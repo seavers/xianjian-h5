@@ -26,6 +26,7 @@
 			--bg-dark: #050508;
 			--panel-inner-bg: rgba(13, 13, 20, 0.96);
 			--grid-item-bg: rgba(255, 255, 255, 0.015);
+			--image-explorer-scale: 2;
 		}
 
 		* {
@@ -612,10 +613,8 @@
 
 		/* 🖼️ 自适应 Canvas 尺寸防糊等比最小拉伸规则 */
 		div#image-gallery-container canvas {
-			width: auto !important;
-			height: auto !important;
-			min-width: 40px;
-			min-height: 40px;
+			width: calc(var(--raw-width, 40px) * var(--image-explorer-scale, 2)) !important;
+			height: calc(var(--raw-height, 40px) * var(--image-explorer-scale, 2)) !important;
 			image-rendering: pixelated;
 		}
 	</style>
@@ -1013,9 +1012,18 @@
 				
 				<!-- 分页控制器 -->
 				<div id="image-page-controller" style="display: flex; align-items: center; gap: 8px;">
+					<!-- 单页容量选择 -->
+					<select id="select-image-page-limit" onchange="changeImagePageLimit(this.value)" style="background: #08080c; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 8.5px; padding: 2px 4px; outline: none; cursor: pointer; border-radius: 2px; margin-right: 6px;">
+						<option value="15">15 句/页</option>
+						<option value="30">30 句/页</option>
+						<option value="50">50 句/页</option>
+						<option value="100">100 句/页</option>
+					</select>
+					<button class="btn-dbg" onclick="firstImagePage()" id="btn-image-first" style="color: #fff; padding: 2px 8px; font-size: 9px; border-color: rgba(255,255,255,0.1); cursor: pointer;">⏮ 首页</button>
 					<button class="btn-dbg" onclick="prevImagePage()" id="btn-image-prev" style="color: #fff; padding: 2px 8px; font-size: 9px; border-color: rgba(255,255,255,0.1); cursor: pointer;">◀ 上一页</button>
 					<span id="image-page-num" style="font-size: 9.5px; color: var(--glow-yellow); font-weight: bold; font-family:'JetBrains Mono', monospace;">1 / 1</span>
 					<button class="btn-dbg" onclick="nextImagePage()" id="btn-image-next" style="color: #fff; padding: 2px 8px; font-size: 9px; border-color: rgba(255,255,255,0.1); cursor: pointer;">下一页 ▶</button>
+					<button class="btn-dbg" onclick="lastImagePage()" id="btn-image-last" style="color: #fff; padding: 2px 8px; font-size: 9px; border-color: rgba(255,255,255,0.1); cursor: pointer;">尾页 ⏭</button>
 				</div>
 			</div>
 		</div>
@@ -1909,23 +1917,28 @@
 			document.getElementById('filter-mgo-container').style.display = (type === 'mgo') ? 'flex' : 'none';
 			document.getElementById('filter-gop-container').style.display = (type === 'gop') ? 'flex' : 'none';
 
-			// 动态调整画廊展示网格：背景大图使用宽网格，剧情文本卡片限制350px宽度多列排布，小精灵高密紧凑
+			// 动态调整画廊展示网格：背景大图使用宽网格，剧情文本卡片限制500px宽度多列排布，小精灵高密紧凑
 			const gallery = document.getElementById('image-gallery-container');
 			if (gallery) {
 				if (type === 'fbp') {
 					gallery.style.gridTemplateColumns = "repeat(auto-fill, minmax(320px, 1fr))";
 				} else if (type === 'msg') {
-					gallery.style.gridTemplateColumns = "repeat(auto-fill, minmax(180px, 350px))";
+					gallery.style.gridTemplateColumns = "repeat(auto-fill, minmax(180px, 500px))";
 				} else {
 					gallery.style.gridTemplateColumns = "repeat(auto-fill, minmax(100px, 1fr))";
 				}
 			}
 
 			// 根据各类精灵尺寸的最佳显示习惯，自适应调整单页容量与初始放大比例
-			// 除剧情文本 MSG 依然进行分页（单页15句）之外，其余全部类型都将 itemsPerPage 设为 100000 极大值以滚动平铺，并隐藏底部分页按钮
+			// 除剧情文本 MSG 依然进行分页（根据容量选择下拉框的值分页）之外，其余全部类型都将 itemsPerPage 设为 100000 极大值以滚动平铺，并隐藏底部分页按钮
 			const pageController = document.getElementById('image-page-controller');
 			if (type === 'msg') {
-				imageExplorerState.itemsPerPage = 15;
+				const selectLimit = document.getElementById('select-image-page-limit');
+				if (selectLimit) {
+					imageExplorerState.itemsPerPage = parseInt(selectLimit.value);
+				} else {
+					imageExplorerState.itemsPerPage = 15;
+				}
 				imageExplorerState.currentScale = 1.5;
 				if (pageController) pageController.style.display = 'flex';
 			} else {
@@ -1949,9 +1962,10 @@
 				}
 			}
 
-			// 同步刷新滑块 UI 显式数值
+			// 同步刷新滑块 UI 显式数值与 CSS 变量以支持极致像素放大
 			document.getElementById('image-gallery-scale').value = imageExplorerState.currentScale;
 			document.getElementById('label-image-scale-val').innerText = `${imageExplorerState.currentScale}X`;
+			document.documentElement.style.setProperty('--image-explorer-scale', imageExplorerState.currentScale);
 
 			updateTotalItemsAndRender();
 		}
@@ -1960,13 +1974,7 @@
 		function changeImageScale(val) {
 			imageExplorerState.currentScale = parseFloat(val);
 			document.getElementById('label-image-scale-val').innerText = `${val}X`;
-
-			const scale = imageExplorerState.currentScale;
-			const gallery = document.getElementById('image-gallery-container');
-			gallery.querySelectorAll('canvas').forEach(canvas => {
-				canvas.style.width = `${canvas.width * scale}px`;
-				canvas.style.height = `${canvas.height * scale}px`;
-			});
+			document.documentElement.style.setProperty('--image-explorer-scale', val);
 		}
 
 		// 6. 处理 MGO 角色二级分类的快速选择与强制数值检索
@@ -2094,6 +2102,17 @@
 			prevBtn.style.opacity = (imageExplorerState.currentPage === 0) ? '0.4' : '1';
 			nextBtn.style.opacity = (imageExplorerState.currentPage === pageCount - 1) ? '0.4' : '1';
 
+			const firstBtn = document.getElementById('btn-image-first');
+			const lastBtn = document.getElementById('btn-image-last');
+			if (firstBtn) {
+				firstBtn.disabled = (imageExplorerState.currentPage === 0);
+				firstBtn.style.opacity = (imageExplorerState.currentPage === 0) ? '0.4' : '1';
+			}
+			if (lastBtn) {
+				lastBtn.disabled = (imageExplorerState.currentPage === pageCount - 1);
+				lastBtn.style.opacity = (imageExplorerState.currentPage === pageCount - 1) ? '0.4' : '1';
+			}
+
 			gallery.innerHTML = '';
 
 			// 逐个生成解包 Canvas
@@ -2128,7 +2147,7 @@
 		// 10. 针对剧情文本 (msg) 用游戏字库原生 16x16 点阵字顺次拼接绘制的特殊渲染引擎
 		function renderMsgItem(msgId, labelText) {
 			const card = document.createElement('div');
-			card.style.cssText = "background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.02); border-radius:2px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; padding:8px; transition:all 0.1s; max-width:350px; overflow:hidden; box-sizing:border-box;";
+			card.style.cssText = "background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.02); border-radius:2px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; padding:8px; transition:all 0.1s; max-width:500px; overflow:hidden; box-sizing:border-box;";
 
 			card.onmouseenter = () => {
 				card.style.borderColor = 'var(--glow-green)';
@@ -2168,8 +2187,10 @@
 						canvas.width = r.length * 16;
 						canvas.height = 16;
 
-						const scale = imageExplorerState.currentScale;
-						canvas.style.cssText = `image-rendering: pixelated; width: ${canvas.width * scale}px; height: ${16 * scale}px; background: rgba(0,0,0,0.4); border-radius: 1px;`;
+						canvas.style.setProperty('--raw-width', `${canvas.width}px`);
+						canvas.style.setProperty('--raw-height', '16px');
+						canvas.style.background = 'rgba(0,0,0,0.4)';
+						canvas.style.borderRadius = '1px';
 
 						const ctx = canvas.getContext('2d');
 						ctx.imageSmoothingEnabled = false;
@@ -2222,8 +2243,10 @@
 				if (img) {
 					// img 本身已经是一个原生 Canvas 节点！
 					// 我们直接对其应用倍率缩放样式，以求最佳性能和 100% 图像完整性。
-					const scale = imageExplorerState.currentScale;
-					img.style.cssText = `image-rendering: pixelated; width: ${img.width * scale}px; height: ${img.height * scale}px; background: rgba(0,0,0,0.3); border-radius: 1px;`;
+					img.style.setProperty('--raw-width', `${img.width}px`);
+					img.style.setProperty('--raw-height', `${img.height}px`);
+					img.style.background = 'rgba(0,0,0,0.3)';
+					img.style.borderRadius = '1px';
 
 					card.appendChild(img);
 
@@ -2259,7 +2282,29 @@
 			}
 		}
 
-		// 12. 将所有与 HTML 直接交互的 API 绑定注册至全局作用域
+		function firstImagePage() {
+			if (imageExplorerState.currentPage > 0) {
+				imageExplorerState.currentPage = 0;
+				renderImagePage();
+			}
+		}
+
+		function lastImagePage() {
+			const limit = imageExplorerState.itemsPerPage;
+			const pageCount = Math.ceil(imageExplorerState.totalItems / limit);
+			if (imageExplorerState.currentPage < pageCount - 1) {
+				imageExplorerState.currentPage = pageCount - 1;
+				renderImagePage();
+			}
+		}
+
+		function changeImagePageLimit(val) {
+			imageExplorerState.itemsPerPage = parseInt(val);
+			imageExplorerState.currentPage = 0;
+			renderImagePage();
+		}
+
+		// 12. 将所有与 HTML 直接交互 of API 绑定注册至全局作用域
 		window.openImageExplorer = openImageExplorer;
 		window.closeImageExplorer = closeImageExplorer;
 		window.switchImageType = switchImageType;
@@ -2270,6 +2315,9 @@
 		window.searchImageMap = searchImageMap;
 		window.prevImagePage = prevImagePage;
 		window.nextImagePage = nextImagePage;
+		window.firstImagePage = firstImagePage;
+		window.lastImagePage = lastImagePage;
+		window.changeImagePageLimit = changeImagePageLimit;
 
 		function openSpriteExplorer() {
 			document.getElementById('sprite-explorer-modal').style.display = 'flex';
