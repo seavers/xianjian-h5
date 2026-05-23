@@ -3,14 +3,6 @@ import { Script } from '../engine/script.js';
 import { refreshRoleCount, setRolePos, startEventTrig } from '../engine/command.js';
 import { canWalk, update } from './draw.js';
 
-let ESCModule = null;
-async function getESCModule() {
-  if (!ESCModule) {
-    ESCModule = await import('../esc/esc.js');
-  }
-  return ESCModule.ESC;
-}
-
 export let blankCallback = null;
 
 // 只有用户点击空格后，执行回调
@@ -29,20 +21,18 @@ export function unbind() {
 }
 
 // 绑定键盘按下事件
-document.addEventListener('keydown', async (ev) => {
+document.addEventListener('keydown', (ev) => {
   if (bindCallback) {
     bindCallback(ev);
     return;
   }
 
-  // 判断是否处于脚本并行执行阻塞中
+  // 同步判断是否处于脚本并行执行阻塞中
   if (Script.isExec()) {
     if (ev.keyCode !== 32 || !blankCallback) {
       return;
     }
   }
-
-  const ESC = await getESCModule();
 
   switch (ev.keyCode) {
     case 32: { // 空格
@@ -53,19 +43,25 @@ document.addEventListener('keydown', async (ev) => {
 
     case 27: { // ESC
       ev.preventDefault();
-      ESC.onMenu();
+      import('../esc/esc.js').then(({ ESC }) => {
+        ESC.onMenu();
+      });
       break;
     }
 
     case 69: { // E键呼出物品栏
       ev.preventDefault();
-      ESC.onItem();
+      import('../esc/esc.js').then(({ ESC }) => {
+        ESC.onItem();
+      });
       break;
     }
 
     case 83: { // S键呼出状态栏
       ev.preventDefault();
-      ESC.onStatus();
+      import('../esc/esc.js').then(({ ESC }) => {
+        ESC.onStatus();
+      });
       break;
     }
 
