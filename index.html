@@ -1001,7 +1001,7 @@
 			</div>
 
 			<!-- 资源平铺展示画廊区 -->
-			<div id="image-gallery-container" style="flex: 1; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; background: #040406; align-content: start;">
+			<div id="image-gallery-container" style="flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-wrap: wrap; gap: 8px; background: #040406; align-content: start;">
 				<!-- 动态生成 -->
 			</div>
 
@@ -1918,17 +1918,7 @@
 			document.getElementById('filter-mgo-container').style.display = (type === 'mgo') ? 'flex' : 'none';
 			document.getElementById('filter-gop-container').style.display = (type === 'gop') ? 'flex' : 'none';
 
-			// 动态调整画廊展示网格：背景大图使用等比缩放的宽网格，剧情文本卡片等比限宽多列排布，普通与短语精灵卡片随缩放比例自动拉宽容器以防重叠
-			const gallery = document.getElementById('image-gallery-container');
-			if (gallery) {
-				if (type === 'fbp') {
-					gallery.style.gridTemplateColumns = "repeat(auto-fill, minmax(calc(160px * var(--image-explorer-scale)), 1fr))";
-				} else if (type === 'msg') {
-					gallery.style.gridTemplateColumns = "repeat(auto-fill, minmax(180px, calc(330px * var(--image-explorer-scale))))";
-				} else {
-					gallery.style.gridTemplateColumns = "repeat(auto-fill, minmax(calc(55px * var(--image-explorer-scale)), 1fr))";
-				}
-			}
+
 
 			// 根据各类精灵尺寸的最佳显示习惯，自适应调整单页容量与初始放大比例
 			// 除剧情文本 MSG 依然进行分页（根据容量选择下拉框的值分页）之外，其余全部类型都将 itemsPerPage 设为 100000 极大值以滚动平铺，并隐藏底部分页按钮
