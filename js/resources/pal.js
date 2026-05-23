@@ -117,8 +117,14 @@ export function createRleImage(data, isPal) {
   const view = data.toDataView();
   const palette = loadPal(globalPalletteId);
 
-  const width = view.nextShort();
-  const height = view.nextShort();
+  var width = view.nextShort();
+  var height = view.nextShort();
+
+  // SDLPAL 的 RLE 解码函数明确会跳过 02 00 00 00，然后把后 4 字节当作 width/height
+  if (width == 2 && height == 0) {
+    width = view.nextShort();
+    height = view.nextShort();
+  }
 
   if (width > 200 || height > 200 || width <= 0 || height <= 0) {
     console.warn('[warning]: rle width/height invalid ' + width + ' ' + height);
