@@ -1321,7 +1321,7 @@
 			loadMsgFn = loadMsg;
 		});
 
-		const gbkDecoder = new TextDecoder('gbk');
+		const big5Decoder = new TextDecoder('big5');
 
 		// 动态反解二进制文件里的国标码对话文本 (引入严格双字节奇偶对齐，彻底阻绝错位乱码)
 		function decodeChineseMsg(msgId) {
@@ -1339,7 +1339,7 @@
 						continue;
 					}
 					
-					// 2. 如果是国标码汉字的前导高字节（GBK 区码范围均大于 0x80）
+					// 2. 如果是国标码汉字的前导高字节（Big5 汉字高字节范围均大于 0x80）
 					if (b > 0x80) {
 						// 保护性确保双字节不越界，完美打包压入双字节以防发生奇偶对齐错位
 						if (i + 1 < text.length) {
@@ -1353,7 +1353,7 @@
 					}
 				}
 				
-				return gbkDecoder.decode(new Uint8Array(bytes)).trim();
+				return big5Decoder.decode(new Uint8Array(bytes)).trim();
 			} catch (e) {
 				return '文本解码失败';
 			}
