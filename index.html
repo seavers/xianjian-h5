@@ -1261,7 +1261,7 @@
 			document.getElementById('ins-val-offset').innerText = info.offset;
 		}
 
-		// 5. 并行指令流高速追加，解决滚动条 Bug（采用最高精准度的多轨多渲染帧校正与双端 Flex 高保真反解）
+		// 5. 并行指令流高速追加，解决滚动条 Bug（采用最高精准度的多轨多渲染帧校正与绝对定位 450px 精密左对齐）
 		function appendScriptLog(log) {
 			const container = document.getElementById('container-logs');
 			if (!container) return;
@@ -1275,11 +1275,11 @@
 
 			const logDiv = document.createElement('div');
 			logDiv.className = `log-item ${log.type}`;
-			logDiv.style.cssText = "display: flex; justify-content: space-between; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 4px; gap: 8px;";
+			logDiv.style.cssText = "position: relative; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 4px; height: 15px; display: flex; align-items: center;";
 
-			// 左侧：原始 16 进制指令和基本描述
+			// 左侧：原始 16 进制指令和基本描述，锁死宽度为 440px 以防遮盖
 			const leftSpan = document.createElement('span');
-			leftSpan.style.cssText = "overflow: hidden; text-overflow: ellipsis; display: inline-block;";
+			leftSpan.style.cssText = "width: 440px; overflow: hidden; text-overflow: ellipsis; display: inline-block; white-space: nowrap; flex-shrink: 0;";
 			leftSpan.innerHTML = `
 				<span class="log-time">${log.time}</span>
 				<span class="log-badge ${log.type}">${log.type}</span>
@@ -1288,9 +1288,9 @@
 				<span style="color:rgba(255,255,255,0.18)">(${log.param1}, ${log.param2}, ${log.param3})</span>
 			`;
 
-			// 右侧：亮荧光绿色展示高度反解出的中文含义，溢出时自动切断 (overflow: hidden)
+			// 右侧：亮荧光绿色展示中文含义，精确定位在离指令最左边 450px 处，左对齐，超宽时 ellipsis 自动切断
 			const rightSpan = document.createElement('span');
-			rightSpan.style.cssText = "color: var(--glow-green); font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; max-width: 50%; display: inline-block;";
+			rightSpan.style.cssText = "color: var(--glow-green); font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; position: absolute; left: 450px; text-align: left; width: calc(100% - 460px); display: inline-block; white-space: nowrap;";
 			rightSpan.innerText = detailInfo || '';
 
 			logDiv.appendChild(leftSpan);
@@ -1323,20 +1323,36 @@
 
 		const gbkDecoder = new TextDecoder('gbk');
 
-		// 动态反解二进制文件里的国标码对话文本
+		// 动态反解二进制文件里的国标码对话文本 (引入严格双字节奇偶对齐，彻底阻绝错位乱码)
 		function decodeChineseMsg(msgId) {
 			if (!loadMsgFn) return '正在加载文本...';
 			try {
 				const text = loadMsgFn(msgId);
 				if (!text) return '无内容';
+				
 				const bytes = [];
 				for (let i = 0; i < text.length; i++) {
 					const b = text.getByte(i);
-					// 剔除仙剑对话框的颜色控制字: 34 ("), 45 (-), 39 (')
-					if (b !== 34 && b !== 45 && b !== 39) {
+					
+					// 1. 如果是单字节控制符（34: ", 45: -, 39: '），它是单字节，直接跳过不压入
+					if (b === 34 || b === 45 || b === 39) {
+						continue;
+					}
+					
+					// 2. 如果是国标码汉字的前导高字节（GBK 区码范围均大于 0x80）
+					if (b > 0x80) {
+						// 保护性确保双字节不越界，完美打包压入双字节以防发生奇偶对齐错位
+						if (i + 1 < text.length) {
+							bytes.push(b);
+							bytes.push(text.getByte(i + 1));
+							i++; // 跳过已处理的下一个字节
+						}
+					} else {
+						// 3. 普通 ASCII 字符，单字节压入
 						bytes.push(b);
 					}
 				}
+				
 				return gbkDecoder.decode(new Uint8Array(bytes)).trim();
 			} catch (e) {
 				return '文本解码失败';
