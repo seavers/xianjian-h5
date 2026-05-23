@@ -923,7 +923,7 @@
 
 	<!-- ==================== 🖼️ 仙剑奇侠传通用图片资源浏览器模态弹窗 ==================== -->
 	<div id="image-explorer-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
-		<div style="background: rgba(13,13,20,0.96); border: 1px solid var(--glow-green); border-radius: 4px; box-shadow: 0 0 25px rgba(0, 255, 157, 0.15); width: 900px; max-width: 95%; height: 600px; display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
+		<div style="background: rgba(13,13,20,0.96); border: 1px solid var(--glow-green); border-radius: 4px; box-shadow: 0 0 25px rgba(0, 255, 157, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
 			<!-- 弹窗头部 -->
 			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
 				<div style="display: flex; align-items: center; gap: 6px;">
@@ -941,6 +941,7 @@
 				<button class="btn-dbg image-tab-btn" id="tab-gop" onclick="switchImageType('gop')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">场景图元 (gop.mkf)</button>
 				<button class="btn-dbg image-tab-btn" id="tab-pic" onclick="switchImageType('pic')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">物品效果 (data.mkf #9)</button>
 				<button class="btn-dbg image-tab-btn" id="tab-ball" onclick="switchImageType('ball')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">物品小图标 (ball.mkf)</button>
+				<button class="btn-dbg image-tab-btn" id="tab-msg" onclick="switchImageType('msg')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">剧情文本 (msg)</button>
 			</div>
 
 			<!-- 二级筛选项控制栏 (根据选中的类型动态显示) -->
@@ -961,7 +962,7 @@
 						<option value="53">Role 53 (集市商贩)</option>
 					</select>
 					<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">或输入动作包 ID:</span>
-					<input type="number" id="input-image-role-id" value="0" min="0" max="636" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; width: 50px; outline: none; text-align: center;">
+					<input type="number" id="input-image-role-id" value="0" min="0" max="636" oninput="searchImageRole()" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; width: 50px; outline: none; text-align: center;">
 					<button class="btn-dbg" onclick="searchImageRole()" style="color: var(--glow-green); border-color: rgba(0,255,157,0.2); padding: 2px 6px; font-size: 8.5px; cursor: pointer;">载入动作</button>
 				</div>
 
@@ -977,7 +978,7 @@
 						<option value="24">Map 24 (十里坡)</option>
 					</select>
 					<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">或输入大地图 ID (0-225):</span>
-					<input type="number" id="input-image-map-id" value="12" min="0" max="225" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; width: 50px; outline: none; text-align: center;">
+					<input type="number" id="input-image-map-id" value="12" min="0" max="225" oninput="searchImageMap()" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; width: 50px; outline: none; text-align: center;">
 					<button class="btn-dbg" onclick="searchImageMap()" style="color: var(--glow-green); border-color: rgba(0,255,157,0.2); padding: 2px 6px; font-size: 8.5px; cursor: pointer;">载入图元</button>
 				</div>
 
@@ -1880,7 +1881,7 @@
 			document.getElementById('image-explorer-modal').style.display = 'none';
 		}
 
-		// 4. 切换浏览的精灵大类（例如头像、角色动作、大背景图等）
+		// 4. 切换浏览的精灵大类（例如头像、角色动作、大背景图、剧情文本等）
 		function switchImageType(type) {
 			imageExplorerState.currentType = type;
 			imageExplorerState.currentPage = 0;
@@ -1897,6 +1898,18 @@
 			// 控制特定的二级筛选项容器的显示/隐藏
 			document.getElementById('filter-mgo-container').style.display = (type === 'mgo') ? 'flex' : 'none';
 			document.getElementById('filter-gop-container').style.display = (type === 'gop') ? 'flex' : 'none';
+
+			// 动态调整画廊展示网格：背景大图使用宽网格，剧情文本整行独占，小精灵高密紧凑
+			const gallery = document.getElementById('image-gallery-container');
+			if (gallery) {
+				if (type === 'fbp') {
+					gallery.style.gridTemplateColumns = "repeat(auto-fill, minmax(320px, 1fr))";
+				} else if (type === 'msg') {
+					gallery.style.gridTemplateColumns = "1fr";
+				} else {
+					gallery.style.gridTemplateColumns = "repeat(auto-fill, minmax(100px, 1fr))";
+				}
+			}
 
 			// 根据各类精灵尺寸的最佳显示习惯，自适应调整单页容量与初始放大比例
 			if (type === 'rgm') {
@@ -1917,6 +1930,9 @@
 			} else if (type === 'ball') {
 				imageExplorerState.itemsPerPage = 60;
 				imageExplorerState.currentScale = 2;
+			} else if (type === 'msg') {
+				imageExplorerState.itemsPerPage = 15;
+				imageExplorerState.currentScale = 1.5;
 			}
 
 			// 同步刷新滑块 UI 显式数值
@@ -2002,6 +2018,9 @@
 				} else if (type === 'pic') {
 					const pics = palResources.loadMkf('data.mkf', 9);
 					imageExplorerState.totalItems = pics.getShort(0);
+				} else if (type === 'msg') {
+					const talk = palResources.loadMkf('sss.mkf', 3);
+					imageExplorerState.totalItems = talk.length / 4 - 1;
 				}
 			} catch (e) {
 				console.error("获取精灵包大小时发生异常:", e);
@@ -2075,6 +2094,8 @@
 					card = renderSingleItem(i, `GOP #${i}`, (id) => palResources.loadGop(imageExplorerState.subId, id));
 				} else if (type === 'pic') {
 					card = renderSingleItem(i, `PIC #${i + 1}`, (id) => palResources.loadPic(id + 1));
+				} else if (type === 'msg') {
+					card = renderMsgItem(i, `MSG #${i}`);
 				}
 
 				if (card) {
@@ -2083,7 +2104,85 @@
 			}
 		}
 
-		// 10. 渲染单个资源卡片的无模像素卡片渲染引擎
+		// 10. 针对剧情文本 (msg) 用游戏字库原生 16x16 点阵字顺次拼接绘制的特殊渲染引擎
+		function renderMsgItem(msgId, labelText) {
+			const card = document.createElement('div');
+			card.style.cssText = "background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.02); border-radius:2px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; padding:8px; transition:all 0.1s; width:100%; box-sizing:border-box;";
+
+			card.onmouseenter = () => {
+				card.style.borderColor = 'var(--glow-green)';
+				card.style.background = 'rgba(0, 255, 157, 0.02)';
+			};
+			card.onmouseleave = () => {
+				card.style.borderColor = 'rgba(255,255,255,0.02)';
+				card.style.background = 'rgba(255,255,255,0.015)';
+			};
+
+			try {
+				const text = palResources.loadMsg(msgId);
+				if (text && text.length > 0) {
+					// 将剧情文本二进制段转换为汉字短整型字码与颜色编码的结合数组
+					const r = [];
+					let color = null;
+					for (let i = 0; i < text.length; i++) {
+						const b = text.getByte(i);
+						if (b === 34) { // "
+							color = color === 0xFCDC84 ? null : 0xFCDC84;
+						} else if (b === 45) { // -
+							color = color === 0xFFFF00 ? null : 0xFFFF00;
+						} else if (b === 39) { // '
+							color = color === 0x0000FF ? null : 0x0000FF;
+						} else {
+							// 两个字节表示一个汉字字码，以 short 读取
+							r.push({
+								charCode: text.getShort(i++),
+								color: color
+							});
+						}
+					}
+
+					if (r.length > 0) {
+						// 创建高度为 16px、宽度根据字数自适应的 Canvas 容器
+						const canvas = document.createElement('canvas');
+						canvas.width = r.length * 16;
+						canvas.height = 16;
+
+						const scale = imageExplorerState.currentScale;
+						canvas.style.cssText = `image-rendering: pixelated; width: ${canvas.width * scale}px; height: ${16 * scale}px; background: rgba(0,0,0,0.4); border-radius: 1px;`;
+
+						const ctx = canvas.getContext('2d');
+						ctx.imageSmoothingEnabled = false;
+
+						// 逐字使用原版 loadWord(charCode, color) 进行点阵贴图拼合绘制
+						for (let j = 0; j < r.length; j++) {
+							const wordImg = r[j].color ? palResources.loadWord(r[j].charCode, r[j].color) : palResources.loadWord(r[j].charCode);
+							if (wordImg) {
+								ctx.drawImage(wordImg, j * 16, 0);
+							}
+						}
+
+						card.appendChild(canvas);
+
+						// 文字说明底签
+						const label = document.createElement('span');
+						label.innerText = `${labelText} (${r.length} 字)`;
+						label.style.cssText = "font-size: 8px; color: rgba(255,255,255,0.3); font-weight: bold; margin-top: 4px;";
+						card.appendChild(label);
+					} else {
+						card.innerHTML = `<span style="font-size:8px; color:rgba(255,255,255,0.15);">${labelText}\n[控制字符或空指令]</span>`;
+					}
+				} else {
+					card.innerHTML = `<span style="font-size:8px; color:rgba(255,255,255,0.15);">${labelText}\n[空文本]</span>`;
+				}
+			} catch (e) {
+				console.error(`绘制剧本文本 MSG #${msgId} 失败:`, e);
+				card.innerHTML = `<span style="font-size:8px; color:var(--glow-red);">${labelText}\n[解析/绘制失败]</span>`;
+			}
+
+			return card;
+		}
+
+		// 11. 渲染单个资源卡片的无模像素卡片渲染引擎
 		function renderSingleItem(itemId, itemLabelText, loadFn) {
 			const card = document.createElement('div');
 			card.style.cssText = "background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.02); border-radius:2px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px; transition:all 0.1s;";
