@@ -39,7 +39,7 @@
 			width: 100vw;
 			overflow: hidden;
 			display: grid;
-			grid-template-columns: 1fr 420px;
+			grid-template-columns: 1fr 520px; /* 初始宽度改为 520px，支持实时拖动改变 */
 		}
 
 		/* ==================== 左侧：游戏区域 ==================== */
@@ -189,6 +189,7 @@
 			display: flex;
 			flex-direction: column;
 			overflow: hidden;
+			position: relative; /* 设为相对定位以让子元素手柄绝对定位 */
 		}
 
 		#dashboard-header {
@@ -612,6 +613,19 @@
 
 	<!-- ==================== 右侧：监控状态面板 ==================== -->
 	<aside id="dashboard">
+		<!-- 拖拽手柄 -->
+		<div id="resize-handle" style="
+			position: absolute;
+			top: 0;
+			left: -4px;
+			width: 8px;
+			height: 100%;
+			cursor: col-resize;
+			z-index: 9999;
+			background: transparent;
+			transition: background 0.2s;
+		" onmouseover="this.style.background='rgba(0, 255, 157, 0.2)'" onmouseout="this.style.background='transparent'"></div>
+
 		<div id="dashboard-header">
 			<div class="db-title">
 				<div class="live-indicator"></div>
@@ -924,6 +938,36 @@
 				});
 			}
 		}
+
+		// 实时拖拽改变监控台宽度逻辑
+		(() => {
+			const dashboard = document.getElementById('dashboard');
+			const handle = document.getElementById('resize-handle');
+			let isResizing = false;
+
+			handle.addEventListener('mousedown', (e) => {
+				isResizing = true;
+				document.body.style.cursor = 'col-resize';
+				document.body.style.userSelect = 'none';
+			});
+
+			document.addEventListener('mousemove', (e) => {
+				if (!isResizing) return;
+				const newWidth = window.innerWidth - e.clientX;
+				// 宽度限定在 400px ~ 1000px 之间以保持极佳的响应式布局
+				if (newWidth >= 400 && newWidth <= 1000) {
+					document.body.style.gridTemplateColumns = `1fr ${newWidth}px`;
+				}
+			});
+
+			document.addEventListener('mouseup', () => {
+				if (isResizing) {
+					isResizing = false;
+					document.body.style.cursor = '';
+					document.body.style.userSelect = '';
+				}
+			});
+		})();
 	</script>
 
 </body>

@@ -2,19 +2,7 @@ import { state } from '../engine/state.js';
 import { Lang } from '../utils/lang.js';
 import { Thread } from '../engine/thread.js';
 import { loadMsg, loadWord, loadPic, loadRgm } from '../resources/pal.js';
-
-let inputModule = null;
-async function getInputModule() {
-  if (!inputModule) {
-    inputModule = await import('./input.js');
-  }
-  return inputModule;
-}
-
-async function triggerRegisterBlank(callback) {
-  const input = await getInputModule();
-  input.registerBlank(callback);
-}
+import { registerBlank } from './input.js';
 
 let tx = 0;
 let ty = 0;
@@ -208,18 +196,18 @@ function checkTalk(callback) {
   }
 
   if (line > 3) {
-    triggerRegisterBlank(() => {
+    registerBlank(() => {
       updateTalk();
       callback();
     });
   } else if (t.isNextTalk()) {
     callback();
   } else if (t.isNextTalks()) {
-    triggerRegisterBlank(() => {
+    registerBlank(() => {
       callback();
     });
   } else {
-    triggerRegisterBlank(() => {
+    registerBlank(() => {
       resetTalk();
       updateTalk();
       callback();
@@ -265,7 +253,7 @@ function drawLineSync(texts, x, y) {
   const t = Thread.currentThread;
   if (t) {
     t.wait();
-    triggerRegisterBlank(() => {
+    registerBlank(() => {
       resetTalk();
       updateTalk();
       t.notify();
