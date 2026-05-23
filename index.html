@@ -1261,7 +1261,7 @@
 			document.getElementById('ins-val-offset').innerText = info.offset;
 		}
 
-		// 5. 并行指令流高速追加，解决滚动条 Bug（采用最高精准度的多轨多渲染帧校正）
+		// 5. 并行指令流高速追加，解决滚动条 Bug（采用最高精准度的多轨多渲染帧校正与双端 Flex 高保真反解）
 		function appendScriptLog(log) {
 			const container = document.getElementById('container-logs');
 			if (!container) return;
@@ -1270,9 +1270,17 @@
 				container.innerHTML = '';
 			}
 
+			// 实时获取高度解密的附加信息
+			const detailInfo = getInstructionDetail(log.code, log.param1, log.param2, log.param3);
+
 			const logDiv = document.createElement('div');
 			logDiv.className = `log-item ${log.type}`;
-			logDiv.innerHTML = `
+			logDiv.style.cssText = "display: flex; justify-content: space-between; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 4px; gap: 8px;";
+
+			// 左侧：原始 16 进制指令和基本描述
+			const leftSpan = document.createElement('span');
+			leftSpan.style.cssText = "overflow: hidden; text-overflow: ellipsis; display: inline-block;";
+			leftSpan.innerHTML = `
 				<span class="log-time">${log.time}</span>
 				<span class="log-badge ${log.type}">${log.type}</span>
 				<span class="log-code">${log.hexCode}</span>: 
@@ -1280,6 +1288,13 @@
 				<span style="color:rgba(255,255,255,0.18)">(${log.param1}, ${log.param2}, ${log.param3})</span>
 			`;
 
+			// 右侧：亮荧光绿色展示高度反解出的中文含义，溢出时自动切断 (overflow: hidden)
+			const rightSpan = document.createElement('span');
+			rightSpan.style.cssText = "color: var(--glow-green); font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; max-width: 50%; display: inline-block;";
+			rightSpan.innerText = detailInfo || '';
+
+			logDiv.appendChild(leftSpan);
+			logDiv.appendChild(rightSpan);
 			container.appendChild(logDiv);
 
 			// 限制内存溢出，裁剪超过 120 行的高频旧日志，并帮助 scrollHeight 高度完美稳定
@@ -1301,6 +1316,111 @@
 		window.STEP_DEBUG = false;
 		window.ACTIVE_DEBUG_THREAD = null;
 
+		let loadMsgFn = null;
+		import('./js/resources/pal.js').then(({ loadMsg }) => {
+			loadMsgFn = loadMsg;
+		});
+
+		const gbkDecoder = new TextDecoder('gbk');
+
+		// 动态反解二进制文件里的国标码对话文本
+		function decodeChineseMsg(msgId) {
+			if (!loadMsgFn) return '正在加载文本...';
+			try {
+				const text = loadMsgFn(msgId);
+				if (!text) return '无内容';
+				const bytes = [];
+				for (let i = 0; i < text.length; i++) {
+					const b = text.getByte(i);
+					// 剔除仙剑对话框的颜色控制字: 34 ("), 45 (-), 39 (')
+					if (b !== 34 && b !== 45 && b !== 39) {
+						bytes.push(b);
+					}
+				}
+				return gbkDecoder.decode(new Uint8Array(bytes)).trim();
+			} catch (e) {
+				return '文本解码失败';
+			}
+		}
+
+		// 核心指令反解高级剖析字典
+		function getInstructionDetail(code, p1, p2, p3) {
+			switch (code) {
+				case 0xFFFF:
+					return `💬 人物对话: "${decodeChineseMsg(p1)}"`;
+				
+				case 0x15: {
+					const roleName = p3 === 0 ? '李逍遥' : `队员 #${p3}`;
+					const dirs = { 0: '下', 1: '左', 2: '上', 3: '右' };
+					const dirStr = dirs[p1] || p1;
+					return `🏃 【${roleName}】朝${dirStr} | 动作帧: 第 ${p2} 帧`;
+				}
+
+				case 0x65: {
+					const roleName2 = p1 === 0 ? '李逍遥' : `队员 #${p1}`;
+					return `👤 【${roleName2}】切换新形象 ID: 0x${p2.toString(16).toUpperCase()}`;
+				}
+
+				case 0x46:
+					return `📍 【位置定位】主角传送至瓦片坐标: (${p1}, ${p2}) | half: ${p3}`;
+
+				case 0x16: {
+					const npcDirs = { 0: '下', 1: '左', 2: '上', 3: '右' };
+					const npcDirStr = npcDirs[p2] || p2;
+					return `👾 【NPC #${p1}】朝${npcDirStr} | 动作帧: 第 ${p3} 帧`;
+				}
+
+				case 0x49: {
+					let stateDesc = `${p2}-未知`;
+					if (p2 === 0) stateDesc = '0-Hidden (隐藏)';
+					else if (p2 === 1) stateDesc = '1-Active (活跃)';
+					else if (p2 === 2) stateDesc = '2-Auto (自动循环)';
+					return `⚡ 【NPC #${p1}】生命活动状态变更 ➔ ${stateDesc}`;
+				}
+
+				case 0x85:
+					return `⏱️ 【线程等待】挂起 ${p1} 帧 (约 ${Math.round(p1 * 160)} 毫秒)`;
+
+				case 0x1E: {
+					const sign = p1 > 0 ? '+' : '';
+					return `🪙 【金钱变动】国库收支 ${sign}${p1} 文钱`;
+				}
+
+				case 0x1F:
+					return `🎒 【获得物品】李逍遥获得 道具 #${p1}`;
+
+				case 0x59:
+					return `🔮 【传送设定】目的地设定 ➔ Scene #${p1}`;
+
+				case 0x24:
+					return `👾 【NPC #${p1}】绑定并启动自动脚本: Script #${p2}`;
+
+				case 0x25:
+					return `👾 【NPC #${p1}】配置交互触发脚本: Script #${p2}`;
+
+				case 0x6E:
+					return `🏃 【主角平移】像素偏移: (dx: ${p1}, dy: ${p2})`;
+
+				case 0x6C:
+					return `👾 【NPC #${p1}】像素平移: (dx: ${p2}, dy: ${p3})`;
+
+				case 0x3C:
+					return `💬 【气泡设定】顶部显示对话 (关联 NPC #${p1})`;
+
+				case 0x3D:
+					return `💬 【气泡设定】底部显示对话 (关联 NPC #${p1})`;
+
+				case 0x3E:
+					return `💬 【系统提示】弹出对话信息 (消息 ID: ${p1})`;
+
+				case 0x8E:
+					return `🧹 【清理视口】清空/重置对话框画面`;
+
+				default:
+					return '';
+			}
+		}
+
 		// 调试广播钩子：当 Thread.js 底层挂载拦截并挂起时触发，刷新 UI 并将指令信息高亮渲染
 		window.onStepDebugPause = (thread) => {
 			window.ACTIVE_DEBUG_THREAD = thread;
@@ -1316,10 +1436,14 @@
 				const codeObj = scriptCodes[script.code];
 				const desc = codeObj ? codeObj.desc : '未知指令';
 				
+				// 实时对即将单步执行的这一条指令进行深度反解
+				const detailInfo = getInstructionDetail(script.code, script.param1, script.param2, script.param3);
+				const displayDesc = detailInfo ? `${desc} ➔ ${detailInfo}` : desc;
+
 				// 填充并展开即将执行的指令详情提示气泡
 				document.getElementById('step-ip').innerText = thread.scriptId;
 				document.getElementById('step-code').innerText = '0x' + script.code.toString(16).toUpperCase();
-				document.getElementById('step-desc').innerText = desc;
+				document.getElementById('step-desc').innerText = displayDesc;
 				document.getElementById('step-params').innerText = `${script.param1}, ${script.param2}, ${script.param3}`;
 				
 				document.getElementById('step-instruction-box').style.display = 'block';
