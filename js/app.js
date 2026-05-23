@@ -129,11 +129,38 @@ function initContexts() {
   state.contexts.talk = document.getElementById('talk').getContext('2d');
   state.contexts.startup = document.getElementById('startup').getContext('2d');
   
+  // 遍历所有 2D 上下文，在引擎底层彻底关闭图像平滑（Image Smoothing），确保复制及渲染极致清晰锐利
+  Object.values(state.contexts).forEach(ctx => {
+    if (ctx) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.webkitImageSmoothingEnabled = false;
+      ctx.mozImageSmoothingEnabled = false;
+      ctx.msImageSmoothingEnabled = false;
+    }
+  });
+
   // 注入全局简便转换函数
   window.hex = Hex.toHex2;
   window.toHex = Hex.toHex2;
   window.toHex4 = Hex.toHex4;
   window.Talk = Talk;
+
+  // 1. 挂载渲染计数器、定时器时钟及资源缓存至全局 window 作用域，便于右侧面板实时监控分析
+  import('./ui/draw.js').then(({ updateCount }) => {
+    window.updateCount = updateCount;
+  });
+
+  import('./engine/timer.js').then(({ Timer }) => {
+    window.Timer = Timer;
+  });
+
+  import('./resources/loader.js').then(({ file_caches }) => {
+    window.file_caches = file_caches;
+  });
+
+  import('./resources/pal.js').then(({ caches }) => {
+    window.caches = caches;
+  });
 }
 
 // 资源载入并启动
