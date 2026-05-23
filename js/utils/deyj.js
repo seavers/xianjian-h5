@@ -50,16 +50,22 @@ export function deyj(src) {
 
   let buf = [];
 
+  let LZSSRepeatTable = null;
+  let LZSSOffsetCodeLengthTable = null;
+  let LZSSRepeatCodeLengthTable = null;
+  let CodeCountCodeLengthTable = null;
+  let CodeCountTable = null;
+
   for (let i = 0; i < BlockCount; i++) {
     const block = data.nextView();
 
     const bUncompressedLength = block.nextShort();
     const bCompressedLength = block.nextShort(); 
-    const LZSSRepeatTable = block.nextShortArray(4);
-    const LZSSOffsetCodeLengthTable = block.nextByteArray(4);
-    const LZSSRepeatCodeLengthTable = block.nextByteArray(3);
-    const CodeCountCodeLengthTable = block.nextByteArray(3);
-    const CodeCountTable = block.nextByteArray(2);
+    LZSSRepeatTable = block.nextShortArray(4);
+    LZSSOffsetCodeLengthTable = block.nextByteArray(4);
+    LZSSRepeatCodeLengthTable = block.nextByteArray(3);
+    CodeCountCodeLengthTable = block.nextByteArray(3);
+    CodeCountTable = block.nextByteArray(2);
 
     if (bCompressedLength === 0) {
       const temp = data.nextView();
