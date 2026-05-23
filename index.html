@@ -531,15 +531,20 @@
 		}
 
 		.log-stream {
-			height: 1000px; /* 固定拉高至 1000px，提供极高数据可观测度 */
+			height: 1000px; /* 固定限制外层高度至 1000px */
 			background: #030305;
-			padding: 6px 8px;
 			overflow-y: scroll;
-			font-family: 'JetBrains Mono', monospace;
-			font-size: 8.5px;
+			position: relative;
+		}
+
+		.log-stream-inner {
 			display: flex;
 			flex-direction: column;
 			gap: 3px;
+			padding: 6px 8px;
+			min-height: 100%;
+			font-family: 'JetBrains Mono', monospace;
+			font-size: 8.5px;
 		}
 
 		.log-item {
@@ -785,9 +790,12 @@
 					<div class="prof-badge">Timer Pause: <span id="prof-timer-pause" style="color:var(--glow-yellow);">Yes</span></div>
 					<div class="prof-badge">Timer Seq: <span id="prof-timer-seq">0</span></div>
 				</div>
-				<!-- 指令日志 -->
-				<div class="log-stream" id="container-logs">
-					<div style="color: rgba(255,255,255,0.15)">等待并行脚本指令执行日志流式输入...</div>
+				<!-- 指令日志外层限高 1000px wrapper -->
+				<div class="log-stream" id="container-logs-wrapper">
+					<!-- 内层不限高，用 flex 容纳条目 -->
+					<div class="log-stream-inner" id="container-logs">
+						<div style="color: rgba(255,255,255,0.15)">等待并行脚本指令执行日志流式输入...</div>
+					</div>
 				</div>
 			</div>
 
@@ -1421,7 +1429,10 @@
 					}
 					badge.innerText = `x${duplicateCount}`;
 				}
-				container.scrollTop = container.scrollHeight - container.clientHeight;
+				const wrapper = document.getElementById('container-logs-wrapper');
+				if (wrapper) {
+					wrapper.scrollTop = wrapper.scrollHeight - wrapper.clientHeight;
+				}
 				return;
 			}
 
@@ -1462,13 +1473,16 @@
 			}
 
 			// 多渲染帧同步校正法 (Multi-frame Rendering Sync) 保证 100% 滚动到最后一行
-			container.scrollTop = container.scrollHeight - container.clientHeight;
-			requestAnimationFrame(() => {
-				container.scrollTop = container.scrollHeight - container.clientHeight;
-				setTimeout(() => {
-					container.scrollTop = container.scrollHeight - container.clientHeight;
-				}, 0);
-			});
+			const wrapper = document.getElementById('container-logs-wrapper');
+			if (wrapper) {
+				wrapper.scrollTop = wrapper.scrollHeight - wrapper.clientHeight;
+				requestAnimationFrame(() => {
+					wrapper.scrollTop = wrapper.scrollHeight - wrapper.clientHeight;
+					setTimeout(() => {
+						wrapper.scrollTop = wrapper.scrollHeight - wrapper.clientHeight;
+					}, 0);
+				});
+			}
 		}
 
 		// ==================== 🐛 脚本单步调试器 (Active Thread Step Debugger) 前端核心交互 ====================
