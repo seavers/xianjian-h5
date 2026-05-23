@@ -609,6 +609,15 @@
 			color: var(--glow-green) !important;
 			box-shadow: 0 0 8px rgba(0, 255, 157, 0.15);
 		}
+
+		/* 🖼️ 自适应 Canvas 尺寸防糊等比最小拉伸规则 */
+		div#image-gallery-container canvas {
+			width: auto !important;
+			height: auto !important;
+			min-width: 40px;
+			min-height: 40px;
+			image-rendering: pixelated;
+		}
 	</style>
 </head>
 <body>
@@ -1002,7 +1011,7 @@
 				</div>
 				
 				<!-- 分页控制器 -->
-				<div style="display: flex; align-items: center; gap: 8px;">
+				<div id="image-page-controller" style="display: flex; align-items: center; gap: 8px;">
 					<button class="btn-dbg" onclick="prevImagePage()" id="btn-image-prev" style="color: #fff; padding: 2px 8px; font-size: 9px; border-color: rgba(255,255,255,0.1); cursor: pointer;">◀ 上一页</button>
 					<span id="image-page-num" style="font-size: 9.5px; color: var(--glow-yellow); font-weight: bold; font-family:'JetBrains Mono', monospace;">1 / 1</span>
 					<button class="btn-dbg" onclick="nextImagePage()" id="btn-image-next" style="color: #fff; padding: 2px 8px; font-size: 9px; border-color: rgba(255,255,255,0.1); cursor: pointer;">下一页 ▶</button>
@@ -1899,40 +1908,42 @@
 			document.getElementById('filter-mgo-container').style.display = (type === 'mgo') ? 'flex' : 'none';
 			document.getElementById('filter-gop-container').style.display = (type === 'gop') ? 'flex' : 'none';
 
-			// 动态调整画廊展示网格：背景大图使用宽网格，剧情文本整行独占，小精灵高密紧凑
+			// 动态调整画廊展示网格：背景大图使用宽网格，剧情文本卡片限制350px宽度多列排布，小精灵高密紧凑
 			const gallery = document.getElementById('image-gallery-container');
 			if (gallery) {
 				if (type === 'fbp') {
 					gallery.style.gridTemplateColumns = "repeat(auto-fill, minmax(320px, 1fr))";
 				} else if (type === 'msg') {
-					gallery.style.gridTemplateColumns = "1fr";
+					gallery.style.gridTemplateColumns = "repeat(auto-fill, minmax(180px, 350px))";
 				} else {
 					gallery.style.gridTemplateColumns = "repeat(auto-fill, minmax(100px, 1fr))";
 				}
 			}
 
 			// 根据各类精灵尺寸的最佳显示习惯，自适应调整单页容量与初始放大比例
-			if (type === 'rgm') {
-				imageExplorerState.itemsPerPage = 48;
-				imageExplorerState.currentScale = 2;
-			} else if (type === 'mgo') {
-				imageExplorerState.itemsPerPage = 1000;
-				imageExplorerState.currentScale = 2;
-			} else if (type === 'fbp') {
-				imageExplorerState.itemsPerPage = 6;
-				imageExplorerState.currentScale = 1;
-			} else if (type === 'gop') {
-				imageExplorerState.itemsPerPage = 60;
-				imageExplorerState.currentScale = 1.5;
-			} else if (type === 'pic') {
-				imageExplorerState.itemsPerPage = 30;
-				imageExplorerState.currentScale = 2;
-			} else if (type === 'ball') {
-				imageExplorerState.itemsPerPage = 60;
-				imageExplorerState.currentScale = 2;
-			} else if (type === 'msg') {
+			// 除剧情文本 MSG 依然进行分页（单页15句）之外，其余全部类型都将 itemsPerPage 设为 100000 极大值以滚动平铺，并隐藏底部分页按钮
+			const pageController = document.getElementById('image-page-controller');
+			if (type === 'msg') {
 				imageExplorerState.itemsPerPage = 15;
 				imageExplorerState.currentScale = 1.5;
+				if (pageController) pageController.style.display = 'flex';
+			} else {
+				imageExplorerState.itemsPerPage = 100000;
+				if (pageController) pageController.style.display = 'none';
+
+				if (type === 'rgm') {
+					imageExplorerState.currentScale = 2;
+				} else if (type === 'mgo') {
+					imageExplorerState.currentScale = 2;
+				} else if (type === 'fbp') {
+					imageExplorerState.currentScale = 1;
+				} else if (type === 'gop') {
+					imageExplorerState.currentScale = 1.5;
+				} else if (type === 'pic') {
+					imageExplorerState.currentScale = 2;
+				} else if (type === 'ball') {
+					imageExplorerState.currentScale = 2;
+				}
 			}
 
 			// 同步刷新滑块 UI 显式数值
@@ -2107,7 +2118,7 @@
 		// 10. 针对剧情文本 (msg) 用游戏字库原生 16x16 点阵字顺次拼接绘制的特殊渲染引擎
 		function renderMsgItem(msgId, labelText) {
 			const card = document.createElement('div');
-			card.style.cssText = "background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.02); border-radius:2px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; padding:8px; transition:all 0.1s; width:100%; box-sizing:border-box;";
+			card.style.cssText = "background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.02); border-radius:2px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; padding:8px; transition:all 0.1s; max-width:350px; overflow:hidden; box-sizing:border-box;";
 
 			card.onmouseenter = () => {
 				card.style.borderColor = 'var(--glow-green)';
