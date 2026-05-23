@@ -598,6 +598,17 @@
 			border-color: var(--glow-green);
 			color: var(--glow-green);
 		}
+
+		/* 🖼️ 图片资源浏览器选项卡与动画 */
+		.image-tab-btn {
+			transition: all 0.15s ease;
+		}
+		.image-tab-btn.active {
+			background: rgba(0, 255, 157, 0.1) !important;
+			border-color: var(--glow-green) !important;
+			color: var(--glow-green) !important;
+			box-shadow: 0 0 8px rgba(0, 255, 157, 0.15);
+		}
 	</style>
 </head>
 <body>
@@ -650,7 +661,10 @@
 				<div style="width:5px; height:5px; background:#00ff9d; border-radius:50%; box-shadow:0 0 6px #00ff9d;"></div>
 				<h2>PAL RUNTIME REALTIME PROFILE CONSOLE</h2>
 			</div>
-			<div style="font-size: 8.5px; color:rgba(255,255,255,0.2);">VER: 4.0-DECRYPT-STREAM</div>
+			<div style="display:flex; align-items:center; gap:8px;">
+				<button class="btn-dbg" onclick="openImageExplorer()" style="color: var(--glow-green); border-color: rgba(0, 255, 157, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s;">🖼️ 查看图片资源</button>
+				<div style="font-size: 8.5px; color:rgba(255,255,255,0.2);">VER: 4.0-DECRYPT-STREAM</div>
+			</div>
 		</div>
 
 		<div id="panel-container">
@@ -903,6 +917,95 @@
 			<!-- Gallery 滚动画廊区 -->
 			<div id="explorer-gallery" style="flex: 1; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; background: #040406;">
 				<!-- 动态生成 -->
+			</div>
+		</div>
+	</div>
+
+	<!-- ==================== 🖼️ 仙剑奇侠传通用图片资源浏览器模态弹窗 ==================== -->
+	<div id="image-explorer-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
+		<div style="background: rgba(13,13,20,0.96); border: 1px solid var(--glow-green); border-radius: 4px; box-shadow: 0 0 25px rgba(0, 255, 157, 0.15); width: 900px; max-width: 95%; height: 600px; display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
+			<!-- 弹窗头部 -->
+			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
+				<div style="display: flex; align-items: center; gap: 6px;">
+					<div style="width: 5px; height: 5px; background: var(--glow-green); border-radius: 50%; box-shadow: 0 0 6px var(--glow-green);"></div>
+					<span style="font-size: 11px; font-weight: bold; color: var(--glow-green); letter-spacing: 0.5px; text-transform: uppercase;">🖼️ PAL IMAGE RESOURCE EXPLORER (图片精灵资源浏览器)</span>
+				</div>
+				<button onclick="closeImageExplorer()" style="background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer; transition: color 0.15s; outline:none;" onmouseenter="this.style.color='#ff3b6f'" onmouseleave="this.style.color='rgba(255,255,255,0.4)'">✕</button>
+			</div>
+			
+			<!-- 图片大类 Tabs 切换栏 -->
+			<div style="background: rgba(0,0,0,0.4); padding: 6px 12px; border-bottom: 1px solid var(--border-glass); display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+				<button class="btn-dbg image-tab-btn active" id="tab-rgm" onclick="switchImageType('rgm')" style="color:var(--glow-green); border-color:var(--glow-green); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">头像界面 (rgm.mkf)</button>
+				<button class="btn-dbg image-tab-btn" id="tab-mgo" onclick="switchImageType('mgo')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">角色动作 (mgo.mkf)</button>
+				<button class="btn-dbg image-tab-btn" id="tab-fbp" onclick="switchImageType('fbp')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">背景原画 (fbp.mkf)</button>
+				<button class="btn-dbg image-tab-btn" id="tab-gop" onclick="switchImageType('gop')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">场景图元 (gop.mkf)</button>
+				<button class="btn-dbg image-tab-btn" id="tab-pic" onclick="switchImageType('pic')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">物品效果 (data.mkf #9)</button>
+				<button class="btn-dbg image-tab-btn" id="tab-ball" onclick="switchImageType('ball')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">物品小图标 (ball.mkf)</button>
+			</div>
+
+			<!-- 二级筛选项控制栏 (根据选中的类型动态显示) -->
+			<div style="background: rgba(0,0,0,0.25); padding: 6px 12px; border-bottom: 1px solid var(--border-glass); display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+				<!-- MGO (角色) 筛选项 -->
+				<div id="filter-mgo-container" style="display: none; align-items: center; gap: 6px;">
+					<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">👤 形象:</span>
+					<select id="select-image-role" onchange="onImageRoleSelect(this.value)" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; outline: none; width: 140px; cursor: pointer;">
+						<option value="0">Role 0 (李逍遥)</option>
+						<option value="1">Role 1 (赵灵儿 - 披发)</option>
+						<option value="2">Role 2 (林月如)</option>
+						<option value="3">Role 3 (阿奴)</option>
+						<option value="4">Role 4 (赵灵儿 - 蛇身)</option>
+						<option value="10">Role 10 (李大娘)</option>
+						<option value="11">Role 11 (苗人首领)</option>
+						<option value="12">Role 12 (苗人手下)</option>
+						<option value="21">Role 21 (村口黄狗)</option>
+						<option value="53">Role 53 (集市商贩)</option>
+					</select>
+					<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">或输入动作包 ID:</span>
+					<input type="number" id="input-image-role-id" value="0" min="0" max="636" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; width: 50px; outline: none; text-align: center;">
+					<button class="btn-dbg" onclick="searchImageRole()" style="color: var(--glow-green); border-color: rgba(0,255,157,0.2); padding: 2px 6px; font-size: 8.5px; cursor: pointer;">载入动作</button>
+				</div>
+
+				<!-- GOP (图元) 筛选项 -->
+				<div id="filter-gop-container" style="display: none; align-items: center; gap: 6px;">
+					<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">🗺️ 场景图元包 (对应大地图 ID):</span>
+					<select id="select-image-map" onchange="onImageMapSelect(this.value)" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; outline: none; width: 150px; cursor: pointer;">
+						<option value="12">Map 12 (盛渔村/客栈)</option>
+						<option value="1">Map 1 (李逍遥家/卧室)</option>
+						<option value="10">Map 10 (盛渔村客栈房)</option>
+						<option value="16">Map 16 (仙灵岛荷花池)</option>
+						<option value="20">Map 20 (仙灵岛水月宫)</option>
+						<option value="24">Map 24 (十里坡)</option>
+					</select>
+					<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">或输入大地图 ID (0-225):</span>
+					<input type="number" id="input-image-map-id" value="12" min="0" max="225" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; width: 50px; outline: none; text-align: center;">
+					<button class="btn-dbg" onclick="searchImageMap()" style="color: var(--glow-green); border-color: rgba(0,255,157,0.2); padding: 2px 6px; font-size: 8.5px; cursor: pointer;">载入图元</button>
+				</div>
+
+				<!-- 全局缩放比例滑块 -->
+				<div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
+					<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">🔍 像素放大:</span>
+					<input type="range" id="image-gallery-scale" min="1" max="4" value="2" oninput="changeImageScale(this.value)" style="width: 80px; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; outline: none; appearance: none; cursor: pointer;">
+					<span id="label-image-scale-val" style="font-size: 8.5px; color: var(--glow-yellow); font-weight: bold; min-width: 18px;">2X</span>
+				</div>
+			</div>
+
+			<!-- 资源平铺展示画廊区 -->
+			<div id="image-gallery-container" style="flex: 1; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; background: #040406; align-content: start;">
+				<!-- 动态生成 -->
+			</div>
+
+			<!-- 底部导航与分页面板 -->
+			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-top: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
+				<div style="display: flex; align-items: center; gap: 10px;">
+					<span id="image-total-count" style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">资源总数: -</span>
+				</div>
+				
+				<!-- 分页控制器 -->
+				<div style="display: flex; align-items: center; gap: 8px;">
+					<button class="btn-dbg" onclick="prevImagePage()" id="btn-image-prev" style="color: #fff; padding: 2px 8px; font-size: 9px; border-color: rgba(255,255,255,0.1); cursor: pointer;">◀ 上一页</button>
+					<span id="image-page-num" style="font-size: 9.5px; color: var(--glow-yellow); font-weight: bold; font-family:'JetBrains Mono', monospace;">1 / 1</span>
+					<button class="btn-dbg" onclick="nextImagePage()" id="btn-image-next" style="color: #fff; padding: 2px 8px; font-size: 9px; border-color: rgba(255,255,255,0.1); cursor: pointer;">下一页 ▶</button>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -1740,11 +1843,319 @@
 		let loadMgoCountFn = null;
 		let loadBallFn = null;
 
-		import('./js/resources/pal.js').then(({ loadMgo, loadMgoCount, loadBall }) => {
-			loadMgoFn = loadMgo;
-			loadMgoCountFn = loadMgoCount;
-			loadBallFn = loadBall;
+		// 动态载入图片浏览与解包所需的全部底层 API 接口
+		let palResources = null;
+		let loaderModule = null;
+
+		import('./js/resources/pal.js').then((module) => {
+			palResources = module;
+			loadMgoFn = module.loadMgo;
+			loadMgoCountFn = module.loadMgoCount;
+			loadBallFn = module.loadBall;
 		});
+
+		import('./js/resources/loader.js').then((module) => {
+			loaderModule = module;
+		});
+
+		// ==================== 🖼️ 通用图片精灵资源浏览器前端核心逻辑 ====================
+		// 1. 初始化核心状态管理器，用于记录当前分类、分页、像素放大倍率和子过滤ID
+		const imageExplorerState = {
+			currentType: 'rgm',
+			currentPage: 0,
+			itemsPerPage: 48,
+			currentScale: 2,
+			totalItems: 0,
+			subId: 0
+		};
+
+		// 2. 开启图片资源浏览器，同步当前状态并执行首次渲染
+		function openImageExplorer() {
+			document.getElementById('image-explorer-modal').style.display = 'flex';
+			switchImageType(imageExplorerState.currentType);
+		}
+
+		// 3. 关闭图片资源浏览器浮层
+		function closeImageExplorer() {
+			document.getElementById('image-explorer-modal').style.display = 'none';
+		}
+
+		// 4. 切换浏览的精灵大类（例如头像、角色动作、大背景图等）
+		function switchImageType(type) {
+			imageExplorerState.currentType = type;
+			imageExplorerState.currentPage = 0;
+
+			// 切换大类选项卡高亮样式
+			document.querySelectorAll('.image-tab-btn').forEach(btn => {
+				btn.classList.remove('active');
+			});
+			const activeTab = document.getElementById(`tab-${type}`);
+			if (activeTab) {
+				activeTab.classList.add('active');
+			}
+
+			// 控制特定的二级筛选项容器的显示/隐藏
+			document.getElementById('filter-mgo-container').style.display = (type === 'mgo') ? 'flex' : 'none';
+			document.getElementById('filter-gop-container').style.display = (type === 'gop') ? 'flex' : 'none';
+
+			// 根据各类精灵尺寸的最佳显示习惯，自适应调整单页容量与初始放大比例
+			if (type === 'rgm') {
+				imageExplorerState.itemsPerPage = 48;
+				imageExplorerState.currentScale = 2;
+			} else if (type === 'mgo') {
+				imageExplorerState.itemsPerPage = 1000;
+				imageExplorerState.currentScale = 2;
+			} else if (type === 'fbp') {
+				imageExplorerState.itemsPerPage = 6;
+				imageExplorerState.currentScale = 1;
+			} else if (type === 'gop') {
+				imageExplorerState.itemsPerPage = 60;
+				imageExplorerState.currentScale = 1.5;
+			} else if (type === 'pic') {
+				imageExplorerState.itemsPerPage = 30;
+				imageExplorerState.currentScale = 2;
+			} else if (type === 'ball') {
+				imageExplorerState.itemsPerPage = 60;
+				imageExplorerState.currentScale = 2;
+			}
+
+			// 同步刷新滑块 UI 显式数值
+			document.getElementById('image-gallery-scale').value = imageExplorerState.currentScale;
+			document.getElementById('label-image-scale-val').innerText = `${imageExplorerState.currentScale}X`;
+
+			updateTotalItemsAndRender();
+		}
+
+		// 5. 全局缩放滑块拉动响应：通过 CSS 特效实时对 Canvas 节点进行防糊等比拉伸
+		function changeImageScale(val) {
+			imageExplorerState.currentScale = parseFloat(val);
+			document.getElementById('label-image-scale-val').innerText = `${val}X`;
+
+			const scale = imageExplorerState.currentScale;
+			const gallery = document.getElementById('image-gallery-container');
+			gallery.querySelectorAll('canvas').forEach(canvas => {
+				canvas.style.width = `${canvas.width * scale}px`;
+				canvas.style.height = `${canvas.height * scale}px`;
+			});
+		}
+
+		// 6. 处理 MGO 角色二级分类的快速选择与强制数值检索
+		function onImageRoleSelect(roleId) {
+			document.getElementById('input-image-role-id').value = roleId;
+			imageExplorerState.subId = parseInt(roleId);
+			imageExplorerState.currentPage = 0;
+			updateTotalItemsAndRender();
+		}
+
+		function searchImageRole() {
+			const roleIdInput = document.getElementById('input-image-role-id').value;
+			if (roleIdInput === '') return;
+			imageExplorerState.subId = parseInt(roleIdInput);
+			imageExplorerState.currentPage = 0;
+			updateTotalItemsAndRender();
+		}
+
+		// 7. 处理 GOP 地图二级分类的快速选择与强制数值检索
+		function onImageMapSelect(mapId) {
+			document.getElementById('input-image-map-id').value = mapId;
+			imageExplorerState.subId = parseInt(mapId);
+			imageExplorerState.currentPage = 0;
+			updateTotalItemsAndRender();
+		}
+
+		function searchImageMap() {
+			const mapIdInput = document.getElementById('input-image-map-id').value;
+			if (mapIdInput === '') return;
+			imageExplorerState.subId = parseInt(mapIdInput);
+			imageExplorerState.currentPage = 0;
+			updateTotalItemsAndRender();
+		}
+
+		// 8. 精密计算当前选定资源包内含有的物理总块数
+		function updateTotalItemsAndRender() {
+			if (!palResources || !loaderModule) {
+				setTimeout(updateTotalItemsAndRender, 50);
+				return;
+			}
+
+			const type = imageExplorerState.currentType;
+			try {
+				if (type === 'rgm') {
+					const data = loaderModule.load('rgm.mkf');
+					imageExplorerState.totalItems = data.getInt(0) / 4 - 1;
+				} else if (type === 'fbp') {
+					const data = loaderModule.load('fbp.mkf');
+					imageExplorerState.totalItems = data.getInt(0) / 4 - 1;
+				} else if (type === 'ball') {
+					const data = loaderModule.load('ball.mkf');
+					imageExplorerState.totalItems = data.getInt(0) / 4 - 1;
+				} else if (type === 'mgo') {
+					const selectEl = document.getElementById('select-image-role');
+					const inputEl = document.getElementById('input-image-role-id');
+					imageExplorerState.subId = parseInt(inputEl.value || selectEl.value || 0);
+					imageExplorerState.totalItems = palResources.loadMgoCount(imageExplorerState.subId);
+				} else if (type === 'gop') {
+					const selectEl = document.getElementById('select-image-map');
+					const inputEl = document.getElementById('input-image-map-id');
+					imageExplorerState.subId = parseInt(inputEl.value || selectEl.value || 12);
+					imageExplorerState.totalItems = palResources.mkf2Count('gop.mkf', imageExplorerState.subId);
+				} else if (type === 'pic') {
+					const pics = palResources.loadMkf('data.mkf', 9);
+					imageExplorerState.totalItems = pics.getShort(0);
+				}
+			} catch (e) {
+				console.error("获取精灵包大小时发生异常:", e);
+				imageExplorerState.totalItems = 0;
+			}
+
+			renderImagePage();
+		}
+
+		// 9. 精准遍历并分页平铺生成 Canvas 图像卡片 DOM 并写入容器中
+		function renderImagePage() {
+			const gallery = document.getElementById('image-gallery-container');
+			if (!gallery) return;
+
+			gallery.innerHTML = '<span style="color:rgba(255,255,255,0.4); font-size:9px; grid-column:span 8; text-align:center;">正在解包并渲染像素点阵数据...</span>';
+
+			const type = imageExplorerState.currentType;
+			const total = imageExplorerState.totalItems;
+
+			if (total <= 0) {
+				gallery.innerHTML = '<span style="color:rgba(255,255,255,0.25); font-size:9.5px; grid-column:span 8; text-align:center;">未找到有效精灵资源，或该资源包未完全就绪</span>';
+				document.getElementById('image-total-count').innerText = `资源总数: 0`;
+				document.getElementById('image-page-num').innerText = `1 / 1`;
+				return;
+			}
+
+			const limit = imageExplorerState.itemsPerPage;
+			const pageCount = Math.max(1, Math.ceil(total / limit));
+
+			if (imageExplorerState.currentPage >= pageCount) {
+				imageExplorerState.currentPage = pageCount - 1;
+			}
+			if (imageExplorerState.currentPage < 0) {
+				imageExplorerState.currentPage = 0;
+			}
+
+			const start = imageExplorerState.currentPage * limit;
+			const end = Math.min(total, start + limit);
+
+			// 更新底栏的统计元数据以及分页按钮的高亮/禁用状态
+			let totalText = `资源总数: ${total} 个`;
+			if (type === 'mgo') {
+				totalText += ` (动作形象 ID: ${imageExplorerState.subId})`;
+			} else if (type === 'gop') {
+				totalText += ` (大地图 ID: ${imageExplorerState.subId})`;
+			}
+			document.getElementById('image-total-count').innerText = totalText;
+			document.getElementById('image-page-num').innerText = `${imageExplorerState.currentPage + 1} / ${pageCount}`;
+
+			const prevBtn = document.getElementById('btn-image-prev');
+			const nextBtn = document.getElementById('btn-image-next');
+			prevBtn.disabled = (imageExplorerState.currentPage === 0);
+			nextBtn.disabled = (imageExplorerState.currentPage === pageCount - 1);
+			prevBtn.style.opacity = (imageExplorerState.currentPage === 0) ? '0.4' : '1';
+			nextBtn.style.opacity = (imageExplorerState.currentPage === pageCount - 1) ? '0.4' : '1';
+
+			gallery.innerHTML = '';
+
+			// 逐个生成解包 Canvas
+			for (let i = start; i < end; i++) {
+				let card = null;
+				if (type === 'rgm') {
+					card = renderSingleItem(i, `RGM #${i}`, (id) => palResources.loadRgm(id));
+				} else if (type === 'fbp') {
+					card = renderSingleItem(i, `FBP #${i}`, (id) => palResources.loadFbp(id));
+				} else if (type === 'ball') {
+					card = renderSingleItem(i, `BALL #${i}`, (id) => palResources.loadBall(id));
+				} else if (type === 'mgo') {
+					card = renderSingleItem(i, `MGO F:#${i}`, (id) => palResources.loadMgo(imageExplorerState.subId, id));
+				} else if (type === 'gop') {
+					card = renderSingleItem(i, `GOP #${i}`, (id) => palResources.loadGop(imageExplorerState.subId, id));
+				} else if (type === 'pic') {
+					card = renderSingleItem(i, `PIC #${i + 1}`, (id) => palResources.loadPic(id + 1));
+				}
+
+				if (card) {
+					gallery.appendChild(card);
+				}
+			}
+		}
+
+		// 10. 渲染单个资源卡片的无模像素卡片渲染引擎
+		function renderSingleItem(itemId, itemLabelText, loadFn) {
+			const card = document.createElement('div');
+			card.style.cssText = "background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.02); border-radius:2px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px; transition:all 0.1s;";
+
+			card.onmouseenter = () => {
+				card.style.borderColor = 'var(--glow-green)';
+				card.style.background = 'rgba(0, 255, 157, 0.02)';
+			};
+			card.onmouseleave = () => {
+				card.style.borderColor = 'rgba(255,255,255,0.02)';
+				card.style.background = 'rgba(255,255,255,0.015)';
+			};
+
+			try {
+				const img = loadFn(itemId);
+				if (img) {
+					const canvas = document.createElement('canvas');
+					canvas.width = img.width;
+					canvas.height = img.height;
+
+					const scale = imageExplorerState.currentScale;
+					canvas.style.cssText = `image-rendering: pixelated; width: ${img.width * scale}px; height: ${img.height * scale}px; background: rgba(0,0,0,0.3); border-radius: 1px;`;
+
+					const ctx = canvas.getContext('2d');
+					ctx.imageSmoothingEnabled = false;
+					ctx.drawImage(img, 0, 0);
+
+					card.appendChild(canvas);
+
+					const label = document.createElement('span');
+					label.innerText = `${itemLabelText}\n(${img.width}x${img.height})`;
+					label.style.cssText = "font-size: 7.5px; color: rgba(255,255,255,0.3); font-weight: bold; margin-top: 4px; text-align: center; white-space: pre-line; line-height: 1.2;";
+					card.appendChild(label);
+				} else {
+					card.innerHTML = `<span style="font-size:7.5px; color:rgba(255,255,255,0.15);">${itemLabelText}\n[无数据]</span>`;
+				}
+			} catch (e) {
+				console.error(`渲染项 #${itemId} 失败:`, e);
+				card.innerHTML = `<span style="font-size:7.5px; color:var(--glow-red);">${itemLabelText}\n[解包失败]</span>`;
+			}
+
+			return card;
+		}
+
+		// 11. 执行翻页控制逻辑
+		function prevImagePage() {
+			if (imageExplorerState.currentPage > 0) {
+				imageExplorerState.currentPage--;
+				renderImagePage();
+			}
+		}
+
+		function nextImagePage() {
+			const limit = imageExplorerState.itemsPerPage;
+			const pageCount = Math.ceil(imageExplorerState.totalItems / limit);
+			if (imageExplorerState.currentPage < pageCount - 1) {
+				imageExplorerState.currentPage++;
+				renderImagePage();
+			}
+		}
+
+		// 12. 将所有与 HTML 直接交互的 API 绑定注册至全局作用域
+		window.openImageExplorer = openImageExplorer;
+		window.closeImageExplorer = closeImageExplorer;
+		window.switchImageType = switchImageType;
+		window.changeImageScale = changeImageScale;
+		window.onImageRoleSelect = onImageRoleSelect;
+		window.searchImageRole = searchImageRole;
+		window.onImageMapSelect = onImageMapSelect;
+		window.searchImageMap = searchImageMap;
+		window.prevImagePage = prevImagePage;
+		window.nextImagePage = nextImagePage;
 
 		function openSpriteExplorer() {
 			document.getElementById('sprite-explorer-modal').style.display = 'flex';
