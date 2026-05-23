@@ -2,244 +2,929 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.5, minimum-scale=1.5, maximum-scale=1.5"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black" />
 	<link rel="apple-touch-startup-image" href="pal.ico" />
 	<link rel="apple-touch-icon" href="pal.ico"/>
-	<title>仙剑奇侠传</title>
-	<meta name="description" content="仙剑奇侠传html5移植版">
+	<title>仙剑奇侠传 HTML5版重构监控台</title>
+	<meta name="description" content="基于 ES Modules 与现代 CSS Grid 重构的仙剑奇侠传运行时控制面板">
+
+	<!-- 引入现代感的高级字体 -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
 
 	<style>
+		/* 暗黑基底与流光背景设计 */
+		:root {
+			--glow-green: #00ff9d;
+			--glow-yellow: #ffd000;
+			--glow-blue: #00e1ff;
+			--border-glass: rgba(255, 255, 255, 0.08);
+			--bg-glass: rgba(18, 18, 28, 0.7);
+		}
 
-body {
-	width: 320px;
-	height: 200px;
-	margin: 0;
-	padding: 0;
-	overflow-x: hidden;
-	overflow-y: hidden;
-}
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
 
-img {
-	float: left;
-}
-.m {
-	position:relative;
-	top: 8px;
-}
-.n {
-	position: absolute;
-	margin-left: 16px;
-}
+		body {
+			font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+			background: radial-gradient(circle at 30% 30%, #151522 0%, #08080f 100%);
+			color: #e2e8f0;
+			height: 100vh;
+			width: 100vw;
+			overflow: hidden;
+			display: grid;
+			grid-template-columns: 1fr 420px;
+		}
 
-canvas {position: absolute;}
+		/* ==================== 左侧：游戏区域 ==================== */
+		#game-section {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			padding: 20px;
+			position: relative;
+			background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.015)" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grid)"/></svg>');
+		}
 
-#map {display:none}		/** off sceen **/
-#map {height: 100px;overflow-y: scroll}		/** off sceen **/
+		#game-header {
+			margin-bottom: 25px;
+			text-align: center;
+		}
 
+		#game-header h1 {
+			font-size: 26px;
+			font-weight: 800;
+			letter-spacing: 2px;
+			background: linear-gradient(135deg, #ffd000, #ff6a00);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			text-shadow: 0 4px 15px rgba(255, 106, 0, 0.15);
+		}
 
-/* other   */
-#debug {position: absolute; right: 0; border: 1px solid #CCC; width: 400px; height: 300px;}
+		#game-header p {
+			font-size: 11px;
+			color: rgba(255, 255, 255, 0.4);
+			margin-top: 5px;
+			text-transform: uppercase;
+			letter-spacing: 3px;
+		}
 
-canvas {zoom: 2}
+		/* 优雅的 Canvas 流光容器 */
+		#canvas-container {
+			position: relative;
+			width: 640px;
+			height: 400px;
+			background: #000;
+			border-radius: 16px;
+			border: 1px solid var(--border-glass);
+			box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 
+						0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+			overflow: hidden;
+			transform-origin: center;
+			transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+		}
 
-@media screen and (max-device-width: 480px) {
-	canvas	{zoom: 1;}
-	#debug {right: auto;}
-	#console {display:none;}
-	#input {display:none;}
-}
+		#canvas-container:hover {
+			box-shadow: 0 25px 60px rgba(0, 255, 157, 0.05),
+						0 20px 50px rgba(0, 0, 0, 0.7);
+		}
 
+		/* 重叠的各个 Canvas */
+		canvas {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 640px;
+			height: 400px;
+			image-rendering: pixelated; /* 像素抗锯齿清晰 */
+		}
+
+		#map {
+			display: none; /* 离屏大地图缓存 */
+		}
+
+		/* 初始下载资源 info 样式 */
+		#info {
+			position: absolute;
+			z-index: 100;
+			background: rgba(10, 10, 15, 0.95);
+			backdrop-filter: blur(15px);
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			padding: 40px;
+			list-style: none;
+			color: #a0aec0;
+			overflow-y: auto;
+		}
+
+		#info li {
+			width: 80%;
+			max-width: 400px;
+			display: flex;
+			justify-content: space-between;
+			padding: 8px 0;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			font-size: 13px;
+		}
+
+		.res-name {
+			color: #ffd000;
+			font-weight: 600;
+		}
+
+		.res-pct {
+			color: var(--glow-green);
+		}
+
+		.done-badge {
+			background: rgba(0, 255, 157, 0.2);
+			color: var(--glow-green);
+			padding: 2px 8px;
+			border-radius: 4px;
+			font-size: 10px;
+			font-weight: 600;
+		}
+
+		/* 操作快捷提示栏 */
+		#tips-bar {
+			margin-top: 25px;
+			display: flex;
+			gap: 15px;
+			font-size: 12px;
+			color: rgba(255,255,255,0.35);
+			background: rgba(255, 255, 255, 0.02);
+			padding: 8px 16px;
+			border-radius: 30px;
+			border: 1px solid rgba(255,255,255,0.03);
+		}
+
+		#tips-bar span kbd {
+			background: rgba(255,255,255,0.07);
+			color: #ffd000;
+			padding: 2px 6px;
+			border-radius: 4px;
+			margin-right: 4px;
+			font-family: inherit;
+		}
+
+		/* ==================== 右侧：磨砂玻璃监控面板 ==================== */
+		#dashboard {
+			background: var(--bg-glass);
+			backdrop-filter: blur(25px) saturate(190%);
+			border-left: 1px solid var(--border-glass);
+			box-shadow: -10px 0 40px rgba(0, 0, 0, 0.4);
+			display: flex;
+			flex-direction: column;
+			overflow: hidden;
+		}
+
+		#dashboard-header {
+			padding: 20px 24px;
+			border-bottom: 1px solid var(--border-glass);
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+		}
+
+		.db-title {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.db-title h2 {
+			font-size: 18px;
+			font-weight: 800;
+			letter-spacing: 1px;
+			background: linear-gradient(135deg, #00ff9d, #00e1ff);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.live-indicator {
+			width: 8px;
+			height: 8px;
+			background: var(--glow-green);
+			border-radius: 50%;
+			box-shadow: 0 0 10px var(--glow-green);
+			animation: pulse 1.5s infinite;
+		}
+
+		@keyframes pulse {
+			0% { transform: scale(0.9); opacity: 0.6; }
+			50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 14px var(--glow-green); }
+			100% { transform: scale(0.9); opacity: 0.6; }
+		}
+
+		/* 滚动条容器 */
+		#panel-container {
+			flex: 1;
+			overflow-y: auto;
+			padding: 20px;
+			display: flex;
+			flex-direction: column;
+			gap: 15px;
+		}
+
+		/* 自定义优雅的滚动条 */
+		#panel-container::-webkit-scrollbar {
+			width: 6px;
+		}
+		#panel-container::-webkit-scrollbar-track {
+			background: transparent;
+		}
+		#panel-container::-webkit-scrollbar-thumb {
+			background: rgba(255, 255, 255, 0.1);
+			border-radius: 10px;
+		}
+		#panel-container::-webkit-scrollbar-thumb:hover {
+			background: rgba(255, 255, 255, 0.2);
+		}
+
+		/* 卡片折叠面板 (Collapsible Cards) */
+		.card {
+			background: rgba(255, 255, 255, 0.02);
+			border: 1px solid rgba(255, 255, 255, 0.04);
+			border-radius: 12px;
+			overflow: hidden;
+			transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+		}
+
+		.card:hover {
+			background: rgba(255, 255, 255, 0.035);
+			border-color: rgba(255, 255, 255, 0.08);
+			box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+		}
+
+		.card-header {
+			padding: 14px 18px;
+			background: rgba(255, 255, 255, 0.01);
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			user-select: none;
+		}
+
+		.card-header h3 {
+			font-size: 13px;
+			font-weight: 600;
+			letter-spacing: 0.5px;
+			color: rgba(255, 255, 255, 0.85);
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.card-header span.toggle-icon {
+			font-size: 10px;
+			color: rgba(255,255,255,0.3);
+			transition: transform 0.2s;
+		}
+
+		.card.collapsed .card-content {
+			display: none;
+		}
+
+		.card:not(.collapsed) .card-header span.toggle-icon {
+			transform: rotate(90deg);
+		}
+
+		.card-content {
+			padding: 16px 18px;
+			border-top: 1px solid rgba(255, 255, 255, 0.02);
+		}
+
+		/* 监控数据格 */
+		.grid-info {
+			display: grid;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 12px;
+		}
+
+		.info-item {
+			background: rgba(0,0,0,0.2);
+			padding: 10px 12px;
+			border-radius: 8px;
+			border: 1px solid rgba(255,255,255,0.02);
+		}
+
+		.info-item-label {
+			font-size: 10px;
+			color: rgba(255, 255, 255, 0.35);
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			margin-bottom: 4px;
+		}
+
+		.info-item-val {
+			font-size: 14px;
+			font-weight: 600;
+			color: #ffd000;
+		}
+
+		.full-width {
+			grid-column: span 2;
+		}
+
+		/* 道具网格 */
+		.items-grid {
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 8px;
+			margin-top: 8px;
+		}
+
+		.item-slot {
+			background: rgba(255, 255, 255, 0.02);
+			border: 1px solid rgba(255, 255, 255, 0.05);
+			border-radius: 8px;
+			height: 52px;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			font-size: 11px;
+			font-weight: 600;
+			color: rgba(255,255,255,0.7);
+			transition: all 0.2s;
+			position: relative;
+			cursor: pointer;
+		}
+
+		.item-slot:hover {
+			background: rgba(255, 208, 0, 0.08);
+			border-color: rgba(255, 208, 0, 0.25);
+			color: #ffd000;
+			transform: translateY(-2px);
+		}
+
+		.item-slot-id {
+			font-size: 9px;
+			color: rgba(255,255,255,0.3);
+			margin-bottom: 2px;
+		}
+
+		/* NPC 列表 */
+		.npc-list {
+			max-height: 180px;
+			overflow-y: auto;
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+			padding-right: 4px;
+		}
+
+		.npc-item {
+			background: rgba(0,0,0,0.15);
+			border: 1px solid rgba(255,255,255,0.03);
+			border-radius: 6px;
+			padding: 8px 12px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.npc-item:hover {
+			background: rgba(0, 255, 157, 0.05);
+			border-color: rgba(0, 255, 157, 0.15);
+		}
+
+		.npc-item.highlighted {
+			background: rgba(0, 255, 157, 0.08);
+			border-color: rgba(0, 255, 157, 0.35);
+			box-shadow: 0 0 10px rgba(0, 255, 157, 0.05);
+		}
+
+		.npc-meta {
+			display: flex;
+			flex-direction: column;
+			gap: 2px;
+		}
+
+		.npc-name {
+			font-size: 12px;
+			font-weight: 600;
+			color: #fff;
+		}
+
+		.npc-pos {
+			font-size: 10px;
+			color: rgba(255,255,255,0.4);
+		}
+
+		.npc-badge {
+			background: rgba(255,255,255,0.05);
+			padding: 2px 6px;
+			border-radius: 4px;
+			font-size: 10px;
+			font-weight: 600;
+			color: #ffd000;
+		}
+
+		/* 并行脚本指令流监控 */
+		.log-stream {
+			background: #09090f;
+			border: 1px solid rgba(255,255,255,0.03);
+			border-radius: 8px;
+			padding: 10px;
+			max-height: 180px;
+			overflow-y: auto;
+			font-family: monospace;
+			font-size: 10.5px;
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+		}
+
+		.log-item {
+			border-left: 2px solid var(--glow-green);
+			padding-left: 8px;
+			color: rgba(255,255,255,0.85);
+			animation: fadeIn 0.15s ease-out;
+		}
+
+		.log-item.scene { border-color: var(--glow-blue); }
+		.log-item.trig { border-color: var(--glow-yellow); }
+		.log-item.auto { border-color: var(--glow-green); }
+
+		.log-time {
+			color: rgba(255,255,255,0.3);
+			font-size: 9px;
+			margin-right: 5px;
+		}
+
+		.log-badge {
+			padding: 1px 4px;
+			border-radius: 3px;
+			font-size: 9px;
+			font-weight: 800;
+			margin-right: 5px;
+			text-transform: uppercase;
+		}
+		.log-badge.scene { background: rgba(0, 225, 255, 0.2); color: var(--glow-blue); }
+		.log-badge.trig { background: rgba(255, 208, 0, 0.2); color: var(--glow-yellow); }
+		.log-badge.auto { background: rgba(0, 255, 157, 0.2); color: var(--glow-green); }
+
+		.log-code { color: #f687b3; font-weight: bold; }
+		.log-desc { color: #a3bffa; }
+
+		@keyframes fadeIn {
+			from { opacity: 0; transform: translateX(-4px); }
+			to { opacity: 1; transform: translateX(0); }
+		}
+
+		/* 调试变速齿轮 */
+		.range-container {
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+			margin-top: 5px;
+		}
+
+		.range-label {
+			display: flex;
+			justify-content: space-between;
+			font-size: 11px;
+			color: rgba(255,255,255,0.45);
+		}
+
+		input[type=range] {
+			-webkit-appearance: none;
+			width: 100%;
+			background: rgba(255,255,255,0.1);
+			height: 6px;
+			border-radius: 5px;
+			outline: none;
+			transition: background 0.15s;
+		}
+
+		input[type=range]::-webkit-slider-thumb {
+			-webkit-appearance: none;
+			appearance: none;
+			width: 14px;
+			height: 14px;
+			border-radius: 50%;
+			background: var(--glow-green);
+			cursor: pointer;
+			box-shadow: 0 0 10px var(--glow-green);
+			transition: transform 0.1s;
+		}
+
+		input[type=range]::-webkit-slider-thumb:hover {
+			transform: scale(1.25);
+		}
+
+		/* 调试互动控制 */
+		.dbg-buttons {
+			display: grid;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 10px;
+			margin-top: 10px;
+		}
+
+		.btn {
+			background: rgba(255, 255, 255, 0.04);
+			border: 1px solid rgba(255, 255, 255, 0.08);
+			padding: 8px 12px;
+			border-radius: 6px;
+			font-size: 11px;
+			font-weight: 600;
+			color: #fff;
+			cursor: pointer;
+			transition: all 0.2s;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.btn:hover {
+			background: rgba(0, 255, 157, 0.1);
+			border-color: var(--glow-green);
+			color: var(--glow-green);
+			box-shadow: 0 4px 12px rgba(0, 255, 157, 0.08);
+		}
+
+		.btn-gold {
+			background: rgba(255, 208, 0, 0.05);
+			border-color: rgba(255, 208, 0, 0.15);
+		}
+
+		.btn-gold:hover {
+			background: rgba(255, 208, 0, 0.15);
+			border-color: var(--glow-yellow);
+			color: var(--glow-yellow);
+			box-shadow: 0 4px 12px rgba(255, 208, 0, 0.08);
+		}
 	</style>
 </head>
 <body>
 
-<script>var TRACE = false; </script>
-<script>var DEBUG = location.search && location.search.indexOf('debug') != -1; </script>
+	<!-- ==================== 左侧：游戏区域 ==================== -->
+	<section id="game-section">
+		<div id="game-header">
+			<h1>仙剑奇侠传</h1>
+			<p>HTML5 Engine Reborn Dashboard</p>
+		</div>
 
+		<!-- 游戏 Canvas 流光容器 -->
+		<div id="canvas-container">
+			<!-- 初始资源加载进度条 -->
+			<ul id="info">
+				<li>正在载入引擎与初始化文件...</li>
+			</ul>
 
-<div id="debug" style="display:none">
-	<div id="console"></div>
-	<div id="input">
-		<input type="text" placeholder="sceneId" value="" onchange="javascript:nextSceneId=this.value;toggleScene();"><br/>
-		<input type="text" placeholder="mx" value="" onchange="javascript:setRolePos(this.value, my, mhalf);"><br/>
-		<input type="text" placeholder="my" value="" onchange="javascript:setRolePos(mx, this.value, mhalf);"><br/>
-		<input type="button" value="stop" onchange="javascript:for(n in Npcs){Npcs[n].stop();}update();"><br/>
-	</div>
-</div>
-<!--虽然宽高为640.400, 但实际 320x200的放大版-->
+			<!-- 游戏中的渲染 Canvas 各层 -->
+			<canvas id="map" width="2048" height="2048"></canvas>
+			<canvas id="back" width="320" height="200"></canvas>
+			<canvas id="canvas" width="320" height="200"></canvas>
+			<canvas id="front" width="320" height="200"></canvas>
+			<canvas id="temp" width="320" height="200"></canvas>
+			<canvas id="talk" width="320" height="200"></canvas>
+			<canvas id="startup" width="320" height="200"></canvas>
+		</div>
 
-<canvas id="map" width="2048" height="2048"></canvas>
-<canvas id="back" width="320" height="200"></canvas>
-<canvas id="canvas" width="320" height="200"></canvas>
-<canvas id="front" width="320" height="200"></canvas>
-<canvas id="temp" width="320" height="200"></canvas>
-<canvas id="talk" width="320" height="200"></canvas>
+		<!-- 操作快捷提示栏 -->
+		<div id="tips-bar">
+			<span><kbd>方向键</kbd>行走 / 交互</span>
+			<span><kbd>空格 Space</kbd>翻页 / 触发事件</span>
+			<span><kbd>Esc</kbd>菜单</span>
+			<span><kbd>E</kbd>物品包裹</span>
+			<span><kbd>S</kbd>状态选项</span>
+		</div>
+	</section>
 
-<canvas id="startup" width="320" height="200"></canvas>
+	<!-- ==================== 右侧：监控状态面板 ==================== -->
+	<aside id="dashboard">
+		<div id="dashboard-header">
+			<div class="db-title">
+				<div class="live-indicator"></div>
+				<h2>运行时信息监控台</h2>
+			</div>
+		</div>
 
-
-<div id="info"></div>
-
-
-
-<!-- Lang, Hex, ByteArray, ByteView, Canvas 这些通用的方法-->
-<script src="util-lang.js"></script>
-<script src="util-hex.js"></script>
-<script src="util-view.js"></script>
-<script src="util-deyj.js"></script>
-<script src="util-canvas.js"></script>
-
-
-<!-- Game 之 init, resource, anim, script-->
-<script src="resource-queue.js"></script>
-<script src="resource-loader.js"></script>
-<script src="resource-pal.js"></script>
-
-<script src="init.js"></script>
-<script src="core-thread.js"></script>
-<script src="core-anim.js"></script>
-<script src="core-timer.js"></script>
-
-
-<!-- Game 之 engine -->
-<script src="core-script.js"></script>
-
-<script>
-
-	//写入全局中, 方便调试
-	window.hex = Hex.toHex2;
-	window.toHex = Hex.toHex2;
-	window.toHex4 = Hex.toHex4;
-
-	function println(str) {
-		//document.write(str + '<br/>')
-		D.get('#console').innerHTML += str + '<br/>';
-	}
-
-	//用在draw.js中
-	var context = document.getElementById('canvas').getContext('2d');
-	var backContext = document.getElementById('back').getContext('2d');
-	var mapContext = document.getElementById('map').getContext('2d');
-	var frontContext = document.getElementById('front').getContext('2d');
-	var tempContext = document.getElementById('temp').getContext('2d');
-
-	//用在talk.js中
-	var talkContext = document.getElementById('talk').getContext('2d');
-	var startupContext = document.getElementById('startup').getContext('2d');
-	//context.translate(-300, -200);
-
-	//context.scale(1, 1);		//320x200  640x400  960x600
-	//context.scale(1366/640, 768/400);
-
-	//context.fillStyle = '#000000';
-	//context.fillRect(0, 0, context.canvas.width, context.canvas.height);
-
-
-</script>
-
-<!-- Game 之 UI, input -->
-<script src="draw-talk.js"></script>
-<script src="draw-draw.js"></script>
-<script src="draw-keypress.js"></script>
-
-
-<!-- Game 之 API -->
-<script src="command.js"></script>
-<script src="ui-draw.js"></script>
-<script src="ui-panel.js"></script>
-<script src="esc.js"></script>
-<script src="esc-ui.js"></script>
-<script src="esc-startup.js"></script>
-<script src="esc-menu.js"></script>
-<script src="esc-item.js"></script>
-
-<script>
-	/////////  启动  ///////////
-
-	ready(function() {
-
-		initEventObject();
-		initScript();
-		initScene();
-		initItem();
-		initDat();
-
-
-		if (!DEBUG) {
-			//drawFbp(0x3C);
-			//drawMenu(startupContext, "\x0b\x0c\x0d\x0e", 124, 96, 0xFFF8CC70);
-			//drawMenu(startupContext, "\x0f\x0c\x10\x11", 124, 114, 0xFFD4D0C0)
-
-			ESC.onStartup();
-
-		} else if (false) {
-			//enter scene 1
-			nextSceneId = 1;
-			toggleScene();
-		} else {
-			//enter scene 2
-			commonEnter();
+		<div id="panel-container">
 			
-			//nextSceneId = 3;
+			<!-- 板块1：🗺️ 场景与地图 -->
+			<div class="card" id="card-map">
+				<div class="card-header" onclick="toggleCard('card-map')">
+					<h3>🗺️ 场景与地图 (Map & Scene)</h3>
+					<span class="toggle-icon">▶</span>
+				</div>
+				<div class="card-content">
+					<div class="grid-info">
+						<div class="info-item">
+							<div class="info-item-label">当前场景 (Scene ID)</div>
+							<div class="info-item-val" id="val-scene-id">加载中...</div>
+						</div>
+						<div class="info-item">
+							<div class="info-item-label">当前地图 (Map ID)</div>
+							<div class="info-item-val" id="val-map-id">加载中...</div>
+						</div>
+						<div class="info-item">
+							<div class="info-item-label">瓦片坐标 (mx, my)</div>
+							<div class="info-item-val" id="val-tile-pos">加载中...</div>
+						</div>
+						<div class="info-item">
+							<div class="info-item-label">像素坐标 (mapX, mapY)</div>
+							<div class="info-item-val" id="val-pixel-pos">加载中...</div>
+						</div>
+						<div class="info-item full-width">
+							<div class="info-item-label">剧情起止事件 (Event Range)</div>
+							<div class="info-item-val" id="val-event-range">加载中...</div>
+						</div>
+					</div>
+				</div>
+			</div>
 
-			nextSceneId = 4;
-			setRolePos(36, 58, 0);			//3.	46.	设置pos: 41, 18
+			<!-- 板块2：👥 主角状态与行囊 -->
+			<div class="card" id="card-party">
+				<div class="card-header" onclick="toggleCard('card-party')">
+					<h3>👥 主角属性与包裹 (Hero & Items)</h3>
+					<span class="toggle-icon">▶</span>
+				</div>
+				<div class="card-content">
+					<div class="grid-info">
+						<div class="info-item">
+							<div class="info-item-label">主角动作帧 (Frame/Dir)</div>
+							<div class="info-item-val" id="val-hero-frame">加载中...</div>
+						</div>
+						<div class="info-item">
+							<div class="info-item-label">当前金钱 (Gold)</div>
+							<div class="info-item-val" id="val-money">500 文</div>
+						</div>
+						<div class="info-item full-width" style="background: none; border: none; padding: 0;">
+							<div class="info-item-label" style="margin-bottom: 8px;">包裹行囊道具 (Bag Items)</div>
+							<div class="items-grid" id="container-items">
+								<!-- 道具网格槽 -->
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
 
+			<!-- 板块3：👾 NPC 事件物体与追踪 -->
+			<div class="card" id="card-npc">
+				<div class="card-header" onclick="toggleCard('card-npc')">
+					<h3>👾 附近 NPC 实体与追踪 (NPC List)</h3>
+					<span class="toggle-icon">▶</span>
+				</div>
+				<div class="card-content">
+					<div class="npc-list" id="container-npcs">
+						<!-- NPC 项 -->
+					</div>
+				</div>
+			</div>
 
-			toggleScene();
+			<!-- 板块4：💻 并行脚本流监视器 -->
+			<div class="card" id="card-logs">
+				<div class="card-header" onclick="toggleCard('card-logs')">
+					<h3>💻 并行脚本指令流 (Active Scripts)</h3>
+					<span class="toggle-icon">▶</span>
+				</div>
+				<div class="card-content">
+					<div class="log-stream" id="container-logs">
+						<div style="color: rgba(255,255,255,0.25)">等待脚本指令触发...</div>
+					</div>
+				</div>
+			</div>
 
+			<!-- 板块5：⚙️ 齿轮与互动机关 -->
+			<div class="card" id="card-debug">
+				<div class="card-header" onclick="toggleCard('card-debug')">
+					<h3>⚙️ 齿轮与互动机关 (Control Panel)</h3>
+					<span class="toggle-icon">▶</span>
+				</div>
+				<div class="card-content">
+					<div class="range-container">
+						<div class="range-label">
+							<span>变速齿轮 (Engine Clock Rate)</span>
+							<span id="label-speed-val">6 fps</span>
+						</div>
+						<input type="range" id="input-speed" min="3" max="60" value="6" oninput="changeGameSpeed(this.value)">
+					</div>
+
+					<div class="dbg-buttons">
+						<button class="btn btn-gold" onclick="cheatGold()">🪙 一键加金钱</button>
+						<button class="btn" onclick="cheatItems()">🎒 解锁神仙丹药</button>
+						<button class="btn full-width" onclick="teleportMarket()">🔮 仙剑快捷传送阵 (Scene 4)</button>
+					</div>
+				</div>
+			</div>
+
+		</div>
+	</aside>
+
+	<!-- ==================== 入口引入 ==================== -->
+	<script type="module" src="js/app.js"></script>
+
+	<!-- ==================== 右侧面板运行时渲染逻辑 ==================== -->
+	<script>
+		// 卡片折叠函数
+		function toggleCard(cardId) {
+			const card = document.getElementById(cardId);
+			if (card) {
+				card.classList.toggle('collapsed');
+			}
 		}
 
+		// 默认折叠某些卡片
+		document.addEventListener('DOMContentLoaded', () => {
+			document.getElementById('card-party').classList.add('collapsed');
+			document.getElementById('card-npc').classList.add('collapsed');
+		});
 
+		// 刷新运行时状态核心数据
+		function refreshDashboard() {
+			const state = window.state;
+			if (!state) return;
 
-		//setInterval(drawCanvas, 1000 / frameCount);		//30帧/秒
-		//setInterval(drawLoop, 1000 / 3);					//30帧/秒
+			// Scene & Map
+			document.getElementById('val-scene-id').innerText = state.nextSceneId;
+			document.getElementById('val-map-id').innerText = '0x' + state.mapId.toString(16).toUpperCase() + ` (${state.mapId})`;
+			document.getElementById('val-tile-pos').innerText = `(${state.mx}, ${state.my})` + (state.mhalf ? ' +0.5' : '');
+			document.getElementById('val-pixel-pos').innerText = `(${state.mapX}, ${state.mapY})`;
+			document.getElementById('val-event-range').innerText = `[${state.startEventId} ➔ ${state.endEventId}]`;
 
-	});
+			// Hero & Money
+			const role = state.roles[0];
+			document.getElementById('val-hero-frame').innerText = `Frame: ${role.frame} (Dir: ${role.dir})`;
+			document.getElementById('val-money').innerText = `${state.money || 0} 文`;
 
-	
-	//******  脚本引擎  ******/
-	function commonEnter() {
+			// 渲染包裹物品 ownItems
+			const itemsContainer = document.getElementById('container-items');
+			itemsContainer.innerHTML = '';
+			const own = state.ownItems || [];
+			
+			// 只最多渲染 8 个槽
+			for (let i = 0; i < Math.max(8, own.length); i++) {
+				const slot = document.createElement('div');
+				slot.className = 'item-slot';
+				if (i < own.length) {
+					const itemId = own[i];
+					slot.innerHTML = `<span class="item-slot-id">#${itemId}</span>道具`;
+					slot.title = `双击可以使用道具 ID: ${itemId}`;
+					slot.ondblclick = () => {
+						if (window.state && window.state.items && window.state.items[itemId]) {
+							import('./js/engine/script.js').then(({ Script }) => {
+								Script.startItemScript(window.state.items[itemId]);
+							});
+						}
+					};
+				} else {
+					slot.innerHTML = '<span style="color: rgba(255,255,255,0.15)">-</span>';
+				}
+				itemsContainer.appendChild(slot);
+			}
 
-		setRolePos(0x31, 0x5E, 0);			//3.	46.	设置pos: 41, 18
-		setRoleTile(0, 0x2, 0);				//4.	65. 设置形象00, C1
-		setRoleIndex(0, 0, 0);				//5.	15. 设置方向0
-		setRoleGroup(1);					//6.	75  分组
-	}
+			// 渲染 NPC 实体
+			const npcContainer = document.getElementById('container-npcs');
+			npcContainer.innerHTML = '';
+			let npcCount = 0;
+			
+			for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
+				const o = state.eventObjects[i];
+				if (!o || o.roleId === 0) continue;
+				npcCount++;
 
+				const npcDiv = document.createElement('div');
+				npcDiv.className = 'npc-item';
+				if (state.highlightNpcId === o.id) {
+					npcDiv.className += ' highlighted';
+				}
 
-//酒剑仙, 使用酒
-//Npc.startScript({trigScr:0x9aec},true)
+				npcDiv.innerHTML = `
+					<div class="npc-meta">
+						<span class="npc-name">NPC #${o.id}</span>
+						<span class="npc-pos">瓦片坐标: (${Math.floor(o.x/32)}, ${Math.floor(o.y/16)}) | Trig: ${o.trigMode}</span>
+					</div>
+					<span class="npc-badge">State: ${o.state}</span>
+				`;
 
-//to scene 4
-/*
-	setRolePos(35, 61, 0);
-	setRoleTile(0, 2, 0);
-	nextSceneId=4;
-	toggleScene();
-*/
+				// 点击高亮定位追踪 NPC！
+				npcDiv.onclick = () => {
+					if (state.highlightNpcId === o.id) {
+						state.highlightNpcId = null; // 取消
+					} else {
+						state.highlightNpcId = o.id; // 高亮
+					}
+					refreshDashboard();
+				};
 
+				npcContainer.appendChild(npcDiv);
+			}
 
-</script>
+			if (npcCount === 0) {
+				npcContainer.innerHTML = '<div style="color:rgba(255,255,255,0.2); font-size:11px; padding: 10px 0;">当前场景暂无活跃 NPC 物体</div>';
+			}
+		}
 
+		// 并行指令流日志流式追加
+		function appendScriptLog(log) {
+			const container = document.getElementById('container-logs');
+			if (!container) return;
 
+			// 如果是第一条，清空提示
+			if (container.firstElementChild && container.firstElementChild.innerText.indexOf('等待') !== -1) {
+				container.innerHTML = '';
+			}
 
+			const logDiv = document.createElement('div');
+			logDiv.className = `log-item ${log.type}`;
+			logDiv.innerHTML = `
+				<span class="log-time">${log.time}</span>
+				<span class="log-badge ${log.type}">${log.type}</span>
+				<span class="log-code">${log.hexCode}</span>: 
+				<span class="log-desc">${log.desc}</span> 
+				<span style="color:rgba(255,255,255,0.3)">(${log.param1}, ${log.param2}, ${log.param3})</span>
+			`;
 
-<script src="tool-debug.js"></script>
+			container.appendChild(logDiv);
+			// 自动滚动到最底部
+			container.scrollTop = container.scrollHeight;
+		}
 
-<!--
-<canvas id="PerformanceCanvas" width="1024" height="400"></canvas>
-<script src="tool-performance.js"></script>
-<script src="tool-performance-use.js"></script>
--->
+		// 挂载生命周期广播钩子
+		window.onSceneUpdate = () => {
+			refreshDashboard();
+		};
 
+		window.onThreadsUpdate = () => {
+			refreshDashboard();
+		};
+
+		window.onScriptExecute = (logItem) => {
+			appendScriptLog(logItem);
+			refreshDashboard();
+		};
+
+		// ⚙️ 调试控制互动功能
+		
+		// 1. 变速齿轮调整
+		function changeGameSpeed(val) {
+			document.getElementById('label-speed-val').innerText = `${val} fps`;
+			if (window.state) {
+				window.state.frameCount = parseInt(val);
+				import('./js/engine/timer.js').then(({ Timer }) => {
+					Timer.updateSpeed();
+				});
+			}
+		}
+
+		// 2. 一键加钱金币
+		function cheatGold() {
+			if (window.state) {
+				import('./js/engine/command.js').then(({ setMoney }) => {
+					setMoney(9999);
+					import('./js/ui/talk.js').then(({ Talk }) => {
+						Talk.talkTips('李逍遥财气冲天，获得 9999 文钱！');
+					});
+				});
+			}
+		}
+
+		// 3. 一键获得稀有灵药
+		function cheatItems() {
+			if (window.state) {
+				import('./js/engine/command.js').then(({ obtain }) => {
+					obtain(99);  // 桂花酒
+					obtain(100); // 随机珍贵道具槽
+					obtain(101);
+					import('./js/ui/talk.js').then(({ Talk }) => {
+						Talk.talkTips('获得 桂花酒、神丹妙药 放入行囊！');
+					});
+				});
+			}
+		}
+
+		// 4. 仙剑快捷传送阵 (传送回市集)
+		function teleportMarket() {
+			if (window.state && window.toggleScene) {
+				window.state.nextSceneId = 4;
+				window.setRolePos(36, 58, 0); // 市场坐标
+				window.toggleScene();
+				import('./js/ui/talk.js').then(({ Talk }) => {
+					Talk.talkTips('激活太乙传送阵！顺移至盛渔村集市！');
+				});
+			}
+		}
+	</script>
 
 </body>
 </html>
-
-
-
-
-
