@@ -210,8 +210,8 @@ export class Panel {
 
         case 13: // 回车
         case 32: { // 空格
-          this.choose();
           unbind();
+          this.choose();
           break;
         }
         case 37: { // 左

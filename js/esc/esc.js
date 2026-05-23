@@ -127,6 +127,22 @@ export const ESC = {
   },
 
   onItem() {
+    PanelFactory.createList([22,23])
+      .show(28, 60)
+      .onchange((value) => {
+        switch (value) {
+          case 22:
+            ESC.onEquipItem();
+            break;
+            case 23:
+            ESC.onUseItem();
+            break;
+        }
+      });
+
+  },
+
+  onUseItem() {
     // 默认如果无物品，给予桂花酒作为初始体验
     if (!state.ownItems || state.ownItems.length === 0) {
       state.ownItems = [99];
@@ -149,6 +165,8 @@ export const ESC = {
       startupCanvas.style.display = 'block';
     }
   },
+
+  onEquipItem() {},
 
   onMagic() {},
   onSystem() {}
