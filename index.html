@@ -122,7 +122,7 @@
 			transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 		}
 
-		canvas {
+		#canvas-container canvas {
 			position: absolute;
 			top: 0;
 			left: 0;
@@ -901,7 +901,7 @@
 			</div>
 			
 			<!-- Gallery 滚动画廊区 -->
-			<div id="explorer-gallery" style="flex: 1; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 6px; background: #040406;">
+			<div id="explorer-gallery" style="flex: 1; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; background: #040406;">
 				<!-- 动态生成 -->
 			</div>
 		</div>
@@ -1806,18 +1806,18 @@
 					};
 
 					const canvas = document.createElement('canvas');
-					canvas.width = 40;
-					canvas.height = 40;
-					canvas.style.cssText = "image-rendering:pixelated; width:40px; height:40px; background:rgba(0,0,0,0.35); border-radius:1px;";
+					canvas.width = 80;
+					canvas.height = 80;
+					canvas.style.cssText = "image-rendering:pixelated; width:80px; height:80px; background:rgba(0,0,0,0.35); border-radius:1px;";
 
 					const ctx = canvas.getContext('2d');
 					ctx.imageSmoothingEnabled = false;
 					const frameMgo = loadMgoFn(roleId, f);
 					if (frameMgo) {
-						const scale = Math.min(40 / frameMgo.width, 40 / frameMgo.height);
+						const scale = Math.min(80 / frameMgo.width, 80 / frameMgo.height);
 						const cleanScale = Math.max(1, Math.floor(scale));
-						const dx = (40 - frameMgo.width * cleanScale) / 2;
-						const dy = (40 - frameMgo.height * cleanScale) / 2;
+						const dx = (80 - frameMgo.width * cleanScale) / 2;
+						const dy = (80 - frameMgo.height * cleanScale) / 2;
 						ctx.drawImage(frameMgo, dx, dy, frameMgo.width * cleanScale, frameMgo.height * cleanScale);
 					}
 
