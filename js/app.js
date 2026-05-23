@@ -4,6 +4,7 @@ import { loadSss, loadDat, fromCache } from './resources/pal.js';
 import { setRolePos, setRoleTile, setRoleIndex, setRoleGroup, toggleScene, calcMap } from './engine/command.js';
 import { ESC } from './esc/esc.js';
 import { Hex } from './utils/hex.js';
+import { Talk } from './ui/talk.js';
 
 // 获取 URL 参数是否为 debug 模式
 const DEBUG = location.search && location.search.indexOf('debug') !== -1;
@@ -132,6 +133,7 @@ function initContexts() {
   window.hex = Hex.toHex2;
   window.toHex = Hex.toHex2;
   window.toHex4 = Hex.toHex4;
+  window.Talk = Talk;
 }
 
 // 资源载入并启动

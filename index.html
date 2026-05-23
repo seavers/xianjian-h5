@@ -345,7 +345,7 @@
 		/* 道具网格 */
 		.items-grid {
 			display: grid;
-			grid-template-columns: repeat(4, 1fr);
+			grid-template-columns: repeat(8, 1fr); /* 充分利用拖宽后的宽度，横排平铺 8 个道具槽 */
 			gap: 8px;
 			margin-top: 8px;
 		}
@@ -382,7 +382,7 @@
 
 		/* NPC 列表 */
 		.npc-list {
-			max-height: 180px;
+			max-height: 400px; /* 大幅拉高 NPC 高度空间，一次性列出更多的 NPC 实体 */
 			overflow-y: auto;
 			display: flex;
 			flex-direction: column;
@@ -445,7 +445,7 @@
 			border: 1px solid rgba(255,255,255,0.03);
 			border-radius: 8px;
 			padding: 10px;
-			max-height: 180px;
+			max-height: 480px; /* 大幅拉高活跃脚本指令流动历史高度，更显极客黑客风 */
 			overflow-y: auto;
 			font-family: monospace;
 			font-size: 10.5px;
@@ -645,9 +645,8 @@
 			
 			<!-- 板块1：🗺️ 场景与地图 -->
 			<div class="card" id="card-map">
-				<div class="card-header" onclick="toggleCard('card-map')">
+				<div class="card-header">
 					<h3>🗺️ 场景与地图 (Map & Scene)</h3>
-					<span class="toggle-icon">▶</span>
 				</div>
 				<div class="card-content">
 					<div class="grid-info">
@@ -677,9 +676,8 @@
 
 			<!-- 板块2：👥 主角状态与行囊 -->
 			<div class="card" id="card-party">
-				<div class="card-header" onclick="toggleCard('card-party')">
+				<div class="card-header">
 					<h3>👥 主角属性与包裹 (Hero & Items)</h3>
-					<span class="toggle-icon">▶</span>
 				</div>
 				<div class="card-content">
 					<div class="grid-info">
@@ -703,9 +701,8 @@
 
 			<!-- 板块3：👾 NPC 事件物体与追踪 -->
 			<div class="card" id="card-npc">
-				<div class="card-header" onclick="toggleCard('card-npc')">
+				<div class="card-header">
 					<h3>👾 附近 NPC 实体与追踪 (NPC List)</h3>
-					<span class="toggle-icon">▶</span>
 				</div>
 				<div class="card-content">
 					<div class="npc-list" id="container-npcs">
@@ -716,9 +713,8 @@
 
 			<!-- 板块4：💻 并行脚本流监视器 -->
 			<div class="card" id="card-logs">
-				<div class="card-header" onclick="toggleCard('card-logs')">
+				<div class="card-header">
 					<h3>💻 并行脚本指令流 (Active Scripts)</h3>
-					<span class="toggle-icon">▶</span>
 				</div>
 				<div class="card-content">
 					<div class="log-stream" id="container-logs">
@@ -729,9 +725,8 @@
 
 			<!-- 板块5：⚙️ 齿轮与互动机关 -->
 			<div class="card" id="card-debug">
-				<div class="card-header" onclick="toggleCard('card-debug')">
+				<div class="card-header">
 					<h3>⚙️ 齿轮与互动机关 (Control Panel)</h3>
-					<span class="toggle-icon">▶</span>
 				</div>
 				<div class="card-content">
 					<div class="range-container">
@@ -778,10 +773,9 @@
 			}
 		}
 
-		// 默认折叠某些卡片
+		// 页面初始化时，所有核心状态板块全景通排展开
 		document.addEventListener('DOMContentLoaded', () => {
-			document.getElementById('card-party').classList.add('collapsed');
-			document.getElementById('card-npc').classList.add('collapsed');
+			// 移除默认折叠，全员展开
 		});
 
 		// 刷新运行时状态核心数据
@@ -806,8 +800,8 @@
 			itemsContainer.innerHTML = '';
 			const own = state.ownItems || [];
 			
-			// 只最多渲染 8 个槽
-			for (let i = 0; i < Math.max(8, own.length); i++) {
+			// 允许渲染多达 16 个道具槽以展现大行囊
+			for (let i = 0; i < Math.max(16, own.length); i++) {
 				const slot = document.createElement('div');
 				slot.className = 'item-slot';
 				if (i < own.length) {

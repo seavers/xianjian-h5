@@ -4,24 +4,7 @@ import { Thread } from './thread.js';
 import { Timer } from './timer.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
-
-// 懒导入 UI 相关以避免强循环依赖
-let TalkModule = null;
-let DrawModule = null;
-
-async function getTalkModule() {
-  if (!TalkModule) {
-    TalkModule = await import('../ui/talk.js');
-  }
-  return TalkModule.Talk;
-}
-
-async function getDrawModule() {
-  if (!DrawModule) {
-    DrawModule = await import('../ui/draw.js');
-  }
-  return DrawModule;
-}
+import { update, drawMapAll } from '../ui/draw.js';
 
 export function setRolePos(sx, sy, shalf) {
   state.mx = sx;
@@ -44,15 +27,14 @@ export function setRoleIndex(dir, frame, roleId) {
   }
 }
 
-export async function calcMap() {
+export function calcMap() {
   state.mapX = state.mx * 32 + state.mhalf * 16; // mhalf 则加一半
   state.mapY = state.my * 16 + state.mhalf * 8;
 
   state.roles[0].x = state.mapX;
   state.roles[0].y = state.mapY;
 
-  const draw = await getDrawModule();
-  draw.update(true);
+  update(true); // 同步重绘
   
   if (window.onSceneUpdate) {
     window.onSceneUpdate();
@@ -93,7 +75,7 @@ export function roleWalk(sx, sy, shalf) {
 
 export function clearWithEffect() {}
 
-export async function walkHeroByOffset(dx, dy) {
+export function walkHeroByOffset(dx, dy) {
   if (dx <= 65536 / 2) {
     state.mapX += dx;
   } else {
@@ -115,8 +97,7 @@ export async function walkHeroByOffset(dx, dy) {
 
   refreshRoleCount(state.roles[0]);
 
-  const draw = await getDrawModule();
-  draw.update(true); // update back
+  update(true); // 同步重绘
   
   if (window.onSceneUpdate) {
     window.onSceneUpdate();
@@ -254,7 +235,7 @@ export function setScene(sceneId) {
   state.nextSceneId = sceneId;
 }
 
-export async function toggleScene() {
+export function toggleScene() {
   const scene = state.scenes[state.nextSceneId];
   state.mapId = scene.mapId;
   state.startEventId = scene.startEventId;
@@ -268,17 +249,15 @@ export async function toggleScene() {
     timerDbg.anims.length = 0;
   }
 
-  const draw = await getDrawModule();
-  draw.drawMapAll();
-  draw.update(true);
+  drawMapAll(); // 同步加载与绘制大地图
+  update(true);  // 同步清屏并排序重绘所有实体
 
-  // 延时加载以防重入
-  setTimeout(() => {
-    Script.startScene(scene);
-    if (window.onSceneUpdate) {
-      window.onSceneUpdate();
-    }
-  }, 100);
+  // 同步启动场景脚本
+  Script.startScene(scene);
+  
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
 }
 
 export function finishCode() {
@@ -306,14 +285,12 @@ export function subScript(scriptId) {
 
 export function randomScript() {}
 
-export async function talk(msgId) {
-  const talkObj = await getTalkModule();
-  talkObj.drawTalk(msgId);
+export function talk(msgId) {
+  window.Talk.drawTalk(msgId); // 绝对同步的对话框弹出
 }
 
-export async function updateScreen() {
-  const draw = await getDrawModule();
-  draw.update();
+export function updateScreen() {
+  update(); // 同步清屏和中间层重绘
 }
 
 export function updateScreenAndWait(time) {
@@ -365,13 +342,15 @@ scriptCodes[0x46] = { func: setRolePos, desc: '设置主角/队员瓦片位置' 
 scriptCodes[0x65] = { func: setRoleTile, desc: '设置主角/队员形象' };
 scriptCodes[0x15] = { func: setRoleIndex, desc: '设置队员动作方向/帧' };
 scriptCodes[0x75] = { func: setRoleGroup, desc: '设置组队伙伴' };
-scriptCodes[0x3B] = { func: async (...args) => { const T = await getTalkModule(); T.talkTips(...args); }, desc: '显示系统通知 tips' };
-scriptCodes[0x3C] = { func: async (...args) => { const T = await getTalkModule(); T.talkUp(...args); }, desc: '在屏幕顶部显示对话' };
-scriptCodes[0x3D] = { func: async (...args) => { const T = await getTalkModule(); T.talkDown(...args); }, desc: '在屏幕底部显示对话' };
-scriptCodes[0x3E] = { func: async (...args) => { const T = await getTalkModule(); T.talkMessage(...args); }, desc: '显示弹出框信息 alert' };
+
+scriptCodes[0x3B] = { func: (...args) => window.Talk.talkTips(...args), desc: '显示系统通知 tips' };
+scriptCodes[0x3C] = { func: (...args) => window.Talk.talkUp(...args), desc: '在屏幕顶部显示对话' };
+scriptCodes[0x3D] = { func: (...args) => window.Talk.talkDown(...args), desc: '在屏幕底部显示对话' };
+scriptCodes[0x3E] = { func: (...args) => window.Talk.talkMessage(...args), desc: '显示弹出框信息 alert' };
+
 scriptCodes[0x09] = { func: updateScreenAndWait, desc: '重绘屏幕并等待' };
 scriptCodes[0x16] = { func: setNpcTile, desc: '设置NPC特定形象与朝向' };
-scriptCodes[0x8E] = { func: async (...args) => { const T = await getTalkModule(); T.clearTalk(...args); }, desc: '清空/关闭对话框' };
+scriptCodes[0x8E] = { func: (...args) => window.Talk.clearTalk(...args), desc: '清空/关闭对话框' };
 scriptCodes[0x49] = { func: setObjectStatus, desc: '改变NPC活动生命状态' };
 scriptCodes[0x70] = { func: roleWalk, desc: '插值移动主角位置' };
 scriptCodes[0x73] = { func: clearWithEffect, desc: '动画淡出清除' };
@@ -381,7 +360,7 @@ scriptCodes[0x10] = { func: npcWalk2, desc: 'NPC插值移动至坐标(10)' };
 scriptCodes[0x11] = { func: npcWalk3, desc: 'NPC插值移动至坐标(11)' };
 
 scriptCodes[0x59] = { func: setScene, desc: '修改切换目的地场景 ID' };
-scriptCodes[0x50] = { func: toggleScene, desc: '执行场景切换切换' };
+scriptCodes[0x50] = { func: toggleScene, desc: '执行场景切换' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
 scriptCodes[0x85] = { func: waitSecond, desc: '等待特定秒数' };
 
