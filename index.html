@@ -2016,10 +2016,10 @@
 					imageExplorerState.subId = parseInt(inputEl.value || selectEl.value || 12);
 					imageExplorerState.totalItems = palResources.mkf2Count('gop.mkf', imageExplorerState.subId);
 				} else if (type === 'pic') {
-					const pics = palResources.loadMkf('data.mkf', 9);
+					const pics = loaderModule.loadMkf('data.mkf', 9);
 					imageExplorerState.totalItems = pics.getShort(0);
 				} else if (type === 'msg') {
-					const talk = palResources.loadMkf('sss.mkf', 3);
+					const talk = loaderModule.loadMkf('sss.mkf', 3);
 					imageExplorerState.totalItems = talk.length / 4 - 1;
 				}
 			} catch (e) {
@@ -2199,18 +2199,12 @@
 			try {
 				const img = loadFn(itemId);
 				if (img) {
-					const canvas = document.createElement('canvas');
-					canvas.width = img.width;
-					canvas.height = img.height;
-
+					// img 本身已经是一个原生 Canvas 节点！
+					// 我们直接对其应用倍率缩放样式，以求最佳性能和 100% 图像完整性。
 					const scale = imageExplorerState.currentScale;
-					canvas.style.cssText = `image-rendering: pixelated; width: ${img.width * scale}px; height: ${img.height * scale}px; background: rgba(0,0,0,0.3); border-radius: 1px;`;
+					img.style.cssText = `image-rendering: pixelated; width: ${img.width * scale}px; height: ${img.height * scale}px; background: rgba(0,0,0,0.3); border-radius: 1px;`;
 
-					const ctx = canvas.getContext('2d');
-					ctx.imageSmoothingEnabled = false;
-					ctx.drawImage(img, 0, 0);
-
-					card.appendChild(canvas);
+					card.appendChild(img);
 
 					const label = document.createElement('span');
 					label.innerText = `${itemLabelText}\n(${img.width}x${img.height})`;
