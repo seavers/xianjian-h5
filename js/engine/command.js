@@ -157,6 +157,8 @@ export function npcWalk(objId, dx, dy) {
 
   obj.x = x;
   obj.y = y;
+
+  Script.sleep(1);
 }
 
 export function setEastDir(objId) {
