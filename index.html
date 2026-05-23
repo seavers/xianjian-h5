@@ -531,7 +531,7 @@
 		}
 
 		.log-stream {
-			height: 280px; /* 固定拉高，提供极高数据可观测度 */
+			height: 1000px; /* 固定拉高至 1000px，提供极高数据可观测度 */
 			background: #030305;
 			padding: 6px 8px;
 			overflow-y: scroll;
@@ -604,13 +604,13 @@
 			<div class="viewport-title">仙剑奇侠传 H5 视口</div>
 			<div class="scale-buttons">
 				<button class="btn-scale" id="btn-scale-2" onclick="changeScreenScale(2)">2X HD</button>
-				<button class="btn-scale" id="btn-scale-3" onclick="changeScreenScale(3)">3X FHD</button>
-				<button class="btn-scale active" id="btn-scale-4" onclick="changeScreenScale(4)">4X Retina</button>
+				<button class="btn-scale active" id="btn-scale-3" onclick="changeScreenScale(3)">3X FHD</button>
+				<button class="btn-scale" id="btn-scale-4" onclick="changeScreenScale(4)">4X Retina</button>
 			</div>
 		</div>
 
-		<!-- Canvas 容器 (默认 4X Retina, 1280x800) -->
-		<div id="canvas-container" style="width: 1280px; height: 800px;">
+		<!-- Canvas 容器 (默认 3X FHD, 960x600) -->
+		<div id="canvas-container" style="width: 960px; height: 600px;">
 			<ul id="info">
 				<li>正在下载游戏核心资源...</li>
 			</ul>
@@ -676,9 +676,11 @@
 				<div class="panel-col" style="grid-column: span 2;">
 					<div class="section-header">👥 逍遥 24 项多维硬核属性大矩阵 (Hero Full 24 Attributes Grid)</div>
 					<div class="hero-block-container">
-						<div class="hero-avatar-card">
-							<span class="hero-name" id="val-hero-name">李逍遥</span>
-							<span class="hero-image-lbl" id="val-hero-desc">Tile: 0x02</span>
+						<div class="hero-avatar-card" style="position: relative; width: 80px; height: 110px; display: flex; flex-direction: column; gap: 3px; align-items: center; justify-content: flex-start; padding: 4px 2px; border: 1px solid rgba(255,255,255,0.03); background: rgba(0,0,0,0.3); border-radius: 2px;">
+							<canvas id="canvas-hero-sprite" width="48" height="54" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); border-radius: 2px; image-rendering: pixelated; width: 48px; height: 54px;"></canvas>
+							<span class="hero-name" id="val-hero-name" style="font-size: 10px; font-weight: bold; color: #fff;">李逍遥</span>
+							<span class="hero-image-lbl" id="val-hero-desc" style="font-size: 7.5px; color: rgba(255,255,255,0.3); margin-top: -1px;">Tile: 0</span>
+							<button class="btn-dbg" onclick="openSpriteExplorer()" style="padding: 1px 4px; font-size: 7.5px; color: var(--glow-yellow); border-color: rgba(255,208,0,0.18); position: absolute; bottom: 3px; width: calc(100% - 8px); height: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer;">🔍 帧画廊</button>
 						</div>
 						<div class="hero-attributes-matrix">
 							<div class="hero-attr-chip"><span class="hero-attr-lbl">等 级 LV</span><span class="hero-attr-val" id="val-attr-lv">1</span></div>
@@ -720,8 +722,12 @@
 							<!-- 槽位 -->
 						</div>
 						<!-- 右侧高级监视器，悬浮点击一秒解码 -->
-						<div class="bag-inspector">
-							<div class="ins-header" id="ins-item-name">🔍 物品隐藏属性解耦监视器</div>
+						<div class="bag-inspector" style="position: relative; padding-right: 56px;">
+							<div style="position: absolute; right: 5px; top: 5px; display: flex; flex-direction: column; align-items: center; gap: 2px;">
+								<canvas id="canvas-item-ball" width="40" height="40" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); border-radius: 2px; image-rendering: pixelated; width: 40px; height: 40px;"></canvas>
+								<span style="font-size: 7.5px; color: rgba(255,255,255,0.25);" id="lbl-item-ball-id">Ball: -</span>
+							</div>
+							<div class="ins-header" id="ins-item-name" style="margin-right: 15px;">🔍 物品/实体隐藏属性解耦监视器</div>
 							<div class="ins-table">
 								<div class="ins-field"><span class="ins-f-label">物品 ID</span><span class="ins-f-val" id="ins-val-id">-</span></div>
 								<div class="ins-field"><span class="ins-f-label">角色适用</span><span class="ins-f-val" id="ins-val-role">-</span></div>
@@ -761,6 +767,10 @@
 
 			<!-- 横栏五：💻 并行脚本指令流终端 ＆ 系统极客剖析指标 -->
 			<div class="terminal-section">
+				<div class="section-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding: 5px 8px;">
+					<span>💻 并行脚本指令流终端 (Active Threads Instruction Console)</span>
+					<button onclick="clearScriptLogs()" style="background: rgba(255, 59, 111, 0.12); border: 1px solid rgba(255, 59, 111, 0.25); color: var(--glow-red); padding: 1px 6px; font-size: 8px; font-weight: bold; border-radius: 2px; cursor: pointer; transition: all 0.15s; outline: none;" onmouseenter="this.style.background='rgba(255,59,111,0.22)'" onmouseleave="this.style.background='rgba(255,59,111,0.12)'">🗑️ 清空日志</button>
+				</div>
 				<!-- 系统分析极客标签面板，实时展示 11 项高级剖析指标 -->
 				<div class="profiler-header">
 					<div class="prof-badge">Render: <span>320x200</span></div>
@@ -843,6 +853,52 @@
 		</div>
 	</aside>
 
+	<!-- ==================== 🔍 2D Sprite Explorer 动作帧画廊模态弹窗 ==================== -->
+	<div id="sprite-explorer-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.7); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
+		<div style="background: rgba(13,13,20,0.96); border: 1px solid rgba(255, 208, 0, 0.25); border-radius: 4px; box-shadow: 0 0 25px rgba(255, 208, 0, 0.2); width: 800px; max-width: 95%; height: 500px; display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
+			<!-- 弹窗头部 -->
+			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
+				<div style="display: flex; align-items: center; gap: 6px;">
+					<div style="width: 5px; height: 5px; background: var(--glow-yellow); border-radius: 50%; box-shadow: 0 0 6px var(--glow-yellow);"></div>
+					<span style="font-size: 11px; font-weight: bold; color: var(--glow-yellow); letter-spacing: 0.5px; text-transform: uppercase;">🔍 2D SPRITE EXPLORER (游戏全角色动作帧序列浏览器)</span>
+				</div>
+				<button onclick="closeSpriteExplorer()" style="background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer; transition: color 0.15s; outline:none;" onmouseenter="this.style.color='#ff3b6f'" onmouseleave="this.style.color='rgba(255,255,255,0.4)'">✕</button>
+			</div>
+			
+			<!-- 工具栏 -->
+			<div style="background: rgba(0,0,0,0.3); padding: 6px 12px; border-bottom: 1px solid var(--border-glass); display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+				<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">👤 快速选择形象:</span>
+				<select id="select-explorer-role" onchange="onExplorerRoleSelect(this.value)" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; outline: none; width: 150px; cursor: pointer;">
+					<option value="0">Role 0 (李逍遥)</option>
+					<option value="1">Role 1 (赵灵儿 - 披发)</option>
+					<option value="2">Role 2 (林月如)</option>
+					<option value="3">Role 3 (阿奴)</option>
+					<option value="4">Role 4 (赵灵儿 - 蛇身)</option>
+					<option value="10">Role 10 (李大娘)</option>
+					<option value="11">Role 11 (苗人首领)</option>
+					<option value="12">Role 12 (苗人手下)</option>
+					<option value="21">Role 21 (村口黄狗)</option>
+					<option value="53">Role 53 (集市商贩)</option>
+				</select>
+				
+				<div style="display: flex; align-items: center; gap: 4px;">
+					<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">输入 Role ID:</span>
+					<input type="number" id="input-explorer-id" value="0" min="0" max="600" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; width: 50px; outline: none; text-align: center;">
+					<button class="btn-dbg" onclick="searchExplorerRole()" style="color: var(--glow-green); border-color: rgba(0,255,157,0.2); padding: 2px 6px; font-size: 8.5px; cursor: pointer;">一键加载</button>
+				</div>
+				
+				<div id="explorer-stats" style="font-size: 8.5px; color: rgba(255,255,255,0.3); font-weight: bold; margin-left: auto;">
+					当前动作序列总数: - 帧
+				</div>
+			</div>
+			
+			<!-- Gallery 滚动画廊区 -->
+			<div id="explorer-gallery" style="flex: 1; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 6px; background: #040406;">
+				<!-- 动态生成 -->
+			</div>
+		</div>
+	</div>
+
 	<!-- ==================== 主程序入口 ==================== -->
 	<script type="module" src="js/app.js"></script>
 
@@ -866,9 +922,9 @@
 			document.getElementById(`btn-scale-${scale}`).classList.add('active');
 		}
 
-		// 默认 4X Retina 高精像素画质开启
+		// 默认 3X FHD 高精像素画质开启
 		document.addEventListener('DOMContentLoaded', () => {
-			changeScreenScale(4);
+			changeScreenScale(3);
 		});
 
 		let selectedItemId = null;
@@ -1078,6 +1134,23 @@
 			document.getElementById('val-attr-r-earth').innerText = isCheated ? '85%' : '10%';
 			
 			const role = state.roles[0];
+			if (role) {
+				// 实时更新主角动作帧像素立绘 Canvas
+				if (loadMgoFn) {
+					try {
+						const tileId = role.tileId || 0;
+						const frame = role.frame || 0;
+						document.getElementById('val-hero-desc').innerText = `Tile: ${tileId} F: ${frame}`;
+						const heroCanvas = loadMgoFn(tileId, frame);
+						if (heroCanvas) {
+							drawDecodedSprite(heroCanvas, 'canvas-hero-sprite');
+						}
+					} catch (e) {
+						console.error("加载主角当前迈步像素立绘失败", e);
+					}
+				}
+			}
+
 			let dirText = '下 (0)';
 			if (role.dir === 1) dirText = '左 (1)';
 			else if (role.dir === 2) dirText = '上 (2)';
@@ -1178,6 +1251,23 @@
 					document.getElementById('ins-val-sellable').innerText = '否';
 					document.getElementById('ins-val-res').innerText = `ModRef: ${o.modsRef}`;
 					document.getElementById('ins-val-offset').innerText = `PX: (${o.x}, ${o.y})`;
+
+					// NPC 当前走路帧动作立绘解码并展示
+					if (loadMgoFn) {
+						try {
+							const npcCanvas = loadMgoFn(o.roleId, o.frame);
+							if (npcCanvas) {
+								drawDecodedSprite(npcCanvas, 'canvas-item-ball', 'NPC: #' + o.roleId);
+							} else {
+								drawDecodedSprite(null, 'canvas-item-ball');
+							}
+						} catch (e) {
+							console.error("加载NPC立绘失败", e);
+							drawDecodedSprite(null, 'canvas-item-ball');
+						}
+					} else {
+						drawDecodedSprite(null, 'canvas-item-ball');
+					}
 				};
 
 				npcCard.onclick = () => {
@@ -1187,6 +1277,16 @@
 						state.highlightNpcId = o.id;
 					}
 					refreshDashboard();
+
+					// 点击时依然同步更新并绘制当前 NPC 的当前帧立绘
+					if (loadMgoFn) {
+						try {
+							const npcCanvas = loadMgoFn(o.roleId, o.frame);
+							if (npcCanvas) {
+								drawDecodedSprite(npcCanvas, 'canvas-item-ball', 'NPC: #' + o.roleId);
+							}
+						} catch (e) {}
+					}
 				};
 
 				npcContainer.appendChild(npcCard);
@@ -1254,11 +1354,37 @@
 			document.getElementById('ins-val-equscr').innerText = info.equscr;
 			document.getElementById('ins-val-dropscr').innerText = info.dropscr;
 			document.getElementById('ins-val-flags').innerText = info.flags;
-			document.getElementById('ins-val-consumable').innerText = info.consumable;
-			document.getElementById('ins-val-throw').innerText = info.throwable;
-			document.getElementById('ins-val-sellable').innerText = info.sellable;
 			document.getElementById('ins-val-res').innerText = info.res;
 			document.getElementById('ins-val-offset').innerText = info.offset;
+
+			// 解码并防糊放大绘制物品 2D 复古图标
+			if (loadBallFn) {
+				try {
+					const ballCanvas = loadBallFn(itemId);
+					if (ballCanvas) {
+						drawDecodedSprite(ballCanvas, 'canvas-item-ball', 'Ball: #' + itemId);
+					} else {
+						drawDecodedSprite(null, 'canvas-item-ball');
+					}
+				} catch (e) {
+					console.error("加载物品图片失败", e);
+					drawDecodedSprite(null, 'canvas-item-ball');
+				}
+			} else {
+				drawDecodedSprite(null, 'canvas-item-ball');
+			}
+		}
+
+		let lastLogItem = null;
+		let duplicateCount = 1;
+
+		function clearScriptLogs() {
+			const container = document.getElementById('container-logs');
+			if (container) {
+				container.innerHTML = '<div style="color: rgba(255,255,255,0.15)">日志已清空...</div>';
+			}
+			lastLogItem = null;
+			duplicateCount = 1;
 		}
 
 		// 5. 并行指令流高速追加，解决滚动条 Bug（采用最高精准度的多轨多渲染帧校正与绝对定位 450px 精密左对齐）
@@ -1270,6 +1396,39 @@
 				container.innerHTML = '';
 			}
 
+			// 智能去重合并同质高频空操作与相同指令
+			if (lastLogItem && 
+				lastLogItem.hexCode === log.hexCode &&
+				lastLogItem.param1 === log.param1 &&
+				lastLogItem.param2 === log.param2 &&
+				lastLogItem.param3 === log.param3 &&
+				lastLogItem.type === log.type) {
+				
+				duplicateCount++;
+				const lastDiv = container.lastElementChild;
+				if (lastDiv) {
+					// 寻找或创建一个黄色高亮的计数 badge
+					let badge = lastDiv.querySelector('.dup-badge');
+					if (!badge) {
+						badge = document.createElement('span');
+						badge.className = 'dup-badge';
+						badge.style.cssText = "background: var(--glow-yellow); color: #000; font-size: 7.5px; font-weight: 800; padding: 0px 3.5px; margin-left: 6px; border-radius: 2px; flex-shrink: 0; line-height: 11px; height: 11px; display: inline-flex; align-items: center; text-shadow: none;";
+						// 找到 leftSpan 元素追加进去
+						const leftSpan = lastDiv.firstElementChild;
+						if (leftSpan) {
+							leftSpan.appendChild(badge);
+						}
+					}
+					badge.innerText = `x${duplicateCount}`;
+				}
+				container.scrollTop = container.scrollHeight - container.clientHeight;
+				return;
+			}
+
+			// 重置计数
+			duplicateCount = 1;
+			lastLogItem = log;
+
 			// 实时获取高度解密的附加信息
 			const detailInfo = getInstructionDetail(log.code, log.param1, log.param2, log.param3);
 
@@ -1279,13 +1438,13 @@
 
 			// 左侧：原始 16 进制指令和基本描述，锁死宽度为 440px 以防遮盖
 			const leftSpan = document.createElement('span');
-			leftSpan.style.cssText = "width: 440px; overflow: hidden; text-overflow: ellipsis; display: inline-block; white-space: nowrap; flex-shrink: 0;";
+			leftSpan.style.cssText = "width: 440px; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0;";
 			leftSpan.innerHTML = `
 				<span class="log-time">${log.time}</span>
 				<span class="log-badge ${log.type}">${log.type}</span>
 				<span class="log-code">${log.hexCode}</span>: 
 				<span class="log-desc">${log.desc}</span> 
-				<span style="color:rgba(255,255,255,0.18)">(${log.param1}, ${log.param2}, ${log.param3})</span>
+				<span style="color:rgba(255,255,255,0.18); margin-left: 2px;">(${log.param1}, ${log.param2}, ${log.param3})</span>
 			`;
 
 			// 右侧：亮荧光绿色展示中文含义，精确定位在离指令最左边 450px 处，左对齐，超宽时 ellipsis 自动切断
@@ -1297,8 +1456,8 @@
 			logDiv.appendChild(rightSpan);
 			container.appendChild(logDiv);
 
-			// 限制内存溢出，裁剪超过 120 行的高频旧日志，并帮助 scrollHeight 高度完美稳定
-			if (container.children.length > 120) {
+			// 限制内存溢出，裁剪超过 1000 行的高频旧日志，并帮助 scrollHeight 高度完美稳定
+			if (container.children.length > 1000) {
 				container.removeChild(container.firstChild);
 			}
 
@@ -1317,8 +1476,12 @@
 		window.ACTIVE_DEBUG_THREAD = null;
 
 		let loadMsgFn = null;
+		let toSimplifiedFn = null;
 		import('./js/resources/pal.js').then(({ loadMsg }) => {
 			loadMsgFn = loadMsg;
+		});
+		import('./js/utils/t2s.js').then(({ toSimplified }) => {
+			toSimplifiedFn = toSimplified;
 		});
 
 		const big5Decoder = new TextDecoder('big5');
@@ -1353,7 +1516,8 @@
 					}
 				}
 				
-				return big5Decoder.decode(new Uint8Array(bytes)).trim();
+				const decodedStr = big5Decoder.decode(new Uint8Array(bytes)).trim();
+				return toSimplifiedFn ? toSimplifiedFn(decodedStr) : decodedStr;
 			} catch (e) {
 				return '文本解码失败';
 			}
@@ -1525,6 +1689,136 @@
 			resetStepDebugUIOnly();
 			document.getElementById('step-dbg-indicator').innerText = '● 待命 (STANDBY)';
 			document.getElementById('step-dbg-indicator').style.color = 'rgba(255,255,255,0.3)';
+		}
+
+		// ==================== 🎨 2D 像素图片解码与防糊缩放居中绘制 ====================
+		function drawDecodedSprite(srcCanvas, destCanvasId, labelText) {
+			const destCanvas = document.getElementById(destCanvasId);
+			if (!destCanvas) return;
+			
+			const ctx = destCanvas.getContext('2d');
+			ctx.imageSmoothingEnabled = false; // 关闭防平滑，像素画的灵魂！
+			ctx.clearRect(0, 0, destCanvas.width, destCanvas.height);
+			
+			if (labelText && document.getElementById('lbl-item-ball-id')) {
+				document.getElementById('lbl-item-ball-id').innerText = labelText;
+			}
+
+			if (srcCanvas) {
+				// 计算自适应最大整数倍数以防半像素抖动
+				const scale = Math.min(destCanvas.width / srcCanvas.width, destCanvas.height / srcCanvas.height);
+				const cleanScale = Math.max(1, Math.floor(scale));
+				
+				const dx = (destCanvas.width - srcCanvas.width * cleanScale) / 2;
+				const dy = (destCanvas.height - srcCanvas.height * cleanScale) / 2;
+				
+				ctx.drawImage(srcCanvas, dx, dy, srcCanvas.width * cleanScale, srcCanvas.height * cleanScale);
+			} else {
+				// 没图时画个极轻微的暗虚线框
+				ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+				ctx.lineWidth = 1;
+				ctx.strokeRect(4, 4, destCanvas.width - 8, destCanvas.height - 8);
+			}
+		}
+
+		// ==================== 🔍 2D Sprite Explorer 帧画廊浏览器前端交互 ====================
+		let loadMgoFn = null;
+		let loadMgoCountFn = null;
+		let loadBallFn = null;
+
+		import('./js/resources/pal.js').then(({ loadMgo, loadMgoCount, loadBall }) => {
+			loadMgoFn = loadMgo;
+			loadMgoCountFn = loadMgoCount;
+			loadBallFn = loadBall;
+		});
+
+		function openSpriteExplorer() {
+			document.getElementById('sprite-explorer-modal').style.display = 'flex';
+			// 默认载入下拉框当前角色形象
+			const roleId = parseInt(document.getElementById('select-explorer-role').value || 0);
+			document.getElementById('input-explorer-id').value = roleId;
+			loadExplorerGallery(roleId);
+		}
+
+		function closeSpriteExplorer() {
+			document.getElementById('sprite-explorer-modal').style.display = 'none';
+		}
+
+		function onExplorerRoleSelect(roleId) {
+			document.getElementById('input-explorer-id').value = roleId;
+			loadExplorerGallery(parseInt(roleId));
+		}
+
+		function searchExplorerRole() {
+			const roleIdInput = document.getElementById('input-explorer-id').value;
+			if (roleIdInput === '') return;
+			const roleId = parseInt(roleIdInput);
+			loadExplorerGallery(roleId);
+		}
+
+		// 全动作帧 Gallery 核心数据泵与 micro-canvas 生成平铺渲染
+		function loadExplorerGallery(roleId) {
+			const gallery = document.getElementById('explorer-gallery');
+			if (!gallery) return;
+
+			gallery.innerHTML = '<span style="color:rgba(255,255,255,0.4); font-size:9px; grid-column:span 8; text-align:center;">正在读取 sss.mkf 资源包并遍历生成动作帧...</span>';
+
+			if (!loadMgoFn || !loadMgoCountFn) {
+				setTimeout(() => loadExplorerGallery(roleId), 100);
+				return;
+			}
+
+			try {
+				const maxFrame = loadMgoCountFn(roleId);
+				document.getElementById('explorer-stats').innerText = `当前动作序列总数: ${maxFrame} 帧`;
+				gallery.innerHTML = '';
+
+				if (maxFrame <= 0) {
+					gallery.innerHTML = '<span style="color:rgba(255,255,255,0.25); font-size:9.5px; grid-column:span 8; text-align:center;">未找到该 ID 对应的有效动作帧数据</span>';
+					return;
+				}
+
+				// 循环高密平铺渲染
+				for (let f = 0; f < maxFrame; f++) {
+					const frameCard = document.createElement('div');
+					frameCard.style.cssText = "background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.02); border-radius:2px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px; transition:all 0.1s;";
+					frameCard.onmouseenter = () => {
+						frameCard.style.borderColor = 'var(--glow-yellow)';
+						frameCard.style.background = 'rgba(255,208,0,0.02)';
+					};
+					frameCard.onmouseleave = () => {
+						frameCard.style.borderColor = 'rgba(255,255,255,0.02)';
+						frameCard.style.background = 'rgba(255,255,255,0.015)';
+					};
+
+					const canvas = document.createElement('canvas');
+					canvas.width = 40;
+					canvas.height = 40;
+					canvas.style.cssText = "image-rendering:pixelated; width:40px; height:40px; background:rgba(0,0,0,0.35); border-radius:1px;";
+
+					const ctx = canvas.getContext('2d');
+					ctx.imageSmoothingEnabled = false;
+					const frameMgo = loadMgoFn(roleId, f);
+					if (frameMgo) {
+						const scale = Math.min(40 / frameMgo.width, 40 / frameMgo.height);
+						const cleanScale = Math.max(1, Math.floor(scale));
+						const dx = (40 - frameMgo.width * cleanScale) / 2;
+						const dy = (40 - frameMgo.height * cleanScale) / 2;
+						ctx.drawImage(frameMgo, dx, dy, frameMgo.width * cleanScale, frameMgo.height * cleanScale);
+					}
+
+					const label = document.createElement('span');
+					label.innerText = `F:#${f}`;
+					label.style.cssText = "font-size:7.5px; color:rgba(255,255,255,0.3); font-weight:bold; margin-top:2px;";
+
+					frameCard.appendChild(canvas);
+					frameCard.appendChild(label);
+					gallery.appendChild(frameCard);
+				}
+			} catch (e) {
+				console.error(e);
+				gallery.innerHTML = '<span style="color:var(--glow-red); font-size:9.5px; grid-column:span 8; text-align:center;">资源解析发生异常，请确认 Role ID 的有效性</span>';
+			}
 		}
 
 		// ==================== 🔮 快捷场景传送 (Scene Teleporter) 前端核心交互 ====================
