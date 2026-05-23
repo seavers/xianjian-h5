@@ -951,6 +951,7 @@
 				<button class="btn-dbg image-tab-btn" id="tab-ball" onclick="switchImageType('ball')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">物品小图标 (ball.mkf)</button>
 				<button class="btn-dbg image-tab-btn" id="tab-msg" onclick="switchImageType('msg')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">剧情文本 (msg)</button>
 				<button class="btn-dbg image-tab-btn" id="tab-wor16" onclick="switchImageType('wor16')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">点阵字库 (wor16.asc)</button>
+				<button class="btn-dbg image-tab-btn" id="tab-word" onclick="switchImageType('word')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">短语资源 (word.dat)</button>
 			</div>
 
 			<!-- 二级筛选项控制栏 (根据选中的类型动态显示) -->
@@ -1959,6 +1960,8 @@
 					imageExplorerState.currentScale = 2;
 				} else if (type === 'wor16') {
 					imageExplorerState.currentScale = 2;
+				} else if (type === 'word') {
+					imageExplorerState.currentScale = 2;
 				}
 			}
 
@@ -2046,6 +2049,9 @@
 				} else if (type === 'wor16') {
 					const data = loaderModule.load('wor16.asc');
 					imageExplorerState.totalItems = data.length / 2;
+				} else if (type === 'word') {
+					const data = loaderModule.load('word.dat');
+					imageExplorerState.totalItems = data.length / 10;
 				}
 			} catch (e) {
 				console.error("获取精灵包大小时发生异常:", e);
@@ -2136,6 +2142,8 @@
 					const data = loaderModule.load('wor16.asc');
 					const code = data.getShort(i * 2);
 					card = renderSingleItem(i, `FON #${i}\n0x${code.toString(16).toUpperCase()}`, (id) => palResources.loadFon(id));
+				} else if (type === 'word') {
+					card = renderWordItem(i, `WORD #${i}`);
 				}
 
 				if (card) {
@@ -2219,6 +2227,69 @@
 			} catch (e) {
 				console.error(`绘制剧本文本 MSG #${msgId} 失败:`, e);
 				card.innerHTML = `<span style="font-size:8px; color:var(--glow-red);">${labelText}\n[解析/绘制失败]</span>`;
+			}
+
+			return card;
+		}
+
+		// 10.1 针对短语 (word) 用游戏字库原生 16x16 点阵字顺次拼接绘制的特殊渲染引擎
+		function renderWordItem(wordId, labelText) {
+			const card = document.createElement('div');
+			card.style.cssText = "background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.02); border-radius:2px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px; transition:all 0.1s;";
+
+			card.onmouseenter = () => {
+				card.style.borderColor = 'var(--glow-green)';
+				card.style.background = 'rgba(0, 255, 157, 0.02)';
+			};
+			card.onmouseleave = () => {
+				card.style.borderColor = 'rgba(255,255,255,0.02)';
+				card.style.background = 'rgba(255,255,255,0.015)';
+			};
+
+			try {
+				const data = loaderModule.load('word.dat');
+				const offset = wordId * 10;
+				const r = [];
+				for (let i = 0; i < 5; i++) {
+					const code = data.getShort(offset + i * 2);
+					if (code !== 0 && code !== 32) { // 过滤掉 0 和空格填充字符
+						r.push(code);
+					}
+				}
+
+				if (r.length > 0) {
+					// 创建高度为 16px、宽度自适应的 Canvas
+					const canvas = document.createElement('canvas');
+					canvas.width = r.length * 16;
+					canvas.height = 16;
+
+					canvas.style.setProperty('--raw-width', `${canvas.width}px`);
+					canvas.style.setProperty('--raw-height', '16px');
+					canvas.style.background = 'rgba(0,0,0,0.4)';
+					canvas.style.borderRadius = '1px';
+
+					const ctx = canvas.getContext('2d');
+					ctx.imageSmoothingEnabled = false;
+
+					for (let j = 0; j < r.length; j++) {
+						const wordImg = palResources.loadWord(r[j]);
+						if (wordImg) {
+							ctx.drawImage(wordImg, j * 16, 0);
+						}
+					}
+
+					card.appendChild(canvas);
+
+					const label = document.createElement('span');
+					label.innerText = `${labelText}`;
+					label.style.cssText = "font-size: 8px; color: rgba(255,255,255,0.3); font-weight: bold; margin-top: 4px;";
+					card.appendChild(label);
+				} else {
+					card.innerHTML = `<span style="font-size:8px; color:rgba(255,255,255,0.15);">${labelText}\n[空短语]</span>`;
+				}
+			} catch (e) {
+				console.error(`绘制短语 WORD #${wordId} 失败:`, e);
+				card.innerHTML = `<span style="font-size:8px; color:var(--glow-red);">${labelText}\n[绘制失败]</span>`;
 			}
 
 			return card;
