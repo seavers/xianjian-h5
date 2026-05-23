@@ -50,6 +50,7 @@
 			justify-content: center;
 			padding: 20px;
 			position: relative;
+			overflow: auto; /* 画面放大后支持容器内部流畅滚动 */
 			background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.015)" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grid)"/></svg>');
 		}
 
@@ -88,7 +89,7 @@
 						0 0 0 1px rgba(255, 255, 255, 0.05) inset;
 			overflow: hidden;
 			transform-origin: center;
-			transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+			transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 		}
 
 		#canvas-container:hover {
@@ -101,8 +102,8 @@
 			position: absolute;
 			top: 0;
 			left: 0;
-			width: 640px;
-			height: 400px;
+			width: 100%;
+			height: 100%;
 			image-rendering: pixelated; /* 像素抗锯齿清晰 */
 		}
 
@@ -573,6 +574,13 @@
 			color: var(--glow-yellow);
 			box-shadow: 0 4px 12px rgba(255, 208, 0, 0.08);
 		}
+
+		.btn-scale.active {
+			background: rgba(0, 255, 157, 0.12) !important;
+			border-color: var(--glow-green) !important;
+			color: var(--glow-green) !important;
+			box-shadow: 0 0 12px rgba(0, 255, 157, 0.25);
+		}
 	</style>
 </head>
 <body>
@@ -732,6 +740,18 @@
 							<span id="label-speed-val">6 fps</span>
 						</div>
 						<input type="range" id="input-speed" min="3" max="60" value="6" oninput="changeGameSpeed(this.value)">
+					</div>
+
+					<!-- 画面等比缩放比例选择 -->
+					<div class="range-container" style="margin-top: 15px;">
+						<div class="range-label">
+							<span>画面等比缩放比例 (Screen Scale Gear)</span>
+						</div>
+						<div style="display: flex; gap: 8px;">
+							<button class="btn btn-scale active" id="btn-scale-2" onclick="changeScreenScale(2)">2X HD</button>
+							<button class="btn btn-scale" id="btn-scale-3" onclick="changeScreenScale(3)">3X Full HD</button>
+							<button class="btn btn-scale" id="btn-scale-4" onclick="changeScreenScale(4)">4X Retina</button>
+						</div>
 					</div>
 
 					<div class="dbg-buttons">
@@ -899,6 +919,21 @@
 					Timer.updateSpeed();
 				});
 			}
+		}
+
+		// 画面等比缩放比例调节（通过改变外层容器 CSS 尺寸实现自适应完美高清缩放，image-rendering: pixelated 带来无糊边缘的 Retina 大画幅）
+		function changeScreenScale(scale) {
+			const width = 320 * scale;
+			const height = 200 * scale;
+			const container = document.getElementById('canvas-container');
+			container.style.width = `${width}px`;
+			container.style.height = `${height}px`;
+
+			// 切换按钮的高亮类名
+			document.querySelectorAll('.btn-scale').forEach(btn => {
+				btn.classList.remove('active');
+			});
+			document.getElementById(`btn-scale-${scale}`).classList.add('active');
 		}
 
 		// 2. 一键加钱金币
