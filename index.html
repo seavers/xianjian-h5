@@ -781,17 +781,62 @@
 				</div>
 			</div>
 
-			<!-- 最底部：⚙️ 调试控制互动功能与变速齿轮 -->
-			<div class="debugger-footer">
-				<div style="display:flex; align-items:center; gap:6px;">
-					<span style="font-size:9.5px; font-weight:bold; color:rgba(255,255,255,0.3)">⏱️ 变速:</span>
-					<input type="range" id="input-speed" min="3" max="60" value="6" oninput="changeGameSpeed(this.value)" style="width: 100px; margin-right: 4px;">
-					<span id="label-speed-val" style="font-size:9.5px; color:#ffd000; font-weight:bold;">6 fps</span>
+			<!-- 调试扩展：🐛 剧情脚本单步调试器 (Step Debugger) -->
+			<div style="border-top: 1px solid var(--border-glass); background: rgba(0,0,0,0.3); padding: 5px 8px; display: flex; flex-direction: column; gap: 4px;">
+				<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dotted rgba(255,255,255,0.03); padding-bottom: 2px;">
+					<span style="font-size: 9px; font-weight: bold; color: var(--glow-yellow); display: flex; align-items: center; gap: 4px;">
+						<span style="width: 4px; height: 4px; background: var(--glow-yellow); border-radius: 50%; display: inline-block;"></span>
+						🐛 剧情脚本单步调试器 (Active Thread Step Debugger)
+					</span>
+					<span id="step-dbg-indicator" style="font-size: 8px; color: rgba(255,255,255,0.3);">● 待命 (STANDBY)</span>
 				</div>
-				<div style="display:flex; gap:4px;">
-					<button class="btn-dbg" onclick="cheatGold()" style="color:#ffd000; border-color:rgba(255,208,0,0.2)">🪙 满钱</button>
-					<button class="btn-dbg" onclick="cheatItems()" style="color:#ff3b6f; border-color:rgba(255,59,111,0.2)">🎒 神药</button>
-					<button class="btn-dbg" onclick="teleportMarket()">🔮 瞬飞集市 (Scene 4)</button>
+				<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+					<label style="font-size: 8.5px; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none;">
+						<input type="checkbox" id="check-step-debug" onchange="toggleStepDebug(this.checked)" style="accent-color: var(--glow-green);">
+						启用单步拦截 (Step Mode)
+					</label>
+					<div style="display: flex; gap: 4px;">
+						<button class="btn-dbg" id="btn-next-step" onclick="executeNextStep()" style="color: var(--glow-green); border-color: rgba(0,255,157,0.15); padding: 2px 5px; font-size: 8.5px;" disabled>⬇️ 下一步 (Next)</button>
+						<button class="btn-dbg" id="btn-resume-run" onclick="resumeRunning()" style="color: var(--glow-blue); border-color: rgba(0,225,255,0.15); padding: 2px 5px; font-size: 8.5px;" disabled>▶️ 恢复 (Resume)</button>
+					</div>
+				</div>
+				<!-- 当前挂起指令详情高亮气泡 -->
+				<div id="step-instruction-box" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,208,0,0.1); padding: 3px 5px; border-radius: 2px; font-size: 8.5px; display: none;">
+					<span style="color: var(--glow-yellow); font-weight: bold;">[暂停于 IP <span id="step-ip">-</span>]</span>: 
+					<span style="color: var(--glow-blue); font-weight: bold;" id="step-code">-</span> ➔ 
+					<span style="color: #fff; font-weight: 500;" id="step-desc">-</span> 
+					<span style="color: rgba(255,255,255,0.35);">Params: (<span id="step-params">-</span>)</span>
+				</div>
+			</div>
+
+			<!-- 最底部：⚙️ 调试控制互动功能与变速齿轮 -->
+			<div class="debugger-footer" style="border-top: 1px solid var(--border-glass);">
+				<div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
+					<!-- ⏱️ 变速齿轮 -->
+					<div style="display:flex; align-items:center; gap:4px;">
+						<span style="font-size:9px; font-weight:bold; color:rgba(255,255,255,0.3)">⏱️ 变速:</span>
+						<input type="range" id="input-speed" min="3" max="60" value="6" oninput="changeGameSpeed(this.value)" style="width: 80px; margin-right: 4px; accent-color:var(--glow-green);">
+						<span id="label-speed-val" style="font-size:9px; color:#ffd000; font-weight:bold;">6 fps</span>
+					</div>
+					<!-- 🔮 快捷场景传送 -->
+					<div style="display: flex; gap: 3px; align-items: center;">
+						<span style="font-size: 9px; color: rgba(255,255,255,0.3); font-weight: bold;">🔮 传送:</span>
+						<select id="select-teleport-scene" onchange="onQuickSceneSelect(this.value)" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8px; padding: 1px 2px; outline: none; width: 110px;">
+							<option value="">-- 快捷场景 --</option>
+							<option value="1">Scene 1 (卧室)</option>
+							<option value="2">Scene 2 (客栈一楼)</option>
+							<option value="3">Scene 3 (大娘病房)</option>
+							<option value="4">Scene 4 (集市)</option>
+							<option value="5">Scene 5 (荷花池)</option>
+							<option value="6">Scene 6 (水月宫)</option>
+						</select>
+						<input type="number" id="input-teleport-id" placeholder="ID" min="1" max="200" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8px; padding: 1px 2px; width: 32px; outline: none; text-align: center;">
+						<button class="btn-dbg" onclick="teleportCustomScene()" style="color: var(--glow-blue); border-color: rgba(0,225,255,0.15); padding: 1px 3px; font-size: 8px;">传送</button>
+					</div>
+				</div>
+				<div style="display:flex; gap:3px;">
+					<button class="btn-dbg" onclick="cheatGold()" style="color:#ffd000; border-color:rgba(255,208,0,0.15); padding: 3px 5px; font-size: 9px;">🪙 满钱</button>
+					<button class="btn-dbg" onclick="cheatItems()" style="color:#ff3b6f; border-color:rgba(255,59,111,0.15); padding: 3px 5px; font-size: 9px;">🎒 神药</button>
 				</div>
 			</div>
 
@@ -1252,7 +1297,144 @@
 			});
 		}
 
-		// 注册全局钩子
+		// ==================== 🐛 脚本单步调试器 (Active Thread Step Debugger) 前端核心交互 ====================
+		window.STEP_DEBUG = false;
+		window.ACTIVE_DEBUG_THREAD = null;
+
+		// 调试广播钩子：当 Thread.js 底层挂载拦截并挂起时触发，刷新 UI 并将指令信息高亮渲染
+		window.onStepDebugPause = (thread) => {
+			window.ACTIVE_DEBUG_THREAD = thread;
+			
+			const state = window.state;
+			if (!state) return;
+
+			// 获取即将执行的下一条指令详情
+			const script = state.scripts[thread.scriptId];
+			if (!script) return;
+
+			import('./js/engine/command.js').then(({ scriptCodes }) => {
+				const codeObj = scriptCodes[script.code];
+				const desc = codeObj ? codeObj.desc : '未知指令';
+				
+				// 填充并展开即将执行的指令详情提示气泡
+				document.getElementById('step-ip').innerText = thread.scriptId;
+				document.getElementById('step-code').innerText = '0x' + script.code.toString(16).toUpperCase();
+				document.getElementById('step-desc').innerText = desc;
+				document.getElementById('step-params').innerText = `${script.param1}, ${script.param2}, ${script.param3}`;
+				
+				document.getElementById('step-instruction-box').style.display = 'block';
+				document.getElementById('step-dbg-indicator').innerText = '● 拦截 (PAUSED)';
+				document.getElementById('step-dbg-indicator').style.color = 'var(--glow-yellow)';
+				
+				// 亮起下一步及恢复按钮
+				document.getElementById('btn-next-step').disabled = false;
+				document.getElementById('btn-resume-run').disabled = false;
+			});
+		};
+
+		// 启用/禁用单步调试模式
+		function toggleStepDebug(enabled) {
+			window.STEP_DEBUG = enabled;
+			console.log(`[Debugger]: Step Debug Mode set to ${enabled}`);
+			
+			if (!enabled) {
+				// 如果关闭单步模式，且当前有被拦截的线程，则解锁恢复其完全自动执行
+				if (window.ACTIVE_DEBUG_THREAD) {
+					const thread = window.ACTIVE_DEBUG_THREAD;
+					window.ACTIVE_DEBUG_THREAD = null;
+					thread.notify();
+				}
+				resetStepDebugUI();
+			} else {
+				document.getElementById('step-dbg-indicator').innerText = '● 待命 (STANDBY)';
+				document.getElementById('step-dbg-indicator').style.color = 'rgba(255,255,255,0.3)';
+			}
+		}
+
+		// 单步执行一步指令
+		function executeNextStep() {
+			if (window.ACTIVE_DEBUG_THREAD) {
+				const thread = window.ACTIVE_DEBUG_THREAD;
+				
+				// 先清空 UI 高亮提示以表示在执行
+				resetStepDebugUIOnly();
+				
+				// 执行单步
+				thread.step();
+				
+				// 如果在单步执行完后，该线程已经结束或者退出了调试模式，则进行 UI 复位
+				if (thread.finish || !window.STEP_DEBUG) {
+					resetStepDebugUI();
+				}
+			}
+		}
+
+		// 恢复完全自动运行，退出单步
+		function resumeRunning() {
+			document.getElementById('check-step-debug').checked = false;
+			toggleStepDebug(false);
+		}
+
+		function resetStepDebugUIOnly() {
+			document.getElementById('step-instruction-box').style.display = 'none';
+			document.getElementById('btn-next-step').disabled = true;
+			document.getElementById('btn-resume-run').disabled = true;
+		}
+
+		function resetStepDebugUI() {
+			resetStepDebugUIOnly();
+			document.getElementById('step-dbg-indicator').innerText = '● 待命 (STANDBY)';
+			document.getElementById('step-dbg-indicator').style.color = 'rgba(255,255,255,0.3)';
+		}
+
+		// ==================== 🔮 快捷场景传送 (Scene Teleporter) 前端核心交互 ====================
+		function onQuickSceneSelect(val) {
+			if (val) {
+				document.getElementById('input-teleport-id').value = val;
+			}
+		}
+
+		function teleportCustomScene() {
+			const sceneInput = document.getElementById('input-teleport-id').value;
+			if (!sceneInput) {
+				alert('请输入有效的 Scene ID 场景数值！');
+				return;
+			}
+
+			const sceneId = parseInt(sceneInput);
+			if (sceneId <= 0 || sceneId > 200) {
+				alert('场景 ID 超出合法区间 (1-200)！');
+				return;
+			}
+
+			if (window.state && window.toggleScene) {
+				// 新场景安全瓦片坐标对照字典，防止由于坐标不对卡墙死锁
+				const COORDS = {
+					1: { x: 49, y: 94, name: '逍遥卧室' },
+					2: { x: 26, y: 36, name: '客栈一楼' },
+					3: { x: 42, y: 18, name: '大娘病房' },
+					4: { x: 36, y: 58, name: '盛渔村集市' },
+					5: { x: 30, y: 30, name: '仙灵岛荷花池' },
+					6: { x: 20, y: 20, name: '仙灵岛水月宫' }
+				};
+
+				const target = COORDS[sceneId] || { x: 30, y: 30, name: `未知场景 #${sceneId}` };
+
+				// 执行无缝切换传送指令链
+				window.state.nextSceneId = sceneId;
+				window.setRolePos(target.x, target.y, 0);
+				window.toggleScene();
+
+				// 在打字对话和通知流中输出双重传送喜报！
+				import('./js/ui/talk.js').then(({ Talk }) => {
+					Talk.talkTips(`太乙神行传送！成功降落于 ${target.name} (${target.x}, ${target.y})`);
+				});
+			} else {
+				console.error('游戏引擎尚未完全初始化，无法执行传送');
+			}
+		}
+
+		// ==================== 注册全局运行时钩子与数据联动 ====================
 		window.onSceneUpdate = () => {
 			refreshDashboard();
 		};
