@@ -1616,6 +1616,15 @@
 			while (container.children.length > window.logLimit) {
 				container.removeChild(container.firstChild);
 			}
+
+			// 仅当用户处于最底部的几行时，新日志追加才触发滚动到最底部，否则保持稳定不滚动
+			const wrapper = document.getElementById('container-logs-wrapper');
+			if (wrapper) {
+				const isAtBottom = wrapper.scrollHeight - wrapper.scrollTop - wrapper.clientHeight < 30;
+				if (isAtBottom) {
+					wrapper.scrollTop = wrapper.scrollHeight - wrapper.clientHeight;
+				}
+			}
 		}
 
 		// ==================== 🐛 脚本单步调试器 (Active Thread Step Debugger) 前端核心交互 ====================
