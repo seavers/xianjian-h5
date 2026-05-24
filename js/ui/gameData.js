@@ -2,6 +2,7 @@
 
 import { loadRgm, loadMgo, loadGop, loadBall, loadMgoCount, loadMsg } from '../resources/pal.js';
 import { state } from '../engine/state.js';
+import { scriptCodes } from '../engine/command.js';
 
 // 1. 全局配置：剧中角色属性高级元数据库
 const ROLES_DB = {
@@ -747,10 +748,16 @@ function renderScriptTab(container) {
       const codeHex = '0x' + s.code.toString(16).toUpperCase();
       const desc = getInstructionChineseDetail(s.code, s.param1, s.param2, s.param3);
       const cmdName = getCommandName(s.code);
+      
+      // 获取官方中文指令解释词条
+      const codeObj = scriptCodes[s.code];
+      const officialDesc = codeObj ? codeObj.desc : '未知系统底层指令';
+      
       listItems.push({
         id: s.id,
         codeHex,
         cmdName,
+        officialDesc,
         params: `${s.param1}, ${s.param2}, ${s.param3}`,
         desc: makeScriptHyperlinks(desc)
       });
@@ -803,10 +810,13 @@ function renderScriptTab(container) {
     rightHtml += `
       <div style="background: ${isHighlight ? 'rgba(255,215,0,0.05)' : 'rgba(255,255,255,0.01)'}; border: 1px solid ${isHighlight ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.02)'}; padding: 8px 12px; border-radius: 3px; display: flex; flex-direction: column; gap: 4px; transition: all 0.15s;">
         <div style="display: flex; justify-content: space-between; align-items: center; font-family:'JetBrains Mono', monospace; font-size: 8px;">
-          <span style="font-weight: bold; color: ${isHighlight ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.3)'};">SCRIPT ID: #${item.id}</span>
-          <div style="display: flex; gap: 8px;">
-            <span style="color: var(--glow-green); font-weight: bold;">${item.codeHex} (${item.cmdName})</span>
-            <span style="color: rgba(255,255,255,0.25);">Params: (${item.params})</span>
+          <div>
+            <span style="font-weight: bold; color: ${isHighlight ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.3)'};">SCRIPT ID: #${item.id}</span>
+            <span style="color: rgba(255,255,255,0.25); margin-left: 8px;">Params: (${item.params})</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: rgba(255,255,255,0.4);">${item.codeHex} (${item.cmdName})</span>
+            <span style="color: var(--glow-green); font-weight: bold; text-transform: uppercase; background: rgba(0,255,157,0.06); border: 1px solid rgba(0,255,157,0.2); padding: 1px 4px; border-radius: 1px; font-size: 7.5px;">${item.officialDesc}</span>
           </div>
         </div>
         <div style="font-size: 9.5px; color: #fff; line-height: 1.4; border-top: 1px dashed rgba(255,255,255,0.04); padding-top: 4px; font-weight: 500;">
