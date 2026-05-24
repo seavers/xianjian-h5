@@ -233,8 +233,16 @@ export function setNpcFrame(frame) {
   loadFrameCount(this);
   this.frame = frame;
 
-  // 先无限循环了
+  // 循环随机N次
   Timer.queue(-1, () => {
+    if (this.frame == 1) {
+      if (Math.random() < 0.1) {
+        this.frame++;
+      } else {
+        this.frame--;
+      }
+      return ;
+    }
     this.frame = (this.frame + 1) % this.frameCount;
   })
 }
