@@ -5,6 +5,7 @@ import { Timer } from './timer.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
 import { update, drawMapAll } from '../ui/draw.js';
+import { intToShort } from '../utils/number.js';
 
 export function setRolePos(sx, sy, shalf) {
   state.mx = sx;
@@ -184,6 +185,14 @@ export function setNpcDir(dir) {
     this.dir = dir;
     refreshRoleCount(this);
   }
+}
+
+export function setNpcPos(objId, dx, dy) {
+  const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
+  if (!obj) return;
+
+  obj.x = state.roles[0].x + intToShort(dx);
+  obj.y = state.roles[0].y + intToShort(dy);
 }
 
 export function npcWalk2(x, y, half) {
@@ -382,6 +391,7 @@ scriptCodes[0x73] = { func: clearWithEffect, desc: '动画淡出清除' };
 scriptCodes[0x6C] = { func: npcWalk, desc: 'NPC平移偏移距离' };
 scriptCodes[0x10] = { func: npcWalk2, desc: 'NPC插值移动至坐标(10)' };
 scriptCodes[0x11] = { func: npcWalk3, desc: 'NPC插值移动至坐标(11)' };
+scriptCodes[0x12] = { func: setNpcPos, desc: '设置NPC位置' };
 
 scriptCodes[0x59] = { func: setScene, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x50] = { func: toggleScene, desc: '执行场景切换' };
