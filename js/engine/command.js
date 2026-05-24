@@ -196,7 +196,11 @@ export function npcWalk3(x, y, half) {
 
 export function walkAtPlace() {
   loadFrameCount(this);
-  this.frame = Math.floor(Math.random() * this.frameCount);
+  
+  // 先无限循环了
+  Timer.queue(-1, () => {
+    this.frame = (this.frame + 1) % this.frameCount;
+  })
 }
 
 function loadFrameCount(obj) {
@@ -226,8 +230,13 @@ export function setNpcTrigScr(objId, trigScr) {
 }
 
 export function setNpcFrame(frame) {
+  loadFrameCount(this);
   this.frame = frame;
-  return Script.Moment;
+
+  // 先无限循环了
+  Timer.queue(-1, () => {
+    this.frame = (this.frame + 1) % this.frameCount;
+  })
 }
 
 export function setMusic() {}

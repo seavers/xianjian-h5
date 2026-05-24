@@ -5,9 +5,11 @@ import { Timer } from './timer.js';
 export const Script = {
   all: [],
   total: 0,
+  autoThreads: [],
 
   startScene(scene) {
     Script.all = [];
+    Script.autoThreads = [];
     Script.total = 0;
 
     Script.start(scene.enterScriptId, scene, 'scene');
@@ -36,6 +38,13 @@ export const Script = {
     Script.start(obj.useScr, obj, 'item');
   },
 
+  loop() {
+    // 载入当前场景内的所有事件/NPC 的 auto 脚本
+    for (let i = 0; i < Script.autoThreads.length; i++) {
+      Script.autoThreads[i].next();
+    }
+  },
+
   // 启动脚本。由于脚本需要并行运行，所以存在多实例情况
   start(scriptId, obj, type) {
     if (type !== 'auto') {
@@ -45,6 +54,9 @@ export const Script = {
     const thread = new Thread(scriptId, obj, type);
     thread.index = Script.total;
     Script.all[Script.total++] = thread;
+    if(type == 'auto') {
+      Script.autoThreads[Script.autoThreads.length] = thread;
+    }
 
     thread.start();
 

@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import { update } from '../ui/draw.js';
+import { Script } from './script.js';
 
 let anims = []; // 注册的动画回调列表
 let animIndex = 0; // 纯自增计数器
@@ -59,6 +60,8 @@ function draw() {
 }
 
 function drawLoop() {
+  Script.loop();
+
   let c = 0;
   for (const key in anims) {
     const func = anims[key];
