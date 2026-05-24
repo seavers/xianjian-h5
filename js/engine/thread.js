@@ -76,6 +76,7 @@ export class Thread {
       const logItem = {
         id: this.id,
         npcId: this.obj ? this.obj.id : '无',
+        roleId: this.obj && typeof this.obj.roleId === 'number' ? this.obj.roleId : null,
         type: this.type,
         scriptId: this.scriptId - 1,
         code: script.code,
@@ -137,6 +138,7 @@ export class Thread {
     const logItem = {
       id: this.id,
       npcId: this.obj ? this.obj.id : '无',
+      roleId: this.obj && typeof this.obj.roleId === 'number' ? this.obj.roleId : null,
       type: this.type,
       scriptId: this.scriptId - 1,
       code: script.code,
