@@ -670,7 +670,8 @@
 				<h2>PAL RUNTIME REALTIME PROFILE CONSOLE</h2>
 			</div>
 			<div style="display:flex; align-items:center; gap:8px;">
-				<button class="btn-dbg" onclick="openImageExplorer()" style="color: var(--glow-green); border-color: rgba(0, 255, 157, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s;">🖼️ 查看图片资源</button>
+				<button class="btn-dbg" onclick="openGameDataModal()" style="color: var(--glow-yellow); border-color: rgba(255, 215, 0, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s;">📚 游戏资料</button>
+				<button class="btn-dbg" onclick="openImageExplorer()" style="color: var(--glow-green); border-color: rgba(0, 255, 157, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s;">🖼️ 图片资源</button>
 				<div style="font-size: 8.5px; color:rgba(255,255,255,0.2);">VER: 4.0-DECRYPT-STREAM</div>
 			</div>
 		</div>
@@ -1037,6 +1038,33 @@
 					<button class="btn-dbg" onclick="nextImagePage()" id="btn-image-next" style="color: #fff; padding: 2px 8px; font-size: 9px; border-color: rgba(255,255,255,0.1); cursor: pointer;">下一页 ▶</button>
 					<button class="btn-dbg" onclick="lastImagePage()" id="btn-image-last" style="color: #fff; padding: 2px 8px; font-size: 9px; border-color: rgba(255,255,255,0.1); cursor: pointer;">尾页 ⏭</button>
 				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- ==================== 📚 仙剑奇侠传游戏资料监视与调试弹窗 ==================== -->
+	<div id="game-data-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
+		<div style="background: rgba(15,13,8,0.96); border: 1px solid var(--glow-yellow); border-radius: 4px; box-shadow: 0 0 25px rgba(255, 215, 0, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
+			<!-- 弹窗头部 -->
+			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
+				<div style="display: flex; align-items: center; gap: 6px;">
+					<div style="width: 5px; height: 5px; background: var(--glow-yellow); border-radius: 50%; box-shadow: 0 0 6px var(--glow-yellow);"></div>
+					<span style="font-size: 11px; font-weight: bold; color: var(--glow-yellow); letter-spacing: 0.5px; text-transform: uppercase;">📚 PAL GAME DATA & PROFILES SYSTEM (游戏实时资料与联动调试系统)</span>
+				</div>
+				<button onclick="closeGameDataModal()" style="background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer; transition: color 0.15s; outline:none;" onmouseenter="this.style.color='#ff3b6f'" onmouseleave="this.style.color='rgba(255,255,255,0.4)'">✕</button>
+			</div>
+			
+			<!-- 资料大类 Tabs 切换栏 -->
+			<div style="background: rgba(0,0,0,0.4); padding: 6px 12px; border-bottom: 1px solid var(--border-glass); display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+				<button class="btn-dbg gamedata-tab-btn active" id="gamedata-tab-role" onclick="switchGameDataTab('role')" style="color:var(--glow-yellow); border-color:var(--glow-yellow); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">👤 角色信息 (Characters)</button>
+				<button class="btn-dbg gamedata-tab-btn" id="gamedata-tab-npc" onclick="switchGameDataTab('npc')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">👾 NPC 信息 (NPCs)</button>
+				<button class="btn-dbg gamedata-tab-btn" id="gamedata-tab-script" onclick="switchGameDataTab('script')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">📜 脚本信息 (Scripts)</button>
+				<button class="btn-dbg gamedata-tab-btn" id="gamedata-tab-scene" onclick="switchGameDataTab('scene')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">🗺️ 场景信息 (Scenes)</button>
+			</div>
+
+			<!-- 主内容展示区：双栏结构 -->
+			<div id="gamedata-main-container" style="flex: 1; display: flex; overflow: hidden; background: #040302;">
+				<!-- 动态载入各个 TAB 的页面 DOM -->
 			</div>
 		</div>
 	</div>
@@ -1669,6 +1697,7 @@
 		});
 		import('./js/utils/t2s.js').then(({ toSimplified }) => {
 			toSimplifiedFn = toSimplified;
+			window.toSimplifiedFn = toSimplified;
 		});
 
 		const big5Decoder = new TextDecoder('big5');
@@ -2652,6 +2681,22 @@
 				}
 			});
 		})();
+
+		// 📚 动态载入游戏资料面板的全部逻辑
+		import('./js/ui/gameData.js').then((module) => {
+			window.openGameDataModal = module.openGameDataModal;
+			window.closeGameDataModal = module.closeGameDataModal;
+			window.switchGameDataTab = module.switchGameDataTab;
+			window.searchGameDataRole = module.searchGameDataRole;
+			window.onGameDataRoleSelect = module.onGameDataRoleSelect;
+			window.searchGameDataNpc = module.searchGameDataNpc;
+			window.onGameDataNpcSelect = module.onGameDataNpcSelect;
+			window.jumpToGameDataScript = module.jumpToGameDataScript;
+			window.searchGameDataScript = module.searchGameDataScript;
+			window.onGameDataSceneSelect = module.onGameDataSceneSelect;
+			window.jumpToGameDataNpc = module.jumpToGameDataNpc;
+			window.toggleHeroAnim = module.toggleHeroAnim;
+		});
 	</script>
 
 </body>
