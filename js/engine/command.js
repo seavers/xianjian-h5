@@ -216,6 +216,11 @@ export function replaceObject() {
   }
 }
 
+export function setSceneEnterScr(sceneId, enterScriptId) {
+  const scene = state.scenes[sceneId];
+  scene.enterScriptId = enterScriptId;
+}
+
 export function setNpcAutoScr(objId, autoScr) {
   const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
   if (!obj) return;
@@ -383,6 +388,7 @@ scriptCodes[0x50] = { func: toggleScene, desc: '执行场景切换' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
 scriptCodes[0x85] = { func: waitSecond, desc: '等待特定秒数' };
 
+scriptCodes[0x6D] = { func: setSceneEnterScr, desc: '设置场景进入脚本' };
 scriptCodes[0x24] = { func: setNpcAutoScr, desc: '开启NPC自主运动自动脚本' };
 scriptCodes[0x25] = { func: setNpcTrigScr, desc: '配置NPC交互触发脚本' };
 
