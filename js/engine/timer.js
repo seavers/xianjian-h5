@@ -43,6 +43,8 @@ export function queue(total, func, callback, force) {
   if (force) {
     Timer.start();
   }
+
+  return timer;
 }
 
 // 主渲染与动画时钟循环
@@ -91,6 +93,7 @@ export const Timer = {
   queue,
   start,
   stop,
+  clearTimer,
   updateSpeed,
   get DEBUG() {
     return {

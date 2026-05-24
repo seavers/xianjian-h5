@@ -14,10 +14,30 @@ export class Thread {
     this.callback = callback;
     this.finish = false;
     this.pause = false;
+    this.timer = null;
+  }
+
+  reset() {
+    this.finish = false;
+    this.pause = false;
+    if (this.timer) {
+      Timer.clearTimer(this.timer);
+      this.timer = null;
+    }
   }
 
   start() {
     this.finish = false;
+    this.next();
+  }
+
+  restart() {
+    this.finish = false;
+    this.pause = false;
+    if (this.timer) {
+      Timer.clearTimer(this.timer);
+      this.timer = null;
+    }
     this.next();
   }
 

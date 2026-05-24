@@ -20,9 +20,9 @@ export const Script = {
       if (!o || o.state === 0 || o.roleId === 0) {
         continue;
       }
-      if (o.autoScr) {
-        Script.start(o.autoScr, o, 'auto');
-      }
+      // if (o.autoScr) {
+      //   Script.start(o.autoScr, o, 'auto');
+      // }
     }
   },
 
@@ -39,9 +39,40 @@ export const Script = {
   },
 
   loop() {
-    // 载入当前场景内的所有事件/NPC 的 auto 脚本
-    for (let i = 0; i < Script.autoThreads.length; i++) {
-      Script.autoThreads[i].next();
+    // 执行当前场景内的所有事件/NPC 的 auto 脚本
+    for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
+      const o = state.eventObjects[i];
+      if (!o || o.state === 0 || o.roleId === 0) {
+        continue;
+      }
+      if (o.thread) {
+        if(!o.thread.finish) {
+          o.thread.next();
+        } 
+      } else if (o.autoScr) {
+        Script.startAutoScript(o);
+      }
+    }
+  },
+
+
+  // 启动脚本。由于脚本需要并行运行，所以存在多实例情况
+  setAutoThread(scriptId, obj, type) {
+    if (type !== 'auto') {
+      Timer.stop();
+    }
+
+    if (obj.thread) {
+      obj.thread.scriptId = scriptId;
+      obj.thread.reset();
+      return ;
+    }
+
+    const thread = new Thread(scriptId, obj, type);
+    thread.index = Script.total++;
+    Script.all[Script.total++] = thread;
+    if (type == 'auto') {
+      obj.thread = thread;
     }
   },
 
@@ -52,10 +83,10 @@ export const Script = {
     }
 
     const thread = new Thread(scriptId, obj, type);
-    thread.index = Script.total;
+    thread.index = Script.total++;
     Script.all[Script.total++] = thread;
-    if(type == 'auto') {
-      Script.autoThreads[Script.autoThreads.length] = thread;
+    if (type == 'auto') {
+      obj.thread = thread;
     }
 
     thread.start();
@@ -66,10 +97,13 @@ export const Script = {
     }
   },
 
-  finish() {
+  finish(obj) {
     const thread = Thread.currentThread;
     if (thread) {
       thread.stop();
+    }
+    if(obj && obj.thread == thread) {
+      obj.thread = null;
     }
     if (window.onThreadsUpdate) {
       window.onThreadsUpdate();
@@ -155,8 +189,10 @@ export const Script = {
 
     const force = thread.type !== 'auto';
     thread.wait();
-    Timer.queue(total, func, () => {
+
+    const timer = Timer.queue(total, func, () => {
       thread.notify();
     }, force);
+    thread.timer = timer;
   }
 };

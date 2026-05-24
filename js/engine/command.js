@@ -233,8 +233,14 @@ export function setSceneEnterScr(sceneId, enterScriptId) {
 export function setNpcAutoScr(objId, autoScr) {
   const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
   if (!obj) return;
-  obj.autoScr = autoScr;
-  Script.startAutoScript(obj);
+  // obj.autoScr = autoScr;
+  // Script.startAutoScript(obj);
+  // if (obj.thread) {
+  //   obj.thread.scriptId = autoScr;
+  //   obj.thread.reset();
+  // }
+
+  Script.setAutoThread(autoScr, obj, 'auto');
 }
 
 export function setNpcTrigScr(objId, trigScr) {
@@ -294,7 +300,7 @@ export function toggleScene() {
 }
 
 export function finishCode() {
-  Script.finish();
+  Script.finish(this);
 }
 
 export function stopCode() {
