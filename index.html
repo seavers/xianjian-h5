@@ -796,7 +796,18 @@
 			<div class="terminal-section">
 				<div class="section-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding: 5px 8px;">
 					<span>💻 并行脚本指令流终端 (Active Threads Instruction Console)</span>
-					<button onclick="clearScriptLogs()" style="background: rgba(255, 59, 111, 0.12); border: 1px solid rgba(255, 59, 111, 0.25); color: var(--glow-red); padding: 1px 6px; font-size: 8px; font-weight: bold; border-radius: 2px; cursor: pointer; transition: all 0.15s; outline: none;" onmouseenter="this.style.background='rgba(255,59,111,0.22)'" onmouseleave="this.style.background='rgba(255,59,111,0.12)'">🗑️ 清空日志</button>
+					<div style="display: flex; align-items: center; gap: 8px;">
+						<label style="font-size: 8px; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 4px;">
+							容量限制:
+							<select id="select-log-limit" onchange="changeLogLimit(this.value)" style="background: #111; border: 1px solid var(--border-glass); color: #fff; font-size: 8px; border-radius: 2px; padding: 1px 2px; cursor: pointer; outline: none;">
+								<option value="100">100 条</option>
+								<option value="200" selected>200 条</option>
+								<option value="500">500 条</option>
+								<option value="1000">1000 条</option>
+							</select>
+						</label>
+						<button onclick="clearScriptLogs()" style="background: rgba(255, 59, 111, 0.12); border: 1px solid rgba(255, 59, 111, 0.25); color: var(--glow-red); padding: 1px 6px; font-size: 8px; font-weight: bold; border-radius: 2px; cursor: pointer; transition: all 0.15s; outline: none;" onmouseenter="this.style.background='rgba(255,59,111,0.22)'" onmouseleave="this.style.background='rgba(255,59,111,0.12)'">🗑️ 清空日志</button>
+					</div>
 				</div>
 				<!-- 系统分析极客标签面板，实时展示 11 项高级剖析指标 -->
 				<div class="profiler-header">
@@ -1508,6 +1519,7 @@
 
 		let lastLogItem = null;
 		let duplicateCount = 1;
+		window.logLimit = 200;
 
 		function clearScriptLogs() {
 			const container = document.getElementById('container-logs');
@@ -1518,7 +1530,21 @@
 			duplicateCount = 1;
 		}
 
-		// 5. 并行指令流高速追加，解决滚动条 Bug（采用最高精准度的多轨多渲染帧校正与绝对定位 450px 精密左对齐）
+		// 动态调整右侧指令区容量上限，多余的部分只清除最前面的一条/多条
+		function changeLogLimit(val) {
+			window.logLimit = parseInt(val) || 200;
+			const container = document.getElementById('container-logs');
+			if (container) {
+				while (container.children.length > window.logLimit) {
+					if (container.firstElementChild && container.firstElementChild.innerText.indexOf('等待') !== -1) {
+						break;
+					}
+					container.removeChild(container.firstChild);
+				}
+			}
+		}
+
+		// 5. 并行指令流高速追加（已按照用户需求关闭 auto-scroll，并改为仅按需清理最前面的一条最老日志）
 		function appendScriptLog(log) {
 			const container = document.getElementById('container-logs');
 			if (!container) return;
@@ -1552,10 +1578,6 @@
 					}
 					badge.innerText = `x${duplicateCount}`;
 				}
-				const wrapper = document.getElementById('container-logs-wrapper');
-				if (wrapper) {
-					wrapper.scrollTop = wrapper.scrollHeight - wrapper.clientHeight;
-				}
 				return;
 			}
 
@@ -1581,7 +1603,7 @@
 				<span style="color:rgba(255,255,255,0.18); margin-left: 2px;">(${log.param1}, ${log.param2}, ${log.param3})</span>
 			`;
 
-			// 右侧：亮荧光绿色展示中文含义，精确定位在离指令最左边 450px 处，左对齐，超宽时 ellipsis 自动切断
+			// 右侧：亮荧光绿色展示中文含义，精确定位在离指令最左边 450px 处，left: 450px，超宽时 ellipsis 自动切断
 			const rightSpan = document.createElement('span');
 			rightSpan.style.cssText = "color: var(--glow-green); font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; position: absolute; left: 450px; text-align: left; width: calc(100% - 460px); display: inline-block; white-space: nowrap;";
 			rightSpan.innerText = detailInfo || '';
@@ -1590,21 +1612,9 @@
 			logDiv.appendChild(rightSpan);
 			container.appendChild(logDiv);
 
-			// 限制内存溢出，裁剪超过 1000 行的高频旧日志，并帮助 scrollHeight 高度完美稳定
-			if (container.children.length > 1000) {
+			// 限制内存溢出，裁剪超过容量限制的高频旧日志，每次只清除最前面的一条旧日志
+			while (container.children.length > window.logLimit) {
 				container.removeChild(container.firstChild);
-			}
-
-			// 多渲染帧同步校正法 (Multi-frame Rendering Sync) 保证 100% 滚动到最后一行
-			const wrapper = document.getElementById('container-logs-wrapper');
-			if (wrapper) {
-				wrapper.scrollTop = wrapper.scrollHeight - wrapper.clientHeight;
-				requestAnimationFrame(() => {
-					wrapper.scrollTop = wrapper.scrollHeight - wrapper.clientHeight;
-					setTimeout(() => {
-						wrapper.scrollTop = wrapper.scrollHeight - wrapper.clientHeight;
-					}, 0);
-				});
 			}
 		}
 
