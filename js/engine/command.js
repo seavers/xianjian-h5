@@ -199,6 +199,15 @@ export function setNpcPos(objId, dx, dy) {
   obj.y = state.roles[0].y + intToShort(dy);
 }
 
+export function setNpcMove(objId, dx, dy) {
+  const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
+  if (!obj) return;
+
+  obj.x = obj.x + intToShort(dx);
+  obj.y = obj.y + intToShort(dy);
+  Script.sleep(1)
+}
+
 export function npcWalk2(x, y, half) {
   Npc.anim(this, x, y, half, 6);
 }
@@ -402,6 +411,7 @@ scriptCodes[0x6C] = { func: npcWalk, desc: 'NPC平移偏移距离' };
 scriptCodes[0x10] = { func: npcWalk2, desc: 'NPC插值移动至坐标(10)' };
 scriptCodes[0x11] = { func: npcWalk3, desc: 'NPC插值移动至坐标(11)' };
 scriptCodes[0x12] = { func: setNpcPos, desc: '设置NPC位置' };
+scriptCodes[0x7D] = { func: setNpcMove, desc: 'NPC偏移位置' };
 
 scriptCodes[0x59] = { func: setScene, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x50] = { func: toggleScene, desc: '执行场景切换' };
