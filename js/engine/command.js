@@ -284,10 +284,22 @@ export function setMusic() {}
 export function setFightMusic() {}
 
 export function setScene(sceneId) {
+  // 有些切换场景，是先切换场景，再填写ID，如脚本5933
+  if (state.nextSceneId == -2) {
+    state.nextSceneId = sceneId;
+    toggleScene();
+    return ;
+  }
   state.nextSceneId = sceneId;
 }
 
 export function toggleScene() {
+  // 有些切换场景，是先切换场景，再填写ID，如脚本5933
+  if (state.nextSceneId == -1) {
+    state.nextSceneId = -2;
+    return ;
+  }
+
   const scene = state.scenes[state.nextSceneId];
   state.mapId = scene.mapId;
   state.startEventId = scene.startEventId;
@@ -310,6 +322,8 @@ export function toggleScene() {
   if (window.onSceneUpdate) {
     window.onSceneUpdate();
   }
+
+  state.nextSceneId = -1;
 }
 
 export function finishCode() {
