@@ -117,7 +117,7 @@ export const Script = {
     scriptId = scriptId || thread.scriptId;
 
     if (thread.type === 'auto') {
-      thread.obj.autoScr = scriptId;
+      // thread.obj.autoScr = scriptId;
     } else if (thread.type === 'scene') {
       thread.obj.enterScriptId = scriptId;
     } else if (thread.type === 'trig') {
