@@ -422,10 +422,12 @@ scriptCodes[0x70] = { func: roleWalk, desc: '插值移动主角位置' };
 scriptCodes[0x73] = { func: clearWithEffect, desc: '动画淡出清除' };
 
 scriptCodes[0x6C] = { func: npcWalk, desc: 'NPC平移偏移距离' };
-scriptCodes[0x10] = { func: npcWalk2, desc: 'NPC插值移动至坐标(10)' };
-scriptCodes[0x11] = { func: npcWalk3, desc: 'NPC插值移动至坐标(11)' };
+scriptCodes[0x10] = { func: npcWalk2, desc: 'NPC快速移动至坐标' };
+scriptCodes[0x11] = { func: npcWalk3, desc: 'NPC慢速移动至坐标' };
 scriptCodes[0x12] = { func: setNpcPos, desc: '设置NPC位置' };
 scriptCodes[0x7D] = { func: setNpcMove, desc: 'NPC偏移位置' };
+scriptCodes[0x3F] = { func: npcWalk3, desc: '队伍慢速骑乘到坐标' };
+scriptCodes[0x44] = { func: npcWalk2, desc: '队伍快速骑乘到坐标' };
 
 scriptCodes[0x59] = { func: setScene, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x50] = { func: toggleScene, desc: '执行场景切换' };
