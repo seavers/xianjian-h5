@@ -19,6 +19,10 @@ export function setRoleTile(roleId, tileId, bool) {
 }
 
 export function setRoleIndex(dir, frame, roleId) {
+  if (state.roles.length <= roleId) {
+    // debugger;
+    return ;
+  }
   state.roles[roleId].dir = dir;
   state.roles[roleId].frame = frame;
   state.roles[roleId].count = -1;

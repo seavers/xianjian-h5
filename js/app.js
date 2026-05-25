@@ -5,6 +5,7 @@ import { setRolePos, setRoleTile, setRoleIndex, setRoleGroup, toggleScene, calcM
 import { ESC } from './esc/esc.js';
 import { Hex } from './utils/hex.js';
 import { Talk } from './ui/talk.js';
+import { Script } from './engine/script.js';
 
 // 获取 URL 参数是否为 debug 模式
 const DEBUG = location.search && location.search.indexOf('debug') !== -1;
@@ -189,8 +190,10 @@ ready(() => {
     ESC.onStartup();
   } else {
     commonEnter();
-    state.nextSceneId = 4;
-    setRolePos(36, 58, 0);
-    toggleScene();
+
+    const n = +new URLSearchParams(location.search).get('debug') || 4;
+    const scriptIds = [7952,4475,4647,6065,5808,4463,6065,5934,5881,5918,5933,8440];
+
+    Script.start(scriptIds[n], state.roles[0], 'trig');
   }
 });
