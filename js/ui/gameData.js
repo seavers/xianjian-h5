@@ -1121,22 +1121,36 @@ function renderSceneTab(container) {
                     </tr>
                   </thead>
                   <tbody>
-                    ${sceneNpcs.map(npc => `
-                      <tr style="border-bottom: 1px solid rgba(255,255,255,0.015); transition: background 0.1s;" onmouseenter="this.style.background='rgba(255,255,255,0.02)'" onmouseleave="this.style.background='transparent'">
-                        <td style="padding: 4px 8px; color:var(--glow-yellow); font-weight:bold;">#${npc.id}</td>
-                        <td style="padding: 4px 8px; color:#fff;">${getRoleName(npc.roleId)}</td>
-                        <td style="padding: 4px 8px; color:rgba(255,255,255,0.5);">(${npc.x}, ${npc.y})</td>
-                        <td style="padding: 4px 8px;">
-                          ${npc.autoScr > 0 ? `<span onclick="jumpToGameDataScript(${npc.autoScr})" style="color:var(--glow-yellow); text-decoration:underline; cursor:pointer; font-weight:bold;">#${npc.autoScr}</span>` : '<span style="color:rgba(255,255,255,0.25);">无</span>'}
-                        </td>
-                        <td style="padding: 4px 8px;">
-                          ${npc.trigScr > 0 ? `<span onclick="jumpToGameDataScript(${npc.trigScr})" style="color:var(--glow-yellow); text-decoration:underline; cursor:pointer; font-weight:bold;">#${npc.trigScr}</span>` : '<span style="color:rgba(255,255,255,0.25);">无</span>'}
-                        </td>
-                        <td style="padding: 4px 8px;">
-                          <button onclick="jumpToGameDataNpc(${npc.id})" class="btn-dbg" style="color:var(--glow-yellow); border-color:rgba(255,215,0,0.15); padding: 1px 4px; font-size: 7px; cursor:pointer;">定位 NPC</button>
-                        </td>
-                      </tr>
-                    `).join('')}
+                    ${sceneNpcs.map(npc => {
+                      const roleName = getRoleName(npc.roleId);
+                      let npcImgHtml = '';
+                      if (roleName) {
+                        try {
+                          const npcCanvas = loadMgo(npc.roleId, npc.frame || 0);
+                          if (npcCanvas) {
+                            npcImgHtml = `<img src="${npcCanvas.toDataURL()}" style="height: 18px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 2px; padding: 1px;" />`;
+                          }
+                        } catch (e) {
+                          // 容错防止加载失败
+                        }
+                      }
+                      return `
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.015); transition: background 0.1s;" onmouseenter="this.style.background='rgba(255,255,255,0.02)'" onmouseleave="this.style.background='transparent'">
+                          <td style="padding: 4px 8px; color:var(--glow-yellow); font-weight:bold;">#${npc.id}</td>
+                          <td style="padding: 4px 8px; color:#fff; display: flex; align-items: center;">${npcImgHtml}<span>${roleName}</span></td>
+                          <td style="padding: 4px 8px; color:rgba(255,255,255,0.5);">(${npc.x}, ${npc.y})</td>
+                          <td style="padding: 4px 8px;">
+                            ${npc.autoScr > 0 ? `<span onclick="jumpToGameDataScript(${npc.autoScr})" style="color:var(--glow-yellow); text-decoration:underline; cursor:pointer; font-weight:bold;">#${npc.autoScr}</span>` : '<span style="color:rgba(255,255,255,0.25);">无</span>'}
+                          </td>
+                          <td style="padding: 4px 8px;">
+                            ${npc.trigScr > 0 ? `<span onclick="jumpToGameDataScript(${npc.trigScr})" style="color:var(--glow-yellow); text-decoration:underline; cursor:pointer; font-weight:bold;">#${npc.trigScr}</span>` : '<span style="color:rgba(255,255,255,0.25);">无</span>'}
+                          </td>
+                          <td style="padding: 4px 8px;">
+                            <button onclick="jumpToGameDataNpc(${npc.id})" class="btn-dbg" style="color:var(--glow-yellow); border-color:rgba(255,215,0,0.15); padding: 1px 4px; font-size: 7px; cursor:pointer;">定位 NPC</button>
+                          </td>
+                        </tr>
+                      `;
+                    }).join('')}
                   </tbody>
                 </table>
               </div>
@@ -1245,22 +1259,36 @@ function buildSceneRightHtml(s) {
                 </tr>
               </thead>
               <tbody>
-                ${sceneNpcs.map(npc => `
-                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.015); transition: background 0.1s;" onmouseenter="this.style.background='rgba(255,255,255,0.02)'" onmouseleave="this.style.background='transparent'">
-                    <td style="padding: 4px 8px; color:var(--glow-yellow); font-weight:bold;">#${npc.id}</td>
-                    <td style="padding: 4px 8px; color:#fff;">${getRoleName(npc.roleId)}</td>
-                    <td style="padding: 4px 8px; color:rgba(255,255,255,0.5);">(${npc.x}, ${npc.y})</td>
-                    <td style="padding: 4px 8px;">
-                      ${npc.autoScr > 0 ? `<span onclick="jumpToGameDataScript(${npc.autoScr})" style="color:var(--glow-yellow); text-decoration:underline; cursor:pointer; font-weight:bold;">#${npc.autoScr}</span>` : '<span style="color:rgba(255,255,255,0.25);">无</span>'}
-                    </td>
-                    <td style="padding: 4px 8px;">
-                      ${npc.trigScr > 0 ? `<span onclick="jumpToGameDataScript(${npc.trigScr})" style="color:var(--glow-yellow); text-decoration:underline; cursor:pointer; font-weight:bold;">#${npc.trigScr}</span>` : '<span style="color:rgba(255,255,255,0.25);">无</span>'}
-                    </td>
-                    <td style="padding: 4px 8px;">
-                      <button onclick="jumpToGameDataNpc(${npc.id})" class="btn-dbg" style="color:var(--glow-yellow); border-color:rgba(255,215,0,0.15); padding: 1px 4px; font-size: 7px; cursor:pointer;">定位 NPC</button>
-                    </td>
-                  </tr>
-                `).join('')}
+                ${sceneNpcs.map(npc => {
+                  const roleName = getRoleName(npc.roleId);
+                  let npcImgHtml = '';
+                  if (roleName) {
+                    try {
+                      const npcCanvas = loadMgo(npc.roleId, npc.frame || 0);
+                      if (npcCanvas) {
+                        npcImgHtml = `<img src="${npcCanvas.toDataURL()}" style="height: 18px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 2px; padding: 1px;" />`;
+                      }
+                    } catch (e) {
+                      // 容错防止加载失败
+                    }
+                  }
+                  return `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.015); transition: background 0.1s;" onmouseenter="this.style.background='rgba(255,255,255,0.02)'" onmouseleave="this.style.background='transparent'">
+                      <td style="padding: 4px 8px; color:var(--glow-yellow); font-weight:bold;">#${npc.id}</td>
+                      <td style="padding: 4px 8px; color:#fff; display: flex; align-items: center;">${npcImgHtml}<span>${roleName}</span></td>
+                      <td style="padding: 4px 8px; color:rgba(255,255,255,0.5);">(${npc.x}, ${npc.y})</td>
+                      <td style="padding: 4px 8px;">
+                        ${npc.autoScr > 0 ? `<span onclick="jumpToGameDataScript(${npc.autoScr})" style="color:var(--glow-yellow); text-decoration:underline; cursor:pointer; font-weight:bold;">#${npc.autoScr}</span>` : '<span style="color:rgba(255,255,255,0.25);">无</span>'}
+                      </td>
+                      <td style="padding: 4px 8px;">
+                        ${npc.trigScr > 0 ? `<span onclick="jumpToGameDataScript(${npc.trigScr})" style="color:var(--glow-yellow); text-decoration:underline; cursor:pointer; font-weight:bold;">#${npc.trigScr}</span>` : '<span style="color:rgba(255,255,255,0.25);">无</span>'}
+                      </td>
+                      <td style="padding: 4px 8px;">
+                        <button onclick="jumpToGameDataNpc(${npc.id})" class="btn-dbg" style="color:var(--glow-yellow); border-color:rgba(255,215,0,0.15); padding: 1px 4px; font-size: 7px; cursor:pointer;">定位 NPC</button>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
               </tbody>
             </table>
           </div>
