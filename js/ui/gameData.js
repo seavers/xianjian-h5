@@ -1,6 +1,6 @@
 // ==================== 📚 仙剑实时游戏资料与联动调试系统核心逻辑 ====================
 
-import { loadRgm, loadMgo, loadGop, loadBall, loadMgoCount, loadMsg } from '../resources/pal.js';
+import { loadRgm, loadMgo, loadGop, loadBall, loadMgoCount, loadMsg, loadFbp } from '../resources/pal.js';
 import { state } from '../engine/state.js';
 import { scriptCodes } from '../engine/command.js';
 
@@ -9,7 +9,7 @@ const ROLES_DB = {
   0: {
     name: '李逍遥',
     rgmId: 0,
-    mgoRoleId: 0,
+    mgoRoleId: 2,
     level: 99,
     hp: '999/999',
     mp: '700/700',
@@ -31,8 +31,8 @@ const ROLES_DB = {
   },
   1: {
     name: '赵灵儿',
-    rgmId: 1,
-    mgoRoleId: 1,
+    rgmId: 11,
+    mgoRoleId: 3,
     level: 99,
     hp: '850/850',
     mp: '999/999',
@@ -54,8 +54,8 @@ const ROLES_DB = {
   },
   2: {
     name: '林月如',
-    rgmId: 2,
-    mgoRoleId: 2,
+    rgmId: 20,
+    mgoRoleId: 7,
     level: 99,
     hp: '920/920',
     mp: '500/500',
@@ -77,8 +77,8 @@ const ROLES_DB = {
   },
   3: {
     name: '阿奴',
-    rgmId: 3,
-    mgoRoleId: 3,
+    rgmId: 27,
+    mgoRoleId: 4,
     level: 99,
     hp: '880/880',
     mp: '800/800',
@@ -240,7 +240,7 @@ function drawPixelated(srcCanvas, destCanvasId) {
   
   if (srcCanvas) {
     const scale = Math.min(destCanvas.width / srcCanvas.width, destCanvas.height / srcCanvas.height);
-    const cleanScale = Math.max(1, Math.floor(scale));
+    const cleanScale = Math.max(0.5, Math.floor(scale));
     
     const dx = (destCanvas.width - srcCanvas.width * cleanScale) / 2;
     const dy = (destCanvas.height - srcCanvas.height * cleanScale) / 2;
@@ -366,7 +366,7 @@ function renderRoleTab(container) {
           <canvas id="canvas-role-rgm" width="80" height="80" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 2px;"></canvas>
           
           <span style="font-size: 8px; color: rgba(255,255,255,0.3); font-weight: bold; margin-top: 5px;">🏃 2D 走动像素立绘 (MGO)</span>
-          <canvas id="canvas-role-mgo" width="80" height="80" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 2px;"></canvas>
+          <canvas id="canvas-role-mgo" width="60" height="138" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 2px;"></canvas>
           
           <button id="btn-hero-anim-play" onclick="toggleHeroAnim()" class="btn-dbg" style="color: var(--glow-green); border-color: rgba(0,255,157,0.2); padding: 2px 8px; font-size: 8px; cursor: pointer; font-weight: bold;">⏸ 暂停走动</button>
         </div>
@@ -691,7 +691,7 @@ function renderNpcTab(container) {
   container.innerHTML = leftHtml + rightHtml;
 
   // 绘制 NPC 经典立绘
-  if (npc) {
+  if (npc && npc.roleId) {
     setTimeout(() => {
       try {
         const npcCanvas = loadMgo(npc.roleId, npc.frame);
