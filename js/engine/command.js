@@ -295,12 +295,13 @@ export function setScene(sceneId) {
 
 export function toggleScene() {
   // 有些切换场景，是先切换场景，再填写ID，如脚本5933
-  if (state.nextSceneId == -1) {
+  if (state.nextSceneId < 0) {
     state.nextSceneId = -2;
     return ;
   }
 
   const scene = state.scenes[state.nextSceneId];
+  state.sceneId = state.nextSceneId;
   state.mapId = scene.mapId;
   state.startEventId = scene.startEventId;
   state.endEventId = scene.endEventId;

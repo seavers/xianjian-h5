@@ -684,14 +684,14 @@
 				<div class="panel-col right-border" style="grid-column: span 2;">
 					<div class="section-header">🗺️ 场景与大地图高级状态剖析 (Scene & Map Advanced Profiles)</div>
 					<div class="scene-dense-grid">
-						<div class="scene-item"><span class="scene-label">场景 ID (Scene)</span><span class="scene-val" id="val-scene-id">1</span></div>
-						<div class="scene-item"><span class="scene-label">地图 ID (Map)</span><span class="scene-val" id="val-map-id">0x0C</span></div>
-						<div class="scene-item"><span class="scene-label">瓦片坐标 (mx, my)</span><span class="scene-val" id="val-tile-pos">(42, 18)</span></div>
-						<div class="scene-item"><span class="scene-label">像素坐标 (mapX, mapY)</span><span class="scene-val" id="val-pixel-pos">(1312, 288)</span></div>
-						<div class="scene-item"><span class="scene-label">事件区间 (Range)</span><span class="scene-val" id="val-event-range">0-32</span></div>
-						<div class="scene-item"><span class="scene-label">事件区间大小</span><span class="scene-val" id="val-range-size">32</span></div>
-						<div class="scene-item"><span class="scene-label">活跃事件密度</span><span class="scene-val" id="val-event-density">0.5</span></div>
-						<div class="scene-item"><span class="scene-label">系统最后同步</span><span class="scene-val" id="val-last-sync" style="color:var(--glow-yellow);">17:47:14</span></div>
+						<div class="scene-item"><span class="scene-label">场景 ID (Scene)</span><span class="scene-val" id="val-scene-id">-</span></div>
+						<div class="scene-item"><span class="scene-label">地图 ID (Map)</span><span class="scene-val" id="val-map-id">-</span></div>
+						<div class="scene-item"><span class="scene-label">瓦片坐标 (mx, my)</span><span class="scene-val" id="val-tile-pos">(-, -)</span></div>
+						<div class="scene-item"><span class="scene-label">像素坐标 (mapX, mapY)</span><span class="scene-val" id="val-pixel-pos">(-, -)</span></div>
+						<div class="scene-item"><span class="scene-label">事件区间 (Range)</span><span class="scene-val" id="val-event-range">---</span></div>
+						<div class="scene-item"><span class="scene-label">事件区间大小</span><span class="scene-val" id="val-range-size">-</span></div>
+						<div class="scene-item"><span class="scene-label">活跃事件密度</span><span class="scene-val" id="val-event-density">-</span></div>
+						<div class="scene-item"><span class="scene-label">系统最后同步</span><span class="scene-val" id="val-last-sync" style="color:var(--glow-yellow);">--:--:--</span></div>
 					</div>
 					<!-- 事件模式计数器 -->
 					<div class="stat-modes-container" id="container-modes" style="margin-top: 4px;">
@@ -1231,7 +1231,7 @@
 			if (!state) return;
 
 			// 3.1 同步大地图与高级场景数据
-			document.getElementById('val-scene-id').innerText = state.nextSceneId;
+			document.getElementById('val-scene-id').innerText = state.sceneId;
 			document.getElementById('val-map-id').innerText = '0x' + state.mapId.toString(16).toUpperCase() + ` (${state.mapId})`;
 			document.getElementById('val-tile-pos').innerText = `(${state.mx}, ${state.my})` + (state.mhalf ? ' +0.5' : '');
 			document.getElementById('val-pixel-pos').innerText = `(${state.mapX}, ${state.mapY})`;

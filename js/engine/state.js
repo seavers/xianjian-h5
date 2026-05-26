@@ -11,7 +11,8 @@ export const state = {
   mapX: 0,
   mapY: 0,
   mapId: 12,
-  nextSceneId: 0,
+  sceneId: -1,
+  nextSceneId: -1,
   startEventId: 0,
   endEventId: 0x20,
 
