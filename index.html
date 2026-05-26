@@ -709,7 +709,7 @@
 							<canvas id="canvas-hero-sprite" width="48" height="54" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); border-radius: 2px; image-rendering: pixelated; width: 48px; height: 54px;"></canvas>
 							<span class="hero-name" id="val-hero-name" style="font-size: 10px; font-weight: bold; color: #fff;">李逍遥</span>
 							<span class="hero-image-lbl" id="val-hero-desc" style="font-size: 7.5px; color: rgba(255,255,255,0.3); margin-top: -1px;">Tile: 0</span>
-							<button class="btn-dbg" onclick="openSpriteExplorer()" style="padding: 1px 4px; font-size: 7.5px; color: var(--glow-yellow); cursor: pointer;">🔍 帧画廊</button>
+							<button class="btn-dbg" onclick="openFrameGalleryToImageExplorer()" style="padding: 1px 4px; font-size: 7.5px; color: var(--glow-yellow); cursor: pointer;">🔍 帧画廊</button>
 						</div>
 						<div class="hero-attributes-matrix">
 							<div class="hero-attr-chip"><span class="hero-attr-lbl">等 级 LV</span><span class="hero-attr-val" id="val-attr-lv">1</span></div>
@@ -895,52 +895,6 @@
 
 		</div>
 	</aside>
-
-	<!-- ==================== 🔍 2D Sprite Explorer 动作帧画廊模态弹窗 ==================== -->
-	<div id="sprite-explorer-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.7); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
-		<div style="background: rgba(13,13,20,0.96); border: 1px solid rgba(255, 208, 0, 0.25); border-radius: 4px; box-shadow: 0 0 25px rgba(255, 208, 0, 0.2); width: 800px; max-width: 95%; height: 500px; display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
-			<!-- 弹窗头部 -->
-			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
-				<div style="display: flex; align-items: center; gap: 6px;">
-					<div style="width: 5px; height: 5px; background: var(--glow-yellow); border-radius: 50%; box-shadow: 0 0 6px var(--glow-yellow);"></div>
-					<span style="font-size: 11px; font-weight: bold; color: var(--glow-yellow); letter-spacing: 0.5px; text-transform: uppercase;">🔍 2D SPRITE EXPLORER (游戏全角色动作帧序列浏览器)</span>
-				</div>
-				<button onclick="closeSpriteExplorer()" style="background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer; transition: color 0.15s; outline:none;" onmouseenter="this.style.color='#ff3b6f'" onmouseleave="this.style.color='rgba(255,255,255,0.4)'">✕</button>
-			</div>
-			
-			<!-- 工具栏 -->
-			<div style="background: rgba(0,0,0,0.3); padding: 6px 12px; border-bottom: 1px solid var(--border-glass); display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-				<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">👤 快速选择形象:</span>
-				<select id="select-explorer-role" onchange="onExplorerRoleSelect(this.value)" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; outline: none; width: 150px; cursor: pointer;">
-					<option value="0">Role 0 (李逍遥)</option>
-					<option value="1">Role 1 (赵灵儿 - 披发)</option>
-					<option value="2">Role 2 (林月如)</option>
-					<option value="3">Role 3 (阿奴)</option>
-					<option value="4">Role 4 (赵灵儿 - 蛇身)</option>
-					<option value="10">Role 10 (李大娘)</option>
-					<option value="11">Role 11 (苗人首领)</option>
-					<option value="12">Role 12 (苗人手下)</option>
-					<option value="21">Role 21 (村口黄狗)</option>
-					<option value="53">Role 53 (集市商贩)</option>
-				</select>
-				
-				<div style="display: flex; align-items: center; gap: 4px;">
-					<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">输入 Role ID:</span>
-					<input type="number" id="input-explorer-id" value="0" min="0" max="600" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; width: 50px; outline: none; text-align: center;">
-					<button class="btn-dbg" onclick="searchExplorerRole()" style="color: var(--glow-green); border-color: rgba(0,255,157,0.2); padding: 2px 6px; font-size: 8.5px; cursor: pointer;">一键加载</button>
-				</div>
-				
-				<div id="explorer-stats" style="font-size: 8.5px; color: rgba(255,255,255,0.3); font-weight: bold; margin-left: auto;">
-					当前动作序列总数: - 帧
-				</div>
-			</div>
-			
-			<!-- Gallery 滚动画廊区 -->
-			<div id="explorer-gallery" style="flex: 1; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; background: #040406;">
-				<!-- 动态生成 -->
-			</div>
-		</div>
-	</div>
 
 	<!-- ==================== 🖼️ 仙剑奇侠传通用图片资源浏览器模态弹窗 ==================== -->
 	<div id="image-explorer-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
@@ -2460,94 +2414,36 @@
 		window.firstImagePage = firstImagePage;
 		window.lastImagePage = lastImagePage;
 		window.changeImagePageLimit = changeImagePageLimit;
+		window.openFrameGalleryToImageExplorer = openFrameGalleryToImageExplorer;
 
-		function openSpriteExplorer() {
-			document.getElementById('sprite-explorer-modal').style.display = 'flex';
-			// 默认载入下拉框当前角色形象
-			const roleId = parseInt(document.getElementById('select-explorer-role').value || 0);
-			document.getElementById('input-explorer-id').value = roleId;
-			loadExplorerGallery(roleId);
-		}
-
-		function closeSpriteExplorer() {
-			document.getElementById('sprite-explorer-modal').style.display = 'none';
-		}
-
-		function onExplorerRoleSelect(roleId) {
-			document.getElementById('input-explorer-id').value = roleId;
-			loadExplorerGallery(parseInt(roleId));
-		}
-
-		function searchExplorerRole() {
-			const roleIdInput = document.getElementById('input-explorer-id').value;
-			if (roleIdInput === '') return;
-			const roleId = parseInt(roleIdInput);
-			loadExplorerGallery(roleId);
-		}
-
-		// 全动作帧 Gallery 核心数据泵与 micro-canvas 生成平铺渲染
-		function loadExplorerGallery(roleId) {
-			const gallery = document.getElementById('explorer-gallery');
-			if (!gallery) return;
-
-			gallery.innerHTML = '<span style="color:rgba(255,255,255,0.4); font-size:9px; grid-column:span 8; text-align:center;">正在读取 sss.mkf 资源包并遍历生成动作帧...</span>';
-
-			if (!loadMgoFn || !loadMgoCountFn) {
-				setTimeout(() => loadExplorerGallery(roleId), 100);
-				return;
+		// 帧画廊按钮：直接跳转至「图片资源」角色动作 Tab 并选中当前角色
+		function openFrameGalleryToImageExplorer() {
+			// 从主角描述标签中提取当前角色的 Tile ID，格式为 "Tile: 0 F: 0"
+			let roleId = 0;
+			const heroDesc = document.getElementById('val-hero-desc');
+			if (heroDesc) {
+				const match = heroDesc.innerText.match(/Tile:\s*(\d+)/);
+				if (match) roleId = parseInt(match[1]);
 			}
 
-			try {
-				const maxFrame = loadMgoCountFn(roleId);
-				document.getElementById('explorer-stats').innerText = `当前动作序列总数: ${maxFrame} 帧`;
-				gallery.innerHTML = '';
+			// 打开图片资源浏览器并切换到 mgo Tab
+			document.getElementById('image-explorer-modal').style.display = 'flex';
+			switchImageType('mgo');
 
-				if (maxFrame <= 0) {
-					gallery.innerHTML = '<span style="color:rgba(255,255,255,0.25); font-size:9.5px; grid-column:span 8; text-align:center;">未找到该 ID 对应的有效动作帧数据</span>';
-					return;
+			// 设置角色选择下拉框和输入框，触发渲染
+			const imageRoleSelect = document.getElementById('select-image-role');
+			if (imageRoleSelect) {
+				const option = imageRoleSelect.querySelector(`option[value="${roleId}"]`);
+				if (option) {
+					imageRoleSelect.value = roleId;
+				} else {
+					imageRoleSelect.selectedIndex = 0;
 				}
-
-				// 循环高密平铺渲染
-				for (let f = 0; f < maxFrame; f++) {
-					const frameCard = document.createElement('div');
-					frameCard.style.cssText = "background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.02); border-radius:2px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 4px; transition:all 0.1s;";
-					frameCard.onmouseenter = () => {
-						frameCard.style.borderColor = 'var(--glow-yellow)';
-						frameCard.style.background = 'rgba(255,208,0,0.02)';
-					};
-					frameCard.onmouseleave = () => {
-						frameCard.style.borderColor = 'rgba(255,255,255,0.02)';
-						frameCard.style.background = 'rgba(255,255,255,0.015)';
-					};
-
-					const canvas = document.createElement('canvas');
-					canvas.width = 80;
-					canvas.height = 80;
-					canvas.style.cssText = "image-rendering:pixelated; width:80px; height:80px; background:rgba(0,0,0,0.35); border-radius:1px;";
-
-					const ctx = canvas.getContext('2d');
-					ctx.imageSmoothingEnabled = false;
-					const frameMgo = loadMgoFn(roleId, f);
-					if (frameMgo) {
-						const scale = Math.min(80 / frameMgo.width, 80 / frameMgo.height);
-						const cleanScale = Math.max(1, Math.floor(scale));
-						const dx = (80 - frameMgo.width * cleanScale) / 2;
-						const dy = (80 - frameMgo.height * cleanScale) / 2;
-						ctx.drawImage(frameMgo, dx, dy, frameMgo.width * cleanScale, frameMgo.height * cleanScale);
-					}
-
-					const label = document.createElement('span');
-					label.innerText = `F:#${f}`;
-					label.style.cssText = "font-size:7.5px; color:rgba(255,255,255,0.3); font-weight:bold; margin-top:2px;";
-
-					frameCard.appendChild(canvas);
-					frameCard.appendChild(label);
-					gallery.appendChild(frameCard);
-				}
-			} catch (e) {
-				console.error(e);
-				gallery.innerHTML = '<span style="color:var(--glow-red); font-size:9.5px; grid-column:span 8; text-align:center;">资源解析发生异常，请确认 Role ID 的有效性</span>';
 			}
+			document.getElementById('input-image-role-id').value = roleId;
+			imageExplorerState.subId = roleId;
+			imageExplorerState.currentPage = 0;
+			updateTotalItemsAndRender();
 		}
 
 		// ==================== 🔮 快捷场景传送 (Scene Teleporter) 前端核心交互 ====================
