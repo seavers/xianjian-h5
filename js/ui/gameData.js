@@ -334,7 +334,7 @@ function renderRoleTab(container) {
     const r = ROLES_DB[roleId];
     const isSelected = selectedRoleId === roleId;
     leftHtml += `
-      <div onclick="onGameDataRoleSelect(${roleId})" style="padding: 8px 12px; background: ${isSelected ? 'rgba(255, 215, 0, 0.08)' : 'rgba(255,255,255,0.015)'}; border: 1px solid ${isSelected ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.03)'}; border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.15s;">
+      <div data-role-item="${roleId}" onclick="onGameDataRoleSelect(${roleId})" style="padding: 8px 12px; background: ${isSelected ? 'rgba(255, 215, 0, 0.08)' : 'rgba(255,255,255,0.015)'}; border: 1px solid ${isSelected ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.03)'}; border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.15s;">
         <span style="font-size: 9px; font-weight: bold; color: ${isSelected ? 'var(--glow-yellow)' : '#fff'};">${r.name}</span>
         <span style="font-size: 8px; color: rgba(255,255,255,0.3);">LV ${r.level}</span>
       </div>
@@ -348,112 +348,9 @@ function renderRoleTab(container) {
 
   // 右侧角色高级详情
   const r = ROLES_DB[selectedRoleId];
-  let rightHtml = `
-    <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 15px;">
-      <!-- 头部：姓名与大类 -->
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.15); padding-bottom: 8px; margin-bottom: 12px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <h2 style="margin: 0; font-size: 14px; color: var(--glow-yellow); font-weight: bold; text-shadow: 0 0 10px rgba(255,215,0,0.2);">${r.name}</h2>
-          <span style="font-size: 8px; background: rgba(0, 255, 157, 0.1); border: 1px solid rgba(0,255,157,0.3); color: var(--glow-green); padding: 1px 4px; border-radius: 1px; font-weight: bold;">主力队员</span>
-        </div>
-        <div style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">当前携带资金: <span style="color: var(--glow-yellow);">${state.money || 0} 文</span></div>
-      </div>
-
-      <div style="flex: 1; display: flex; gap: 15px; overflow: hidden;">
-        <!-- 中左：头像、动作立绘 -->
-        <div style="width: 180px; display: flex; flex-direction: column; gap: 10px; align-items: center; background: rgba(0,0,0,0.4); padding: 12px; border: 1px solid rgba(255,255,255,0.02); border-radius: 3px;">
-          <span style="font-size: 8px; color: rgba(255,255,255,0.3); font-weight: bold;">🖼️ 经典角色头像 (RGM)</span>
-          <canvas id="canvas-role-rgm" width="80" height="80" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 2px;"></canvas>
-          
-          <span style="font-size: 8px; color: rgba(255,255,255,0.3); font-weight: bold; margin-top: 5px;">🏃 2D 走动像素立绘 (MGO)</span>
-          <canvas id="canvas-role-mgo" width="60" height="138" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 2px;"></canvas>
-          
-          <button id="btn-hero-anim-play" onclick="toggleHeroAnim()" class="btn-dbg" style="color: var(--glow-green); border-color: rgba(0,255,157,0.2); padding: 2px 8px; font-size: 8px; cursor: pointer; font-weight: bold;">⏸ 暂停走动</button>
-        </div>
-
-        <!-- 中右：属性及装备 -->
-        <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 4px;">
-          <!-- 属性网格 -->
-          <div>
-            <div style="font-size: 8.5px; color: rgba(255,255,255,0.4); font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
-              <span style="width: 3px; height: 3px; background: var(--glow-yellow); border-radius: 50%;"></span> 角色基础属性
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
-              <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;">
-                <div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">等级 (LV)</div>
-                <div style="font-size: 10px; color: var(--glow-yellow); font-weight: bold;">LV ${r.level}</div>
-              </div>
-              <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;">
-                <div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">体力 (HP)</div>
-                <div style="font-size: 10px; color: #ff5777; font-weight: bold;">${r.hp}</div>
-              </div>
-              <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;">
-                <div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">真气 (MP)</div>
-                <div style="font-size: 10px; color: #4db3ff; font-weight: bold;">${r.mp}</div>
-              </div>
-              <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;">
-                <div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">武术 (ATK)</div>
-                <div style="font-size: 10px; color: #ffa64d; font-weight: bold;">${r.atk}</div>
-              </div>
-              <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;">
-                <div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">灵力 (MAG)</div>
-                <div style="font-size: 10px; color: #b366ff; font-weight: bold;">${r.mag}</div>
-              </div>
-              <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;">
-                <div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">防御 (DEF)</div>
-                <div style="font-size: 10px; color: #00ffaa; font-weight: bold;">${r.def}</div>
-              </div>
-              <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;">
-                <div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">身法 (SPD)</div>
-                <div style="font-size: 10px; color: #00e5ff; font-weight: bold;">${r.spd}</div>
-              </div>
-              <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;">
-                <div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">吉运 (LCK)</div>
-                <div style="font-size: 10px; color: #ffff00; font-weight: bold;">${r.lck}</div>
-              </div>
-              <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;">
-                <div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">状态 (STATUS)</div>
-                <div style="font-size: 10px; color: var(--glow-green); font-weight: bold;">${r.status}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 装备网格 -->
-          <div>
-            <div style="font-size: 8.5px; color: rgba(255,255,255,0.4); font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
-              <span style="width: 3px; height: 3px; background: var(--glow-yellow); border-radius: 50%;"></span> 配备神兵防具
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-              <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 5px 8px; border-radius: 2px; display:flex; flex-direction:column;">
-                <span style="font-size: 7px; color:rgba(255,255,255,0.25);">⚔ 武器</span>
-                <span style="font-size: 8px; color:#fff; font-weight:bold; margin-top:2px;">${r.equip.weapon}</span>
-              </div>
-              <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 5px 8px; border-radius: 2px; display:flex; flex-direction:column;">
-                <span style="font-size: 7px; color:rgba(255,255,255,0.25);">🛡 身体防具</span>
-                <span style="font-size: 8px; color:#fff; font-weight:bold; margin-top:2px;">${r.equip.armor}</span>
-              </div>
-              <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 5px 8px; border-radius: 2px; display:flex; flex-direction:column;">
-                <span style="font-size: 7px; color:rgba(255,255,255,0.25);">👒 头部防护</span>
-                <span style="font-size: 8px; color:#fff; font-weight:bold; margin-top:2px;">${r.equip.helmet}</span>
-              </div>
-              <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 5px 8px; border-radius: 2px; display:flex; flex-direction:column;">
-                <span style="font-size: 7px; color:rgba(255,255,255,0.25);">🥾 足踏奇鞋</span>
-                <span style="font-size: 8px; color:#fff; font-weight:bold; margin-top:2px;">${r.equip.shoes}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 精通仙术 -->
-          <div>
-            <div style="font-size: 8.5px; color: rgba(255,255,255,0.4); font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
-              <span style="width: 3px; height: 3px; background: var(--glow-yellow); border-radius: 50%;"></span> 精通绝学仙术
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-              ${r.spells.map(s => `<span style="font-size: 8px; color: #dfb3ff; background: rgba(179,102,255,0.1); border: 1px solid rgba(179,102,255,0.3); padding: 2px 6px; border-radius: 2px; font-weight:bold;">✨ ${s}</span>`).join('')}
-            </div>
-          </div>
-        </div>
-      </div>
+  const rightHtml = `
+    <div data-role-right style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 15px;">
+      ${buildRoleRightHtml(r)}
     </div>
   `;
 
@@ -476,7 +373,90 @@ function renderRoleTab(container) {
 
 export function onGameDataRoleSelect(roleId) {
   selectedRoleId = roleId;
-  switchGameDataTab('role');
+  updateRoleSelection();
+}
+
+// 动态切换角色列表选中样式并仅刷新右侧详情
+function updateRoleSelection() {
+  const container = document.getElementById('gamedata-main-container');
+  // 清除旧选中样式
+  container.querySelectorAll('[data-role-item]').forEach(el => {
+    el.style.background = 'rgba(255,255,255,0.015)';
+    el.style.borderColor = 'rgba(255,255,255,0.03)';
+    const span = el.querySelector('span');
+    if (span) span.style.color = '#fff';
+  });
+  // 设置新选中样式
+  const activeEl = container.querySelector(`[data-role-item="${selectedRoleId}"]`);
+  if (activeEl) {
+    activeEl.style.background = 'rgba(255, 215, 0, 0.08)';
+    activeEl.style.borderColor = 'var(--glow-yellow)';
+    const span = activeEl.querySelector('span');
+    if (span) span.style.color = 'var(--glow-yellow)';
+  }
+  // 只重建右侧详情区
+  const rightPanel = container.querySelector('[data-role-right]');
+  if (rightPanel) {
+    const r = ROLES_DB[selectedRoleId];
+    rightPanel.innerHTML = buildRoleRightHtml(r);
+    setTimeout(() => {
+      try {
+        const rgmImg = loadRgm(r.rgmId);
+        if (rgmImg) drawPixelated(rgmImg, 'canvas-role-rgm');
+      } catch (e) { console.error('加载头像失败:', e); }
+      startHeroAnimClock(r.mgoRoleId);
+    }, 30);
+  }
+}
+
+// 构建角色右侧详情 HTML（从 renderRoleTab 抽取）
+function buildRoleRightHtml(r) {
+  return `
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.15); padding-bottom: 8px; margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <h2 style="margin: 0; font-size: 14px; color: var(--glow-yellow); font-weight: bold; text-shadow: 0 0 10px rgba(255,215,0,0.2);">${r.name}</h2>
+        <span style="font-size: 8px; background: rgba(0, 255, 157, 0.1); border: 1px solid rgba(0,255,157,0.3); color: var(--glow-green); padding: 1px 4px; border-radius: 1px; font-weight: bold;">主力队员</span>
+      </div>
+      <div style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">当前携带资金: <span style="color: var(--glow-yellow);">${state.money || 0} 文</span></div>
+    </div>
+    <div style="flex: 1; display: flex; gap: 15px; overflow: hidden;">
+      <div style="width: 180px; display: flex; flex-direction: column; gap: 10px; align-items: center; background: rgba(0,0,0,0.4); padding: 12px; border: 1px solid rgba(255,255,255,0.02); border-radius: 3px;">
+        <span style="font-size: 8px; color: rgba(255,255,255,0.3); font-weight: bold;">🖼️ 经典角色头像 (RGM)</span>
+        <canvas id="canvas-role-rgm" width="80" height="80" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 2px;"></canvas>
+        <span style="font-size: 8px; color: rgba(255,255,255,0.3); font-weight: bold; margin-top: 5px;">🏃 2D 走动像素立绘 (MGO)</span>
+        <canvas id="canvas-role-mgo" width="60" height="138" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 2px;"></canvas>
+        <button id="btn-hero-anim-play" onclick="toggleHeroAnim()" class="btn-dbg" style="color: var(--glow-green); border-color: rgba(0,255,157,0.2); padding: 2px 8px; font-size: 8px; cursor: pointer; font-weight: bold;">⏸ 暂停走动</button>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 4px;">
+        <div>
+          <div style="font-size: 8.5px; color: rgba(255,255,255,0.4); font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;"><span style="width: 3px; height: 3px; background: var(--glow-yellow); border-radius: 50%;"></span> 角色基础属性</div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;"><div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">等级 (LV)</div><div style="font-size: 10px; color: var(--glow-yellow); font-weight: bold;">LV ${r.level}</div></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;"><div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">体力 (HP)</div><div style="font-size: 10px; color: #ff5777; font-weight: bold;">${r.hp}</div></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;"><div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">真气 (MP)</div><div style="font-size: 10px; color: #4db3ff; font-weight: bold;">${r.mp}</div></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;"><div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">武术 (ATK)</div><div style="font-size: 10px; color: #ffa64d; font-weight: bold;">${r.atk}</div></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;"><div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">灵力 (MAG)</div><div style="font-size: 10px; color: #b366ff; font-weight: bold;">${r.mag}</div></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;"><div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">防御 (DEF)</div><div style="font-size: 10px; color: #00ffaa; font-weight: bold;">${r.def}</div></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;"><div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">身法 (SPD)</div><div style="font-size: 10px; color: #00e5ff; font-weight: bold;">${r.spd}</div></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;"><div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">吉运 (LCK)</div><div style="font-size: 10px; color: #ffff00; font-weight: bold;">${r.lck}</div></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 2px;"><div style="font-size: 7.5px; color: rgba(255,255,255,0.3);">状态 (STATUS)</div><div style="font-size: 10px; color: var(--glow-green); font-weight: bold;">${r.status}</div></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size: 8.5px; color: rgba(255,255,255,0.4); font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;"><span style="width: 3px; height: 3px; background: var(--glow-yellow); border-radius: 50%;"></span> 配备神兵防具</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 5px 8px; border-radius: 2px; display:flex; flex-direction:column;"><span style="font-size: 7px; color:rgba(255,255,255,0.25);">⚔ 武器</span><span style="font-size: 8px; color:#fff; font-weight:bold; margin-top:2px;">${r.equip.weapon}</span></div>
+            <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 5px 8px; border-radius: 2px; display:flex; flex-direction:column;"><span style="font-size: 7px; color:rgba(255,255,255,0.25);">🛡 身体防具</span><span style="font-size: 8px; color:#fff; font-weight:bold; margin-top:2px;">${r.equip.armor}</span></div>
+            <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 5px 8px; border-radius: 2px; display:flex; flex-direction:column;"><span style="font-size: 7px; color:rgba(255,255,255,0.25);">👒 头部防护</span><span style="font-size: 8px; color:#fff; font-weight:bold; margin-top:2px;">${r.equip.helmet}</span></div>
+            <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 5px 8px; border-radius: 2px; display:flex; flex-direction:column;"><span style="font-size: 7px; color:rgba(255,255,255,0.25);">🥾 足踏奇鞋</span><span style="font-size: 8px; color:#fff; font-weight:bold; margin-top:2px;">${r.equip.shoes}</span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size: 8.5px; color: rgba(255,255,255,0.4); font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;"><span style="width: 3px; height: 3px; background: var(--glow-yellow); border-radius: 50%;"></span> 精通绝学仙术</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 4px;">${r.spells.map(s => `<span style="font-size: 8px; color: #dfb3ff; background: rgba(179,102,255,0.1); border: 1px solid rgba(179,102,255,0.3); padding: 2px 6px; border-radius: 2px; font-weight:bold;">✨ ${s}</span>`).join('')}</div>
+        </div>
+      </div>
+    </div>`;
 }
 
 export function toggleHeroAnim() {
@@ -562,7 +542,7 @@ function renderNpcTab(container) {
       const isSelected = selectedNpcId === npc.id;
       const roleName = getRoleName(npc.roleId);
       leftHtml += `
-        <div onclick="onGameDataNpcSelect(${npc.id})" style="padding: 6px 10px; background: ${isSelected ? 'rgba(255, 215, 0, 0.08)' : 'rgba(255,255,255,0.012)'}; border: 1px solid ${isSelected ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.02)'}; border-radius: 2px; cursor: pointer; display: flex; flex-direction: column; transition: all 0.12s;">
+        <div data-npc-item="${npc.id}" onclick="onGameDataNpcSelect(${npc.id})" style="padding: 6px 10px; background: ${isSelected ? 'rgba(255, 215, 0, 0.08)' : 'rgba(255,255,255,0.012)'}; border: 1px solid ${isSelected ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.02)'}; border-radius: 2px; cursor: pointer; display: flex; flex-direction: column; transition: all 0.12s;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <span style="font-size: 9px; font-weight: bold; color: ${isSelected ? 'var(--glow-yellow)' : '#fff'};">🤖 NPC #${npc.id}</span>
             <span style="font-size: 7.5px; color: rgba(255,255,255,0.3);">Dir: ${npc.dir}</span>
@@ -587,7 +567,7 @@ function renderNpcTab(container) {
 
   if (!npc) {
     rightHtml = `
-      <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.2); font-size: 10px;">
+      <div data-npc-right style="flex: 1; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.2); font-size: 10px;">
         请在左侧选择一个 NPC 进行深度分析
       </div>
     `;
@@ -604,7 +584,7 @@ function renderNpcTab(container) {
       : '<span style="color: rgba(255,255,255,0.25);">无自动脚本 (0)</span>';
 
     rightHtml = `
-      <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 15px;">
+      <div data-npc-right style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 15px;">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.15); padding-bottom: 8px; margin-bottom: 12px;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <h2 style="margin: 0; font-size: 12px; color: var(--glow-yellow); font-weight: bold;">👾 NPC #${npc.id} [${roleName}] 的运行时状态分析</h2>
@@ -711,7 +691,45 @@ function renderNpcTab(container) {
 
 export function onGameDataNpcSelect(npcId) {
   selectedNpcId = npcId;
-  switchGameDataTab('npc');
+  updateNpcSelection();
+}
+
+// 动态切换 NPC 列表选中样式并仅刷新右侧详情
+function updateNpcSelection() {
+  const container = document.getElementById('gamedata-main-container');
+  // 清除旧选中样式
+  container.querySelectorAll('[data-npc-item]').forEach(el => {
+    el.style.background = 'rgba(255,255,255,0.012)';
+    el.style.borderColor = 'rgba(255,255,255,0.02)';
+    const spans = el.querySelectorAll('div > span:first-child');
+    spans.forEach(s => { if (s.innerText.startsWith('🤖')) s.style.color = '#fff'; });
+  });
+  // 设置新选中样式
+  const activeEl = container.querySelector(`[data-npc-item="${selectedNpcId}"]`);
+  if (activeEl) {
+    activeEl.style.background = 'rgba(255, 215, 0, 0.08)';
+    activeEl.style.borderColor = 'var(--glow-yellow)';
+    const spans = activeEl.querySelectorAll('div > span:first-child');
+    spans.forEach(s => { if (s.innerText.startsWith('🤖')) s.style.color = 'var(--glow-yellow)'; });
+  }
+  // 只重建右侧详情区
+  const rightPanel = container.querySelector('[data-npc-right]');
+  if (rightPanel) {
+    const npc = state.eventObjects[selectedNpcId];
+    if (npc && npc.roleId) {
+      rightPanel.innerHTML = buildNpcRightHtml(npc);
+      setTimeout(() => {
+        try {
+          const npcCanvas = loadMgo(npc.roleId, npc.frame);
+          if (npcCanvas) {
+            drawPixelated(npcCanvas, 'canvas-npc-mgo');
+            const sizeLabel = document.getElementById('label-npc-mgo-size');
+            if (sizeLabel) sizeLabel.innerText = `${npcCanvas.width}x${npcCanvas.height} px`;
+          }
+        } catch (e) { console.error('绘制 NPC 像素精灵图失败:', e); }
+      }, 30);
+    }
+  }
 }
 
 export function searchGameDataNpc(val) {
@@ -728,8 +746,59 @@ export function searchGameDataNpc(val) {
 
 export function jumpToGameDataNpc(npcId) {
   selectedNpcId = npcId;
-  npcFilterKeyword = ''; // 清空搜索以便正确定位
-  switchGameDataTab('npc');
+  npcFilterKeyword = '';
+  // 若已在 NPC Tab，直接动态切换
+  if (activeTab === 'npc') {
+    updateNpcSelection();
+  } else {
+    switchGameDataTab('npc');
+  }
+}
+
+// 构建 NPC 右侧详情 HTML
+function buildNpcRightHtml(npc) {
+  const roleName = getRoleName(npc.roleId);
+  const trigScrHtml = npc.trigScr > 0 
+    ? `<span onclick="jumpToGameDataScript(${npc.trigScr})" style="color: var(--glow-yellow); text-decoration: underline; cursor: pointer; font-weight: bold;">Script #${npc.trigScr} ➔ 点击反解</span>`
+    : '<span style="color: rgba(255,255,255,0.25);">无触发脚本 (0)</span>';
+  const autoScrHtml = npc.autoScr > 0 
+    ? `<span onclick="jumpToGameDataScript(${npc.autoScr})" style="color: var(--glow-yellow); text-decoration: underline; cursor: pointer; font-weight: bold;">Script #${npc.autoScr} ➔ 点击反解</span>`
+    : '<span style="color: rgba(255,255,255,0.25);">无自动脚本 (0)</span>';
+  return `
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.15); padding-bottom: 8px; margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <h2 style="margin: 0; font-size: 12px; color: var(--glow-yellow); font-weight: bold;">👾 NPC #${npc.id} [${roleName}] 的运行时状态分析</h2>
+      </div>
+    </div>
+    <div style="flex: 1; display: flex; gap: 15px; overflow: hidden;">
+      <div style="width: 180px; display: flex; flex-direction: column; gap: 8px; align-items: center; background: rgba(0,0,0,0.4); padding: 12px; border: 1px solid rgba(255,255,255,0.02); border-radius: 3px;">
+        <span style="font-size: 8px; color: rgba(255,255,255,0.3); font-weight: bold;">👾 原生 2D 像素精灵图</span>
+        <canvas id="canvas-npc-mgo" width="100" height="100" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 2px;"></canvas>
+        <div style="font-size: 7.5px; color: rgba(255,255,255,0.3); text-align: center; line-height: 1.3; margin-top: 4px;">动作包: mgo.mkf #${npc.roleId}<br>当前帧数: Frame #${npc.frame}<br>像素尺寸: <span id="label-npc-mgo-size" style="color:var(--glow-yellow);">--x--</span></div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 4px;">
+        <div>
+          <div style="font-size: 8.5px; color: rgba(255,255,255,0.4); font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;"><span style="width: 3px; height: 3px; background: var(--glow-yellow); border-radius: 50%;"></span> 二进制核心事件物体属性 (EventObject Profile)</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">瓦片横坐标 (mx)</span><span style="font-size: 9px; color: #fff; font-weight: bold;">${npc.x}</span></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">瓦片纵坐标 (my)</span><span style="font-size: 9px; color: #fff; font-weight: bold;">${npc.y}</span></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">图层高度 (layer)</span><span style="font-size: 9px; color: #fff; font-weight: bold;">${npc.layer}</span></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">初始朝向 (dir)</span><span style="font-size: 9px; color: #fff; font-weight: bold;">${npc.dir === 0 ? '下 (0)' : npc.dir === 1 ? '左 (1)' : npc.dir === 2 ? '上 (2)' : '右 (3)'}</span></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">动作包 ID (roleId)</span><span style="font-size: 9px; color: var(--glow-green); font-weight: bold;">${npc.roleId} (${roleName})</span></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">当前图元帧 (frame)</span><span style="font-size: 9px; color: #fff; font-weight: bold;">${npc.frame}</span></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">生命活动状态 (state)</span><span style="font-size: 9px; color: var(--glow-yellow); font-weight: bold;">${npc.state === 0 ? '0 (隐藏)' : npc.state === 1 ? '1 (活跃)' : '2 (自动循环)'}</span></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">触发模式 (trigMode)</span><span style="font-size: 9px; color: #fff; font-weight: bold;">${npc.trigMode}</span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size: 8.5px; color: rgba(255,255,255,0.4); font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;"><span style="width: 3px; height: 3px; background: var(--glow-yellow); border-radius: 50%;"></span> 绑定脚本事件指针 (点击立即穿梭反解)</div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,215,0,0.08); padding: 6px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.35);">🔍 交互触发脚本 (trigScr)</span><span style="font-size: 8.5px;">${trigScrHtml}</span></div>
+            <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,215,0,0.08); padding: 6px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.35);">🤖 自动心跳脚本 (autoScr)</span><span style="font-size: 8.5px;">${autoScrHtml}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
 }
 
 // ==================== 📜 TAB 3: 脚本信息渲染逻辑 ====================
@@ -781,7 +850,7 @@ function renderScriptTab(container) {
   for (let i = 0; i < totalScripts; i += 20) {
     const isCurrentRange = selectedScriptId >= i && selectedScriptId < i + 20;
     leftHtml += `
-      <div onclick="jumpToGameDataScript(${i})" style="padding: 6px 8px; background: ${isCurrentRange ? 'rgba(255, 215, 0, 0.06)' : 'rgba(255,255,255,0.012)'}; border: 1px solid ${isCurrentRange ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.02)'}; border-radius: 2px; cursor: pointer; font-size: 8px; color: ${isCurrentRange ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.4)'}; display:flex; justify-content:space-between; transition: all 0.1s;">
+      <div data-script-item="${i}" onclick="jumpToGameDataScript(${i})" style="padding: 6px 8px; background: ${isCurrentRange ? 'rgba(255, 215, 0, 0.06)' : 'rgba(255,255,255,0.012)'}; border: 1px solid ${isCurrentRange ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.02)'}; border-radius: 2px; cursor: pointer; font-size: 8px; color: ${isCurrentRange ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.4)'}; display:flex; justify-content:space-between; transition: all 0.1s;">
         <span>段落 #${i} ➔ #${Math.min(totalScripts - 1, i + 19)}</span>
         <span>${isCurrentRange ? '●' : ''}</span>
       </div>
@@ -795,7 +864,7 @@ function renderScriptTab(container) {
 
   // 右侧核心反解区
   let rightHtml = `
-    <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 15px;">
+    <div data-script-right style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 15px;">
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.15); padding-bottom: 8px; margin-bottom: 12px;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <h2 style="margin: 0; font-size: 12px; color: var(--glow-yellow); font-weight: bold;">📜 连续指令解析流 (从 ID #${selectedScriptId} 顺序向下解码)</h2>
@@ -836,7 +905,83 @@ function renderScriptTab(container) {
 
 export function jumpToGameDataScript(scriptId) {
   selectedScriptId = Math.max(0, Math.min(state.scripts.length - 1, parseInt(scriptId)));
-  switchGameDataTab('script');
+  // 若已在脚本 Tab，直接动态切换
+  if (activeTab === 'script') {
+    updateScriptSelection();
+  } else {
+    switchGameDataTab('script');
+  }
+}
+
+// 动态切换脚本段落选中样式并仅刷新右侧详情
+function updateScriptSelection() {
+  const container = document.getElementById('gamedata-main-container');
+  // 清除旧选中样式
+  container.querySelectorAll('[data-script-item]').forEach(el => {
+    el.style.background = 'rgba(255,255,255,0.012)';
+    el.style.borderColor = 'rgba(255,255,255,0.02)';
+    el.style.color = 'rgba(255,255,255,0.4)';
+    const dot = el.querySelectorAll('span')[1];
+    if (dot) dot.innerText = '';
+  });
+  // 设置新选中样式
+  const activeEl = container.querySelector(`[data-script-item="${Math.floor(selectedScriptId / 20) * 20}"]`);
+  if (activeEl) {
+    activeEl.style.background = 'rgba(255, 215, 0, 0.06)';
+    activeEl.style.borderColor = 'var(--glow-yellow)';
+    activeEl.style.color = 'var(--glow-yellow)';
+    const dot = activeEl.querySelectorAll('span')[1];
+    if (dot) dot.innerText = '●';
+  }
+  // 同步输入框
+  const input = document.getElementById('input-gamedata-script-id');
+  if (input) input.value = selectedScriptId;
+  // 只重建右侧详情区
+  const rightPanel = container.querySelector('[data-script-right]');
+  if (rightPanel) {
+    rightPanel.innerHTML = buildScriptRightHtml();
+  }
+}
+
+// 构建脚本右侧详情 HTML
+function buildScriptRightHtml() {
+  const totalScripts = state.scripts.length;
+  const listItems = [];
+  const startId = selectedScriptId;
+  const endId = Math.min(totalScripts, startId + 20);
+  for (let i = startId; i < endId; i++) {
+    const s = state.scripts[i];
+    if (s) {
+      const codeHex = '0x' + s.code.toString(16).toUpperCase();
+      const desc = getInstructionChineseDetail(s.code, s.param1, s.param2, s.param3);
+      const cmdName = getCommandName(s.code);
+      const codeObj = scriptCodes[s.code];
+      const officialDesc = codeObj ? codeObj.desc : '未知系统底层指令';
+      listItems.push({ id: s.id, codeHex, cmdName, officialDesc, params: `${s.param1}, ${s.param2}, ${s.param3}`, desc: makeScriptHyperlinks(desc) });
+    }
+  }
+  let html = `
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.15); padding-bottom: 8px; margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <h2 style="margin: 0; font-size: 12px; color: var(--glow-yellow); font-weight: bold;">📜 连续指令解析流 (从 ID #${selectedScriptId} 顺序向下解码)</h2>
+      </div>
+    </div>
+    <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
+  `;
+  listItems.forEach(item => {
+    const isHighlight = item.id === selectedScriptId;
+    html += `
+      <div style="background: ${isHighlight ? 'rgba(255,215,0,0.05)' : 'rgba(255,255,255,0.01)'}; border: 1px solid ${isHighlight ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.02)'}; padding: 8px 12px; border-radius: 3px; display: flex; flex-direction: column; gap: 4px; transition: all 0.15s;">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-family:'JetBrains Mono', monospace; font-size: 8px;">
+          <div><span style="font-weight: bold; color: ${isHighlight ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.3)'};">SCRIPT ID: #${item.id}</span><span style="color: rgba(255,255,255,0.25); margin-left: 8px;">Params: (${item.params})</span></div>
+          <div style="display: flex; align-items: center; gap: 8px;"><span style="color: rgba(255,255,255,0.4);">${item.codeHex} (${item.cmdName})</span><span style="color: var(--glow-green); font-weight: bold; text-transform: uppercase; background: rgba(0,255,157,0.06); border: 1px solid rgba(0,255,157,0.2); padding: 1px 4px; border-radius: 1px; font-size: 7.5px;">${item.officialDesc}</span></div>
+        </div>
+        <div style="font-size: 9.5px; color: #fff; line-height: 1.4; border-top: 1px dashed rgba(255,255,255,0.04); padding-top: 4px; font-weight: 500;">${item.desc || '<span style="color:rgba(255,255,255,0.2);">普通系统底层控制指令</span>'}</div>
+      </div>
+    `;
+  });
+  html += `</div>`;
+  return html;
 }
 
 export function searchGameDataScript() {
@@ -844,7 +989,8 @@ export function searchGameDataScript() {
   if (input) {
     const val = parseInt(input.value);
     if (!isNaN(val)) {
-      jumpToGameDataScript(val);
+      selectedScriptId = Math.max(0, Math.min(state.scripts.length - 1, val));
+      updateScriptSelection();
     }
   }
 }
@@ -870,7 +1016,7 @@ function renderSceneTab(container) {
   scenes.forEach(s => {
     const isSelected = selectedSceneId === s.sceneId;
     leftHtml += `
-      <div onclick="onGameDataSceneSelect(${s.sceneId})" style="padding: 8px 12px; background: ${isSelected ? 'rgba(255, 215, 0, 0.08)' : 'rgba(255,255,255,0.015)'}; border: 1px solid ${isSelected ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.03)'}; border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.12s;">
+      <div data-scene-item="${s.sceneId}" onclick="onGameDataSceneSelect(${s.sceneId})" style="padding: 8px 12px; background: ${isSelected ? 'rgba(255, 215, 0, 0.08)' : 'rgba(255,255,255,0.015)'}; border: 1px solid ${isSelected ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.03)'}; border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.12s;">
         <span style="font-size: 9px; font-weight: bold; color: ${isSelected ? 'var(--glow-yellow)' : '#fff'};">Scene #${s.sceneId}</span>
         <span style="font-size: 8px; color: rgba(255,255,255,0.3);">Map 0x${s.mapId.toString(16).toUpperCase()}</span>
       </div>
@@ -888,7 +1034,7 @@ function renderSceneTab(container) {
 
   if (!s) {
     rightHtml = `
-      <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.2); font-size: 10px;">
+      <div data-scene-right style="flex: 1; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.2); font-size: 10px;">
         请在左侧选择一个场景进行全景剖析
       </div>
     `;
@@ -903,7 +1049,7 @@ function renderSceneTab(container) {
     }
 
     rightHtml = `
-      <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 15px;">
+      <div data-scene-right style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 15px;">
         <!-- 头部 -->
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.15); padding-bottom: 8px; margin-bottom: 12px;">
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -1011,5 +1157,79 @@ function renderSceneTab(container) {
 
 export function onGameDataSceneSelect(sceneId) {
   selectedSceneId = sceneId;
-  switchGameDataTab('scene');
+  updateSceneSelection();
+}
+
+// 动态切换场景列表选中样式并仅刷新右侧详情
+function updateSceneSelection() {
+  const container = document.getElementById('gamedata-main-container');
+  // 清除旧选中样式
+  container.querySelectorAll('[data-scene-item]').forEach(el => {
+    el.style.background = 'rgba(255,255,255,0.015)';
+    el.style.borderColor = 'rgba(255,255,255,0.03)';
+    const spans = el.querySelectorAll('span');
+    if (spans[0]) spans[0].style.color = '#fff';
+  });
+  // 设置新选中样式
+  const activeEl = container.querySelector(`[data-scene-item="${selectedSceneId}"]`);
+  if (activeEl) {
+    activeEl.style.background = 'rgba(255, 215, 0, 0.08)';
+    activeEl.style.borderColor = 'var(--glow-yellow)';
+    const spans = activeEl.querySelectorAll('span');
+    if (spans[0]) spans[0].style.color = 'var(--glow-yellow)';
+  }
+  // 只重建右侧详情区
+  const rightPanel = container.querySelector('[data-scene-right]');
+  const s = state.scenes[selectedSceneId];
+  if (rightPanel && s) {
+    rightPanel.innerHTML = buildSceneRightHtml(s);
+    setTimeout(() => {
+      try {
+        const gopCanvas = loadGop(s.mapId, 0);
+        if (gopCanvas) drawPixelated(gopCanvas, 'canvas-scene-gop');
+      } catch (e) { console.error('绘制场景专属 GOP 失败:', e); }
+    }, 30);
+  }
+}
+
+// 构建场景右侧详情 HTML
+function buildSceneRightHtml(s) {
+  const sceneNpcs = [];
+  for (let i = s.startEventId + 1; i <= s.endEventId; i++) {
+    const npcObj = state.eventObjects[i];
+    if (npcObj && npcObj.type === 'npc') sceneNpcs.push(npcObj);
+  }
+  return `
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.15); padding-bottom: 8px; margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <h2 style="margin: 0; font-size: 12px; color: var(--glow-yellow); font-weight: bold;">🗺️ Scene #${s.sceneId} (Map #${s.mapId}) 的多维场景档案</h2>
+      </div>
+    </div>
+    <div style="flex: 1; display: flex; gap: 15px; overflow: hidden;">
+      <div style="width: 180px; display: flex; flex-direction: column; gap: 10px; align-items: center; background: rgba(0,0,0,0.4); padding: 12px; border: 1px solid rgba(255,255,255,0.02); border-radius: 3px;">
+        <span style="font-size: 8px; color: rgba(255,255,255,0.3); font-weight: bold;">🗺️ 场景专属 GOP 图元解码</span>
+        <canvas id="canvas-scene-gop" width="120" height="120" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 2px;"></canvas>
+        <div style="font-size: 7.5px; color: rgba(255,255,255,0.25); text-align: center; line-height: 1.3; margin-top: 4px;">大地图包 ID: gop.mkf #${s.mapId}<br>场景图元: GOP #0<br>自动平铺防滑绘制</div>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 4px;">
+        <div>
+          <div style="font-size: 8.5px; color: rgba(255,255,255,0.4); font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;"><span style="width: 3px; height: 3px; background: var(--glow-yellow); border-radius: 50%;"></span> 场景事件与地图底牌</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">对应大地图 ID (mapId)</span><span style="font-size: 9px; color: var(--glow-green); font-weight: bold;">0x${s.mapId.toString(16).toUpperCase()} (${s.mapId})</span></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">场景物体区间</span><span style="font-size: 9px; color: #fff; font-weight: bold;">${s.startEventId} ➔ ${s.endEventId}</span></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">进入场景触发脚本</span><span style="font-size: 8.5px; font-weight: bold;">${s.enterScriptId > 0 ? `<span onclick="jumpToGameDataScript(${s.enterScriptId})" style="color:var(--glow-yellow); text-decoration:underline; cursor:pointer;">Script #${s.enterScriptId}</span>` : '<span style="color:rgba(255,255,255,0.25);">无</span>'}</span></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">离开场景触发脚本</span><span style="font-size: 8.5px; font-weight: bold;">${s.exitScriptId > 0 ? `<span onclick="jumpToGameDataScript(${s.exitScriptId})" style="color:var(--glow-yellow); text-decoration:underline; cursor:pointer;">Script #${s.exitScriptId}</span>` : '<span style="color:rgba(255,255,255,0.25);">无</span>'}</span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size: 8.5px; color: rgba(255,255,255,0.4); font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;"><span style="width: 3px; height: 3px; background: var(--glow-yellow); border-radius: 50%;"></span> 当前场景内放置的 NPC 物体列表 (${sceneNpcs.length} 个)</div>
+          <div style="max-height: 150px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.03); background: rgba(0,0,0,0.2); border-radius: 3px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 8px; text-align: left;">
+              <thead><tr style="background: rgba(255,215,0,0.04); border-bottom: 1px solid rgba(255,255,255,0.04); color: rgba(255,255,255,0.35);"><th style="padding: 4px 8px;">NPC ID</th><th style="padding: 4px 8px;">人物名称</th><th style="padding: 4px 8px;">坐标位置</th><th style="padding: 4px 8px;">动作包</th><th style="padding: 4px 8px;">交互跳转</th></tr></thead>
+              <tbody>${sceneNpcs.map(npc => `<tr style="border-bottom: 1px solid rgba(255,255,255,0.015); transition: background 0.1s;" onmouseenter="this.style.background='rgba(255,255,255,0.02)'" onmouseleave="this.style.background='transparent'"><td style="padding: 4px 8px; color:var(--glow-yellow); font-weight:bold;">#${npc.id}</td><td style="padding: 4px 8px; color:#fff;">${getRoleName(npc.roleId)}</td><td style="padding: 4px 8px; color:rgba(255,255,255,0.5);">(${npc.x}, ${npc.y})</td><td style="padding: 4px 8px; color:var(--glow-green);">MGO #${npc.roleId}</td><td style="padding: 4px 8px;"><button onclick="jumpToGameDataNpc(${npc.id})" class="btn-dbg" style="color:var(--glow-yellow); border-color:rgba(255,215,0,0.15); padding: 1px 4px; font-size: 7px; cursor:pointer;">定位 NPC</button></td></tr>`).join('')}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>`;
 }
