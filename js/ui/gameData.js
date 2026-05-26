@@ -254,17 +254,20 @@ function drawPixelated(srcCanvas, destCanvasId) {
 
 // 角色动作包的角色名
 function getRoleName(roleId) {
+  if (roleId <= 0) {
+    return "-";
+  }
   const names = {
-    0: '李逍遥',
-    1: '赵灵儿',
-    2: '林月如',
-    3: '阿奴',
-    4: '赵灵儿(蛇)',
-    10: '李大娘',
-    11: '苗人首领',
-    12: '苗人手下',
-    21: '村口黄狗',
-    53: '集市商贩'
+    // 0: '李逍遥',
+    // 1: '赵灵儿',
+    // 2: '林月如',
+    // 3: '阿奴',
+    // 4: '赵灵儿(蛇)',
+    // 10: '李大娘',
+    // 11: '苗人首领',
+    // 12: '苗人手下',
+    // 21: '村口黄狗',
+    // 53: '集市商贩'
   };
   return names[roleId] || `人物 #${roleId}`;
 }
@@ -1105,7 +1108,7 @@ function renderSceneTab(container) {
               <div style="font-size: 8.5px; color: rgba(255,255,255,0.4); font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
                 <span style="width: 3px; height: 3px; background: var(--glow-yellow); border-radius: 50%;"></span> 当前场景内放置的 NPC 物体列表 (${sceneNpcs.length} 个)
               </div>
-              <div style="max-height: 150px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.03); background: rgba(0,0,0,0.2); border-radius: 3px;">
+              <div style="border: 1px solid rgba(255,255,255,0.03); background: rgba(0,0,0,0.2); border-radius: 3px;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 8px; text-align: left;">
                   <thead>
                     <tr style="background: rgba(255,215,0,0.04); border-bottom: 1px solid rgba(255,255,255,0.04); color: rgba(255,255,255,0.35);">
@@ -1223,7 +1226,7 @@ function buildSceneRightHtml(s) {
         </div>
         <div>
           <div style="font-size: 8.5px; color: rgba(255,255,255,0.4); font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;"><span style="width: 3px; height: 3px; background: var(--glow-yellow); border-radius: 50%;"></span> 当前场景内放置的 NPC 物体列表 (${sceneNpcs.length} 个)</div>
-          <div style="max-height: 150px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.03); background: rgba(0,0,0,0.2); border-radius: 3px;">
+          <div style="border: 1px solid rgba(255,255,255,0.03); background: rgba(0,0,0,0.2); border-radius: 3px;">
             <table style="width: 100%; border-collapse: collapse; font-size: 8px; text-align: left;">
               <thead><tr style="background: rgba(255,215,0,0.04); border-bottom: 1px solid rgba(255,255,255,0.04); color: rgba(255,255,255,0.35);"><th style="padding: 4px 8px;">NPC ID</th><th style="padding: 4px 8px;">人物名称</th><th style="padding: 4px 8px;">坐标位置</th><th style="padding: 4px 8px;">动作包</th><th style="padding: 4px 8px;">交互跳转</th></tr></thead>
               <tbody>${sceneNpcs.map(npc => `<tr style="border-bottom: 1px solid rgba(255,255,255,0.015); transition: background 0.1s;" onmouseenter="this.style.background='rgba(255,255,255,0.02)'" onmouseleave="this.style.background='transparent'"><td style="padding: 4px 8px; color:var(--glow-yellow); font-weight:bold;">#${npc.id}</td><td style="padding: 4px 8px; color:#fff;">${getRoleName(npc.roleId)}</td><td style="padding: 4px 8px; color:rgba(255,255,255,0.5);">(${npc.x}, ${npc.y})</td><td style="padding: 4px 8px; color:var(--glow-green);">MGO #${npc.roleId}</td><td style="padding: 4px 8px;"><button onclick="jumpToGameDataNpc(${npc.id})" class="btn-dbg" style="color:var(--glow-yellow); border-color:rgba(255,215,0,0.15); padding: 1px 4px; font-size: 7px; cursor:pointer;">定位 NPC</button></td></tr>`).join('')}</tbody>
