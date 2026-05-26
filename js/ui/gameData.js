@@ -1115,7 +1115,8 @@ function renderSceneTab(container) {
                       <th style="padding: 4px 8px;">NPC ID</th>
                       <th style="padding: 4px 8px;">人物名称</th>
                       <th style="padding: 4px 8px;">坐标位置</th>
-                      <th style="padding: 4px 8px;">动作包</th>
+                      <th style="padding: 4px 8px;">自动脚本</th>
+                      <th style="padding: 4px 8px;">触发脚本</th>
                       <th style="padding: 4px 8px;">交互跳转</th>
                     </tr>
                   </thead>
@@ -1125,7 +1126,12 @@ function renderSceneTab(container) {
                         <td style="padding: 4px 8px; color:var(--glow-yellow); font-weight:bold;">#${npc.id}</td>
                         <td style="padding: 4px 8px; color:#fff;">${getRoleName(npc.roleId)}</td>
                         <td style="padding: 4px 8px; color:rgba(255,255,255,0.5);">(${npc.x}, ${npc.y})</td>
-                        <td style="padding: 4px 8px; color:var(--glow-green);">MGO #${npc.roleId}</td>
+                        <td style="padding: 4px 8px;">
+                          ${npc.autoScr > 0 ? `<span onclick="jumpToGameDataScript(${npc.autoScr})" style="color:var(--glow-yellow); text-decoration:underline; cursor:pointer; font-weight:bold;">#${npc.autoScr}</span>` : '<span style="color:rgba(255,255,255,0.25);">无</span>'}
+                        </td>
+                        <td style="padding: 4px 8px;">
+                          ${npc.trigScr > 0 ? `<span onclick="jumpToGameDataScript(${npc.trigScr})" style="color:var(--glow-yellow); text-decoration:underline; cursor:pointer; font-weight:bold;">#${npc.trigScr}</span>` : '<span style="color:rgba(255,255,255,0.25);">无</span>'}
+                        </td>
                         <td style="padding: 4px 8px;">
                           <button onclick="jumpToGameDataNpc(${npc.id})" class="btn-dbg" style="color:var(--glow-yellow); border-color:rgba(255,215,0,0.15); padding: 1px 4px; font-size: 7px; cursor:pointer;">定位 NPC</button>
                         </td>
@@ -1228,8 +1234,34 @@ function buildSceneRightHtml(s) {
           <div style="font-size: 8.5px; color: rgba(255,255,255,0.4); font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;"><span style="width: 3px; height: 3px; background: var(--glow-yellow); border-radius: 50%;"></span> 当前场景内放置的 NPC 物体列表 (${sceneNpcs.length} 个)</div>
           <div style="border: 1px solid rgba(255,255,255,0.03); background: rgba(0,0,0,0.2); border-radius: 3px;">
             <table style="width: 100%; border-collapse: collapse; font-size: 8px; text-align: left;">
-              <thead><tr style="background: rgba(255,215,0,0.04); border-bottom: 1px solid rgba(255,255,255,0.04); color: rgba(255,255,255,0.35);"><th style="padding: 4px 8px;">NPC ID</th><th style="padding: 4px 8px;">人物名称</th><th style="padding: 4px 8px;">坐标位置</th><th style="padding: 4px 8px;">动作包</th><th style="padding: 4px 8px;">交互跳转</th></tr></thead>
-              <tbody>${sceneNpcs.map(npc => `<tr style="border-bottom: 1px solid rgba(255,255,255,0.015); transition: background 0.1s;" onmouseenter="this.style.background='rgba(255,255,255,0.02)'" onmouseleave="this.style.background='transparent'"><td style="padding: 4px 8px; color:var(--glow-yellow); font-weight:bold;">#${npc.id}</td><td style="padding: 4px 8px; color:#fff;">${getRoleName(npc.roleId)}</td><td style="padding: 4px 8px; color:rgba(255,255,255,0.5);">(${npc.x}, ${npc.y})</td><td style="padding: 4px 8px; color:var(--glow-green);">MGO #${npc.roleId}</td><td style="padding: 4px 8px;"><button onclick="jumpToGameDataNpc(${npc.id})" class="btn-dbg" style="color:var(--glow-yellow); border-color:rgba(255,215,0,0.15); padding: 1px 4px; font-size: 7px; cursor:pointer;">定位 NPC</button></td></tr>`).join('')}</tbody>
+              <thead>
+                <tr style="background: rgba(255,215,0,0.04); border-bottom: 1px solid rgba(255,255,255,0.04); color: rgba(255,255,255,0.35);">
+                  <th style="padding: 4px 8px;">NPC ID</th>
+                  <th style="padding: 4px 8px;">人物名称</th>
+                  <th style="padding: 4px 8px;">坐标位置</th>
+                  <th style="padding: 4px 8px;">自动脚本</th>
+                  <th style="padding: 4px 8px;">触发脚本</th>
+                  <th style="padding: 4px 8px;">交互跳转</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sceneNpcs.map(npc => `
+                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.015); transition: background 0.1s;" onmouseenter="this.style.background='rgba(255,255,255,0.02)'" onmouseleave="this.style.background='transparent'">
+                    <td style="padding: 4px 8px; color:var(--glow-yellow); font-weight:bold;">#${npc.id}</td>
+                    <td style="padding: 4px 8px; color:#fff;">${getRoleName(npc.roleId)}</td>
+                    <td style="padding: 4px 8px; color:rgba(255,255,255,0.5);">(${npc.x}, ${npc.y})</td>
+                    <td style="padding: 4px 8px;">
+                      ${npc.autoScr > 0 ? `<span onclick="jumpToGameDataScript(${npc.autoScr})" style="color:var(--glow-yellow); text-decoration:underline; cursor:pointer; font-weight:bold;">#${npc.autoScr}</span>` : '<span style="color:rgba(255,255,255,0.25);">无</span>'}
+                    </td>
+                    <td style="padding: 4px 8px;">
+                      ${npc.trigScr > 0 ? `<span onclick="jumpToGameDataScript(${npc.trigScr})" style="color:var(--glow-yellow); text-decoration:underline; cursor:pointer; font-weight:bold;">#${npc.trigScr}</span>` : '<span style="color:rgba(255,255,255,0.25);">无</span>'}
+                    </td>
+                    <td style="padding: 4px 8px;">
+                      <button onclick="jumpToGameDataNpc(${npc.id})" class="btn-dbg" style="color:var(--glow-yellow); border-color:rgba(255,215,0,0.15); padding: 1px 4px; font-size: 7px; cursor:pointer;">定位 NPC</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
             </table>
           </div>
         </div>
