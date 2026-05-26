@@ -113,13 +113,6 @@ function initDat() {
   console.log(`载入简体汉字短语字表完成`);
 }
 
-function commonEnter() {
-  setRolePos(0x31, 0x5E, 0); // 瓦片坐标
-  setRoleTile(0, 0x2, 0);     // 李逍遥动作形象
-  setRoleIndex(0, 0, 0);     // 朝向方向
-  setRoleGroup(1);           // 队伍配置
-}
-
 // 绑定全局上下文，挂载至 state
 function initContexts() {
   state.contexts.main = document.getElementById('canvas').getContext('2d');
@@ -184,13 +177,10 @@ ready(() => {
   window.state = state;
   window.toggleScene = toggleScene;
   window.setRolePos = setRolePos;
-  window.commonEnter = commonEnter;
 
   if (!DEBUG) {
     ESC.onStartup();
   } else {
-    commonEnter();
-
     const n = +new URLSearchParams(location.search).get('debug') || 4;
     const scriptIds = [7952,4475,4647,6065,5808,4463,6065,5934,5881,5918,5933,8440];
 
