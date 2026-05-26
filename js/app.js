@@ -140,8 +140,9 @@ function initContexts() {
   window.Talk = Talk;
 
   // 1. 挂载渲染计数器、定时器时钟及资源缓存至全局 window 作用域，便于右侧面板实时监控分析
-  import('./ui/draw.js').then(({ updateCount }) => {
+  import('./ui/draw.js').then(({ updateCount, update }) => {
     window.updateCount = updateCount;
+    window.updateGameScreen = update;
   });
 
   import('./engine/timer.js').then(({ Timer }) => {

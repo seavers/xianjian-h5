@@ -787,7 +787,19 @@
 			<!-- 横栏四：👾 附近 NPC 实体袖珍网格矩阵 -->
 			<div class="panel-row">
 				<div class="panel-col" style="grid-column: span 2;">
-					<div class="section-header">👾 附近活跃 NPC/事件实体矩阵 (Nearby NPCs micro Grid Matrix)</div>
+					<div class="section-header" style="justify-content: space-between;">
+						<span>👾 附近活跃 NPC/事件实体矩阵 (Nearby NPCs micro Grid Matrix)</span>
+						<div style="display: flex; align-items: center; gap: 8px; font-weight: normal; text-transform: none; letter-spacing: 0;">
+							<label style="font-size: 8.5px; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 3px; cursor: pointer; user-select: none;">
+								<input type="checkbox" id="check-show-npc-id" style="accent-color: var(--glow-green); cursor: pointer;" onchange="toggleNpcIdOnScreen(this.checked)">
+								屏幕打标 ID
+							</label>
+							<label style="font-size: 8.5px; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 3px; cursor: pointer; user-select: none;">
+								<input type="checkbox" id="check-only-human-npc" checked style="accent-color: var(--glow-green); cursor: pointer;" onchange="toggleOnlyHumanNpc(this.checked)">
+								仅人物NPC
+							</label>
+						</div>
+					</div>
 					<div class="npc-fleet-grid" id="container-npcs">
 						<!-- 袖珍网格矩阵 -->
 					</div>
@@ -1029,6 +1041,25 @@
 
 	<!-- ==================== 运行时控制台脚本 ==================== -->
 	<script>
+		// 全局 NPC 屏幕打标与仅人物NPC筛选状态
+		window.SHOW_NPC_ID_ON_SCREEN = false;
+		window.ONLY_HUMAN_NPC = true;
+
+		function toggleNpcIdOnScreen(checked) {
+			window.SHOW_NPC_ID_ON_SCREEN = checked;
+			if (window.updateGameScreen) {
+				window.updateGameScreen(true);
+			}
+		}
+
+		function toggleOnlyHumanNpc(checked) {
+			window.ONLY_HUMAN_NPC = checked;
+			refreshDashboard();
+			if (window.updateGameScreen) {
+				window.updateGameScreen(true);
+			}
+		}
+
 		// 1. 改变画面缩放比例（配合 pixelated 展现极致清亮像素画）
 		function changeScreenScale(scale) {
 			const width = 320 * scale;
@@ -1336,7 +1367,12 @@
 
 			for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
 				const o = state.eventObjects[i];
-				if (!o || o.roleId === 0) continue;
+				if (!o) continue;
+
+				// 过滤条件：如果开启了“仅人物NPC”，则过滤掉 roleId === 0 的事件点
+				const onlyHuman = window.ONLY_HUMAN_NPC !== false;
+				if (onlyHuman && o.roleId === 0) continue;
+
 				npcCountForMicro++;
 
 				const npcCard = document.createElement('div');
@@ -1350,7 +1386,7 @@
 						<span>#${o.id}</span>
 						<span style="color:${o.state ? 'var(--glow-green)' : 'rgba(255,255,255,0.15)'}; font-size:7.5px;">S:${o.state}</span>
 					</div>
-					<div class="npc-mc-pos">(${Math.floor(o.x/32)}, ${Math.floor(o.y/16)}) R:${o.roleId}</div>
+					<div class="npc-mc-pos">(${Math.floor(o.x/32)}, ${Math.floor(o.y/16)}) ${o.roleId === 0 ? '事件' : 'R:' + o.roleId}</div>
 				`;
 
 				// 悬停时在物品解构里也可以看看 NPC 底层数据，超级极客！

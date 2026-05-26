@@ -185,6 +185,18 @@ export function drawEventObjectPos() {
   }
 }
 
+export function drawNpcIdsOnScreen() {
+  const onlyHuman = window.ONLY_HUMAN_NPC !== false;
+  for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
+    const o = state.eventObjects[i];
+    if (o && o.state > 0) {
+      if (onlyHuman && o.roleId === 0) continue;
+      // 绘制于 NPC 坐标稍微上方，使其清晰易读
+      drawText('#' + o.id, o.x, o.y - 12, state.contexts.main, '#ffd700', 7);
+    }
+  }
+}
+
 export function drawMiddle() {
   // 层级核心排序算法
   tiles.sort((a, b) => {
@@ -256,6 +268,9 @@ export function update(refreshBack) {
   }
   if (window.TRACE) {
     drawEventObjectPos();
+  }
+  if (window.SHOW_NPC_ID_ON_SCREEN) {
+    drawNpcIdsOnScreen();
   }
   updateCount[1]++;
 }
