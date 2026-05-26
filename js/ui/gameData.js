@@ -880,19 +880,15 @@ function renderScriptTab(container) {
   listItems.forEach(item => {
     const isHighlight = item.id === selectedScriptId;
     rightHtml += `
-      <div style="background: ${isHighlight ? 'rgba(255,215,0,0.05)' : 'rgba(255,255,255,0.01)'}; border: 1px solid ${isHighlight ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.02)'}; padding: 8px 12px; border-radius: 3px; display: flex; flex-direction: column; gap: 4px; transition: all 0.15s;">
-        <div style="display: flex; justify-content: space-between; align-items: center; font-family:'JetBrains Mono', monospace; font-size: 8px;">
-          <div>
-            <span style="font-weight: bold; color: ${isHighlight ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.3)'};">SCRIPT ID: #${item.id}</span>
-            <span style="color: rgba(255,255,255,0.25); margin-left: 8px;">Params: (${item.params})</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="color: rgba(255,255,255,0.4);">${item.codeHex} (${item.cmdName})</span>
-            <span style="color: var(--glow-green); font-weight: bold; text-transform: uppercase; background: rgba(0,255,157,0.06); border: 1px solid rgba(0,255,157,0.2); padding: 1px 4px; border-radius: 1px; font-size: 7.5px;">${item.officialDesc}</span>
-          </div>
+      <div style="background: ${isHighlight ? 'rgba(255,215,0,0.05)' : 'rgba(255,255,255,0.01)'}; border: 1px solid ${isHighlight ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.02)'}; padding: 6px 12px; border-radius: 3px; display: flex; align-items: center; justify-content: space-between; font-family:'JetBrains Mono', monospace; font-size: 8px; transition: all 0.15s; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+          <span style="font-weight: bold; color: ${isHighlight ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.35)'};">SCRIPT ID: #${item.id}</span>
+          <span style="color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.03); padding: 1px 4px; border-radius: 2px;">${item.codeHex} (${item.cmdName})</span>
+          <span style="color: var(--glow-green); font-weight: bold; text-transform: uppercase; background: rgba(0,255,157,0.06); border: 1px solid rgba(0,255,157,0.2); padding: 1px 4px; border-radius: 2px;">${item.officialDesc}</span>
+          <span style="color: rgba(255,255,255,0.25);">Params: (${item.params})</span>
         </div>
-        <div style="font-size: 9.5px; color: #fff; line-height: 1.4; border-top: 1px dashed rgba(255,255,255,0.04); padding-top: 4px; font-weight: 500;">
-          ${item.desc || '<span style="color:rgba(255,255,255,0.2);">普通系统底层控制指令</span>'}
+        <div style="font-size: 9.5px; color: #fff; font-weight: 500; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          ${item.desc || ''}
         </div>
       </div>
     `;
@@ -974,12 +970,16 @@ function buildScriptRightHtml() {
   listItems.forEach(item => {
     const isHighlight = item.id === selectedScriptId;
     html += `
-      <div style="background: ${isHighlight ? 'rgba(255,215,0,0.05)' : 'rgba(255,255,255,0.01)'}; border: 1px solid ${isHighlight ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.02)'}; padding: 8px 12px; border-radius: 3px; display: flex; flex-direction: column; gap: 4px; transition: all 0.15s;">
-        <div style="display: flex; justify-content: space-between; align-items: center; font-family:'JetBrains Mono', monospace; font-size: 8px;">
-          <div><span style="font-weight: bold; color: ${isHighlight ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.3)'};">SCRIPT ID: #${item.id}</span><span style="color: rgba(255,255,255,0.25); margin-left: 8px;">Params: (${item.params})</span></div>
-          <div style="display: flex; align-items: center; gap: 8px;"><span style="color: rgba(255,255,255,0.4);">${item.codeHex} (${item.cmdName})</span><span style="color: var(--glow-green); font-weight: bold; text-transform: uppercase; background: rgba(0,255,157,0.06); border: 1px solid rgba(0,255,157,0.2); padding: 1px 4px; border-radius: 1px; font-size: 7.5px;">${item.officialDesc}</span></div>
+      <div style="background: ${isHighlight ? 'rgba(255,215,0,0.05)' : 'rgba(255,255,255,0.01)'}; border: 1px solid ${isHighlight ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.02)'}; padding: 6px 12px; border-radius: 3px; display: flex; align-items: center; justify-content: space-between; font-family:'JetBrains Mono', monospace; font-size: 8px; transition: all 0.15s; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+          <span style="font-weight: bold; color: ${isHighlight ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.35)'};">SCRIPT ID: #${item.id}</span>
+          <span style="color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.03); padding: 1px 4px; border-radius: 2px;">${item.codeHex} (${item.cmdName})</span>
+          <span style="color: var(--glow-green); font-weight: bold; text-transform: uppercase; background: rgba(0,255,157,0.06); border: 1px solid rgba(0,255,157,0.2); padding: 1px 4px; border-radius: 2px;">${item.officialDesc}</span>
+          <span style="color: rgba(255,255,255,0.25);">Params: (${item.params})</span>
         </div>
-        <div style="font-size: 9.5px; color: #fff; line-height: 1.4; border-top: 1px dashed rgba(255,255,255,0.04); padding-top: 4px; font-weight: 500;">${item.desc || '<span style="color:rgba(255,255,255,0.2);">普通系统底层控制指令</span>'}</div>
+        <div style="font-size: 9.5px; color: #fff; font-weight: 500; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          ${item.desc || ''}
+        </div>
       </div>
     `;
   });
