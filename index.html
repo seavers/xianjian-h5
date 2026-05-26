@@ -1386,7 +1386,7 @@
 						<span>#${o.id}</span>
 						<span style="color:${o.state ? 'var(--glow-green)' : 'rgba(255,255,255,0.15)'}; font-size:7.5px;">S:${o.state}</span>
 					</div>
-					<div class="npc-mc-pos">(${Math.floor(o.x/32)}, ${Math.floor(o.y/16)}) ${o.roleId === 0 ? '事件' : 'R:' + o.roleId}</div>
+					<div class="npc-mc-pos">(${Math.floor(o.x/32)}, ${Math.floor(o.y/16)})${o.roleId === 0 ? '' : ' R:' + o.roleId}</div>
 				`;
 
 				// 悬停时在物品解构里也可以看看 NPC 底层数据，超级极客！
@@ -1414,20 +1414,20 @@
 					document.getElementById('ins-val-offset').innerText = `PX: (${o.x}, ${o.y})`;
 
 					// NPC 当前走路帧动作立绘解码并展示
-					if (loadMgoFn) {
+					if (o.roleId !== 0 && loadMgoFn) {
 						try {
 							const npcCanvas = loadMgoFn(o.roleId, o.frame);
 							if (npcCanvas) {
 								drawDecodedSprite(npcCanvas, 'canvas-item-ball', 'NPC: #' + o.roleId);
 							} else {
-								drawDecodedSprite(null, 'canvas-item-ball');
+								drawDecodedSprite(null, 'canvas-item-ball', '无');
 							}
 						} catch (e) {
 							console.error("加载NPC立绘失败", e);
-							drawDecodedSprite(null, 'canvas-item-ball');
+							drawDecodedSprite(null, 'canvas-item-ball', '无');
 						}
 					} else {
-						drawDecodedSprite(null, 'canvas-item-ball');
+						drawDecodedSprite(null, 'canvas-item-ball', '无');
 					}
 				};
 
