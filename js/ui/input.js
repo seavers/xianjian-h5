@@ -210,26 +210,14 @@ function onXY(x, y, half, dir) {
     const o = state.eventObjects[i];
     if (!o || o.state === 0) continue;
 
-    const s = Math.abs(o.x - posX) + Math.abs(o.y - posY);
+    const s = Math.abs(o.x - posX) + Math.abs(o.y - posY) * 2;
 
     switch (o.trigMode) {
-      case 7: // 远距离触发
-        if (s >= 0 && s < 32) {
-          startEventTrig(o);
-        }
-        break;
-      case 6: // 远距离触发
-        if (s >= 0 && s < 48) {
-          startEventTrig(o);
-        }
-        break;
-      case 5: // 中距离触发，主要是切换场景
-        if (s >= 0 && s <= 32) {
-          startEventTrig(o);
-        }
-        break;
       case 4: // 近距离触发，踩机关
-        if (posX === o.x && posY === o.y) {
+      case 5: // 中距离触发，主要是切换场景
+      case 6: // 远距离触发
+      case 7: // 远距离触发
+        if (s < (o.trigMode - 4) * 32 + 16) {    
           startEventTrig(o);
         }
         break;
@@ -253,6 +241,8 @@ export function onBlank() {
   for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
     const o = state.eventObjects[i];
     if (!o || o.state === 0) continue;
+
+    if (o.trigMode * 6 - 4 < )
 
     switch (o.trigMode) {
       case 3: // 远距离，按空格
