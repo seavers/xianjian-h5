@@ -109,9 +109,9 @@ export function drawMapBack() {
 export function drawEventObject() {
   for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
     const o = state.eventObjects[i];
-    if (!o || o.roleId === 0) continue;
+    if (!o || o.mgoId === 0) continue;
 
-    const mgo = loadMgo(o.roleId, o.frame);
+    const mgo = loadMgo(o.mgoId, o.frame);
     if (!mgo) continue;
     o.tile = mgo;
     tiles.push(o);
@@ -190,7 +190,7 @@ export function drawNpcIdsOnScreen() {
   for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
     const o = state.eventObjects[i];
     if (o && o.state > 0) {
-      if (onlyHuman && o.roleId === 0) continue;
+      if (onlyHuman && o.mgoId === 0) continue;
       // 绘制于 NPC 坐标稍微上方，使其清晰易读
       drawText('#' + o.id, o.x, o.y - 12, state.contexts.main, '#ffd700', 7);
     }

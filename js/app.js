@@ -30,7 +30,7 @@ function initEventObject() {
       autoScr: view.nextShort(),
       state: view.nextShort(),
       trigMode: view.nextShort(),
-      roleId: view.nextShort(),
+      mgoId: view.nextShort(),
       frame: view.nextShort(),
       dir: view.nextShort(),
       unknown1: view.nextShort(),

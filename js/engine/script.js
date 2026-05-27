@@ -17,7 +17,7 @@ export const Script = {
     // 载入当前场景内的所有事件/NPC 的 auto 脚本
     for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
       const o = state.eventObjects[i];
-      if (!o || o.state === 0 || o.roleId === 0) {
+      if (!o || o.state === 0 || o.mgoId === 0) {
         continue;
       }
       // if (o.autoScr) {
@@ -42,7 +42,7 @@ export const Script = {
     // 执行当前场景内的所有事件/NPC 的 auto 脚本
     for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
       const o = state.eventObjects[i];
-      if (!o || o.state === 0 || o.roleId === 0) {
+      if (!o || o.state === 0 || o.mgoId === 0) {
         continue;
       }
       if (o.thread) {

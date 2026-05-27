@@ -183,7 +183,7 @@ export function setSouthDir(objId) {
 }
 
 export function setNpcDir(dir) {
-  if (loadMgoCount(this.roleId) < 12) {
+  if (loadMgoCount(this.mgoId) < 12) {
     this.frame = dir;
   } else {
     this.dir = dir;
@@ -227,7 +227,7 @@ export function walkAtPlace() {
 
 function loadFrameCount(obj) {
   if (!obj.frameCount) {
-    obj.frameCount = loadMgoCount(obj.roleId);
+    obj.frameCount = loadMgoCount(obj.mgoId);
   }
 }
 

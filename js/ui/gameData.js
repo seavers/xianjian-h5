@@ -523,8 +523,8 @@ function renderNpcTab(container) {
 
   // 过滤模糊匹配
   const filteredNpcs = npcs.filter(npc => {
-    const name = getRoleName(npc.roleId);
-    const searchStr = `${npc.id} ${npc.roleId} ${name}`.toLowerCase();
+    const name = getRoleName(npc.mgoId);
+    const searchStr = `${npc.id} ${npc.mgoId} ${name}`.toLowerCase();
     return searchStr.indexOf(npcFilterKeyword.toLowerCase()) !== -1;
   });
 
@@ -543,7 +543,7 @@ function renderNpcTab(container) {
   } else {
     filteredNpcs.forEach(npc => {
       const isSelected = selectedNpcId === npc.id;
-      const roleName = getRoleName(npc.roleId);
+      const roleName = getRoleName(npc.mgoId);
       leftHtml += `
         <div data-npc-item="${npc.id}" onclick="onGameDataNpcSelect(${npc.id})" style="padding: 6px 10px; background: ${isSelected ? 'rgba(255, 215, 0, 0.08)' : 'rgba(255,255,255,0.012)'}; border: 1px solid ${isSelected ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.02)'}; border-radius: 2px; cursor: pointer; display: flex; flex-direction: column; transition: all 0.12s;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -575,7 +575,7 @@ function renderNpcTab(container) {
       </div>
     `;
   } else {
-    const roleName = getRoleName(npc.roleId);
+    const roleName = getRoleName(npc.mgoId);
     
     // 脚本高亮超链接渲染
     const trigScrHtml = npc.trigScr > 0 
@@ -600,7 +600,7 @@ function renderNpcTab(container) {
             <span style="font-size: 8px; color: rgba(255,255,255,0.3); font-weight: bold;">👾 原生 2D 像素精灵图</span>
             <canvas id="canvas-npc-mgo" width="100" height="100" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 2px;"></canvas>
             <div style="font-size: 7.5px; color: rgba(255,255,255,0.3); text-align: center; line-height: 1.3; margin-top: 4px;">
-              动作包: mgo.mkf #${npc.roleId}<br>
+              动作包: mgo.mkf #${npc.mgoId}<br>
               当前帧数: Frame #${npc.frame}<br>
               像素尺寸: <span id="label-npc-mgo-size" style="color:var(--glow-yellow);">--x--</span>
             </div>
@@ -631,8 +631,8 @@ function renderNpcTab(container) {
                   <span style="font-size: 9px; color: #fff; font-weight: bold;">${npc.dir === 0 ? '下 (0)' : npc.dir === 1 ? '左 (1)' : npc.dir === 2 ? '上 (2)' : '右 (3)'}</span>
                 </div>
                 <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;">
-                  <span style="font-size: 8px; color: rgba(255,255,255,0.3);">动作包 ID (roleId)</span>
-                  <span style="font-size: 9px; color: var(--glow-green); font-weight: bold;">${npc.roleId} (${roleName})</span>
+                  <span style="font-size: 8px; color: rgba(255,255,255,0.3);">动作包 ID (mgoId)</span>
+                  <span style="font-size: 9px; color: var(--glow-green); font-weight: bold;">${npc.mgoId} (${roleName})</span>
                 </div>
                 <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;">
                   <span style="font-size: 8px; color: rgba(255,255,255,0.3);">当前图元帧 (frame)</span>
@@ -674,10 +674,10 @@ function renderNpcTab(container) {
   container.innerHTML = leftHtml + rightHtml;
 
   // 绘制 NPC 经典立绘
-  if (npc && npc.roleId) {
+  if (npc && npc.mgoId) {
     setTimeout(() => {
       try {
-        const npcCanvas = loadMgo(npc.roleId, npc.frame);
+        const npcCanvas = loadMgo(npc.mgoId, npc.frame);
         if (npcCanvas) {
           drawPixelated(npcCanvas, 'canvas-npc-mgo');
           const sizeLabel = document.getElementById('label-npc-mgo-size');
@@ -719,11 +719,11 @@ function updateNpcSelection() {
   const rightPanel = container.querySelector('[data-npc-right]');
   if (rightPanel) {
     const npc = state.eventObjects[selectedNpcId];
-    if (npc && npc.roleId) {
+    if (npc && npc.mgoId) {
       rightPanel.innerHTML = buildNpcRightHtml(npc);
       setTimeout(() => {
         try {
-          const npcCanvas = loadMgo(npc.roleId, npc.frame);
+          const npcCanvas = loadMgo(npc.mgoId, npc.frame);
           if (npcCanvas) {
             drawPixelated(npcCanvas, 'canvas-npc-mgo');
             const sizeLabel = document.getElementById('label-npc-mgo-size');
@@ -760,7 +760,7 @@ export function jumpToGameDataNpc(npcId) {
 
 // 构建 NPC 右侧详情 HTML
 function buildNpcRightHtml(npc) {
-  const roleName = getRoleName(npc.roleId);
+  const roleName = getRoleName(npc.mgoId);
   const trigScrHtml = npc.trigScr > 0 
     ? `<span onclick="jumpToGameDataScript(${npc.trigScr})" style="color: var(--glow-yellow); text-decoration: underline; cursor: pointer; font-weight: bold;">Script #${npc.trigScr} ➔ 点击反解</span>`
     : '<span style="color: rgba(255,255,255,0.25);">无触发脚本 (0)</span>';
@@ -777,7 +777,7 @@ function buildNpcRightHtml(npc) {
       <div style="width: 180px; display: flex; flex-direction: column; gap: 8px; align-items: center; background: rgba(0,0,0,0.4); padding: 12px; border: 1px solid rgba(255,255,255,0.02); border-radius: 3px;">
         <span style="font-size: 8px; color: rgba(255,255,255,0.3); font-weight: bold;">👾 原生 2D 像素精灵图</span>
         <canvas id="canvas-npc-mgo" width="100" height="100" style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 2px;"></canvas>
-        <div style="font-size: 7.5px; color: rgba(255,255,255,0.3); text-align: center; line-height: 1.3; margin-top: 4px;">动作包: mgo.mkf #${npc.roleId}<br>当前帧数: Frame #${npc.frame}<br>像素尺寸: <span id="label-npc-mgo-size" style="color:var(--glow-yellow);">--x--</span></div>
+        <div style="font-size: 7.5px; color: rgba(255,255,255,0.3); text-align: center; line-height: 1.3; margin-top: 4px;">动作包: mgo.mkf #${npc.mgoId}<br>当前帧数: Frame #${npc.frame}<br>像素尺寸: <span id="label-npc-mgo-size" style="color:var(--glow-yellow);">--x--</span></div>
       </div>
       <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 4px;">
         <div>
@@ -787,7 +787,7 @@ function buildNpcRightHtml(npc) {
             <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">瓦片纵坐标 (my)</span><span style="font-size: 9px; color: #fff; font-weight: bold;">${npc.y}</span></div>
             <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">图层高度 (layer)</span><span style="font-size: 9px; color: #fff; font-weight: bold;">${npc.layer}</span></div>
             <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">初始朝向 (dir)</span><span style="font-size: 9px; color: #fff; font-weight: bold;">${npc.dir === 0 ? '下 (0)' : npc.dir === 1 ? '左 (1)' : npc.dir === 2 ? '上 (2)' : '右 (3)'}</span></div>
-            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">动作包 ID (roleId)</span><span style="font-size: 9px; color: var(--glow-green); font-weight: bold;">${npc.roleId} (${roleName})</span></div>
+            <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">动作包 ID (mgoId)</span><span style="font-size: 9px; color: var(--glow-green); font-weight: bold;">${npc.mgoId} (${roleName})</span></div>
             <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">当前图元帧 (frame)</span><span style="font-size: 9px; color: #fff; font-weight: bold;">${npc.frame}</span></div>
             <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">生命活动状态 (state)</span><span style="font-size: 9px; color: var(--glow-yellow); font-weight: bold;">${npc.state === 0 ? '0 (隐藏)' : npc.state === 1 ? '1 (活跃)' : '2 (自动循环)'}</span></div>
             <div style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.02); padding: 5px 10px; border-radius: 2px; display:flex; justify-content:space-between; align-items:center;"><span style="font-size: 8px; color: rgba(255,255,255,0.3);">触发模式 (trigMode)</span><span style="font-size: 9px; color: #fff; font-weight: bold;">${npc.trigMode}</span></div>
@@ -1122,11 +1122,11 @@ function renderSceneTab(container) {
                   </thead>
                   <tbody>
                     ${sceneNpcs.map(npc => {
-                      const roleName = getRoleName(npc.roleId);
+                      const roleName = getRoleName(npc.mgoId);
                       let npcImgHtml = '';
                       if (roleName) {
                         try {
-                          const npcCanvas = loadMgo(npc.roleId, npc.frame || 0);
+                          const npcCanvas = loadMgo(npc.mgoId, npc.frame || 0);
                           if (npcCanvas) {
                             npcImgHtml = `<img src="${npcCanvas.toDataURL()}" style="height: 18px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 2px; padding: 1px;" />`;
                           }
@@ -1260,11 +1260,11 @@ function buildSceneRightHtml(s) {
               </thead>
               <tbody>
                 ${sceneNpcs.map(npc => {
-                  const roleName = getRoleName(npc.roleId);
+                  const roleName = getRoleName(npc.mgoId);
                   let npcImgHtml = '';
                   if (roleName) {
                     try {
-                      const npcCanvas = loadMgo(npc.roleId, npc.frame || 0);
+                      const npcCanvas = loadMgo(npc.mgoId, npc.frame || 0);
                       if (npcCanvas) {
                         npcImgHtml = `<img src="${npcCanvas.toDataURL()}" style="height: 18px; image-rendering: pixelated; vertical-align: middle; margin-right: 4px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 2px; padding: 1px;" />`;
                       }
