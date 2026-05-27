@@ -233,36 +233,50 @@ export function onBlank() {
     return;
   }
 
-  const x = state.mx;
-  const y = state.my;
-  const posX = x * 32 + state.mhalf * 16;
-  const posY = y * 16 + state.mhalf * 8;
+  // 计算主角脚底的像素坐标
+  const x = state.mx * 32 + state.mhalf * 16;
+  const y = state.my * 16 + state.mhalf * 8;
 
-  for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
-    const o = state.eventObjects[i];
-    if (!o || o.state === 0) continue;
+  // 根据主角朝向计算搜索方向的偏移量
+  const dir = state.roles[0].dir;
+  const xOffset = (dir === 2 || dir === 3) ? 16 : -16;
+  const yOffset = (dir === 0 || dir === 3) ? 8 : -8;
 
-    if (o.trigMode * 6 - 4 < )
+  // 生成 13 个搜索检查点：位置 0 为主角脚下，位置 1-12 沿朝向展开为 4 排每排 3 个
+  const checkpoints = [{ x, y }];
+  let cx = x, cy = y;
+  for (let i = 0; i < 4; i++) {
+    checkpoints.push({ x: cx + xOffset, y: cy + yOffset });
+    checkpoints.push({ x: cx, y: cy + yOffset * 2 });
+    checkpoints.push({ x: cx + 2 * xOffset, y: cy });
+    cx += xOffset;
+    cy += yOffset;
+  }
 
-    switch (o.trigMode) {
-      case 3: // 远距离，按空格
-        if (x * 32 + 32 >= o.x && o.x >= x * 32 - 32 &&
-            y * 16 + 16 >= o.y && o.y >= y * 16 - 16) {
-          startEventTrig(o);
-        }
-        break;
-      case 2: // 中距离，面对面或踩地洞
-        if (x * 32 + 32 >= o.x && o.x >= x * 32 - 32 &&
-            y * 16 + 16 >= o.y && o.y >= y * 16 - 16) {
-          startEventTrig(o);
-        }
-        break;
-      case 1: // 近距离，按空格
-        if (x * 32 + 32 >= o.x && o.x >= x * 32 - 32 &&
-            y * 16 + 16 >= o.y && o.y >= y * 16 - 16) {
-          startEventTrig(o);
-        }
-        break;
+  // 遍历 13 个检查点，由近到远
+  for (let i = 0; i < 13; i++) {
+    const cp = checkpoints[i];
+    // 将检查点像素坐标转换为瓦片坐标
+    const dh = (cp.x % 32) ? 1 : 0;
+    const dx = Math.floor(cp.x / 32);
+    const dy = Math.floor(cp.y / 16);
+
+    for (let j = state.startEventId + 1; j <= state.endEventId; j++) {
+      const o = state.eventObjects[j];
+      if (!o || o.state === 0) continue;
+
+      // 只处理 Search 模式（trigMode 1-3），且检查点索引不超过该模式允许的范围
+      if (o.trigMode < 1 || o.trigMode > 3 || o.trigMode * 6 - 4 < i) continue;
+
+      // 将事件对象的像素坐标转换为瓦片坐标，精确匹配
+      const eh = (o.x % 32) ? 1 : 0;
+      const ex = Math.floor(o.x / 32);
+      const ey = Math.floor(o.y / 16);
+
+      if (dx === ex && dy === ey && dh === eh) {
+        startEventTrig(o);
+        return;
+      }
     }
   }
 }
