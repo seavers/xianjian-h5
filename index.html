@@ -60,6 +60,13 @@
 			border-right: 1px solid var(--border-glass);
 		}
 
+		#game-section.viewport-2x {
+			min-width: 640px;
+		}
+		#game-section.viewport-3x {
+			min-width: 960px;
+		}
+
 		#viewport-control-bar {
 			width: 640px;
 			margin-bottom: 8px;
@@ -1076,11 +1083,20 @@
 				btn.classList.remove('active');
 			});
 			document.getElementById(`btn-scale-${scale}`).classList.add('active');
+
+			document.getElementById('game-section').classList.remove('viewport-2x')
+			document.getElementById('game-section').classList.remove('viewport-3x')
+			document.getElementById('game-section').classList.remove('viewport-4x')
+			document.getElementById('game-section').classList.add(`viewport-${scale}x`)
 		}
 
 		// 默认 3X FHD 高精像素画质开启
 		document.addEventListener('DOMContentLoaded', () => {
-			changeScreenScale(3);
+			if (window.innerWidth > 1900) {
+				changeScreenScale(3);
+			} else {
+				changeScreenScale(2);
+			}
 		});
 
 		let selectedItemId = null;
