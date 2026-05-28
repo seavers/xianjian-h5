@@ -43,8 +43,17 @@
 			width: 100vw;
 			overflow: hidden;
 			display: grid;
-			grid-template-columns: 1fr 1000px; /* 默认右侧面板为 1000px 超宽极密面板 */
 			transition: grid-template-columns 0.05s linear;
+		}
+
+		body.game-viewport-2x {
+			grid-template-columns: 1fr minmax(0px, calc(100vw - 670px)); /* 默认右侧面板为 800px 超宽极密面板 */
+		}
+		body.game-viewport-3x {
+			grid-template-columns: 1fr minmax(0px, calc(100vw - 970px)); /* 默认右侧面板为 800px 超宽极密面板 */
+		}
+		body.game-viewport-4x {
+			grid-template-columns: 1fr minmax(0px, calc(100vw - 1300px)); /* 默认右侧面板为 800px 超宽极密面板 */
 		}
 
 		/* ==================== 左侧：游戏视口与防糊像素画控制栏 ==================== */
@@ -1076,11 +1085,20 @@
 				btn.classList.remove('active');
 			});
 			document.getElementById(`btn-scale-${scale}`).classList.add('active');
+
+      document.body.classList.remove('game-viewport-2x')
+      document.body.classList.remove('game-viewport-3x')
+      document.body.classList.remove('game-viewport-4x')
+      document.body.classList.add(`game-viewport-${scale}x`)
 		}
 
 		// 默认 3X FHD 高精像素画质开启
 		document.addEventListener('DOMContentLoaded', () => {
-			changeScreenScale(3);
+			if (window.innerWidth < 1400) {
+				changeScreenScale(2);
+			} else {
+				changeScreenScale(3);
+			}
 		});
 
 		let selectedItemId = null;
