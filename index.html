@@ -1516,6 +1516,18 @@
 					}
 				};
 
+				npcCard.ondblclick = () => {
+					const tx = Math.floor(o.x / 32);
+					const ty = Math.floor(o.y / 16);
+					const thalf = Math.round((o.x - tx * 32) / 16);
+					if (window.setRolePos) {
+						window.setRolePos(tx, ty, thalf);
+						import('./js/ui/talk.js').then(({ Talk }) => {
+							Talk.talkTips(`双击瞬移！已直接传送至 NPC #${o.id} 所在的坐标 (${tx}, ${ty})`);
+						});
+					}
+				};
+
 				npcContainer.appendChild(npcCard);
 			}
 

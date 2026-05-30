@@ -246,8 +246,9 @@ export function faceNpcTrig(objId, dist, targetScriptId) {
 
   // 3. 若面朝条件成立则重置 NPC 的交互触发脚本并启动它；若不满足则跳转至分支脚本地址
   if (success) {
-    o.trigScr = targetScriptId;
-    startEventTrig(o);
+    if(o.trigScr) {
+      startEventTrig(o);
+    }
   } else {
     Script.next(targetScriptId);
   }
