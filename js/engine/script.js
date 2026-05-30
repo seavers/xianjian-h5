@@ -341,7 +341,10 @@ export const Script = {
         // 核心协同挂起控制：
         // 如果指令返回 大于 0 的未完成帧计数，表示指令需要跨多 tick 进行状态步进
         // 我们在此直接退出 While 循环，不递增指令指针 IP，等待下一 tick 重新执行该指令。
-        if (typeof ret === 'number' && ret > 0) {
+        if (ret > 0) {
+          return;
+        } else if (ret === -1) {
+          thread.scriptId++;
           return;
         }
       }

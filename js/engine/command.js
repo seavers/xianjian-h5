@@ -554,6 +554,10 @@ export function delayPeriod(time) {
 }
 
 export function updateScreenAndWait(time) {
+  if (time == 0) {
+    return -1;
+  }
+
   // 返回>0，跳出场景脚本循环，来重绘
   return Script.stepProgress(this, time);
 }
