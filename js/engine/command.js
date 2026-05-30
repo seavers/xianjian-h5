@@ -321,29 +321,40 @@ export function setNpcFrame(frame) {
   return -1;
 }
 
-export function setMusic() {}
-export function setFightMusic() {}
-
 export function setSceneId(sceneId) {
-  // 有些切换场景，是先切换场景，再填写ID，如脚本5933
-  state.nextSceneId = sceneId;
+  // 步骤 1：有些切换场景是先切换再填写ID，或者 0x59 指令本身有参数。只有当参数有效时才更新 nextSceneId
+  if (sceneId !== undefined && sceneId !== null && sceneId !== -1) {
+    state.nextSceneId = sceneId;
+  }
 }
 
-export function fadeOutScene(fadeOutSpeed) {
-  // 有些切换场景，是先切换场景，再填写ID，如脚本5933
-  state.fadeOutSpeed = fadeOutSpeed;
-  update('fadeOut');
+export function fadeOutScene(sceneId) {
+  // 步骤 1：有些切换场景是先切换再填写ID，或者 0x50 指令本身参数为空。只有当参数有效时才更新 nextSceneId
+  if (sceneId !== undefined && sceneId !== null && sceneId !== -1) {
+    state.nextSceneId = sceneId;
+  }
+
   state.needToFadeIn = true;
+
+  // 步骤 2：如果是在非脚本线程环境（例如控制台直接调用），则立即触发切换
+  if (!Thread.currentThread) {
+    toggleScene();
+  }
 }
 
-export function toggleScene(sceneId) {
-  const scene = state.scenes[sceneId];
-  state.sceneId = sceneId;
+export function performToggleScene(targetSceneId) {
+  const scene = state.scenes[targetSceneId];
+  if (!scene) {
+    console.warn('[performToggleScene] 未能匹配到目标场景配置: ' + targetSceneId);
+    return;
+  }
+
+  state.sceneId = targetSceneId;
   state.mapId = scene.mapId;
   state.startEventId = scene.startEventId;
   state.endEventId = scene.endEventId;
 
-  console.log('切换场景: ' + state.nextSceneId + ' 地图: ' + state.mapId);
+  console.log('切换场景: ' + targetSceneId + ' 地图: ' + state.mapId);
 
   // 清空 Timer 中的全部 anims
   const timerDbg = Timer.DEBUG;
@@ -352,12 +363,7 @@ export function toggleScene(sceneId) {
   }
 
   drawMapAll(); // 同步加载与绘制大地图
-  if (state.needToFadeIn) {
-    update('fadeIn');  // 同步清屏并排序重绘所有实体
-    state.needToFadeIn = false;
-  } else {
-    update(true);
-  }
+  update(true); // 重绘画面
 
   // 同步启动场景脚本
   Script.startScene(scene);
@@ -367,6 +373,32 @@ export function toggleScene(sceneId) {
   }
 
   state.nextSceneId = -1;
+}
+
+export function toggleScene(sceneId) {
+  // 步骤 1：仅设置目标场景 ID，不直接执行切换
+  if (sceneId !== undefined && sceneId !== null && sceneId !== -1) {
+    state.nextSceneId = sceneId;
+  }
+
+  // 步骤 2：如果是在非脚本线程环境（例如控制台或调试面板直接调用），则立即在此执行过渡切换
+  if (!Thread.currentThread) {
+    const targetSceneId = state.nextSceneId;
+    if (targetSceneId !== undefined && targetSceneId !== null && targetSceneId !== -1 && targetSceneId !== state.sceneId) {
+      state.nextSceneId = -1;
+      const needFade = state.needToFadeIn;
+      state.needToFadeIn = false;
+
+      if (needFade) {
+        update('fadeOut', () => {
+          performToggleScene(targetSceneId);
+          update('fadeIn');
+        });
+      } else {
+        performToggleScene(targetSceneId);
+      }
+    }
+  }
 }
 
 export function finishCode() {

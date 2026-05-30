@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { scriptCodes } from './command.js';
+import { scriptCodes, performToggleScene } from './command.js';
 import { Hex } from '../utils/hex.js';
 import { Timer } from './timer.js';
 
@@ -136,6 +136,34 @@ export class Thread {
         if (ret == -1) {
           return ;
         }
+      }
+    }
+
+    // 步骤 1：当 While 循环挂起或结束时，检测是否有场景切换挂起（不一致则进行切换）
+    if (state.nextSceneId !== state.sceneId && state.nextSceneId !== -1) {
+      const targetSceneId = state.nextSceneId;
+      const needFade = state.needToFadeIn;
+
+      // 重置挂起的切换标志，避免后续由于时序错误导致重复执行
+      state.nextSceneId = -1;
+      state.needToFadeIn = false;
+
+      if (needFade) {
+        // 如果需要淡出，则暂停当前线程以同步进行淡出和淡入画面效果
+        this.wait();
+
+        // 步骤 2：淡出 -> 加载新地图 -> 淡入 -> 唤醒当前线程
+        import('../ui/draw.js').then(({ update }) => {
+          update('fadeOut', () => {
+            performToggleScene(targetSceneId);
+            update('fadeIn', () => {
+              this.notify();
+            });
+          });
+        });
+      } else {
+        // 如果是直接切换，则立即同步加载场景数据
+        performToggleScene(targetSceneId);
       }
     }
   }
