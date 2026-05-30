@@ -815,8 +815,59 @@
 				</div>
 			</div>
 
-			<!-- 横栏五：💻 并行脚本指令流终端 ＆ 系统极客剖析指标 -->
-			<div class="terminal-section">
+			<!-- 横栏五：⚙️ 极客调试控制中心 (Geek Debug Control Panel) -->
+			<div style="border-top: 1px solid var(--border-glass); background: rgba(0, 0, 0, 0.2); padding: 6px 8px; display: flex; flex-direction: column; gap: 6px;">
+				<div class="section-header" style="justify-content: space-between; border-bottom: 1px dotted rgba(255, 255, 255, 0.05); padding-bottom: 3px; font-size: 9px; font-weight: bold; letter-spacing: 0.5px;">
+					<span style="color: var(--glow-green); font-weight: bold; display: flex; align-items: center; gap: 4px;">
+						<span style="width: 4px; height: 4px; background: var(--glow-green); border-radius: 50%; display: inline-block;"></span>
+						⚙️ 极客调试控制中心 (Geek Debug Control Panel)
+					</span>
+				</div>
+				
+				<!-- ⏱️ 变速齿轮 & 🪙 满钱 & 🎒 神药 -->
+				<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+					<!-- 变速 -->
+					<div style="display: flex; align-items: center; gap: 6px;">
+						<span style="font-size: 9px; font-weight: bold; color: rgba(255,255,255,0.4)">⏱️ 变速:</span>
+						<input type="range" id="input-speed" min="3" max="60" value="6" oninput="changeGameSpeed(this.value)" style="width: 80px; accent-color: var(--glow-green); cursor: pointer;">
+						<span id="label-speed-val" style="font-size: 9px; color: #ffd000; font-weight: bold;">6 fps</span>
+					</div>
+					<!-- 满钱/神药 -->
+					<div style="display: flex; gap: 4px;">
+						<button class="btn-dbg" onclick="cheatGold()" style="color: #ffd000; border-color: rgba(255,208,0,0.25); background: rgba(255,208,0,0.05); padding: 2px 6px; font-size: 8.5px;">🪙 满钱</button>
+						<button class="btn-dbg" onclick="cheatItems()" style="color: #ff3b6f; border-color: rgba(255,59,111,0.25); background: rgba(255,59,111,0.05); padding: 2px 6px; font-size: 8.5px;">🎒 神药</button>
+					</div>
+				</div>
+
+				<!-- 🔮 快捷场景传送 -->
+				<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; border-top: 1px dotted rgba(255,255,255,0.03); padding-top: 5px;">
+					<div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+						<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">🔮 传送:</span>
+						<select id="select-teleport-scene" onchange="onQuickSceneSelect(this.value)" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; outline: none; width: 130px; cursor: pointer; border-radius: 2px;">
+							<!-- 动态渲染 -->
+						</select>
+						<input type="number" id="input-teleport-id" placeholder="ID" min="1" max="200" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; width: 36px; outline: none; text-align: center; border-radius: 2px;">
+						<button class="btn-dbg" onclick="teleportCustomScene()" style="color: var(--glow-blue); border-color: rgba(0,225,255,0.25); background: rgba(0,225,255,0.05); padding: 2px 6px; font-size: 8.5px;">传送</button>
+					</div>
+					<button class="btn-dbg" onclick="toggleCoordsManager()" style="color: var(--glow-yellow); border-color: rgba(255,208,0,0.2); background: rgba(255,208,0,0.03); padding: 2px 6px; font-size: 8.5px; margin-left: auto;">📝 坐标管理</button>
+				</div>
+
+				<!-- 📝 坐标管理面板 (Collapsible coords editor) -->
+				<div id="coords-manager-panel" style="display: none; flex-direction: column; gap: 4px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.04); padding: 6px; border-radius: 2px; margin-top: 2px;">
+					<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dotted rgba(255, 255, 255, 0.05); padding-bottom: 2px; margin-bottom: 2px;">
+						<span style="font-size: 8px; color: rgba(255,255,255,0.4); font-weight: bold;">编辑快捷传送点坐标 (JSON 数组)</span>
+						<span style="font-size: 8px; color: rgba(0,255,157,0.5);">localStorage 实时持久化</span>
+					</div>
+					<textarea id="textarea-coords" style="width: 100%; height: 110px; background: #050508; border: 1px solid rgba(255,255,255,0.08); color: #00ff9d; font-family: 'JetBrains Mono', monospace; font-size: 8px; outline: none; padding: 4px; resize: vertical; line-height: 1.3;" placeholder="请输入 JSON 坐标配置数组..."></textarea>
+					<div style="display: flex; justify-content: flex-end; gap: 4px; margin-top: 2px;">
+						<button onclick="saveCoords()" class="btn-dbg" style="color: var(--glow-green); border-color: rgba(0,255,157,0.25); background: rgba(0,255,157,0.05); padding: 2px 6px; font-size: 8px;">💾 保存配置</button>
+						<button onclick="resetCoords()" class="btn-dbg" style="color: var(--glow-red); border-color: rgba(255,59,111,0.25); background: rgba(255,59,111,0.05); padding: 2px 6px; font-size: 8px;">🔄 恢复默认</button>
+					</div>
+				</div>
+			</div>
+
+			<!-- 横栏六：💻 并行脚本指令流终端 ＆ 系统极客剖析指标 -->
+			<div class="terminal-section" style="border-top: 1px solid var(--border-glass);">
 				<div class="section-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding: 5px 8px;">
 					<span>💻 并行脚本指令流终端 (Active Threads Instruction Console)</span>
 					<div style="display: flex; align-items: center; gap: 8px;">
@@ -882,38 +933,6 @@
 					<span style="color: rgba(255,255,255,0.35);">Params: (<span id="step-params">-</span>)</span>
 				</div>
 			</div>
-
-			<!-- 最底部：⚙️ 调试控制互动功能与变速齿轮 -->
-			<div class="debugger-footer" style="border-top: 1px solid var(--border-glass);">
-				<div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
-					<!-- ⏱️ 变速齿轮 -->
-					<div style="display:flex; align-items:center; gap:4px;">
-						<span style="font-size:9px; font-weight:bold; color:rgba(255,255,255,0.3)">⏱️ 变速:</span>
-						<input type="range" id="input-speed" min="3" max="60" value="6" oninput="changeGameSpeed(this.value)" style="width: 80px; margin-right: 4px; accent-color:var(--glow-green);">
-						<span id="label-speed-val" style="font-size:9px; color:#ffd000; font-weight:bold;">6 fps</span>
-					</div>
-					<!-- 🔮 快捷场景传送 -->
-					<div style="display: flex; gap: 3px; align-items: center;">
-						<span style="font-size: 9px; color: rgba(255,255,255,0.3); font-weight: bold;">🔮 传送:</span>
-						<select id="select-teleport-scene" onchange="onQuickSceneSelect(this.value)" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8px; padding: 1px 2px; outline: none; width: 110px;">
-							<option value="">-- 快捷场景 --</option>
-							<option value="1">Scene 1 (卧室)</option>
-							<option value="2">Scene 2 (客栈一楼)</option>
-							<option value="3">Scene 3 (大娘病房)</option>
-							<option value="4">Scene 4 (集市)</option>
-							<option value="5">Scene 5 (荷花池)</option>
-							<option value="6">Scene 6 (水月宫)</option>
-						</select>
-						<input type="number" id="input-teleport-id" placeholder="ID" min="1" max="200" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8px; padding: 1px 2px; width: 32px; outline: none; text-align: center;">
-						<button class="btn-dbg" onclick="teleportCustomScene()" style="color: var(--glow-blue); border-color: rgba(0,225,255,0.15); padding: 1px 3px; font-size: 8px;">传送</button>
-					</div>
-				</div>
-				<div style="display:flex; gap:3px;">
-					<button class="btn-dbg" onclick="cheatGold()" style="color:#ffd000; border-color:rgba(255,208,0,0.15); padding: 3px 5px; font-size: 9px;">🪙 满钱</button>
-					<button class="btn-dbg" onclick="cheatItems()" style="color:#ff3b6f; border-color:rgba(255,59,111,0.15); padding: 3px 5px; font-size: 9px;">🎒 神药</button>
-				</div>
-			</div>
-
 		</div>
 	</aside>
 
@@ -2504,6 +2523,112 @@
 		}
 
 		// ==================== 🔮 快捷场景传送 (Scene Teleporter) 前端核心交互 ====================
+		const DEFAULT_COORDS = [
+			{ sceneId: 1, x: 49, y: 94, name: '逍遥卧室' },
+			{ sceneId: 2, x: 26, y: 36, name: '客栈一楼' },
+			{ sceneId: 3, x: 42, y: 18, name: '大娘病房' },
+			{ sceneId: 4, x: 54, y: 87, name: '盛渔村集市' },
+			{ sceneId: 5, x: 30, y: 30, name: '仙灵岛荷花池' },
+			{ sceneId: 6, x: 20, y: 20, name: '仙灵岛水月宫' }
+		];
+
+		let COORDS = [];
+
+		// 从 localStorage 加载配置，如果没有，使用默认值
+		function loadCoords() {
+			try {
+				const saved = localStorage.getItem('PAL_COORDS');
+				if (saved) {
+					COORDS = JSON.parse(saved);
+				} else {
+					COORDS = [...DEFAULT_COORDS];
+					localStorage.setItem('PAL_COORDS', JSON.stringify(COORDS));
+				}
+			} catch (e) {
+				console.error('加载传送坐标配置失败，使用默认值', e);
+				COORDS = [...DEFAULT_COORDS];
+			}
+			renderQuickSceneOptions();
+		}
+
+		// 动态渲染快捷场景下拉菜单选项
+		function renderQuickSceneOptions() {
+			const selectEl = document.getElementById('select-teleport-scene');
+			if (!selectEl) return;
+
+			// 保留第一个默认空选项
+			selectEl.innerHTML = '<option value="">-- 快捷场景 --</option>';
+
+			COORDS.forEach(item => {
+				const opt = document.createElement('option');
+				opt.value = item.sceneId;
+				opt.textContent = `Scene ${item.sceneId} (${item.name})`;
+				selectEl.appendChild(opt);
+			});
+		}
+
+		// 切换显示坐标管理面板
+		function toggleCoordsManager() {
+			const managerEl = document.getElementById('coords-manager-panel');
+			if (!managerEl) return;
+
+			const isHidden = managerEl.style.display === 'none';
+			managerEl.style.display = isHidden ? 'flex' : 'none';
+
+			if (isHidden) {
+				const textarea = document.getElementById('textarea-coords');
+				if (textarea) {
+					textarea.value = JSON.stringify(COORDS, null, 2);
+				}
+			}
+		}
+
+		// 保存编辑后的坐标配置
+		function saveCoords() {
+			const textarea = document.getElementById('textarea-coords');
+			if (!textarea) return;
+
+			try {
+				const newCoords = JSON.parse(textarea.value);
+				if (!Array.isArray(newCoords)) {
+					alert('配置必须是 JSON 数组结构！');
+					return;
+				}
+
+				// 简单验证每个元素的结构
+				for (const item of newCoords) {
+					if (typeof item.sceneId !== 'number' || typeof item.x !== 'number' || typeof item.y !== 'number' || !item.name) {
+						alert('每项必须包含 sceneId (数字), x (数字), y (数字) 和 name (字符串)！');
+						return;
+					}
+				}
+
+				COORDS = newCoords;
+				localStorage.setItem('PAL_COORDS', JSON.stringify(COORDS));
+				renderQuickSceneOptions();
+				alert('传送坐标配置保存成功！');
+				toggleCoordsManager();
+			} catch (e) {
+				alert('JSON 格式有误，请检查语法！错误信息: ' + e.message);
+			}
+		}
+
+		// 恢复默认配置
+		function resetCoords() {
+			if (confirm('确认恢复为系统默认坐标配置吗？这会覆盖当前的本地修改。')) {
+				COORDS = [...DEFAULT_COORDS];
+				localStorage.setItem('PAL_COORDS', JSON.stringify(COORDS));
+				renderQuickSceneOptions();
+				
+				const textarea = document.getElementById('textarea-coords');
+				if (textarea) {
+					textarea.value = JSON.stringify(COORDS, null, 2);
+				}
+				
+				alert('已成功恢复为默认配置！');
+			}
+		}
+
 		function onQuickSceneSelect(val) {
 			if (val) {
 				document.getElementById('input-teleport-id').value = val;
@@ -2524,17 +2649,7 @@
 			}
 
 			if (window.state && window.toggleScene) {
-				// 新场景安全瓦片坐标对照字典，防止由于坐标不对卡墙死锁
-				const COORDS = {
-					1: { x: 49, y: 94, name: '逍遥卧室' },
-					2: { x: 26, y: 36, name: '客栈一楼' },
-					3: { x: 42, y: 18, name: '大娘病房' },
-					4: { x: 54, y: 87, name: '盛渔村集市' },
-					5: { x: 30, y: 30, name: '仙灵岛荷花池' },
-					6: { x: 20, y: 20, name: '仙灵岛水月宫' }
-				};
-
-				const target = COORDS[sceneId] || { x: 30, y: 30, name: `未知场景 #${sceneId}` };
+				const target = COORDS.find(item => item.sceneId === sceneId) || { x: 30, y: 30, name: `未知场景 #${sceneId}` };
 
 				// 执行无缝切换传送指令链
 				window.state.nextSceneId = sceneId;
@@ -2549,6 +2664,9 @@
 				console.error('游戏引擎尚未完全初始化，无法执行传送');
 			}
 		}
+
+		// 页面初始化时自动加载
+		document.addEventListener('DOMContentLoaded', loadCoords);
 
 		// ==================== 注册全局运行时钩子与数据联动 ====================
 		window.onSceneUpdate = () => {
