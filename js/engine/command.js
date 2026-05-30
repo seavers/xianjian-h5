@@ -304,18 +304,21 @@ export function setNpcFrame(frame) {
   loadFrameCount(this);
   this.frame = frame;
 
-  // 循环随机N次
-  Timer.queue(-1, () => {
-    if (this.frame == 1) {
-      if (Math.random() < 0.1) {
-        this.frame++;
-      } else {
-        this.frame--;
-      }
-      return ;
-    }
-    this.frame = (this.frame + 1) % this.frameCount;
-  })
+  // // 循环随机N次
+  // Timer.queue(-1, () => {
+  //   if (this.frame == 1) {
+  //     if (Math.random() < 0.1) {
+  //       this.frame++;
+  //     } else {
+  //       this.frame--;
+  //     }
+  //     return ;
+  //   }
+  //   this.frame = (this.frame + 1) % this.frameCount;
+  // })
+
+  // 不能随机，看 9991 脚本，这里会死循环
+  return -1;
 }
 
 export function setMusic() {}

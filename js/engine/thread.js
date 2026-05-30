@@ -132,7 +132,10 @@ export class Thread {
       console.log(`[info] [${tab} NPC:${this.obj?.id || '无'} IP:${this.scriptId - 1}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
       if (code.func) {
-        code.func.call(this.obj, script.param1, script.param2, script.param3);
+        const ret = code.func.call(this.obj, script.param1, script.param2, script.param3);
+        if (ret == -1) {
+          return ;
+        }
       }
     }
   }
