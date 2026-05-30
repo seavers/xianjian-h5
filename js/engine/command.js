@@ -299,6 +299,7 @@ export function setNpcTrigScr(objId, trigScr) {
 export function setNpcFrame(frame) {
   loadFrameCount(this);
   this.frame = frame;
+  this.dir = 0;        // 强制指向南方(0)
 }
 
 export function setSceneId(sceneId) {
@@ -390,7 +391,7 @@ export function stopCode() {
 
 export function changeScript(scriptId, count) {
   if (!count || ++this.scriptIdleFrameCountAuto < count) {
-    Script.next(scriptId);
+    Script.next(scriptId - 1);
   } else {
     this.scriptIdleFrameCountAuto = 0;
   }
