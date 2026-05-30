@@ -26,15 +26,15 @@ export const Npc = {
 
     const dx = zx - cx;
     const dy = zy - cy;
-    const s = Math.max(Math.abs(dx), Math.abs(dy));
+    const absDy = Math.abs(dy);
 
     // 计算移动时的朝向，并更新步态动画帧
     calcNpcDir(o, zx, zy);
 
-    if (s > speed) {
-      o.x = cx + (dx / s) * speed;
-      o.y = cy + (dy / s) * speed;
-      return s - speed; // 未到站，返回剩余像素距离（非 0）以安全挂起指令
+    if (absDy > speed) {
+      o.x = cx + Math.sign(dx) * speed * 2;
+      o.y = cy + Math.sign(dy) * speed;
+      return absDy - speed; // 未到站，返回剩余像素距离（非 0）以安全挂起指令
     } else {
       o.x = zx;
       o.y = zy;
@@ -50,14 +50,14 @@ export const Npc = {
 
     const dx = zx - cx;
     const dy = zy - cy;
-    const s = Math.max(Math.abs(dx), Math.abs(dy));
+    const absDy = Math.abs(dy);
 
     // 1. 计算移动时的朝向，并更新步态动画帧
     calcNpcDir(o, zx, zy);
 
-    if (s > speed) {
-      const nx = cx + (dx / s) * speed;
-      const ny = cy + (dy / s) * speed;
+    if (absDy > speed) {
+      const nx = cx + Math.sign(dx) * speed * 2;
+      const ny = cy + Math.sign(dy) * speed;
 
       // 同步移动主角（Role 0）的坐标与相机偏移坐标
       state.roles[0].x = nx;
@@ -76,7 +76,7 @@ export const Npc = {
       state.my = Math.floor(ny / 16);
       state.mhalf = Math.round((nx - state.mx * 32) / 16);
 
-      return s - speed; // 未到站，返回剩余像素距离（非 0）以安全挂起指令
+      return absDy - speed; // 未到站，返回剩余像素距离（非 0）以安全挂起指令
     } else {
       // 3. 移动结束，修正误差并准确对齐到目标像素与瓦片位置
       state.roles[0].x = zx;
