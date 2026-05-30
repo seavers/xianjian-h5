@@ -16,6 +16,16 @@ export const state = {
   nextSceneId: -1,
   needToFadeIn: false,  // 标识是否fadeIn、fadeOut 场景
   fadeAlpha: 0,         // 场景渐变过渡的黑色遮罩透明度（0表示完全透明，1表示完全黑色）
+  _isTransitionPaused: false, // 标识切换过渡期间是否挂起主循环
+  get isPaused() {
+    const startup = document.getElementById('startup');
+    return (startup && startup.style.display === 'block') || this._isTransitionPaused;
+  },
+  set isPaused(val) {
+    this._isTransitionPaused = val;
+  },
+  nextTriggerScriptId: -1, // 延迟触发的 trigger 脚本 ID，将在下一 tick 执行
+  nextTriggerScriptObject: null, // 延迟触发的 trigger 脚本绑定的实体对象
   fadeOutSpeed: 1,
 
   startEventId: 0,

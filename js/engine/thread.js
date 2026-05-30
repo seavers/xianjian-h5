@@ -139,31 +139,67 @@ export class Thread {
       }
     }
 
-    // 步骤 1：当 While 循环挂起或结束时，检测是否有场景切换挂起（不一致则进行切换）
-    if (state.nextSceneId !== state.sceneId && state.nextSceneId !== -1) {
-      const targetSceneId = state.nextSceneId;
-      const needFade = state.needToFadeIn;
+  }
 
-      // 重置挂起的切换标志，避免后续由于时序错误导致重复执行
-      state.nextSceneId = -1;
-      state.needToFadeIn = false;
+  // 步进执行单条指令，用于 auto NPC 在每次 tick 中仅执行单条命令，避免密集 While 循环阻塞
+  stepOneInstruction() {
+    if (this.finish || this.pause) return;
 
-      if (needFade) {
-        // 如果需要淡出，则暂停当前线程以同步进行淡出和淡入画面效果
-        this.wait();
+    Thread.currentThread = this;
 
-        // 步骤 2：淡出 -> 加载新地图 -> 淡入 -> 唤醒当前线程
-        import('../ui/draw.js').then(({ update }) => {
-          update('fadeOut', () => {
-            performToggleScene(targetSceneId);
-            update('fadeIn', () => {
-              this.notify();
-            });
-          });
-        });
-      } else {
-        // 如果是直接切换，则立即同步加载场景数据
-        performToggleScene(targetSceneId);
+    const script = state.scripts[this.scriptId++]; // 执行当前指令，并指向下一条
+    if (!script) {
+      console.warn(`Thread #${this.id} scriptId: ${this.scriptId - 1} 越界`);
+      this.stop();
+      return;
+    }
+
+    const code = scriptCodes[script.code];
+    const desc = code ? code.desc : '未知指令';
+    
+    // 记录到全局状态机中的 scriptLogs，供右侧 Dashboard 实时渲染
+    const logItem = {
+      id: this.id,
+      npcId: this.obj ? this.obj.id : '无',
+      roleId: this.obj && typeof this.obj.mgoId === 'number' ? this.obj.mgoId : null,
+      type: this.type,
+      scriptId: this.scriptId - 1,
+      code: script.code,
+      hexCode: '0x' + Hex.toHex(script.code),
+      desc: desc,
+      param1: script.param1,
+      param2: script.param2,
+      param3: script.param3,
+      time: new Date().toLocaleTimeString()
+    };
+
+    state.scriptLogs.push(logItem);
+    if (state.scriptLogs.length > 40) {
+      state.scriptLogs.shift();
+    }
+
+    // 通知前端监控台重绘日志面板
+    if (window.onScriptExecute) {
+      window.onScriptExecute(logItem);
+    }
+
+    if (!code) {
+      console.warn(`[warn] [NPC ${this.obj?.id || '无'} scriptId:${this.scriptId - 1}]: execute ${Hex.toHex(script.code)} ${Hex.toHex(script.param1)}`);
+      return;
+    }
+
+    if (script.code === 0) {
+      this.stop();
+      return;
+    }
+
+    const tab = this.type.charAt(0).toUpperCase();
+    console.log(`[info] [${tab} NPC:${this.obj?.id || '无'} IP:${this.scriptId - 1}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
+
+    if (code.func) {
+      const ret = code.func.call(this.obj, script.param1, script.param2, script.param3);
+      if (ret == -1) {
+        return;
       }
     }
   }

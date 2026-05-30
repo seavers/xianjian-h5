@@ -62,22 +62,8 @@ function draw() {
 }
 
 function drawLoop() {
-  Script.loop();
-
-  let c = 0;
-  for (const key in anims) {
-    const func = anims[key];
-    if (func) {
-      const index = func.index || 0;
-      func(index + 1);
-      func.index = index + 1;
-      c++;
-    }
-  }
-  // 如果有动画在执行，则触发地图及画面绘制重绘
-  if (c > 0) {
-    update();
-  }
+  // 统一委托至 Script 主循环进行集中时钟推进、脚本调度与渲染
+  Script.mainLoop();
 }
 
 export function start() {

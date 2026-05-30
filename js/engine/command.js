@@ -132,7 +132,9 @@ export function setObjectStatus(objId, stateVal) {
 }
 
 export function startEventTrig(obj) {
-  Script.startTrigScript(obj);
+  // 步骤 1：仅设置下一次需要触发的 trigger 脚本信息，在下一 tick 的中央主循环中安全执行
+  state.nextTriggerScriptId = obj.trigScr;
+  state.nextTriggerScriptObject = obj;
 }
 
 export function setTrigMode(objId, trigMode) {
