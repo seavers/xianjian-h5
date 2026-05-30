@@ -388,10 +388,11 @@ export function stopCode() {
   Script.stop();
 }
 
-let c = 0;
 export function changeScript(scriptId, count) {
-  if (c++ <= count) {
+  if (!count || ++this.scriptIdleFrameCountAuto < count) {
     Script.next(scriptId);
+  } else {
+    this.scriptIdleFrameCountAuto = 0;
   }
 }
 

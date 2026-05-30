@@ -367,7 +367,7 @@ export const Script = {
     const logItem = {
       id: thread.id,
       npcId: thread.obj ? thread.obj.id : '无',
-      roleId: thread.obj && typeof thread.obj.mgoId === 'number' ? thread.obj.mgoId : null,
+      mgoId: thread.obj && typeof thread.obj.mgoId === 'number' ? thread.obj.mgoId : null,
       type: thread.type,
       scriptId: thread.scriptId,
       code: script.code,

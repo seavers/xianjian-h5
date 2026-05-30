@@ -38,7 +38,9 @@ function initEventObject() {
       unknown2: view.nextShort(),
       modsRef: view.nextShort(),
       unknown3: view.nextShort(),
-      unknown4: view.nextShort()
+      unknown4: view.nextShort(),
+
+      scriptIdleFrameCountAuto: 0,
     };
     state.eventObjects[i + 1] = obj;
   }
