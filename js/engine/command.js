@@ -307,13 +307,9 @@ export function setSceneId(sceneId) {
   }
 }
 
-export function fadeOutScene(sceneId) {
-  // 步骤 1：有些切换场景是先切换再填写ID，或者 0x50 指令本身参数为空。只有当参数有效时才更新 nextSceneId
-  if (sceneId !== undefined && sceneId !== null && sceneId !== -1) {
-    state.nextSceneId = sceneId;
-  }
-
+export function fadeOutScene(fadeOutSpeed) {
   state.needToFadeIn = true;
+  state.fadeOutSpeed = fadeOutSpeed;
 
   // 步骤 2：如果是在非脚本线程环境（例如控制台直接调用），则立即触发切换
   if (!Thread.currentThread) {
