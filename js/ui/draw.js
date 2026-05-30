@@ -1,6 +1,5 @@
 import { state } from '../engine/state.js';
 import { loadMap, loadGop, loadMgo, loadFon, u9s, u3s } from '../resources/pal.js';
-import { Timer } from '../engine/timer.js';
 
 export const updateCount = [0, 0, 0];
 let tiles = [];
@@ -287,32 +286,35 @@ function renderScreen(refreshBack) {
 // 执行全屏淡入淡出渐变动画过渡
 function startFadeTransition(type, callback) {
   const duration = 12; // 12帧过渡时长
-  const force = true;
+  let frame = 0;
 
-  // 步骤 1：启动帧时钟定时任务队列，在 12 帧内线性渐变修改 fadeAlpha
-  Timer.queue(duration, (frame) => {
-    if (type === 'fadeOut') {
-      state.fadeAlpha = frame / duration;
+  // 步骤 1：使用自主定时器在 12 帧内线性渐变修改 fadeAlpha 并重绘，不受游戏核心主时钟暂停干扰
+  const timer = setInterval(() => {
+    frame++;
+    if (frame <= duration) {
+      if (type === 'fadeOut') {
+        state.fadeAlpha = frame / duration;
+      } else {
+        state.fadeAlpha = 1 - frame / duration;
+      }
+      renderScreen(true);
     } else {
-      state.fadeAlpha = 1 - frame / duration;
-    }
+      clearInterval(timer);
 
-    renderScreen(true);
-  }, () => {
-    // 步骤 2：过渡完成回调，设置最终确切的 fadeAlpha 值并清屏/重绘
-    if (type === 'fadeOut') {
-      state.fadeAlpha = 1;
-    } else {
-      state.fadeAlpha = 0;
-    }
+      // 步骤 2：过渡完成回调，设置最终确切的 fadeAlpha 值并清屏/重绘
+      if (type === 'fadeOut') {
+        state.fadeAlpha = 1;
+      } else {
+        state.fadeAlpha = 0;
+      }
+      renderScreen(true);
 
-    renderScreen(true);
-
-    // 步骤 3：动画彻底结束后，如果传入了回调函数，则执行回调以驱动后续逻辑
-    if (callback) {
-      callback();
+      // 步骤 3：动画彻底结束后，如果传入了回调函数，则执行回调以驱动后续逻辑
+      if (callback) {
+        callback();
+      }
     }
-  }, force);
+  }, 50);
 }
 
 export function update(refreshBack, callback) {

@@ -1,7 +1,6 @@
 import { state } from './state.js';
 import { Script } from './script.js';
 import { Thread } from './thread.js';
-import { Timer } from './timer.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
 import { update, drawMapAll } from '../ui/draw.js';
@@ -336,11 +335,7 @@ export function performToggleScene(targetSceneId) {
 
   console.log('切换场景: ' + targetSceneId + ' 地图: ' + state.mapId);
 
-  // 清空 Timer 中的全部 anims
-  const timerDbg = Timer.DEBUG;
-  if (timerDbg && timerDbg.anims) {
-    timerDbg.anims.length = 0;
-  }
+
 
   drawMapAll(); // 同步加载与绘制大地图
   update(true); // 重绘画面

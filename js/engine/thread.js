@@ -1,5 +1,4 @@
 import { state } from './state.js';
-import { Timer } from './timer.js';
 
 let threadIdCounter = 1;
 
@@ -19,10 +18,7 @@ export class Thread {
   reset() {
     this.finish = false;
     this.pause = false;
-    if (this.timer) {
-      Timer.clearTimer(this.timer);
-      this.timer = null;
-    }
+
   }
 
   start() {
@@ -32,10 +28,7 @@ export class Thread {
   restart() {
     this.finish = false;
     this.pause = false;
-    if (this.timer) {
-      Timer.clearTimer(this.timer);
-      this.timer = null;
-    }
+
   }
 
   stop() {

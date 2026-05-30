@@ -1,6 +1,5 @@
 import { state } from './state.js';
 import { Thread } from './thread.js';
-import { Timer } from './timer.js';
 import { scriptCodes, performToggleScene } from './command.js';
 import { Hex } from '../utils/hex.js';
 import { update } from '../ui/draw.js';
@@ -56,26 +55,13 @@ export const Script = {
 
   // 4. 规范化的逻辑帧嘀嗒（负责原本单次游戏循环中的全部逻辑更新与统一渲染）
   tick() {
-    // 步骤 1：步进底层动画和定时任务
-    let animCount = 0;
-    const anims = Timer.DEBUG.anims;
-    for (const key in anims) {
-      const func = anims[key];
-      if (func) {
-        const index = func.index || 0;
-        func(index + 1);
-        func.index = index + 1;
-        animCount++;
-      }
-    }
-
-    // 步骤 2：检测是否需要进行场景切换（一律在主循环头部做同步判定）
+    // 步骤 1：检测是否需要进行场景切换（一律在主循环头部做同步判定）
     if (state.nextSceneId !== state.sceneId && state.nextSceneId !== -1) {
       this.handleSceneSwitch();
       return;
     }
 
-    // 步骤 3：检测是否有延迟触发的 trigger 交互脚本需要激活
+    // 步骤 2：检测是否有延迟触发的 trigger 交互脚本需要激活
     if (state.nextTriggerScriptId !== undefined && state.nextTriggerScriptId !== null && state.nextTriggerScriptId !== -1) {
       const scriptId = state.nextTriggerScriptId;
       const obj = state.nextTriggerScriptObject;
@@ -88,7 +74,7 @@ export const Script = {
       // 激活后继续向下运行，以便在同一个 tick 中直接步进该脚本，保持高响应性
     }
 
-    // 步骤 4：步进当前活跃的非 auto 类主线程（进入场景脚本、交互触发脚本等）
+    // 步骤 3：步进当前活跃的非 auto 类主线程（进入场景脚本、交互触发脚本等）
     const t = Script.activeThread;
     if (t && !t.finish) {
       if (!t.pause) {
@@ -96,7 +82,7 @@ export const Script = {
       }
     }
 
-    // 步骤 5：步进 auto NPC 漫游线程。判定依据为事件物体的类型 type === 'npc'
+    // 步骤 4：步进 auto NPC 漫游线程。判定依据为事件物体的类型 type === 'npc'
     for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
       const o = state.eventObjects[i];
       if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc') continue;
@@ -113,7 +99,7 @@ export const Script = {
       }
     }
 
-    // 步骤 6：画面统一重绘同步
+    // 步骤 5：画面统一重绘同步
     update(true);
   },
 

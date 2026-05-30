@@ -4,7 +4,6 @@ import { UI, PanelFactory } from '../ui/panel.js';
 import { unbind } from '../ui/input.js';
 import { Script } from '../engine/script.js';
 import { toggleScene } from '../engine/command.js';
-import { Timer } from '../engine/timer.js';
 
 export const ESC = {
   ShowStatus: false,
@@ -194,6 +193,6 @@ function animHide(el, callback) {
 }
 
 function newStory() {
-  Timer.start(); // 正式启动底层定时器时钟，将 pause 置为 false 激活主循环 tick()
+  state.isPaused = false; // 正式启动游戏主循环时钟暂停状态，激活核心 tick()
   toggleScene(1);
 }

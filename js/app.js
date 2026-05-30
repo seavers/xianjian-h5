@@ -6,7 +6,6 @@ import { ESC } from './esc/esc.js';
 import { Hex } from './utils/hex.js';
 import { Talk } from './ui/talk.js';
 import { Script } from './engine/script.js';
-import { Timer } from './engine/timer.js';
 import { updateCount, update as updateGameScreen } from './ui/draw.js';
 
 // 获取 URL 参数是否为 debug 模式
@@ -144,7 +143,6 @@ function initContexts() {
   // 1. 挂载渲染计数器、定时器时钟及资源缓存至全局 window 作用域，便于右侧面板实时监控分析
   window.updateCount = updateCount;
   window.updateGameScreen = updateGameScreen;
-  window.Timer = Timer;
   window.file_caches = file_caches;
   window.pal_caches = caches;
 }
