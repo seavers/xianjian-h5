@@ -1320,7 +1320,7 @@
 			
 			for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
 				const o = state.eventObjects[i];
-				if (o && o.roleId !== 0) {
+				if (o && o.mgoId !== 0) {
 					npcCount++;
 					if (typeof o.trigMode === 'number') {
 						trigModeCount[o.trigMode] = (trigModeCount[o.trigMode] || 0) + 1;
@@ -1476,7 +1476,7 @@
 
 				// 过滤条件：如果开启了“仅人物NPC”，则过滤掉 roleId === 0 的事件点
 				const onlyHuman = window.ONLY_HUMAN_NPC !== false;
-				if (onlyHuman && o.roleId === 0) continue;
+				if (onlyHuman && o.mgoId === 0) continue;
 
 				npcCountForMicro++;
 
@@ -1511,7 +1511,7 @@
 					npcCard.onmouseenter = () => {
 						document.getElementById('ins-item-name').innerText = `👾 NPC #${o.id} 底层数据解剖`;
 						document.getElementById('ins-val-id').innerText = o.id;
-						document.getElementById('ins-val-role').innerText = `Role #${o.roleId}`;
+						document.getElementById('ins-val-role').innerText = `Role #${o.mgoId}`;
 						document.getElementById('ins-val-buy').innerText = '无';
 						document.getElementById('ins-val-sell').innerText = '无';
 						document.getElementById('ins-val-type').innerText = 'NPC 实体物体';
@@ -1532,11 +1532,11 @@
 						document.getElementById('ins-val-offset').innerText = `PX: (${o.x}, ${o.y})`;
 
 						// NPC 当前走路帧动作立绘解码并展示
-						if (o.roleId !== 0 && loadMgoFn) {
+						if (o.mgoId !== 0 && loadMgoFn) {
 							try {
-								const npcCanvas = loadMgoFn(o.roleId, o.frame);
+								const npcCanvas = loadMgoFn(o.mgoId, o.frame);
 								if (npcCanvas) {
-									drawDecodedSprite(npcCanvas, 'canvas-item-ball', 'NPC: #' + o.roleId);
+									drawDecodedSprite(npcCanvas, 'canvas-item-ball', 'NPC: #' + o.mgoId);
 								} else {
 									drawDecodedSprite(null, 'canvas-item-ball', '无');
 								}
@@ -1560,9 +1560,9 @@
 						// 点击时依然同步更新并绘制当前 NPC 的当前帧立绘
 						if (loadMgoFn) {
 							try {
-								const npcCanvas = loadMgoFn(o.roleId, o.frame);
+								const npcCanvas = loadMgoFn(o.mgoId, o.frame);
 								if (npcCanvas) {
-									drawDecodedSprite(npcCanvas, 'canvas-item-ball', 'NPC: #' + o.roleId);
+									drawDecodedSprite(npcCanvas, 'canvas-item-ball', 'NPC: #' + o.mgoId);
 								}
 							} catch (e) {}
 						}
@@ -1608,7 +1608,7 @@
 					stateSpan.style.color = stateColor;
 				}
 
-				const posText = `(${Math.floor(o.x / 32)}, ${Math.floor(o.y / 16)})${o.roleId === 0 ? '' : ' R:' + o.roleId}`;
+				const posText = `(${Math.floor(o.x / 32)}, ${Math.floor(o.y / 16)})${o.mgoId === 0 ? '' : ' mgoId:' + o.mgoId}`;
 				if (posDiv.innerText !== posText) {
 					posDiv.innerText = posText;
 				}
@@ -1723,9 +1723,9 @@
 		window.lastLogFilterSignature = '';
 
 		// 根据角色 ID 获取人物/NPC名称 (以支持右侧指令区对 auto 指令的执行 NPC 展示)
-		function getRoleName(roleId) {
-			if (roleId <= 0) {
-				return "-";
+		function getRoleName(mgoId) {
+			if (!mgoId || mgoId <= 0) {
+				return "角色 -";
 			}
 			const names = {
 				// 0: '李逍遥',
@@ -1739,7 +1739,7 @@
 				// 21: '村口黄狗',
 				// 53: '集市商贩'
 			};
-			return names[roleId] || `角色 #${roleId}`;
+			return names[mgoId] || `角色 #${mgoId}`;
 		}
 
 		function clearScriptLogs() {
@@ -1861,7 +1861,7 @@
 
 			// 如果是 auto 类型的指令，右侧展示正在执行指令的 NPC 信息 (包含 ID 和 角色名)
 			if (log.type === 'auto') {
-				const roleName = getRoleName(log.roleId);
+				const roleName = getRoleName(log.mgoId);
 				const npcText = `🤖 NPC #${log.npcId} (${roleName})`;
 
 				// 若有具体指令细节描述则进行拼接显示，增强调试信息极客感
@@ -2978,7 +2978,7 @@
 			refreshDashboard();
 		};
 		window.onThreadsUpdate = () => {
-			refreshDashboard();
+			// refreshDashboard();
 		};
 		window.onScriptExecute = (logItemOrArray) => {
 			if (Array.isArray(logItemOrArray)) {

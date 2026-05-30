@@ -299,9 +299,6 @@ export function setNpcTrigScr(objId, trigScr) {
 export function setNpcFrame(frame) {
   loadFrameCount(this);
   this.frame = frame;
-
-  // 不能随机，看 9991 脚本，这里会死循环
-  return -1;
 }
 
 export function setSceneId(sceneId) {
@@ -418,15 +415,15 @@ export function updateScreen() {
 
 export function updateScreenAndWait(time) {
   update();
-  return Script.sleep(time);
+  return Script.stepProgress(this, time);
 }
 
 export function waitSecond(time) {
-  return Script.sleep(time * 6);
+  return Script.stepProgress(this, time * 6);
 }
 
 export function sleepFrame(frameCount, speed) {
-  return Script.sleep(frameCount * speed);
+  return Script.stepProgress(this, frameCount * speed);
 }
 
 export function checkTalk() {
