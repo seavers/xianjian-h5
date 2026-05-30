@@ -86,6 +86,8 @@ export const Script = {
     // 步骤 6：步进 auto NPC 漫游线程。判定依据为事件物体的类型 type === 'npc'
     // 剧情对话 (isTalking) 展示期间，跳过 auto 漫游步进以完全挂起漫游 NPC，杜绝对话期间 NPC 步态和移位
     if (!isTalking) {
+      const autoLogs = [];
+
       for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
         const o = state.eventObjects[i];
         if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc') continue;
@@ -97,9 +99,17 @@ export const Script = {
           }
           
           if (o.thread && !o.thread.finish && !o.thread.pause) {
-            this.stepOneInstruction(o.thread);
+            const logItem = this.stepOneInstruction(o.thread);
+            if (logItem) {
+              autoLogs.push(logItem);
+            }
           }
         }
+      }
+
+      // 所有 auto 脚本执行完毕后，统一批量回调脚本执行钩子，大幅减少重绘次数
+      if (autoLogs.length > 0 && window.onScriptExecute) {
+        window.onScriptExecute(autoLogs);
       }
     }
 
@@ -339,7 +349,7 @@ export const Script = {
 
   // 步进执行单条指令，用于 auto NPC 在每次 tick 中仅执行单条命令，避免 While 循环阻塞
   stepOneInstruction(thread) {
-    if (thread.finish || thread.pause) return;
+    if (thread.finish || thread.pause) return null;
 
     Thread.currentThread = thread;
 
@@ -347,7 +357,7 @@ export const Script = {
     if (!script) {
       console.warn(`Thread #${thread.id} scriptId: ${thread.scriptId} 越界`);
       thread.stop();
-      return;
+      return null;
     }
 
     const code = scriptCodes[script.code];
@@ -374,19 +384,15 @@ export const Script = {
       state.scriptLogs.shift();
     }
 
-    if (window.onScriptExecute) {
-      window.onScriptExecute(logItem);
-    }
-
     if (!code) {
       console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${thread.scriptId}]: execute ${Hex.toHex(script.code)}`);
       thread.scriptId++;
-      return;
+      return logItem;
     }
 
     if (script.code === 0) {
       thread.stop();
-      return;
+      return logItem;
     }
 
     const tab = thread.type.charAt(0).toUpperCase();
@@ -397,10 +403,11 @@ export const Script = {
       
       // 同理，如果 auto NPC 执行指令尚未完成，直接退出且不递增指令指针 IP
       if (ret === -1 || (typeof ret === 'number' && ret > 0)) {
-        return;
+        return logItem;
       }
     }
 
     thread.scriptId++;
+    return logItem;
   }
 };

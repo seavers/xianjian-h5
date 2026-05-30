@@ -2904,8 +2904,18 @@
 		window.onThreadsUpdate = () => {
 			refreshDashboard();
 		};
-		window.onScriptExecute = (logItem) => {
-			appendScriptLog(logItem);
+		window.onScriptExecute = (logItemOrArray) => {
+			if (Array.isArray(logItemOrArray)) {
+				logItemOrArray.forEach(item => {
+					window.scriptLogStore.push(item);
+				});
+				if (window.scriptLogStore.length > window.scriptLogStoreMax) {
+					window.scriptLogStore.splice(0, window.scriptLogStore.length - window.scriptLogStoreMax);
+				}
+				renderScriptLogs({ force: true, stickToBottom: true });
+			} else {
+				appendScriptLog(logItemOrArray);
+			}
 			refreshDashboard();
 		};
 
