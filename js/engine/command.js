@@ -77,7 +77,7 @@ export function roleWalk(sx, sy, shalf) {
   state.mx = sx;
   state.my = sy;
   state.mhalf = shalf;
-  Npc.anim(state.roles[0], sx, sy, shalf, 4);
+  return Npc.animTeam(state.roles[0], sx, sy, shalf, 4);
 }
 
 export function clearWithEffect() {}
@@ -554,7 +554,7 @@ export function delayPeriod(time) {
 }
 
 export function updateScreenAndWait(time) {
-  update();
+  // 返回>0，跳出场景脚本循环，来重绘
   return Script.stepProgress(this, time);
 }
 
@@ -629,6 +629,7 @@ scriptCodes[0x03] = { func: gotoScript, desc: '无条件跳转指令' };
 scriptCodes[0x04] = { func: subScript, desc: '执行子脚本指令' };
 scriptCodes[0x05] = { func: updateScreen, desc: '屏幕重绘指令' };
 scriptCodes[0x06] = { func: randomScript, desc: '概率随机分支指令' };
+scriptCodes[0x09] = { func: updateScreenAndWait, desc: '重绘屏幕并等待' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };
@@ -651,7 +652,6 @@ scriptCodes[0x3C] = { func: (...args) => window.Talk.talkUp(...args), desc: '在
 scriptCodes[0x3D] = { func: (...args) => window.Talk.talkDown(...args), desc: '在屏幕底部显示对话' };
 scriptCodes[0x3E] = { func: (...args) => window.Talk.talkMessage(...args), desc: '显示弹出框信息 alert' };
 
-scriptCodes[0x09] = { func: updateScreenAndWait, desc: '重绘屏幕并等待' };
 scriptCodes[0x16] = { func: setNpcTile, desc: '设置NPC特定形象与朝向' };
 scriptCodes[0x8E] = { func: (...args) => window.Talk.clearTalk(...args), desc: '清空/关闭对话框' };
 scriptCodes[0x49] = { func: setObjectStatus, desc: '改变NPC活动生命状态' };
