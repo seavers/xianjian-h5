@@ -324,6 +324,11 @@ export function setNpcFrame(frame) {
 export function setMusic() {}
 export function setFightMusic() {}
 
+export function setSceneId(sceneId) {
+  // 有些切换场景，是先切换场景，再填写ID，如脚本5933
+  state.nextSceneId = sceneId;
+}
+
 export function fadeOutScene(fadeOutSpeed) {
   // 有些切换场景，是先切换场景，再填写ID，如脚本5933
   state.fadeOutSpeed = fadeOutSpeed;
@@ -472,7 +477,7 @@ scriptCodes[0x3F] = { func: teamWalk, desc: '队伍慢速骑乘到坐标' };
 scriptCodes[0x44] = { func: teamWalk2, desc: '队伍常速骑乘到坐标' };
 scriptCodes[0x97] = { func: teamWalk3, desc: '队伍快速骑乘到坐标' };
 
-scriptCodes[0x59] = { func: toggleScene, desc: '修改切换目的地场景 ID' };
+scriptCodes[0x59] = { func: setSceneId, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
 scriptCodes[0x85] = { func: waitSecond, desc: '非阻塞等待特定秒数' };
