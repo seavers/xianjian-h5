@@ -1449,9 +1449,18 @@
 				itemsContainer.appendChild(slot);
 			}
 
-			// 3.4 袖珍芯片式 NPC 网格矩阵平铺
+			// 3.4 袖珍芯片式 NPC 网格矩阵平铺（差量更新 DOM 提升性能）
 			const npcContainer = document.getElementById('container-npcs');
-			npcContainer.innerHTML = '';
+			
+			// 收集当前容器里所有的旧卡片，供后续复用与差量清理
+			const existingCards = {};
+			Array.from(npcContainer.children).forEach(child => {
+				const npcId = child.getAttribute('data-npc-id');
+				if (npcId) {
+					existingCards[npcId] = child;
+				}
+			});
+
 			let npcCountForMicro = 0;
 
 			for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
@@ -1464,19 +1473,65 @@
 
 				npcCountForMicro++;
 
-				const npcCard = document.createElement('div');
-				npcCard.className = 'npc-micro-card';
-				if (state.highlightNpcId === o.id) {
-					npcCard.className += ' highlighted';
+				let npcCard = existingCards[o.id];
+				let idSpan, stateSpan, posDiv;
+
+				if (!npcCard) {
+					// 卡片不存在，首次创建并初始化 DOM 骨架
+					npcCard = document.createElement('div');
+					npcCard.className = 'npc-micro-card';
+					npcCard.setAttribute('data-npc-id', o.id);
+
+					const headDiv = document.createElement('div');
+					headDiv.className = 'npc-mc-head';
+
+					idSpan = document.createElement('span');
+					idSpan.innerText = `#${o.id}`;
+					headDiv.appendChild(idSpan);
+
+					stateSpan = document.createElement('span');
+					stateSpan.className = 'npc-state-span';
+					stateSpan.style.fontSize = '7.5px';
+					headDiv.appendChild(stateSpan);
+
+					posDiv = document.createElement('div');
+					posDiv.className = 'npc-mc-pos';
+
+					npcCard.appendChild(headDiv);
+					npcCard.appendChild(posDiv);
+				} else {
+					// 从复用池中标记移除，避免在末尾被当作垃圾清理
+					delete existingCards[o.id];
+					
+					// 直接通过类名快速获取需要局部更新的 DOM 节点
+					stateSpan = npcCard.querySelector('.npc-state-span');
+					posDiv = npcCard.querySelector('.npc-mc-pos');
 				}
 
-				npcCard.innerHTML = `
-					<div class="npc-mc-head">
-						<span>#${o.id}</span>
-						<span style="color:${o.state ? 'var(--glow-green)' : 'rgba(255,255,255,0.15)'}; font-size:7.5px;">S:${o.state}</span>
-					</div>
-					<div class="npc-mc-pos">(${Math.floor(o.x/32)}, ${Math.floor(o.y/16)})${o.roleId === 0 ? '' : ' R:' + o.roleId}</div>
-				`;
+				// 精密对比并仅更新发生变动的属性或样式，杜绝无谓的 DOM 回流
+				const isHighlighted = state.highlightNpcId === o.id;
+				const hasHighlightedClass = npcCard.classList.contains('highlighted');
+				if (isHighlighted !== hasHighlightedClass) {
+					if (isHighlighted) {
+						npcCard.classList.add('highlighted');
+					} else {
+						npcCard.classList.remove('highlighted');
+					}
+				}
+
+				const stateText = `S:${o.state}`;
+				const stateColor = o.state ? 'var(--glow-green)' : 'rgba(255,255,255,0.15)';
+				if (stateSpan.innerText !== stateText) {
+					stateSpan.innerText = stateText;
+				}
+				if (stateSpan.style.color !== stateColor) {
+					stateSpan.style.color = stateColor;
+				}
+
+				const posText = `(${Math.floor(o.x / 32)}, ${Math.floor(o.y / 16)})${o.roleId === 0 ? '' : ' R:' + o.roleId}`;
+				if (posDiv.innerText !== posText) {
+					posDiv.innerText = posText;
+				}
 
 				// 悬停时在物品解构里也可以看看 NPC 底层数据，超级极客！
 				npcCard.onmouseenter = () => {
@@ -1553,6 +1608,11 @@
 
 				npcContainer.appendChild(npcCard);
 			}
+
+			// 彻底清除本轮过滤后不再显示的多余旧 NPC 芯片卡片
+			Object.values(existingCards).forEach(card => {
+				npcContainer.removeChild(card);
+			});
 
 			if (npcCountForMicro === 0) {
 				npcContainer.innerHTML = '<div style="color:rgba(255,255,255,0.15); font-size:9.5px; padding: 6px 0; grid-column:span 6; text-align:center;">当前场景暂无活跃的事件/NPC实体</div>';
