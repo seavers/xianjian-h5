@@ -217,15 +217,15 @@ export function npcWalk3(x, y, half) {
 }
 
 export function teamWalk(x, y, half) {
-  Npc.animTeam(state.roles[0], x, y, half, 2);
+  Npc.animTeam(this, x, y, half, 2);
 }
 
 export function teamWalk2(x, y, half) {
-  Npc.animTeam(state.roles[0], x, y, half, 4);
+  Npc.animTeam(this, x, y, half, 4);
 }
 
 export function teamWalk3(x, y, half) {
-  Npc.animTeam(state.roles[0], x, y, half, 6);
+  Npc.animTeam(this, x, y, half, 6);
 }
 
 export function walkAtPlace() {
