@@ -211,9 +211,8 @@ ready(() => {
     // 4. 获取目标传送坐标并执行场景切换
     const target = coords[n] || coords[0];
     if (target) {
-      state.nextSceneId = target.sceneId;
       setRolePos(target.x, target.y, 0);
-      toggleScene();
+      toggleScene(target.sceneId);
     }
   }
 });

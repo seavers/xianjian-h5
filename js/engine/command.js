@@ -324,16 +324,16 @@ export function setNpcFrame(frame) {
 export function setMusic() {}
 export function setFightMusic() {}
 
-export function fadeOutScene(sceneId) {
+export function fadeOutScene(fadeOutSpeed) {
   // 有些切换场景，是先切换场景，再填写ID，如脚本5933
-  state.nextSceneId = sceneId;
+  state.fadeOutSpeed = fadeOutSpeed;
   update('fadeOut');
   state.needToFadeIn = true;
 }
 
-export function toggleScene() {
-  const scene = state.scenes[state.nextSceneId];
-  state.sceneId = state.nextSceneId;
+export function toggleScene(sceneId) {
+  const scene = state.scenes[sceneId];
+  state.sceneId = sceneId;
   state.mapId = scene.mapId;
   state.startEventId = scene.startEventId;
   state.endEventId = scene.endEventId;

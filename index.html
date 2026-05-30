@@ -2713,9 +2713,8 @@
 				const target = COORDS.find(item => item.sceneId === sceneId) || { x: 30, y: 30, name: `未知场景 #${sceneId}` };
 
 				// 执行无缝切换传送指令链
-				window.state.nextSceneId = sceneId;
 				window.setRolePos(target.x, target.y, 0);
-				window.toggleScene();
+				window.toggleScene(sceneId);
 
 				// 在打字对话和通知流中输出双重传送喜报！
 				import('./js/ui/talk.js').then(({ Talk }) => {
@@ -2741,8 +2740,7 @@
 			}
 
 			if (window.state && window.toggleScene) {
-				window.state.nextSceneId = sceneId;
-				window.toggleScene();
+				window.toggleScene(sceneId);
 				import('./js/ui/talk.js').then(({ Talk }) => {
 					Talk.talkTips(`场景切换！已成功切换至场景 #${sceneId}`);
 				});
@@ -2856,9 +2854,8 @@
 
 		function teleportMarket() {
 			if (window.state && window.toggleScene) {
-				window.state.nextSceneId = 4;
 				window.setRolePos(36, 58, 0);
-				window.toggleScene();
+				window.toggleScene(4);
 				import('./js/ui/talk.js').then(({ Talk }) => {
 					Talk.talkTips('太乙神行瞬移大法！直接飞抵集市！');
 				});

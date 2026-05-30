@@ -11,10 +11,13 @@ export const state = {
   mapX: 0,
   mapY: 0,
   mapId: 12,
+  
   sceneId: -1,
   nextSceneId: -1,
   needToFadeIn: false,  // 标识是否fadeIn、fadeOut 场景
   fadeAlpha: 0,         // 场景渐变过渡的黑色遮罩透明度（0表示完全透明，1表示完全黑色）
+  fadeOutSpeed: 1,
+
   startEventId: 0,
   endEventId: 0x20,
 

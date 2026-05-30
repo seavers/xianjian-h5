@@ -60,7 +60,7 @@ canvas {zoom: 2}
 <div id="debug" style="display:none">
 	<div id="console"></div>
 	<div id="input">
-		<input type="text" placeholder="sceneId" value="" onchange="javascript:nextSceneId=this.value;toggleScene();"><br/>
+		<input type="text" placeholder="sceneId" value="" onchange="javascript:toggleScene(this.value);"><br/>
 		<input type="text" placeholder="mx" value="" onchange="javascript:setRolePos(this.value, my, mhalf);"><br/>
 		<input type="text" placeholder="my" value="" onchange="javascript:setRolePos(mx, this.value, mhalf);"><br/>
 		<input type="button" value="stop" onchange="javascript:for(n in Npcs){Npcs[n].stop();}update();"><br/>
@@ -173,20 +173,12 @@ canvas {zoom: 2}
 			ESC.onStartup();
 
 		} else if (false) {
-			//enter scene 1
-			nextSceneId = 1;
-			toggleScene();
+			toggleScene(1);
 		} else {
-			//enter scene 2
 			commonEnter();
 			
-			//nextSceneId = 3;
-
-			nextSceneId = 4;
 			setRolePos(36, 58, 0);			//3.	46.	设置pos: 41, 18
-
-
-			toggleScene();
+			toggleScene(4);
 
 		}
 
@@ -215,8 +207,7 @@ canvas {zoom: 2}
 /*
 	setRolePos(35, 61, 0);
 	setRoleTile(0, 2, 0);
-	nextSceneId=4;
-	toggleScene();
+	toggleScene(4);
 */
 
 

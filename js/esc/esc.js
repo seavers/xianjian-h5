@@ -193,6 +193,5 @@ function animHide(el, callback) {
 }
 
 function newStory() {
-  state.nextSceneId = 1;
-  toggleScene();
+  toggleScene(1);
 }
