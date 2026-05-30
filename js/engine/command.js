@@ -371,6 +371,35 @@ export function fadeOutScene(fadeOutSpeed) {
   }
 }
 
+export function fadeScreen(speed) {
+  // 步骤 1：利用 intToShort 将传入 the 无符号短整型 speed 转换为有符号短整型速度 s
+  const s = intToShort(speed);
+  state.fadeOutSpeed = Math.abs(s);
+  state.needToFadeIn = s < 0;
+
+  // 步骤 2：如果是在非脚本线程环境，只更新渐变标记不进行硬挂起
+  if (!Thread.currentThread) {
+    return;
+  }
+
+  // 步骤 3：将游戏状态置为暂停挂起，并在后台主时钟驱动下依次播放淡出、淡入的流畅渐变过渡
+  state.isPaused = true;
+
+  if (s < 0) {
+    // 负数：淡出完后，触发淡入，最后解除挂起以恢复游戏推进
+    update('fadeOut', () => {
+      update('fadeIn', () => {
+        state.isPaused = false;
+      });
+    });
+  } else {
+    // 正数：直接单向执行淡入，并在结束后解除挂起
+    update('fadeIn', () => {
+      state.isPaused = false;
+    });
+  }
+}
+
 export function performToggleScene(targetSceneId) {
   const scene = state.scenes[targetSceneId];
   if (!scene) {
@@ -576,6 +605,7 @@ scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
 
 scriptCodes[0x59] = { func: setSceneId, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
+scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
 scriptCodes[0x85] = { func: waitSecond, desc: '非阻塞等待特定秒数' };
 scriptCodes[0x4C] = { func: sleepFrame, desc: '阻塞等待特定帧数' };
