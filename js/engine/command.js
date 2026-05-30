@@ -446,6 +446,14 @@ export function checkTalk() {
   console.log('global checkTalk');
 }
 
+export function setMusic() {
+  // 背景音乐播放桩，暂未支持音频播放
+}
+
+export function setFightMusic() {
+  // 战斗音乐播放桩，暂未支持音频播放
+}
+
 export function setMoney(add) {
   state.money += add;
   if (window.onSceneUpdate) {
