@@ -1449,10 +1449,16 @@
 				itemsContainer.appendChild(slot);
 			}
 
-			// 3.4 袖珍芯片式 NPC 网格矩阵平铺（差量更新 DOM 提升性能）
+			// 3.4 袖珍芯片式 NPC 网格矩阵平铺（极致 DOM 差量更新与复用）
 			const npcContainer = document.getElementById('container-npcs');
 			
-			// 收集当前容器里所有的旧卡片，供后续复用与差量清理
+			// 场景切换判定：切换场景时强制清空容器以触发生命周期重绑
+			if (window.lastRenderedSceneId !== state.sceneId) {
+				window.lastRenderedSceneId = state.sceneId;
+				npcContainer.innerHTML = '';
+			}
+
+			// 仅在同一个场景内提取并复用现有的 DOM 节点
 			const existingCards = {};
 			Array.from(npcContainer.children).forEach(child => {
 				const npcId = child.getAttribute('data-npc-id');
@@ -1462,6 +1468,7 @@
 			});
 
 			let npcCountForMicro = 0;
+			let currentIdx = 0;
 
 			for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
 				const o = state.eventObjects[i];
@@ -1499,6 +1506,79 @@
 
 					npcCard.appendChild(headDiv);
 					npcCard.appendChild(posDiv);
+
+					// 仅在首次生成时设置一次事件监听，消除重复绑定的性能开销与内存压力
+					npcCard.onmouseenter = () => {
+						document.getElementById('ins-item-name').innerText = `👾 NPC #${o.id} 底层数据解剖`;
+						document.getElementById('ins-val-id').innerText = o.id;
+						document.getElementById('ins-val-role').innerText = `Role #${o.roleId}`;
+						document.getElementById('ins-val-buy').innerText = '无';
+						document.getElementById('ins-val-sell').innerText = '无';
+						document.getElementById('ins-val-type').innerText = 'NPC 实体物体';
+						document.getElementById('ins-val-slot').innerText = '无';
+						document.getElementById('ins-val-atk').innerText = '无';
+						document.getElementById('ins-val-def').innerText = '无';
+						document.getElementById('ins-val-spd').innerText = `方向: ${o.dir}`;
+						document.getElementById('ins-val-mag').innerText = `动作帧: ${o.frame}`;
+						document.getElementById('ins-val-lck').innerText = '无';
+						document.getElementById('ins-val-usescr').innerText = o.trigScr ? '0x' + o.trigScr.toString(16).toUpperCase() : '无';
+						document.getElementById('ins-val-equscr').innerText = o.autoScr ? '0x' + o.autoScr.toString(16).toUpperCase() : '无';
+						document.getElementById('ins-val-dropscr').innerText = '无';
+						document.getElementById('ins-val-flags').innerText = `TrigMode: ${o.trigMode}`;
+						document.getElementById('ins-val-consumable').innerText = o.state === 0 ? '隐蔽 (Hidden)' : '活跃 (Active)';
+						document.getElementById('ins-val-throw').innerText = '否';
+						document.getElementById('ins-val-sellable').innerText = '否';
+						document.getElementById('ins-val-res').innerText = `ModRef: ${o.modsRef}`;
+						document.getElementById('ins-val-offset').innerText = `PX: (${o.x}, ${o.y})`;
+
+						// NPC 当前走路帧动作立绘解码并展示
+						if (o.roleId !== 0 && loadMgoFn) {
+							try {
+								const npcCanvas = loadMgoFn(o.roleId, o.frame);
+								if (npcCanvas) {
+									drawDecodedSprite(npcCanvas, 'canvas-item-ball', 'NPC: #' + o.roleId);
+								} else {
+									drawDecodedSprite(null, 'canvas-item-ball', '无');
+								}
+							} catch (e) {
+								console.error("加载NPC立绘失败", e);
+								drawDecodedSprite(null, 'canvas-item-ball', '无');
+							}
+						} else {
+							drawDecodedSprite(null, 'canvas-item-ball', '无');
+						}
+					};
+
+					npcCard.onclick = () => {
+						if (state.highlightNpcId === o.id) {
+							state.highlightNpcId = null;
+						} else {
+							state.highlightNpcId = o.id;
+						}
+						refreshDashboard();
+
+						// 点击时依然同步更新并绘制当前 NPC 的当前帧立绘
+						if (loadMgoFn) {
+							try {
+								const npcCanvas = loadMgoFn(o.roleId, o.frame);
+								if (npcCanvas) {
+									drawDecodedSprite(npcCanvas, 'canvas-item-ball', 'NPC: #' + o.roleId);
+								}
+							} catch (e) {}
+						}
+					};
+
+					npcCard.ondblclick = () => {
+						const tx = Math.floor(o.x / 32);
+						const ty = Math.floor(o.y / 16);
+						const thalf = Math.round((o.x - tx * 32) / 16);
+						if (window.setRolePos) {
+							window.setRolePos(tx, ty, thalf);
+							import('./js/ui/talk.js').then(({ Talk }) => {
+								Talk.talkTips(`双击瞬移！已直接传送至 NPC #${o.id} 所在的坐标 (${tx}, ${ty})`);
+							});
+						}
+					};
 				} else {
 					// 从复用池中标记移除，避免在末尾被当作垃圾清理
 					delete existingCards[o.id];
@@ -1533,80 +1613,16 @@
 					posDiv.innerText = posText;
 				}
 
-				// 悬停时在物品解构里也可以看看 NPC 底层数据，超级极客！
-				npcCard.onmouseenter = () => {
-					document.getElementById('ins-item-name').innerText = `👾 NPC #${o.id} 底层数据解剖`;
-					document.getElementById('ins-val-id').innerText = o.id;
-					document.getElementById('ins-val-role').innerText = `Role #${o.roleId}`;
-					document.getElementById('ins-val-buy').innerText = '无';
-					document.getElementById('ins-val-sell').innerText = '无';
-					document.getElementById('ins-val-type').innerText = 'NPC 实体物体';
-					document.getElementById('ins-val-slot').innerText = '无';
-					document.getElementById('ins-val-atk').innerText = '无';
-					document.getElementById('ins-val-def').innerText = '无';
-					document.getElementById('ins-val-spd').innerText = `方向: ${o.dir}`;
-					document.getElementById('ins-val-mag').innerText = `动作帧: ${o.frame}`;
-					document.getElementById('ins-val-lck').innerText = '无';
-					document.getElementById('ins-val-usescr').innerText = o.trigScr ? '0x' + o.trigScr.toString(16).toUpperCase() : '无';
-					document.getElementById('ins-val-equscr').innerText = o.autoScr ? '0x' + o.autoScr.toString(16).toUpperCase() : '无';
-					document.getElementById('ins-val-dropscr').innerText = '无';
-					document.getElementById('ins-val-flags').innerText = `TrigMode: ${o.trigMode}`;
-					document.getElementById('ins-val-consumable').innerText = o.state === 0 ? '隐蔽 (Hidden)' : '活跃 (Active)';
-					document.getElementById('ins-val-throw').innerText = '否';
-					document.getElementById('ins-val-sellable').innerText = '否';
-					document.getElementById('ins-val-res').innerText = `ModRef: ${o.modsRef}`;
-					document.getElementById('ins-val-offset').innerText = `PX: (${o.x}, ${o.y})`;
-
-					// NPC 当前走路帧动作立绘解码并展示
-					if (o.roleId !== 0 && loadMgoFn) {
-						try {
-							const npcCanvas = loadMgoFn(o.roleId, o.frame);
-							if (npcCanvas) {
-								drawDecodedSprite(npcCanvas, 'canvas-item-ball', 'NPC: #' + o.roleId);
-							} else {
-								drawDecodedSprite(null, 'canvas-item-ball', '无');
-							}
-						} catch (e) {
-							console.error("加载NPC立绘失败", e);
-							drawDecodedSprite(null, 'canvas-item-ball', '无');
-						}
+				// 精确 DOM 顺序维护：如果当前节点已经在正确的位置上，则杜绝调用 appendChild 触发 DOM 节点在树中移动重载
+				const currentChild = npcContainer.children[currentIdx];
+				if (currentChild !== npcCard) {
+					if (currentIdx < npcContainer.children.length) {
+						npcContainer.insertBefore(npcCard, currentChild);
 					} else {
-						drawDecodedSprite(null, 'canvas-item-ball', '无');
+						npcContainer.appendChild(npcCard);
 					}
-				};
-
-				npcCard.onclick = () => {
-					if (state.highlightNpcId === o.id) {
-						state.highlightNpcId = null;
-					} else {
-						state.highlightNpcId = o.id;
-					}
-					refreshDashboard();
-
-					// 点击时依然同步更新并绘制当前 NPC 的当前帧立绘
-					if (loadMgoFn) {
-						try {
-							const npcCanvas = loadMgoFn(o.roleId, o.frame);
-							if (npcCanvas) {
-								drawDecodedSprite(npcCanvas, 'canvas-item-ball', 'NPC: #' + o.roleId);
-							}
-						} catch (e) {}
-					}
-				};
-
-				npcCard.ondblclick = () => {
-					const tx = Math.floor(o.x / 32);
-					const ty = Math.floor(o.y / 16);
-					const thalf = Math.round((o.x - tx * 32) / 16);
-					if (window.setRolePos) {
-						window.setRolePos(tx, ty, thalf);
-						import('./js/ui/talk.js').then(({ Talk }) => {
-							Talk.talkTips(`双击瞬移！已直接传送至 NPC #${o.id} 所在的坐标 (${tx}, ${ty})`);
-						});
-					}
-				};
-
-				npcContainer.appendChild(npcCard);
+				}
+				currentIdx++;
 			}
 
 			// 彻底清除本轮过滤后不再显示的多余旧 NPC 芯片卡片
