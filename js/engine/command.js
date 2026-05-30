@@ -326,6 +326,21 @@ export function moveViewport(dx, dy, frameCount) {
   });
 }
 
+export function toggleDayNight(param1) {
+  // 步骤 1：反转全局的黑夜调色板标志状态
+  state.fNightPalette = !state.fNightPalette;
+
+  // 步骤 2：输出详细的黑夜/白天切换调试日志，说明渐变模式（param1 为 0 代表渐变，非 0 代表立即切换）
+  const mode = param1 === 0 ? '渐变平滑过渡' : '立即瞬间切换';
+  const status = state.fNightPalette ? '黑夜模式' : '白天常态';
+
+  console.log(`[0x80 toggleDayNight] 切换昼夜调色板, 当前状态: ${status}, 切换模式: ${mode}`);
+
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 export function setSceneEnterScr(sceneId, enterScriptId) {
   const scene = state.scenes[sceneId];
   scene.enterScriptId = enterScriptId;
@@ -624,6 +639,7 @@ scriptCodes[0x14] = { func: setNpcFrame, desc: '设置NPC活动动作帧' };
 scriptCodes[0x87] = { func: walkAtPlace, desc: '原地徘徊漫步' };
 scriptCodes[0x6F] = { func: replaceObject, desc: '替换并终结脚本实体' };
 scriptCodes[0x7F] = { func: moveViewport, desc: '平移或定位镜头视口' };
+scriptCodes[0x80] = { func: toggleDayNight, desc: '切换昼夜调色板' };
 scriptCodes[0x81] = { func: faceNpcTrig, desc: '面朝NPC触发脚本' };
 
 scriptCodes[0xFFFF] = { func: talk, desc: '展示剧情人物对话框' };
