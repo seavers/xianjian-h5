@@ -489,6 +489,14 @@ export function setFightMusic() {
   // 战斗音乐播放桩，暂未支持音频播放
 }
 
+export function stopMusic(fadeTime) {
+  // 步骤 1：若淡出时间参数为 0，默认为 2 秒淡出，否则按参数乘 3 换算为秒数
+  const seconds = fadeTime === 0 ? 2 : fadeTime * 3;
+
+  // 步骤 2：输出详细的停止音乐调试日志，以供后续接入音频框架时参考
+  console.log(`[0x77 stopMusic] 停止当前播放背景音乐，淡出时间: ${seconds} 秒`);
+}
+
 export function setMoney(add) {
   state.money += add;
   if (window.onSceneUpdate) {
@@ -533,6 +541,7 @@ scriptCodes[0x46] = { func: nextRolePos, desc: '设置主角/队员瓦片位置'
 scriptCodes[0x65] = { func: setRoleTile, desc: '设置主角/队员形象' };
 scriptCodes[0x15] = { func: setRoleIndex, desc: '设置队员动作方向/帧' };
 scriptCodes[0x75] = { func: setRoleGroup, desc: '设置组队伙伴' };
+scriptCodes[0x77] = { func: stopMusic, desc: '停止当前背景音乐并淡出' };
 
 scriptCodes[0x3B] = { func: (...args) => window.Talk.talkTips(...args), desc: '显示系统通知 tips' };
 scriptCodes[0x3C] = { func: (...args) => window.Talk.talkUp(...args), desc: '在屏幕顶部显示对话' };
