@@ -146,7 +146,7 @@ function initContexts() {
   window.updateGameScreen = updateGameScreen;
   window.Timer = Timer;
   window.file_caches = file_caches;
-  window.caches = caches;
+  window.pal_caches = caches;
 }
 
 // 资源载入并启动
