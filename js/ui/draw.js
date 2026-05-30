@@ -1,5 +1,7 @@
 import { state } from '../engine/state.js';
 import { loadMap, loadGop, loadMgo, loadFon, u9s, u3s } from '../resources/pal.js';
+import { Thread } from '../engine/thread.js';
+import { Timer } from '../engine/timer.js';
 
 export const updateCount = [0, 0, 0];
 let tiles = [];
@@ -243,7 +245,8 @@ export function drawMiddle() {
   }
 }
 
-export function update(refreshBack) {
+// 核心屏幕同步重绘逻辑
+function renderScreen(refreshBack) {
   const tempCtx = state.contexts.temp;
   const mainCtx = state.contexts.main;
   if (!tempCtx || !mainCtx) return;
@@ -272,7 +275,66 @@ export function update(refreshBack) {
   if (window.SHOW_NPC_ID_ON_SCREEN) {
     drawNpcIdsOnScreen();
   }
+
+  // 步骤 4：绘制全屏渐变半透明黑色遮罩，用于场景淡入淡出过渡
+  if (state.fadeAlpha > 0) {
+    mainCtx.fillStyle = `rgba(0, 0, 0, ${state.fadeAlpha})`;
+    mainCtx.fillRect(0, 0, mainCtx.canvas.width, mainCtx.canvas.height);
+  }
+
   updateCount[1]++;
+}
+
+// 执行全屏淡入淡出渐变动画过渡，并在过程中智能挂起/恢复脚本线程
+function startFadeTransition(type) {
+  const thread = Thread.currentThread;
+  const force = thread ? thread.type !== 'auto' : true;
+
+  // 步骤 1：如果存在活跃的脚本执行线程，则在过渡期间将其暂停/挂起以确保过场动画同步性
+  if (thread) {
+    thread.wait();
+  }
+
+  const duration = 12; // 12帧过渡时长
+
+  // 步骤 2：启动帧时钟定时任务队列，在 12 帧内线性渐变修改 fadeAlpha
+  Timer.queue(duration, (frame) => {
+    if (type === 'fadeOut') {
+      state.fadeAlpha = frame / duration;
+    } else {
+      state.fadeAlpha = 1 - frame / duration;
+    }
+
+    renderScreen(true);
+  }, () => {
+    // 步骤 3：过渡完成回调，设置最终确切的 fadeAlpha 值并清屏/重绘
+    if (type === 'fadeOut') {
+      state.fadeAlpha = 1;
+    } else {
+      state.fadeAlpha = 0;
+    }
+
+    renderScreen(true);
+
+    // 步骤 4：动画彻底结束后，若之前有挂起脚本线程，则恢复其执行
+    if (thread) {
+      thread.notify();
+    }
+  }, force);
+}
+
+export function update(refreshBack) {
+  // 步骤 1：检测是否为特殊的淡入淡出过渡指令，是则触发过渡动画，否则进行普通画面渲染
+  if (refreshBack === 'fadeOut') {
+    startFadeTransition('fadeOut');
+    return;
+  }
+  if (refreshBack === 'fadeIn') {
+    startFadeTransition('fadeIn');
+    return;
+  }
+
+  renderScreen(refreshBack);
 }
 
 export function updateTalk() {
