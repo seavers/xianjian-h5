@@ -182,9 +182,16 @@ ready(() => {
   if (!DEBUG) {
     ESC.onStartup();
   } else {
+    commonEnter();
+
     const n = +new URLSearchParams(location.search).get('debug') || 4;
-    const scriptIds = [7952,4475,4647,6065,5808,4463,6065,5934,5881,5918,5933,8440];
+    const scriptIds = [7952,4475,4647,6065,5808,4463,6065,5934,5881,5918,5933,8440,5150];
 
     Script.start(scriptIds[n], state.roles[0], 'trig');
   }
 });
+
+function commonEnter() {
+  setRoleTile(0, 0x2, 0);     // 李逍遥动作形象
+  setRoleGroup(1);           // 队伍配置
+}
