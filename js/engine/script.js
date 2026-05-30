@@ -6,17 +6,11 @@ import { Hex } from '../utils/hex.js';
 import { update } from '../ui/draw.js';
 
 export const Script = {
-  all: [],
-  total: 0,
-  autoThreads: [],
+  activeThread: null,
   lastTime: 0,
   accumulator: 0,
 
   startScene(scene) {
-    Script.all = [];
-    Script.autoThreads = [];
-    Script.total = 0;
-
     Script.start(scene.enterScriptId, scene, 'scene');
   },
 
@@ -100,16 +94,14 @@ export const Script = {
       // 激活后继续向下运行，以便在同一个 tick 中直接步进该脚本，保持高响应性
     }
 
-    // 步骤 5：步进当前活跃 of 非 auto 类主线程（进入场景脚本、交互触发脚本等）
+    // 步骤 5：步进当前活跃的非 auto 类主线程（进入场景脚本、交互触发脚本等）
     let blockAuto = false;
-    for (let i = 0; i < Script.all.length; i++) {
-      const t = Script.all[i];
-      if (t && !t.finish && t.type !== 'auto') {
-        if (!t.pause) {
-          this.stepThread(t);
-        }
-        blockAuto = true;
+    const t = Script.activeThread;
+    if (t && !t.finish) {
+      if (!t.pause) {
+        this.stepThread(t);
       }
+      blockAuto = true;
     }
 
     // 步骤 6：步进 auto NPC 漫游线程。判定依据为事件物体的类型 type === 'npc'
@@ -167,20 +159,15 @@ export const Script = {
       return ;
     }
 
-    const thread = new Thread(scriptId, obj, type);
-    thread.index = Script.total++;
-    Script.all.push(thread);
-    if (type == 'auto') {
-      obj.thread = thread;
-    }
+    obj.thread = new Thread(scriptId, obj, type);
   },
 
   // 启动并注册脚本线程状态
   start(scriptId, obj, type) {
     const thread = new Thread(scriptId, obj, type);
-    thread.index = Script.total++;
-    Script.all.push(thread);
-    if (type == 'auto') {
+    if (type !== 'auto') {
+      Script.activeThread = thread;
+    } else {
       obj.thread = thread;
     }
 
@@ -196,6 +183,9 @@ export const Script = {
     const thread = Thread.currentThread;
     if (thread) {
       thread.stop();
+      if (thread === Script.activeThread) {
+        Script.activeThread = thread.parent || null;
+      }
     }
     if(obj && obj.thread == thread) {
       obj.thread = null;
@@ -220,6 +210,9 @@ export const Script = {
     }
 
     thread.stop();
+    if (thread === Script.activeThread) {
+      Script.activeThread = thread.parent || null;
+    }
 
     if (window.onThreadsUpdate) {
       window.onThreadsUpdate();
@@ -239,9 +232,12 @@ export const Script = {
 
     thread.wait();
     const sub = new Thread(scriptId, thread.obj, thread.type, () => {
+      Script.activeThread = thread; // 子脚本执行完毕，将 activeThread 自适应恢复为父脚本
       thread.notify();
     });
     sub.parent = thread;
+    Script.activeThread = sub; // 将当前活跃的阻塞主线程推进为新启动的子脚本
+
     sub.start();
 
     if (window.onThreadsUpdate) {
@@ -250,13 +246,8 @@ export const Script = {
   },
 
   isExec() {
-    for (const k in Script.all) {
-      const script = Script.all[k];
-      if (script && !script.finish && script.type !== 'auto') {
-        return true;
-      }
-    }
-    return false;
+    const t = Script.activeThread;
+    return !!(t && !t.finish);
   },
 
   isAuto(thread) {
