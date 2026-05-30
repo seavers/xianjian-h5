@@ -272,6 +272,43 @@ export function replaceObject() {
   }
 }
 
+export function moveViewport(dx, dy, frameCount) {
+  // 步骤 1：若首参数和次参数均为 0，代表需要恢复视口对焦中心为主角位置，使其正常对焦
+  if (dx === 0 && dy === 0) {
+    state.mapX = state.roles[0].x;
+    state.mapY = state.roles[0].y;
+    
+    if (window.onSceneUpdate) {
+      window.onSceneUpdate();
+    }
+    return 0;
+  }
+
+  // 步骤 2：若 frameCount 为 0xFFFF，代表立即定位视口到指定的绝对瓦片坐标处
+  if (frameCount === 0xFFFF) {
+    state.mapX = dx * 32;
+    state.mapY = dy * 16;
+    
+    if (window.onSceneUpdate) {
+      window.onSceneUpdate();
+    }
+    return 0;
+  }
+
+  // 步骤 3：否则进入平移动画模式，每逻辑帧以 speedX 和 speedY 偏移量移动视口，总共持续 frameCount 帧
+  const speedX = intToShort(dx);
+  const speedY = intToShort(dy);
+
+  return Script.stepProgress(this, frameCount, () => {
+    state.mapX += speedX;
+    state.mapY += speedY;
+
+    if (window.onSceneUpdate) {
+      window.onSceneUpdate();
+    }
+  });
+}
+
 export function setSceneEnterScr(sceneId, enterScriptId) {
   const scene = state.scenes[sceneId];
   scene.enterScriptId = enterScriptId;
@@ -532,6 +569,7 @@ scriptCodes[0x6E] = { func: walkHeroByOffset, desc: '主角平移偏移距离' }
 scriptCodes[0x14] = { func: setNpcFrame, desc: '设置NPC活动动作帧' };
 scriptCodes[0x87] = { func: walkAtPlace, desc: '原地徘徊漫步' };
 scriptCodes[0x6F] = { func: replaceObject, desc: '替换并终结脚本实体' };
+scriptCodes[0x7F] = { func: moveViewport, desc: '平移或定位镜头视口' };
 scriptCodes[0x81] = { func: faceNpcTrig, desc: '面朝NPC触发脚本' };
 
 scriptCodes[0xFFFF] = { func: talk, desc: '展示剧情人物对话框' };
