@@ -528,6 +528,17 @@ export function updateScreen() {
   update(); // 同步清屏和中间层重绘
 }
 
+export function delayPeriod(time) {
+  // 步骤 1：原版延迟为 time * 80 毫秒，我们在 150 毫秒为主循环周期的 H5 引擎中同步换算为对应的帧数 ticks
+  // 并且使用 Math.max(1, ...) 保证至少等待一帧以避免同步挂起失效
+  const ticks = Math.max(1, Math.round((time * 80) / 150));
+
+  // 步骤 2：输出详细的非阻塞延迟调试日志，辅助追踪时序同步
+  console.log(`[0x85 delayPeriod] 剧情等待, 原版毫秒: ${time * 80}ms, H5换算帧数: ${ticks} 帧`);
+
+  return Script.stepProgress(this, ticks);
+}
+
 export function updateScreenAndWait(time) {
   update();
   return Script.stepProgress(this, time);
@@ -650,7 +661,7 @@ scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
-scriptCodes[0x85] = { func: waitSecond, desc: '非阻塞等待特定秒数' };
+scriptCodes[0x85] = { func: delayPeriod, desc: '非阻塞时序延迟' };
 scriptCodes[0x4C] = { func: sleepFrame, desc: '阻塞等待特定帧数' };
 
 scriptCodes[0x6D] = { func: setSceneEnterScr, desc: '设置场景进入脚本' };
