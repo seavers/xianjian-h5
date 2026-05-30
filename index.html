@@ -844,10 +844,11 @@
 					</div>
 				</div>
 
-				<!-- 🔮 快捷场景传送 & 📍 直接修改坐标 -->
+				<!-- 🔮 快速传送 & 🎬 场景切换 -->
 				<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; border-top: 1px dotted rgba(255,255,255,0.03); padding-top: 5px;">
+					<!-- 快速传送 -->
 					<div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-						<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">🔮 传送:</span>
+						<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">🔮 快速传送:</span>
 						<select id="select-teleport-scene" onchange="onQuickSceneSelect(this.value)" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; outline: none; width: 90px; cursor: pointer; border-radius: 2px;">
 							<!-- 动态渲染 -->
 						</select>
@@ -855,8 +856,18 @@
 						<button class="btn-dbg" onclick="teleportCustomScene()" style="color: var(--glow-blue); border-color: rgba(0,225,255,0.25); background: rgba(0,225,255,0.05); padding: 2px 5px; font-size: 8.5px;">传送</button>
 					</div>
 
+					<!-- 🎬 场景切换 -->
+					<div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap; border-left: 1px dotted rgba(255,255,255,0.08); padding-left: 6px; margin-left: auto;">
+						<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">🎬 场景切换:</span>
+						<input type="number" id="input-scene-switch-id" placeholder="场景ID" min="1" max="200" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #93c5fd; font-size: 8.5px; padding: 2px 4px; width: 70px; outline: none; text-align: center; border-radius: 2px;">
+						<button class="btn-dbg" onclick="changeCustomScene()" style="color: #93c5fd; border-color: rgba(147,197,253,0.25); background: rgba(147,197,253,0.05); padding: 2px 5px; font-size: 8.5px;">切换</button>
+					</div>
+				</div>
+
+				<!-- 📍 直接修改坐标 & 📝 坐标管理 -->
+				<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; border-top: 1px dotted rgba(255,255,255,0.03); padding-top: 5px;">
 					<!-- 📍 直接修改坐标 -->
-					<div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap; border-left: 1px dotted rgba(255,255,255,0.08); padding-left: 6px;">
+					<div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
 						<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">📍 坐标:</span>
 						<input type="number" id="input-coord-x" placeholder="X" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #00ff9d; font-size: 8.5px; padding: 2px 4px; width: 70px; outline: none; text-align: center; border-radius: 2px;">
 						<input type="number" id="input-coord-y" placeholder="Y" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #00ff9d; font-size: 8.5px; padding: 2px 4px; width: 70px; outline: none; text-align: center; border-radius: 2px;">
@@ -2598,7 +2609,7 @@
 			if (!selectEl) return;
 
 			// 保留第一个默认空选项
-			selectEl.innerHTML = '<option value="">-- 快捷场景 --</option>';
+			selectEl.innerHTML = '<option value="">-- 快速传送 --</option>';
 
 			COORDS.forEach(item => {
 				const opt = document.createElement('option');
@@ -2704,6 +2715,33 @@
 				console.error('游戏引擎尚未完全初始化，无法执行传送');
 			}
 		}
+
+		// 场景切换功能，调用 toggleScene 切换至指定的场景 ID
+		function changeCustomScene() {
+			const sceneInput = document.getElementById('input-scene-switch-id').value;
+			if (!sceneInput) {
+				alert('请输入有效的 Scene ID 场景数值！');
+				return;
+			}
+
+			const sceneId = parseInt(sceneInput);
+			if (sceneId <= 0 || sceneId > 200) {
+				alert('场景 ID 超出合法区间 (1-200)！');
+				return;
+			}
+
+			if (window.state && window.toggleScene) {
+				window.state.nextSceneId = sceneId;
+				window.toggleScene();
+				import('./js/ui/talk.js').then(({ Talk }) => {
+					Talk.talkTips(`场景切换！已成功切换至场景 #${sceneId}`);
+				});
+			} else {
+				console.error('游戏引擎尚未完全初始化，无法进行场景切换');
+			}
+		}
+
+		window.changeCustomScene = changeCustomScene;
 
 		// 直接修改主角坐标位置的功能
 		function modifyPlayerCoord() {
