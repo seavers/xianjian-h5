@@ -112,30 +112,26 @@ export const Script = {
     }
 
     // 步骤 5：步进当前活跃的非 auto 类主线程（进入场景脚本、交互触发脚本等）
-    let blockAuto = false;
     const t = Script.activeThread;
     if (t && !t.finish) {
       if (!t.pause) {
         this.stepThread(t);
       }
-      blockAuto = true;
     }
 
     // 步骤 6：步进 auto NPC 漫游线程。判定依据为事件物体的类型 type === 'npc'
-    if (!blockAuto) {
-      for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
-        const o = state.eventObjects[i];
-        if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc') continue;
+    for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
+      const o = state.eventObjects[i];
+      if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc') continue;
 
-        if (o.autoScr) {
-          // 如果还没有 thread 或者 thread 已经结束，则惰性创建 thread 状态记录，但不当场运行
-          if (!o.thread || o.thread.finish) {
-            Script.setAutoThread(o.autoScr, o, 'auto');
-          }
-          
-          if (o.thread && !o.thread.finish && !o.thread.pause) {
-            this.stepOneInstruction(o.thread);
-          }
+      if (o.autoScr) {
+        // 如果还没有 thread 或者 thread 已经结束，则惰性创建 thread 状态记录，但不当场运行
+        if (!o.thread || o.thread.finish) {
+          Script.setAutoThread(o.autoScr, o, 'auto');
+        }
+        
+        if (o.thread && !o.thread.finish && !o.thread.pause) {
+          this.stepOneInstruction(o.thread);
         }
       }
     }
@@ -272,7 +268,7 @@ export const Script = {
   },
 
   sleep(time) {
-    return Script.stepProgress(this, time);
+    return Script.stepProgress(state.roles[0], time);
   },
 
   // 集中推进非 auto 类型的阻塞脚本主线程，运行 While 指令解析循环

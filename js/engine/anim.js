@@ -29,7 +29,7 @@ export const Npc = {
     const total = Math.ceil(step / speed);
 
     // 彻底弃用 Script.draw，改用 Script.stepProgress 步进器进行逻辑 tick 计算，并向上传递挂起状态
-    return Script.stepProgress(o, total, (currStep) => {
+    return Script.stepProgress(o, 1, (currStep) => {
       calcNpcDir(o, zx, zy);
       const curr = currStep * speed;
 

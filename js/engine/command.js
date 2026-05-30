@@ -415,27 +415,16 @@ export function updateScreen() {
 }
 
 export function updateScreenAndWait(time) {
-  if (!this.sleepCount) {
-    this.sleepCount = time;
-  }
-  this.sleepCount--;
-  return this.sleepCount;
+  update();
+  return Script.sleep(time);
 }
 
 export function waitSecond(time) {
-  if (!this.sleepCount) {
-    this.sleepCount = time;
-  }
-  this.sleepCount--;
-  return this.sleepCount;
+  return Script.sleep(time * 6);
 }
 
 export function sleepFrame(frameCount, speed) {
-  if (!this.sleepCount) {
-    this.sleepCount = frameCount * speed;
-  }
-  this.sleepCount--;
-  return this.sleepCount;
+  return Script.sleep(frameCount * speed);
 }
 
 export function checkTalk() {
