@@ -62,7 +62,12 @@ export class Thread {
 
   notify() {
     this.pause = false;
-    this.next();
+
+    // 步骤 1：如果不是 auto 类型的漫游脚本，被唤醒后应立刻同步触发 next 循环跑完后续指令
+    // 如果是 auto 类型，则不主动调用 next()，而是依靠 Script.mainLoop() 主时钟进行单步调度
+    if (this.type !== 'auto') {
+      this.next();
+    }
   }
 
   next() {
