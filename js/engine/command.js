@@ -506,7 +506,8 @@ export function updateScreenAndWait(time) {
 }
 
 export function waitSecond(time) {
-  return Script.stepProgress(this, time * 6);
+  // 原游戏是 80ms * time ，这里一帧150ms
+  return Script.stepProgress(this, time / 2);
 }
 
 export function sleepFrame(frameCount, speed) {
