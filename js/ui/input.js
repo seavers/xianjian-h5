@@ -23,6 +23,12 @@ export function unbind() {
 
 // 绑定键盘按下事件
 document.addEventListener('keydown', (ev) => {
+  // 如果当前处于硬暂停（转场渐变过渡中或 ESC 菜单中），直接拦截丢弃键盘输入，禁止后台非法移动
+  if (state.isPaused) {
+    ev.preventDefault();
+    return;
+  }
+
   if (bindCallback) {
     bindCallback(ev);
     return;

@@ -285,36 +285,21 @@ function renderScreen(refreshBack) {
 
 // 执行全屏淡入淡出渐变动画过渡
 function startFadeTransition(type, callback) {
-  const duration = 12; // 12帧过渡时长
-  let frame = 0;
+  // 同步创建并配置渐变任务，将控制权完全移交至主时钟 tick 同步驱动，实现完美顺畅与变速齿轮自适应
+  state.transitionTask = {
+    type: type,
+    frame: 0,
+    duration: 12,
+    callback: callback
+  };
 
-  // 步骤 1：使用自主定时器在 12 帧内线性渐变修改 fadeAlpha 并重绘，不受游戏核心主时钟暂停干扰
-  const timer = setInterval(() => {
-    frame++;
-    if (frame <= duration) {
-      if (type === 'fadeOut') {
-        state.fadeAlpha = frame / duration;
-      } else {
-        state.fadeAlpha = 1 - frame / duration;
-      }
-      renderScreen(true);
-    } else {
-      clearInterval(timer);
-
-      // 步骤 2：过渡完成回调，设置最终确切的 fadeAlpha 值并清屏/重绘
-      if (type === 'fadeOut') {
-        state.fadeAlpha = 1;
-      } else {
-        state.fadeAlpha = 0;
-      }
-      renderScreen(true);
-
-      // 步骤 3：动画彻底结束后，如果传入了回调函数，则执行回调以驱动后续逻辑
-      if (callback) {
-        callback();
-      }
-    }
-  }, 50);
+  // 设置起始帧遮罩并立即重绘，确保无白屏延迟
+  if (type === 'fadeOut') {
+    state.fadeAlpha = 0;
+  } else {
+    state.fadeAlpha = 1;
+  }
+  renderScreen(true);
 }
 
 export function update(refreshBack, callback) {

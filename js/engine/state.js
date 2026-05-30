@@ -25,6 +25,7 @@ export const state = {
   set isPaused(val) {
     this._isTransitionPaused = val;
   },
+  transitionTask: null, // 场景渐变过渡的同步定时任务对象
   nextTriggerScriptId: -1, // 延迟触发的 trigger 脚本 ID，将在下一 tick 执行
   nextTriggerScriptObject: null, // 延迟触发的 trigger 脚本绑定的实体对象
   fadeOutSpeed: 1,

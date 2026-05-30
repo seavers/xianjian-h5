@@ -365,9 +365,12 @@ export function toggleScene(sceneId) {
       state.needToFadeIn = false;
 
       if (needFade) {
+        state.isPaused = true;
         update('fadeOut', () => {
           performToggleScene(targetSceneId);
-          update('fadeIn');
+          update('fadeIn', () => {
+            state.isPaused = false;
+          });
         });
       } else {
         performToggleScene(targetSceneId);

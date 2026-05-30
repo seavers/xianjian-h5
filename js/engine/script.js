@@ -37,11 +37,7 @@ export const Script = {
     // 限制单帧最大时间间隔为 250ms，防止浏览器在切后台挂起或极度卡顿时瞬间累加超长 deltaTime，导致异常大跨度追帧
     const clampedDt = Math.min(dt, 250);
 
-    // 步骤 0：检测主循环全局暂停状态，如果被挂起，则仅重绘画面以保持渲染连贯，且不推进累加器及逻辑 tick
-    if (state.isPaused) {
-      update(true);
-      return;
-    }
+
 
     // 2. 动态读取变速齿轮 state.frameCount，实时计算每一逻辑帧所需的毫秒数
     const frameInterval = 1000 / (state.frameCount || 6);
@@ -62,7 +58,36 @@ export const Script = {
       return;
     }
 
-    // 步骤 2：检测是否有延迟触发的 trigger 交互脚本需要激活
+    // 步骤 2：步进场景渐变过渡动画任务（由主时钟 tick 同步驱动，支持变速齿轮自适应，且异步分发完成回调）
+    if (state.transitionTask) {
+      const task = state.transitionTask;
+      task.frame++;
+      if (task.frame <= task.duration) {
+        if (task.type === 'fadeOut') {
+          state.fadeAlpha = task.frame / task.duration;
+        } else {
+          state.fadeAlpha = 1 - task.frame / task.duration;
+        }
+      } else {
+        if (task.type === 'fadeOut') {
+          state.fadeAlpha = 1;
+        } else {
+          state.fadeAlpha = 0;
+        }
+        state.transitionTask = null;
+        if (task.callback) {
+          setTimeout(task.callback, 0); // 异步触发完成回调，彻底阻断重入竞态冲突
+        }
+      }
+    }
+
+    // 步骤 3：处理游戏硬挂起状态（如渐变动画中或 ESC 打开时，仅重绘画面以保持动画连贯，不步进任何游戏脚本和 auto 漫游）
+    if (state.isPaused) {
+      update(true);
+      return;
+    }
+
+    // 步骤 4：检测是否有延迟触发的 trigger 交互脚本需要激活
     if (state.nextTriggerScriptId !== undefined && state.nextTriggerScriptId !== null && state.nextTriggerScriptId !== -1) {
       const scriptId = state.nextTriggerScriptId;
       const obj = state.nextTriggerScriptObject;
@@ -75,7 +100,7 @@ export const Script = {
       // 激活后继续向下运行，以便在同一个 tick 中直接步进该脚本，保持高响应性
     }
 
-    // 步骤 3：步进当前活跃的非 auto 类主线程（进入场景脚本、交互触发脚本等）
+    // 步骤 5：步进当前活跃的非 auto 类主线程（进入场景脚本、交互触发脚本等）
     const t = Script.activeThread;
     if (t && !t.finish) {
       if (!t.pause) {
@@ -83,8 +108,8 @@ export const Script = {
       }
     }
 
-    // 步骤 4：步进 auto NPC 漫游线程。判定依据为事件物体的类型 type === 'npc'
-    // 剧情对话 (isTalking) 展示期间，跳过 auto 漫游步进以完全挂起漫游 NPC
+    // 步骤 6：步进 auto NPC 漫游线程。判定依据为事件物体的类型 type === 'npc'
+    // 剧情对话 (isTalking) 展示期间，跳过 auto 漫游步进以完全挂起漫游 NPC，杜绝对话期间 NPC 步态和移位
     if (!isTalking) {
       for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
         const o = state.eventObjects[i];
@@ -103,7 +128,7 @@ export const Script = {
       }
     }
 
-    // 步骤 5：画面统一重绘同步
+    // 步骤 7：画面统一重绘同步
     update(true);
   },
 
