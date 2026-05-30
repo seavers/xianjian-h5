@@ -462,6 +462,13 @@ export function obtain(ballId) {
   }
 }
 
+export function inflictDamage(allEnemies, damage) {
+  // 步骤 1：若战斗系统暂未实现，输出详细的伤害调试日志以供追踪意图
+  const target = allEnemies ? '全体敌人' : `当前敌人 (ID: ${this?.id || '未知'})`;
+
+  console.log(`[0x21 inflictDamage] 造成伤害: ${damage}, 目标: ${target}`);
+}
+
 // 脚本指令集注册表
 export const scriptCodes = [];
 scriptCodes[0x00] = { func: finishCode, desc: '停止指令' };
@@ -519,6 +526,7 @@ scriptCodes[0x25] = { func: setNpcTrigScr, desc: '配置NPC交互触发脚本' }
 
 scriptCodes[0x1E] = { func: setMoney, desc: '金钱数值改变指令' };
 scriptCodes[0x1F] = { func: obtain, desc: '添加物品进主角包裹' };
+scriptCodes[0x21] = { func: inflictDamage, desc: '对敌人造成伤害' };
 
 scriptCodes[0x6E] = { func: walkHeroByOffset, desc: '主角平移偏移距离' };
 scriptCodes[0x14] = { func: setNpcFrame, desc: '设置NPC活动动作帧' };
