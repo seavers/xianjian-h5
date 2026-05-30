@@ -1610,7 +1610,7 @@
 					stateSpan.style.color = stateColor;
 				}
 
-				const posText = `(${Math.floor(o.x / 32)}, ${Math.floor(o.y / 16)})${o.mgoId === 0 ? '' : ' mgoId:' + o.mgoId}`;
+				const posText = `(${Math.floor(o.x / 32)}, ${Math.floor(o.y / 16)})${o.mgoId === 0 ? '' : ' mgo:' + o.mgoId}`;
 				if (posDiv.innerText !== posText) {
 					posDiv.innerText = posText;
 				}
