@@ -233,12 +233,16 @@ export const Script = {
     return 0;
   },
 
-  sub(scriptId) {
+  sub(scriptId, targetObj) {
     const thread = Thread.currentThread;
     if (!thread) return;
 
     thread.wait();
-    const sub = new Thread(scriptId, thread.obj, thread.type, () => {
+    
+    // 步骤 1：若提供了自定义目标物体 targetObj 则在新线程中绑定该物体，否则继承父线程的对象自身 thread.obj
+    const activeObj = targetObj !== undefined ? targetObj : thread.obj;
+    
+    const sub = new Thread(scriptId, activeObj, thread.type, () => {
       Script.activeThread = thread; // 子脚本执行完毕，将 activeThread 自适应恢复为父脚本
       thread.notify();
     });

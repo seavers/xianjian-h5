@@ -510,8 +510,16 @@ export function gotoScript(scriptId) {
   Script.next(scriptId - 1);
 }
 
-export function subScript(scriptId) {
-  Script.sub(scriptId - 1);
+export function subScript(scriptId, objId) {
+  // 步骤 1：分析第二个参数 objId，若为 0 或者是 0xFFFF 则说明子脚本沿用父线程当前主体 this
+  // 否则从全局状态机 state.eventObjects 中获取对应的目标事件实体对象
+  let targetObj = undefined;
+  if (objId !== undefined && objId !== null && objId !== 0 && objId !== 0xFFFF) {
+    targetObj = state.eventObjects[objId];
+  }
+
+  // 步骤 2：启动子程序，并传入确定的目标实体对象以满足对象重定向的需求
+  Script.sub(scriptId - 1, targetObj);
 }
 
 export function randomScript(base, scriptId) {
