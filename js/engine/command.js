@@ -324,23 +324,14 @@ export function setNpcFrame(frame) {
 export function setMusic() {}
 export function setFightMusic() {}
 
-export function setScene(sceneId) {
+export function fadeOutScene(sceneId) {
   // 有些切换场景，是先切换场景，再填写ID，如脚本5933
-  if (state.nextSceneId == -2) {
-    state.nextSceneId = sceneId;
-    toggleScene();
-    return ;
-  }
   state.nextSceneId = sceneId;
+  update('fadeOut');
+  state.needToFadeIn = true;
 }
 
 export function toggleScene() {
-  // 有些切换场景，是先切换场景，再填写ID，如脚本5933
-  if (state.nextSceneId < 0) {
-    state.nextSceneId = -2;
-    return ;
-  }
-
   const scene = state.scenes[state.nextSceneId];
   state.sceneId = state.nextSceneId;
   state.mapId = scene.mapId;
@@ -356,7 +347,12 @@ export function toggleScene() {
   }
 
   drawMapAll(); // 同步加载与绘制大地图
-  update(true);  // 同步清屏并排序重绘所有实体
+  if (state.needToFadeIn) {
+    update('fadeIn');  // 同步清屏并排序重绘所有实体
+    state.needToFadeIn = false;
+  } else {
+    update(true);
+  }
 
   // 同步启动场景脚本
   Script.startScene(scene);
@@ -476,8 +472,8 @@ scriptCodes[0x3F] = { func: teamWalk, desc: '队伍慢速骑乘到坐标' };
 scriptCodes[0x44] = { func: teamWalk2, desc: '队伍常速骑乘到坐标' };
 scriptCodes[0x97] = { func: teamWalk3, desc: '队伍快速骑乘到坐标' };
 
-scriptCodes[0x59] = { func: setScene, desc: '修改切换目的地场景 ID' };
-scriptCodes[0x50] = { func: toggleScene, desc: '执行场景切换' };
+scriptCodes[0x59] = { func: toggleScene, desc: '修改切换目的地场景 ID' };
+scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
 scriptCodes[0x85] = { func: waitSecond, desc: '非阻塞等待特定秒数' };
 scriptCodes[0x4C] = { func: sleepFrame, desc: '阻塞等待特定帧数' };

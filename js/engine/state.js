@@ -13,6 +13,7 @@ export const state = {
   mapId: 12,
   sceneId: -1,
   nextSceneId: -1,
+  needToFadeIn: false,  // 标识是否fadeIn、fadeOut 场景
   startEventId: 0,
   endEventId: 0x20,
 
