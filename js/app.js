@@ -184,10 +184,37 @@ ready(() => {
   } else {
     commonEnter();
 
-    const n = +new URLSearchParams(location.search).get('debug') || 4;
-    const scriptIds = [7952,4475,4647,6065,5808,4463,6065,5934,5881,5918,5933,8440,5150];
+    // 1. 获取 URL 中的 debug 参数作为 COORDS 数组的下标
+    const n = +new URLSearchParams(location.search).get('debug') || 0;
 
-    Script.start(scriptIds[n], state.roles[0], 'trig');
+    // 2. 默认的坐标配置数组，与 index.html 保持一致
+    const DEFAULT_COORDS = [
+      { sceneId: 1, x: 49, y: 94, name: '逍遥卧室' },
+      { sceneId: 2, x: 26, y: 36, name: '客栈一楼' },
+      { sceneId: 3, x: 42, y: 18, name: '大娘病房' },
+      { sceneId: 4, x: 54, y: 87, name: '盛渔村集市' },
+      { sceneId: 5, x: 30, y: 30, name: '仙灵岛荷花池' },
+      { sceneId: 6, x: 20, y: 20, name: '仙灵岛水月宫' }
+    ];
+
+    // 3. 从 localStorage 加载配置，如果没有，使用默认值
+    let coords = DEFAULT_COORDS;
+    try {
+      const saved = localStorage.getItem('PAL_COORDS');
+      if (saved) {
+        coords = JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('加载传送坐标配置失败，使用默认值', e);
+    }
+
+    // 4. 获取目标传送坐标并执行场景切换
+    const target = coords[n] || coords[0];
+    if (target) {
+      state.nextSceneId = target.sceneId;
+      setRolePos(target.x, target.y, 0);
+      toggleScene();
+    }
   }
 });
 
