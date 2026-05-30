@@ -26,13 +26,12 @@ export const Npc = {
 
     const s = Math.max(Math.abs(zx - cx), Math.abs(zy - cy));
     const step = Math.ceil(s);
-    const current = 0;
     const total = Math.ceil(step / speed);
 
-    let curr = current;
-    Script.draw(total, () => {
+    // 彻底弃用 Script.draw，改用 Script.stepProgress 步进器进行逻辑 tick 计算，并向上传递挂起状态
+    return Script.stepProgress(o, total, (currStep) => {
       calcNpcDir(o, zx, zy);
-      curr += speed;
+      const curr = currStep * speed;
 
       if (step !== 0) {
         o.x = (zx - cx) * curr / step + cx;
@@ -54,14 +53,13 @@ export const Npc = {
 
     const s = Math.max(Math.abs(zx - cx), Math.abs(zy - cy));
     const step = Math.ceil(s);
-    const current = 0;
     const total = Math.ceil(step / speed);
 
-    let curr = current;
-    Script.draw(total, () => {
+    // 彻底弃用 Script.draw，改用 Script.stepProgress 步进器进行逻辑 tick 计算，并向上传递挂起状态
+    return Script.stepProgress(o, total, (currStep) => {
       // 1. 计算移动时的朝向，并更新步态动画帧
       calcNpcDir(o, zx, zy);
-      curr += speed;
+      const curr = currStep * speed;
 
       // 2. 平滑更新移动中每一帧的主角、事件实体与相机视口像素坐标
       if (step !== 0) {

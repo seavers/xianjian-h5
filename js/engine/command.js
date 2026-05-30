@@ -205,23 +205,23 @@ export function setNpcMove(objId, dx, dy) {
 }
 
 export function npcWalk2(x, y, half) {
-  Npc.anim(this, x, y, half, 6);
+  return Npc.anim(this, x, y, half, 6);
 }
 
 export function npcWalk3(x, y, half) {
-  Npc.anim(this, x, y, half, 2);
+  return Npc.anim(this, x, y, half, 2);
 }
 
 export function teamWalk(x, y, half) {
-  Npc.animTeam(this, x, y, half, 2);
+  return Npc.animTeam(this, x, y, half, 2);
 }
 
 export function teamWalk2(x, y, half) {
-  Npc.animTeam(this, x, y, half, 4);
+  return Npc.animTeam(this, x, y, half, 4);
 }
 
 export function teamWalk3(x, y, half) {
-  Npc.animTeam(this, x, y, half, 6);
+  return Npc.animTeam(this, x, y, half, 6);
 }
 
 export function faceNpcTrig(objId, dist, targetScriptId) {
@@ -253,10 +253,7 @@ export function faceNpcTrig(objId, dist, targetScriptId) {
 export function walkAtPlace() {
   loadFrameCount(this);
   
-  // 先无限循环了
-  Timer.queue(-1, () => {
-    this.frame = (this.frame + 1) % this.frameCount;
-  })
+  this.frame = (this.frame + 1) % this.frameCount;
 }
 
 function loadFrameCount(obj) {
@@ -299,19 +296,6 @@ export function setNpcTrigScr(objId, trigScr) {
 export function setNpcFrame(frame) {
   loadFrameCount(this);
   this.frame = frame;
-
-  // // 循环随机N次
-  // Timer.queue(-1, () => {
-  //   if (this.frame == 1) {
-  //     if (Math.random() < 0.1) {
-  //       this.frame++;
-  //     } else {
-  //       this.frame--;
-  //     }
-  //     return ;
-  //   }
-  //   this.frame = (this.frame + 1) % this.frameCount;
-  // })
 
   // 不能随机，看 9991 脚本，这里会死循环
   return -1;
@@ -431,15 +415,27 @@ export function updateScreen() {
 }
 
 export function updateScreenAndWait(time) {
-  Script.sleep(time);
+  if (!this.sleepCount) {
+    this.sleepCount = time;
+  }
+  this.sleepCount--;
+  return this.sleepCount;
 }
 
 export function waitSecond(time) {
-  Script.sleep(time);
+  if (!this.sleepCount) {
+    this.sleepCount = time;
+  }
+  this.sleepCount--;
+  return this.sleepCount;
 }
 
 export function sleepFrame(frameCount, speed) {
-  Script.draw(frameCount * speed);
+  if (!this.sleepCount) {
+    this.sleepCount = frameCount * speed;
+  }
+  this.sleepCount--;
+  return this.sleepCount;
 }
 
 export function checkTalk() {

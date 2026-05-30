@@ -10,6 +10,23 @@ export const Script = {
   lastTime: 0,
   accumulator: 0,
 
+  // 步进执行动画/步态进度。如果动画正在进行则返回剩余步数，全部执行完毕则返回 0
+  stepProgress(obj, total, func) {
+    if (!obj.animStep) {
+      obj.animStep = 0;
+    }
+    
+    if (obj.animStep < total) {
+      if (func) func(obj.animStep + 1);
+      obj.animStep++;
+      return total - obj.animStep; // 返回剩余步数，以作为非零信号挂起指令
+    }
+    
+    // 执行完毕，重置状态并返回 0
+    obj.animStep = 0;
+    return 0;
+  },
+
   startScene(scene) {
     Script.start(scene.enterScriptId, scene, 'scene');
   },
@@ -255,27 +272,7 @@ export const Script = {
   },
 
   sleep(time) {
-    const thread = Thread.currentThread;
-    if (!thread) return;
-
-    const force = thread.type !== 'auto';
-    thread.wait();
-    Timer.queue(time, undefined, () => {
-      thread.notify();
-    }, force);
-  },
-
-  draw(total, func) {
-    const thread = Thread.currentThread;
-    if (!thread) return;
-
-    const force = thread.type !== 'auto';
-    thread.wait();
-
-    const timer = Timer.queue(total, func, () => {
-      thread.notify();
-    }, force);
-    thread.timer = timer;
+    return Script.stepProgress(this, time);
   },
 
   // 集中推进非 auto 类型的阻塞脚本主线程，运行 While 指令解析循环
@@ -295,9 +292,9 @@ export const Script = {
         break;
       }
 
-      const script = state.scripts[thread.scriptId++];
+      const script = state.scripts[thread.scriptId];
       if (!script) {
-        console.warn(`Thread #${thread.id} scriptId: ${thread.scriptId - 1} 越界`);
+        console.warn(`Thread #${thread.id} scriptId: ${thread.scriptId} 越界`);
         thread.stop();
         break;
       }
@@ -311,7 +308,7 @@ export const Script = {
         npcId: thread.obj ? thread.obj.id : '无',
         roleId: thread.obj && typeof thread.obj.mgoId === 'number' ? thread.obj.mgoId : null,
         type: thread.type,
-        scriptId: thread.scriptId - 1,
+        scriptId: thread.scriptId,
         code: script.code,
         hexCode: '0x' + Hex.toHex(script.code),
         desc: desc,
@@ -331,7 +328,8 @@ export const Script = {
       }
 
       if (!code) {
-        console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${thread.scriptId - 1}]: execute ${Hex.toHex(script.code)}`);
+        console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${thread.scriptId}]: execute ${Hex.toHex(script.code)}`);
+        thread.scriptId++; // 未知指令跳过
         continue;
       }
 
@@ -341,14 +339,21 @@ export const Script = {
       }
 
       const tab = thread.type.charAt(0).toUpperCase();
-      console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId - 1}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
+      console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
       if (code.func) {
         const ret = code.func.call(thread.obj, script.param1, script.param2, script.param3);
-        if (ret == -1) {
+        
+        // 核心协同挂起控制：
+        // 如果指令返回 -1 或者是大于 0 的未完成帧计数，表示指令需要跨多 tick 进行状态步进
+        // 我们在此直接退出 While 循环，不递增指令指针 IP，等待下一 tick 重新执行该指令。
+        if (ret === -1 || (typeof ret === 'number' && ret > 0)) {
           return;
         }
       }
+
+      // 本条指令执行成功，指向下一条指令
+      thread.scriptId++;
     }
   },
 
@@ -358,9 +363,9 @@ export const Script = {
 
     Thread.currentThread = thread;
 
-    const script = state.scripts[thread.scriptId++];
+    const script = state.scripts[thread.scriptId];
     if (!script) {
-      console.warn(`Thread #${thread.id} scriptId: ${thread.scriptId - 1} 越界`);
+      console.warn(`Thread #${thread.id} scriptId: ${thread.scriptId} 越界`);
       thread.stop();
       return;
     }
@@ -374,7 +379,7 @@ export const Script = {
       npcId: thread.obj ? thread.obj.id : '无',
       roleId: thread.obj && typeof thread.obj.mgoId === 'number' ? thread.obj.mgoId : null,
       type: thread.type,
-      scriptId: thread.scriptId - 1,
+      scriptId: thread.scriptId,
       code: script.code,
       hexCode: '0x' + Hex.toHex(script.code),
       desc: desc,
@@ -394,7 +399,8 @@ export const Script = {
     }
 
     if (!code) {
-      console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${thread.scriptId - 1}]: execute ${Hex.toHex(script.code)}`);
+      console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${thread.scriptId}]: execute ${Hex.toHex(script.code)}`);
+      thread.scriptId++;
       return;
     }
 
@@ -404,13 +410,17 @@ export const Script = {
     }
 
     const tab = thread.type.charAt(0).toUpperCase();
-    console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId - 1}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
+    console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
     if (code.func) {
       const ret = code.func.call(thread.obj, script.param1, script.param2, script.param3);
-      if (ret == -1) {
+      
+      // 同理，如果 auto NPC 执行指令尚未完成，直接退出且不递增指令指针 IP
+      if (ret === -1 || (typeof ret === 'number' && ret > 0)) {
         return;
       }
     }
+
+    thread.scriptId++;
   }
 };
