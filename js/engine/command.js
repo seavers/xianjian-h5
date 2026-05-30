@@ -6,6 +6,7 @@ import { loadMgoCount } from '../resources/pal.js';
 import { update, drawMapAll } from '../ui/draw.js';
 import { intToShort } from '../utils/number.js';
 
+// 解决fadeIn渲染的问题，所以nextRolePos与setRolePos分开了
 export function nextRolePos(sx, sy, shalf) {
   state.nextRolePos = [sx, sy, shalf];
 }
@@ -449,6 +450,7 @@ export function performToggleScene(targetSceneId) {
 
 
   drawMapAll(); // 同步加载与绘制大地图
+
   update(true); // 重绘画面
 
   // 同步启动场景脚本
@@ -533,6 +535,10 @@ export function talk(msgId) {
 }
 
 export function updateScreen() {
+  if (state.nextRolePos) {
+    setRolePos(state.nextRolePos[0], state.nextRolePos[1], state.nextRolePos[2]);
+    state.nextRolePos = null;
+  }
   update(); // 同步清屏和中间层重绘
 }
 
