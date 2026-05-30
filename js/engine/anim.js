@@ -1,7 +1,6 @@
 import { Script } from './script.js';
 import { refreshRoleCount, setRolePos } from './command.js';
 import { state } from './state.js';
-import { update } from '../ui/draw.js';
 
 export function calcNpcDir(o, x, y) {
   if (x > o.x && y > o.y) {
@@ -85,8 +84,6 @@ export const Npc = {
         state.mx = Math.floor(nx / 32);
         state.my = Math.floor(ny / 16);
         state.mhalf = Math.round((nx - state.mx * 32) / 16);
-
-        update(true);
       }
       
       // 3. 移动结束，修正误差并准确对齐到目标像素与瓦片位置
@@ -104,8 +101,6 @@ export const Npc = {
         state.mx = x;
         state.my = y;
         state.mhalf = half;
-
-        update(true);
       }
     });
   },

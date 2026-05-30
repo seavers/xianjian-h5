@@ -126,9 +126,7 @@ export function setObjectStatus(objId, stateVal) {
   if (!obj) return;
 
   obj.state = stateVal;
-  if (stateVal === 2) { // 自动触发脚本
-    Script.startAutoScript(obj);
-  }
+  // 步骤 1：仅设置活动生命状态，不在此处进行任何同步的指令或异步循环触发，统一交由 mainLoop 调度
 }
 
 export function startEventTrig(obj) {

@@ -1,6 +1,8 @@
 import { state } from './state.js';
 import { Thread } from './thread.js';
 import { Timer } from './timer.js';
+import { scriptCodes } from './command.js';
+import { Hex } from '../utils/hex.js';
 
 export const Script = {
   all: [],
@@ -13,21 +15,6 @@ export const Script = {
     Script.total = 0;
 
     Script.start(scene.enterScriptId, scene, 'scene');
-
-    // 载入当前场景内的所有事件/NPC 的 auto 脚本
-    for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
-      const o = state.eventObjects[i];
-      if (!o || o.state === 0 || o.mgoId === 0) {
-        continue;
-      }
-      // if (o.autoScr) {
-      //   Script.start(o.autoScr, o, 'auto');
-      // }
-    }
-  },
-
-  startAutoScript(obj) {
-    Script.start(obj.autoScr, obj, 'auto');
   },
 
   startTrigScript(obj) {
@@ -39,7 +26,7 @@ export const Script = {
   },
 
   mainLoop() {
-    // 步骤 1：步进底层动画和定时任务（原来在 timer.js 的 anims 遍历）
+    // 步骤 1：步进底层动画和定时任务
     let animCount = 0;
     const anims = Timer.DEBUG.anims;
     for (const key in anims) {
@@ -55,7 +42,7 @@ export const Script = {
     // 步骤 2：处理游戏挂起状态（如渐变动画中或 ESC 打开时）
     if (state.isPaused) {
       // 仅重绘画面以保持动画连贯，不步进任何游戏脚本
-      import('../ui/draw.js').then(({ update }) => update());
+      import('../ui/draw.js').then(({ update }) => update(true));
       return;
     }
 
@@ -75,7 +62,7 @@ export const Script = {
       state.nextTriggerScriptObject = null;
       
       Script.start(scriptId, obj, 'trig');
-      return;
+      // 激活后继续向下运行，以便在同一个 tick 中直接步进该脚本，保持高响应性
     }
 
     // 步骤 5：步进当前活跃的非 auto 类主线程（进入场景脚本、交互触发脚本等）
@@ -84,30 +71,33 @@ export const Script = {
       const t = Script.all[i];
       if (t && !t.finish && t.type !== 'auto') {
         if (!t.pause) {
-          t.next();
+          this.stepThread(t);
         }
         blockAuto = true;
       }
     }
 
-    // 步骤 6：步进 auto NPC 漫游线程，每次 tick 只执行单条指令
+    // 步骤 6：步进 auto NPC 漫游线程。判定依据为事件物体的类型 type === 'npc'
     if (!blockAuto) {
       for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
         const o = state.eventObjects[i];
-        if (!o || o.state === 0 || o.mgoId === 0) continue;
+        if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc') continue;
 
-        if (o.thread) {
-          if (!o.thread.finish && !o.thread.pause) {
-            o.thread.stepOneInstruction();
+        if (o.autoScr) {
+          // 如果还没有 thread 或者 thread 已经结束，则惰性创建 thread 状态记录，但不当场运行
+          if (!o.thread || o.thread.finish) {
+            Script.setAutoThread(o.autoScr, o, 'auto');
           }
-        } else if (o.autoScr) {
-          Script.startAutoScript(o);
+          
+          if (o.thread && !o.thread.finish && !o.thread.pause) {
+            this.stepOneInstruction(o.thread);
+          }
         }
       }
     }
 
     // 步骤 7：画面统一重绘同步
-    import('../ui/draw.js').then(({ update }) => update());
+    import('../ui/draw.js').then(({ update }) => update(true));
   },
 
   handleSceneSwitch() {
@@ -140,7 +130,7 @@ export const Script = {
     }
   },
 
-  // 启动脚本。由于脚本需要并行运行，所以存在多实例情况
+  // 惰性配置 Auto NPC 漫游状态
   setAutoThread(scriptId, obj, type) {
     if (obj.thread) {
       obj.thread.scriptId = scriptId;
@@ -150,24 +140,24 @@ export const Script = {
 
     const thread = new Thread(scriptId, obj, type);
     thread.index = Script.total++;
-    Script.all[Script.total++] = thread;
+    Script.all.push(thread);
     if (type == 'auto') {
       obj.thread = thread;
     }
   },
 
-  // 启动脚本。由于脚本需要并行运行，所以存在多实例情况
+  // 启动并注册脚本线程状态
   start(scriptId, obj, type) {
     const thread = new Thread(scriptId, obj, type);
     thread.index = Script.total++;
-    Script.all[Script.total++] = thread;
+    Script.all.push(thread);
     if (type == 'auto') {
       obj.thread = thread;
     }
 
     thread.start();
 
-    // 每当启动或销毁脚本时，刷新 UI
+    // 刷新 UI
     if (window.onThreadsUpdate) {
       window.onThreadsUpdate();
     }
@@ -266,5 +256,141 @@ export const Script = {
       thread.notify();
     }, force);
     thread.timer = timer;
+  },
+
+  // 集中推进非 auto 类型的阻塞脚本主线程，运行 While 指令解析循环
+  stepThread(thread) {
+    if (thread.finish || thread.pause) return;
+
+    Thread.currentThread = thread;
+
+    while (!thread.pause && !thread.finish) {
+      // 1. 核心单步调试拦截点
+      if (window.STEP_DEBUG && thread.type !== 'auto') {
+        window.ACTIVE_DEBUG_THREAD = thread;
+        thread.wait();
+        if (window.onStepDebugPause) {
+          window.onStepDebugPause(thread);
+        }
+        break;
+      }
+
+      const script = state.scripts[thread.scriptId++];
+      if (!script) {
+        console.warn(`Thread #${thread.id} scriptId: ${thread.scriptId - 1} 越界`);
+        thread.stop();
+        break;
+      }
+
+      const code = scriptCodes[script.code];
+      const desc = code ? code.desc : '未知指令';
+
+      // 记录到全局状态机中的 scriptLogs，供右侧 Dashboard 实时渲染
+      const logItem = {
+        id: thread.id,
+        npcId: thread.obj ? thread.obj.id : '无',
+        roleId: thread.obj && typeof thread.obj.mgoId === 'number' ? thread.obj.mgoId : null,
+        type: thread.type,
+        scriptId: thread.scriptId - 1,
+        code: script.code,
+        hexCode: '0x' + Hex.toHex(script.code),
+        desc: desc,
+        param1: script.param1,
+        param2: script.param2,
+        param3: script.param3,
+        time: new Date().toLocaleTimeString()
+      };
+
+      state.scriptLogs.push(logItem);
+      if (state.scriptLogs.length > 40) {
+        state.scriptLogs.shift();
+      }
+
+      if (window.onScriptExecute) {
+        window.onScriptExecute(logItem);
+      }
+
+      if (!code) {
+        console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${thread.scriptId - 1}]: execute ${Hex.toHex(script.code)}`);
+        continue;
+      }
+
+      if (script.code === 0) {
+        thread.stop();
+        break;
+      }
+
+      const tab = thread.type.charAt(0).toUpperCase();
+      console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId - 1}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
+
+      if (code.func) {
+        const ret = code.func.call(thread.obj, script.param1, script.param2, script.param3);
+        if (ret == -1) {
+          return;
+        }
+      }
+    }
+  },
+
+  // 步进执行单条指令，用于 auto NPC 在每次 tick 中仅执行单条命令，避免 While 循环阻塞
+  stepOneInstruction(thread) {
+    if (thread.finish || thread.pause) return;
+
+    Thread.currentThread = thread;
+
+    const script = state.scripts[thread.scriptId++];
+    if (!script) {
+      console.warn(`Thread #${thread.id} scriptId: ${thread.scriptId - 1} 越界`);
+      thread.stop();
+      return;
+    }
+
+    const code = scriptCodes[script.code];
+    const desc = code ? code.desc : '未知指令';
+
+    // 记录到全局状态机中的 scriptLogs，供右侧 Dashboard 实时渲染
+    const logItem = {
+      id: thread.id,
+      npcId: thread.obj ? thread.obj.id : '无',
+      roleId: thread.obj && typeof thread.obj.mgoId === 'number' ? thread.obj.mgoId : null,
+      type: thread.type,
+      scriptId: thread.scriptId - 1,
+      code: script.code,
+      hexCode: '0x' + Hex.toHex(script.code),
+      desc: desc,
+      param1: script.param1,
+      param2: script.param2,
+      param3: script.param3,
+      time: new Date().toLocaleTimeString()
+    };
+
+    state.scriptLogs.push(logItem);
+    if (state.scriptLogs.length > 40) {
+      state.scriptLogs.shift();
+    }
+
+    if (window.onScriptExecute) {
+      window.onScriptExecute(logItem);
+    }
+
+    if (!code) {
+      console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${thread.scriptId - 1}]: execute ${Hex.toHex(script.code)}`);
+      return;
+    }
+
+    if (script.code === 0) {
+      thread.stop();
+      return;
+    }
+
+    const tab = thread.type.charAt(0).toUpperCase();
+    console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId - 1}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
+
+    if (code.func) {
+      const ret = code.func.call(thread.obj, script.param1, script.param2, script.param3);
+      if (ret == -1) {
+        return;
+      }
+    }
   }
 };

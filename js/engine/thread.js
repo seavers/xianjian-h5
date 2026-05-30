@@ -1,10 +1,9 @@
 import { state } from './state.js';
-import { scriptCodes, performToggleScene } from './command.js';
-import { Hex } from '../utils/hex.js';
 import { Timer } from './timer.js';
 
 let threadIdCounter = 1;
 
+// Thread 状态容器类，降维成纯粹的数据属性载体，彻底解耦指令执行逻辑
 export class Thread {
   constructor(scriptId, o, type, callback) {
     this.id = threadIdCounter++;
@@ -28,7 +27,6 @@ export class Thread {
 
   start() {
     this.finish = false;
-    this.next();
   }
 
   restart() {
@@ -38,7 +36,6 @@ export class Thread {
       Timer.clearTimer(this.timer);
       this.timer = null;
     }
-    this.next();
   }
 
   stop() {
@@ -50,10 +47,6 @@ export class Thread {
     if (this.callback) {
       this.callback();
     }
-
-    if (this.type !== 'auto') {
-      Timer.start();
-    }
   }
 
   wait() {
@@ -62,218 +55,6 @@ export class Thread {
 
   notify() {
     this.pause = false;
-
-    // 步骤 1：如果不是 auto 类型的漫游脚本，被唤醒后应立刻同步触发 next 循环跑完后续指令
-    // 如果是 auto 类型，则不主动调用 next()，而是依靠 Script.mainLoop() 主时钟进行单步调度
-    if (this.type !== 'auto') {
-      this.next();
-    }
-  }
-
-  next() {
-    // 循环执行脚本指令，直到线程被暂停挂起或者执行完毕
-    while (!this.pause && !this.finish) {
-      // 1. 核心单步调试拦截点：如果全局单步调试模式开启，且不是 auto 漫游线程，则在此挂起
-      if (window.STEP_DEBUG && this.type !== 'auto') {
-        window.ACTIVE_DEBUG_THREAD = this;
-        this.wait();
-
-        // 广播当前暂停的线程对象，供前端调试器更新即将执行的指令信息
-        if (window.onStepDebugPause) {
-          window.onStepDebugPause(this);
-        }
-        break;
-      }
-
-      Thread.currentThread = this;
-
-      const script = state.scripts[this.scriptId++]; // 先执行当条，再指向下一条
-      if (!script) {
-        console.warn(`Thread #${this.id} scriptId: ${this.scriptId - 1} 越界`);
-        this.stop();
-        break;
-      }
-
-      const code = scriptCodes[script.code];
-      
-      // 记录到全局状态机中的 scriptLogs，供右侧 Dashboard 实时渲染
-      const desc = code ? code.desc : '未知指令';
-      const logItem = {
-        id: this.id,
-        npcId: this.obj ? this.obj.id : '无',
-        roleId: this.obj && typeof this.obj.mgoId === 'number' ? this.obj.mgoId : null,
-        type: this.type,
-        scriptId: this.scriptId - 1,
-        code: script.code,
-        hexCode: '0x' + Hex.toHex(script.code),
-        desc: desc,
-        param1: script.param1,
-        param2: script.param2,
-        param3: script.param3,
-        time: new Date().toLocaleTimeString()
-      };
-
-      state.scriptLogs.push(logItem);
-      if (state.scriptLogs.length > 40) {
-        state.scriptLogs.shift();
-      }
-
-      // 通知前端监控台重绘日志面板
-      if (window.onScriptExecute) {
-        window.onScriptExecute(logItem);
-      }
-
-      if (!code) {
-        console.warn(`[warn] [NPC ${this.obj?.id || '无'} scriptId:${this.scriptId - 1}]: execute ${Hex.toHex(script.code)} ${Hex.toHex(script.param1)}`);
-        continue;
-      }
-
-      if (script.code === 0) {
-        this.stop();
-        break;
-      }
-
-      const tab = this.type.charAt(0).toUpperCase();
-      console.log(`[info] [${tab} NPC:${this.obj?.id || '无'} IP:${this.scriptId - 1}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
-
-      if (code.func) {
-        const ret = code.func.call(this.obj, script.param1, script.param2, script.param3);
-        if (ret == -1) {
-          return ;
-        }
-      }
-    }
-
-  }
-
-  // 步进执行单条指令，用于 auto NPC 在每次 tick 中仅执行单条命令，避免密集 While 循环阻塞
-  stepOneInstruction() {
-    if (this.finish || this.pause) return;
-
-    Thread.currentThread = this;
-
-    const script = state.scripts[this.scriptId++]; // 执行当前指令，并指向下一条
-    if (!script) {
-      console.warn(`Thread #${this.id} scriptId: ${this.scriptId - 1} 越界`);
-      this.stop();
-      return;
-    }
-
-    const code = scriptCodes[script.code];
-    const desc = code ? code.desc : '未知指令';
-    
-    // 记录到全局状态机中的 scriptLogs，供右侧 Dashboard 实时渲染
-    const logItem = {
-      id: this.id,
-      npcId: this.obj ? this.obj.id : '无',
-      roleId: this.obj && typeof this.obj.mgoId === 'number' ? this.obj.mgoId : null,
-      type: this.type,
-      scriptId: this.scriptId - 1,
-      code: script.code,
-      hexCode: '0x' + Hex.toHex(script.code),
-      desc: desc,
-      param1: script.param1,
-      param2: script.param2,
-      param3: script.param3,
-      time: new Date().toLocaleTimeString()
-    };
-
-    state.scriptLogs.push(logItem);
-    if (state.scriptLogs.length > 40) {
-      state.scriptLogs.shift();
-    }
-
-    // 通知前端监控台重绘日志面板
-    if (window.onScriptExecute) {
-      window.onScriptExecute(logItem);
-    }
-
-    if (!code) {
-      console.warn(`[warn] [NPC ${this.obj?.id || '无'} scriptId:${this.scriptId - 1}]: execute ${Hex.toHex(script.code)} ${Hex.toHex(script.param1)}`);
-      return;
-    }
-
-    if (script.code === 0) {
-      this.stop();
-      return;
-    }
-
-    const tab = this.type.charAt(0).toUpperCase();
-    console.log(`[info] [${tab} NPC:${this.obj?.id || '无'} IP:${this.scriptId - 1}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
-
-    if (code.func) {
-      const ret = code.func.call(this.obj, script.param1, script.param2, script.param3);
-      if (ret == -1) {
-        return;
-      }
-    }
-  }
-
-  // 2. 专门用于单步执行一条指令的步进函数
-  step() {
-    if (this.finish) return;
-
-    // 暂时解锁暂停状态，以仅允许单步执行当前的一条指令
-    this.pause = false;
-    Thread.currentThread = this;
-
-    const script = state.scripts[this.scriptId++]; // 执行当前指令，并指向下一条
-    if (!script) {
-      this.stop();
-      return;
-    }
-
-    const code = scriptCodes[script.code];
-    const desc = code ? code.desc : '未知指令';
-    
-    // 组装调试日志快照，塞入流中
-    const logItem = {
-      id: this.id,
-      npcId: this.obj ? this.obj.id : '无',
-      roleId: this.obj && typeof this.obj.mgoId === 'number' ? this.obj.mgoId : null,
-      type: this.type,
-      scriptId: this.scriptId - 1,
-      code: script.code,
-      hexCode: '0x' + Hex.toHex(script.code),
-      desc: desc,
-      param1: script.param1,
-      param2: script.param2,
-      param3: script.param3,
-      time: new Date().toLocaleTimeString()
-    };
-
-    state.scriptLogs.push(logItem);
-    if (state.scriptLogs.length > 40) {
-      state.scriptLogs.shift();
-    }
-
-    // 触发前端实时日志渲染
-    if (window.onScriptExecute) {
-      window.onScriptExecute(logItem);
-    }
-
-    if (script.code === 0) {
-      this.stop();
-      return;
-    }
-
-    const tab = this.type.charAt(0).toUpperCase();
-    console.log(`[step-info] [${tab} NPC:${this.obj?.id || '无'} IP:${this.scriptId - 1}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
-
-    // 执行具体指令函数
-    if (code && code.func) {
-      code.func.call(this.obj, script.param1, script.param2, script.param3);
-    }
-
-    // 3. 单步指令执行完毕后，如果线程未被指令内生性挂起（如 wait 挂载），且单步模式仍开启，则重新挂起
-    if (!this.pause && !this.finish) {
-      this.wait();
-      window.ACTIVE_DEBUG_THREAD = this;
-
-      if (window.onStepDebugPause) {
-        window.onStepDebugPause(this);
-      }
-    }
   }
 
   isNextTalk() {
