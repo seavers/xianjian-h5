@@ -824,18 +824,23 @@
 					</span>
 				</div>
 				
-				<!-- ⏱️ 变速齿轮 & 🪙 满钱 & 🎒 神药 -->
+				<!-- 🪙 金手指金钱与物品 & ⏱️ 变速齿轮 -->
 				<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-					<!-- 变速 -->
-					<div style="display: flex; align-items: center; gap: 6px;">
+					<!-- 左侧：一键金币、一键神药与动态添加物品 -->
+					<div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+						<button class="btn-dbg" onclick="cheatGold()" style="color: #ffd000; border-color: rgba(255,208,0,0.25); background: rgba(255,208,0,0.05); padding: 2px 5px; font-size: 8.5px;">🪙 满钱</button>
+						<button class="btn-dbg" onclick="cheatItems()" style="color: #ff3b6f; border-color: rgba(255,59,111,0.25); background: rgba(255,59,111,0.05); padding: 2px 5px; font-size: 8.5px;">🎒 神药</button>
+						
+						<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold; margin-left: 6px;">🎒 物品:</span>
+						<input type="number" id="input-cheat-item-id" placeholder="ID" min="1" max="255" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #ff3b6f; font-size: 8.5px; padding: 2px 4px; width: 70px; outline: none; text-align: center; border-radius: 2px;">
+						<button class="btn-dbg" onclick="cheatCustomItem()" style="color: #ff3b6f; border-color: rgba(255,59,111,0.25); background: rgba(255,59,111,0.05); padding: 2px 5px; font-size: 8.5px;">获得</button>
+					</div>
+
+					<!-- 右侧：变速齿轮 -->
+					<div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
 						<span style="font-size: 9px; font-weight: bold; color: rgba(255,255,255,0.4)">⏱️ 变速:</span>
 						<input type="range" id="input-speed" min="3" max="60" value="6" oninput="changeGameSpeed(this.value)" style="width: 80px; accent-color: var(--glow-green); cursor: pointer;">
 						<span id="label-speed-val" style="font-size: 9px; color: #ffd000; font-weight: bold;">6 fps</span>
-					</div>
-					<!-- 满钱/神药 -->
-					<div style="display: flex; gap: 4px;">
-						<button class="btn-dbg" onclick="cheatGold()" style="color: #ffd000; border-color: rgba(255,208,0,0.25); background: rgba(255,208,0,0.05); padding: 2px 6px; font-size: 8.5px;">🪙 满钱</button>
-						<button class="btn-dbg" onclick="cheatItems()" style="color: #ff3b6f; border-color: rgba(255,59,111,0.25); background: rgba(255,59,111,0.05); padding: 2px 6px; font-size: 8.5px;">🎒 神药</button>
 					</div>
 				</div>
 
@@ -2769,6 +2774,25 @@
 				});
 			}
 		}
+
+		function cheatCustomItem() {
+			const input = document.getElementById('input-cheat-item-id').value;
+			if (!input) {
+				alert('请输入有效的物品 ID！');
+				return;
+			}
+			const itemId = parseInt(input);
+			if (window.state) {
+				import('./js/engine/command.js').then(({ obtain }) => {
+					obtain(itemId);
+					import('./js/ui/talk.js').then(({ Talk }) => {
+						Talk.talkTips(`获得道具：#${itemId}`);
+					});
+				});
+			}
+		}
+
+		window.cheatCustomItem = cheatCustomItem;
 
 		function teleportMarket() {
 			if (window.state && window.toggleScene) {
