@@ -549,6 +549,18 @@ export function stopMusic(fadeTime) {
   console.log(`[0x77 stopMusic] 停止当前播放背景音乐，淡出时间: ${seconds} 秒`);
 }
 
+export function showFbp(fbpId, effect) {
+  // 步骤 1：在全局状态机中记录当前的 FBP 全屏背景图 ID
+  state.currentFbpId = fbpId;
+
+  // 步骤 2：输出详细的展示 FBP 图片调试日志，以供后续结局大图渲染时对接
+  console.log(`[0x76 showFbp] 展示全屏剧情背景图 (FBP ID: ${fbpId}, 渐变效果: ${effect})`);
+
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 export function setMoney(add) {
   state.money += add;
   if (window.onSceneUpdate) {
@@ -593,6 +605,7 @@ scriptCodes[0x46] = { func: nextRolePos, desc: '设置主角/队员瓦片位置'
 scriptCodes[0x65] = { func: setRoleTile, desc: '设置主角/队员形象' };
 scriptCodes[0x15] = { func: setRoleIndex, desc: '设置队员动作方向/帧' };
 scriptCodes[0x75] = { func: setRoleGroup, desc: '设置组队伙伴' };
+scriptCodes[0x76] = { func: showFbp, desc: '展示全屏剧情背景图' };
 scriptCodes[0x77] = { func: stopMusic, desc: '停止当前背景音乐并淡出' };
 
 scriptCodes[0x3B] = { func: (...args) => window.Talk.talkTips(...args), desc: '显示系统通知 tips' };
