@@ -39,8 +39,6 @@ export function calcMap() {
   state.roles[0].x = state.mapX;
   state.roles[0].y = state.mapY;
 
-  update(true); // 同步重绘
-  
   if (window.onSceneUpdate) {
     window.onSceneUpdate();
   }
@@ -102,8 +100,6 @@ export function walkHeroByOffset(dx, dy) {
 
   refreshRoleCount(state.roles[0]);
 
-  update(true); // 同步重绘
-  
   if (window.onSceneUpdate) {
     window.onSceneUpdate();
   }

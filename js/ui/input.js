@@ -197,7 +197,6 @@ function onXY(x, y, half, dir) {
 
   // 0能走, 1不能走
   if (canWalk(x, y, half) !== 0) {
-    update();
     return;
   }
 
