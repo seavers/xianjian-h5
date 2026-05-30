@@ -2,6 +2,7 @@ import { state } from '../engine/state.js';
 import { Script } from '../engine/script.js';
 import { refreshRoleCount, setRolePos, startEventTrig } from '../engine/command.js';
 import { canWalk, update } from './draw.js';
+import { ESC } from '../esc/esc.js';
 
 export let blankCallback = null;
 
@@ -43,25 +44,19 @@ document.addEventListener('keydown', (ev) => {
 
     case 27: { // ESC
       ev.preventDefault();
-      import('../esc/esc.js').then(({ ESC }) => {
-        ESC.onMenu();
-      });
+      ESC.onMenu();
       break;
     }
 
     case 69: { // E键呼出物品栏
       ev.preventDefault();
-      import('../esc/esc.js').then(({ ESC }) => {
-        ESC.onItem();
-      });
+      ESC.onItem();
       break;
     }
 
     case 83: { // S键呼出状态栏
       ev.preventDefault();
-      import('../esc/esc.js').then(({ ESC }) => {
-        ESC.onStatus();
-      });
+      ESC.onStatus();
       break;
     }
 

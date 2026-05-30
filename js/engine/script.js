@@ -1,8 +1,9 @@
 import { state } from './state.js';
 import { Thread } from './thread.js';
 import { Timer } from './timer.js';
-import { scriptCodes } from './command.js';
+import { scriptCodes, performToggleScene } from './command.js';
 import { Hex } from '../utils/hex.js';
+import { update } from '../ui/draw.js';
 
 export const Script = {
   all: [],
@@ -76,7 +77,7 @@ export const Script = {
     // 步骤 2：处理游戏挂起状态（如渐变动画中或 ESC 打开时）
     if (state.isPaused) {
       // 仅重绘画面以保持动画连贯，不步进任何游戏脚本
-      import('../ui/draw.js').then(({ update }) => update(true));
+      update(true);
       return;
     }
 
@@ -131,7 +132,7 @@ export const Script = {
     }
 
     // 步骤 7：画面统一重绘同步
-    import('../ui/draw.js').then(({ update }) => update(true));
+    update(true);
   },
 
   handleSceneSwitch() {
@@ -146,21 +147,15 @@ export const Script = {
       // 场景淡出切换流程，期间暂停主循环
       state.isPaused = true;
       
-      import('../ui/draw.js').then(({ update }) => {
-        update('fadeOut', () => {
-          import('./command.js').then(({ performToggleScene }) => {
-            performToggleScene(targetSceneId);
-            update('fadeIn', () => {
-              state.isPaused = false;
-            });
-          });
+      update('fadeOut', () => {
+        performToggleScene(targetSceneId);
+        update('fadeIn', () => {
+          state.isPaused = false;
         });
       });
     } else {
       // 直接切换场景
-      import('./command.js').then(({ performToggleScene }) => {
-        performToggleScene(targetSceneId);
-      });
+      performToggleScene(targetSceneId);
     }
   },
 

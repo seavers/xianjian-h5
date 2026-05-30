@@ -1,11 +1,13 @@
 import { state } from './engine/state.js';
-import { ready } from './resources/loader.js';
-import { loadSss, loadDat, fromCache } from './resources/pal.js';
+import { ready, file_caches } from './resources/loader.js';
+import { loadSss, loadDat, fromCache, caches } from './resources/pal.js';
 import { setRolePos, setRoleTile, setRoleIndex, setRoleGroup, toggleScene, calcMap } from './engine/command.js';
 import { ESC } from './esc/esc.js';
 import { Hex } from './utils/hex.js';
 import { Talk } from './ui/talk.js';
 import { Script } from './engine/script.js';
+import { Timer } from './engine/timer.js';
+import { updateCount, update as updateGameScreen } from './ui/draw.js';
 
 // 获取 URL 参数是否为 debug 模式
 const DEBUG = location.search && location.search.indexOf('debug') !== -1;
@@ -140,22 +142,11 @@ function initContexts() {
   window.Talk = Talk;
 
   // 1. 挂载渲染计数器、定时器时钟及资源缓存至全局 window 作用域，便于右侧面板实时监控分析
-  import('./ui/draw.js').then(({ updateCount, update }) => {
-    window.updateCount = updateCount;
-    window.updateGameScreen = update;
-  });
-
-  import('./engine/timer.js').then(({ Timer }) => {
-    window.Timer = Timer;
-  });
-
-  import('./resources/loader.js').then(({ file_caches }) => {
-    window.file_caches = file_caches;
-  });
-
-  import('./resources/pal.js').then(({ caches }) => {
-    window.caches = caches;
-  });
+  window.updateCount = updateCount;
+  window.updateGameScreen = updateGameScreen;
+  window.Timer = Timer;
+  window.file_caches = file_caches;
+  window.caches = caches;
 }
 
 // 资源载入并启动
