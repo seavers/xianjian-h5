@@ -6,14 +6,9 @@ let anims = []; // 注册的动画回调列表
 let animIndex = 0; // 纯自增计数器
 let pause = true; // 定时器是否暂停
 
-let intervalId = null;
-let currentFrameCount = 6;
-
-// 开启定时器，如果变速齿轮被触发则自动以新速度重启
+// 开启定时器。由于速度计算已完全整合至主循环的 accumulator 中进行动态帧率平滑匹配，此处保留空函数以向后兼容
 export function updateSpeed() {
-  if (state.frameCount !== currentFrameCount) {
-    draw();
-  }
+  // 变速齿轮调整时，主循环会自动依据 state.frameCount 调整 tick 时间间隔，此处无需操作
 }
 
 // 注册定时任务
@@ -47,32 +42,17 @@ export function queue(total, func, callback, force) {
   return timer;
 }
 
-// 主渲染与动画时钟循环
-function draw() {
-  if (intervalId) {
-    clearInterval(intervalId);
-  }
-
-  currentFrameCount = state.frameCount || 6;
-  
-  intervalId = setInterval(() => {
-    if (pause) return;
-    drawLoop();
-  }, 1000 / currentFrameCount);
-}
-
-function drawLoop() {
-  // 统一委托至 Script 主循环进行集中时钟推进、脚本调度与渲染
-  Script.mainLoop();
-}
-
 export function start() {
-  update(); // 立即 update 一次以同步画面
+  update(true); // 立即 update 一次以同步画面
   pause = false;
 }
 
 export function stop() {
   pause = true;
+}
+
+export function isPaused() {
+  return pause;
 }
 
 export const Timer = {
@@ -81,6 +61,7 @@ export const Timer = {
   stop,
   clearTimer,
   updateSpeed,
+  isPaused,
   get DEBUG() {
     return {
       anims,
@@ -88,6 +69,3 @@ export const Timer = {
     };
   }
 };
-
-// 启动底层时钟
-draw();

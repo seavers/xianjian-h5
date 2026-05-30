@@ -215,6 +215,13 @@ ready(() => {
       toggleScene(target.sceneId);
     }
   }
+
+  // 5. 资源就绪及初始化完毕后，正式开启 requestAnimationFrame 驱动的主循环
+  function runLoop(timestamp) {
+    Script.mainLoop(timestamp);
+    requestAnimationFrame(runLoop);
+  }
+  requestAnimationFrame(runLoop);
 });
 
 function commonEnter() {
