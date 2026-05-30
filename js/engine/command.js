@@ -198,6 +198,16 @@ export function setNpcPos(objId, dx, dy) {
   obj.y = state.roles[0].y + intToShort(dy);
 }
 
+export function setNpcPosAbsolute(objId, x, y) {
+  // 步骤 1：若指定实体 ID 为 0 或者是 0xFFFF，代表当前触发此脚本的实体自身，否则指向指定事件对象
+  const obj = (objId === 0 || objId === 0xFFFF) ? this : state.eventObjects[objId];
+  if (!obj) return;
+
+  // 步骤 2：直接将该实体的坐标设定为指定的 x 和 y 绝对像素坐标
+  obj.x = x;
+  obj.y = y;
+}
+
 export function setNpcMove(objId, dx, dy) {
   const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
   if (!obj) return;
@@ -559,6 +569,7 @@ scriptCodes[0x6C] = { func: npcWalk, desc: 'NPC平移偏移距离' };
 scriptCodes[0x10] = { func: npcWalk2, desc: 'NPC快速移动至坐标' };
 scriptCodes[0x11] = { func: npcWalk3, desc: 'NPC慢速移动至坐标' };
 scriptCodes[0x12] = { func: setNpcPos, desc: '设置NPC位置' };
+scriptCodes[0x13] = { func: setNpcPosAbsolute, desc: '设置NPC绝对像素位置' };
 scriptCodes[0x7D] = { func: setNpcMove, desc: 'NPC偏移位置' };
 scriptCodes[0x3F] = { func: teamWalk, desc: '队伍慢速骑乘到坐标' };
 scriptCodes[0x44] = { func: teamWalk2, desc: '队伍常速骑乘到坐标' };
