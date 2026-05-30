@@ -335,9 +335,9 @@ export const Script = {
         const ret = code.func.call(thread.obj, script.param1, script.param2, script.param3);
         
         // 核心协同挂起控制：
-        // 如果指令返回 -1 或者是大于 0 的未完成帧计数，表示指令需要跨多 tick 进行状态步进
+        // 如果指令返回 大于 0 的未完成帧计数，表示指令需要跨多 tick 进行状态步进
         // 我们在此直接退出 While 循环，不递增指令指针 IP，等待下一 tick 重新执行该指令。
-        if (ret === -1 || (typeof ret === 'number' && ret > 0)) {
+        if (typeof ret === 'number' && ret > 0) {
           return;
         }
       }
@@ -402,7 +402,7 @@ export const Script = {
       const ret = code.func.call(thread.obj, script.param1, script.param2, script.param3);
       
       // 同理，如果 auto NPC 执行指令尚未完成，直接退出且不递增指令指针 IP
-      if (ret === -1 || (typeof ret === 'number' && ret > 0)) {
+      if (typeof ret === 'number' && ret > 0) {
         return logItem;
       }
     }
