@@ -2807,10 +2807,10 @@
 			// 保留第一个默认空选项
 			selectEl.innerHTML = '<option value="">-- 快速传送 --</option>';
 
-			COORDS.forEach(item => {
+			COORDS.forEach((item, index) => {
 				const opt = document.createElement('option');
 				opt.value = item.sceneId;
-				opt.textContent = `Scene ${item.sceneId} (${item.name})`;
+				opt.textContent = `${index}: Scene ${item.sceneId} (${item.name})`;
 				selectEl.appendChild(opt);
 			});
 		}
