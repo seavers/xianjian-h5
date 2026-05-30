@@ -227,6 +227,10 @@ export function teamWalk3(x, y, half) {
   return Npc.animTeam(this, x, y, half, 6);
 }
 
+export function teamWalk4(x, y, half) {
+  return Npc.animTeam(this, x, y, half, 8);
+}
+
 export function faceNpcTrig(objId, dist, targetScriptId) {
   const o = objId === 0xFFFF ? this : state.eventObjects[objId];
   if (!o) return;
@@ -550,6 +554,7 @@ scriptCodes[0x7D] = { func: setNpcMove, desc: 'NPC偏移位置' };
 scriptCodes[0x3F] = { func: teamWalk, desc: '队伍慢速骑乘到坐标' };
 scriptCodes[0x44] = { func: teamWalk2, desc: '队伍常速骑乘到坐标' };
 scriptCodes[0x97] = { func: teamWalk3, desc: '队伍快速骑乘到坐标' };
+scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速骑乘到坐标' };
 
 scriptCodes[0x59] = { func: setSceneId, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
