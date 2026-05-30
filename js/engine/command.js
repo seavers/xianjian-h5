@@ -131,6 +131,19 @@ export function setObjectStatus(objId, stateVal) {
   // 步骤 1：仅设置活动生命状态，不在此处进行任何同步的指令或异步循环触发，统一交由 mainLoop 调度
 }
 
+export function setMultipleObjectStatus(startObjId, endObjId, stateVal) {
+  // 步骤 1：遍历闭区间 [startObjId, endObjId] 的所有事件对象，批量设定它们的活动生命状态值
+  for (let i = startObjId; i <= endObjId; i++) {
+    const obj = state.eventObjects[i];
+    if (obj) {
+      obj.state = stateVal;
+    }
+  }
+
+  // 步骤 2：输出详细的批量设置状态调试日志，以供全局追踪 NPC 生死显示变化
+  console.log(`[0x9A setMultipleObjectStatus] 批量设定 NPC 活动生命状态: 区间 [${startObjId}, ${endObjId}], 状态值: ${stateVal}`);
+}
+
 export function startEventTrig(obj) {
   // 步骤 1：仅设置下一次需要触发的 trigger 脚本信息，在下一 tick 的中央主循环中安全执行
   state.nextTriggerScriptId = obj.trigScr;
@@ -635,6 +648,7 @@ scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
 scriptCodes[0x59] = { func: setSceneId, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
+scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
 scriptCodes[0x85] = { func: waitSecond, desc: '非阻塞等待特定秒数' };
 scriptCodes[0x4C] = { func: sleepFrame, desc: '阻塞等待特定帧数' };
