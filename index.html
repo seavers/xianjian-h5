@@ -824,16 +824,30 @@
 					</span>
 				</div>
 				
-				<!-- 🪙 金手指金钱与物品 & ⏱️ 变速齿轮 -->
+				<!-- 🔮 传送、🎒 物品、🪙 满钱、🎒 神药 & ⏱️ 变速齿轮 -->
 				<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-					<!-- 左侧：一键金币、一键神药与动态添加物品 -->
+					<!-- 左侧：传送、物品、满钱、神药 -->
 					<div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-						<button class="btn-dbg" onclick="cheatGold()" style="color: #ffd000; border-color: rgba(255,208,0,0.25); background: rgba(255,208,0,0.05); padding: 2px 5px; font-size: 8.5px;">🪙 满钱</button>
-						<button class="btn-dbg" onclick="cheatItems()" style="color: #ff3b6f; border-color: rgba(255,59,111,0.25); background: rgba(255,59,111,0.05); padding: 2px 5px; font-size: 8.5px;">🎒 神药</button>
-						
+						<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">🔮 传送:</span>
+						<select id="select-teleport-scene" onchange="onQuickSceneSelect(this.value)"
+							style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; outline: none; width: 90px; cursor: pointer; border-radius: 2px;">
+							<!-- 动态渲染 -->
+						</select>
+						<input type="number" id="input-teleport-id" placeholder="ID" min="1" max="200"
+							style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; width: 70px; outline: none; text-align: center; border-radius: 2px;">
+						<button class="btn-dbg" onclick="teleportCustomScene()"
+							style="color: var(--glow-blue); border-color: rgba(0,225,255,0.25); background: rgba(0,225,255,0.05); padding: 2px 5px; font-size: 8.5px;">传送</button>
+
 						<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold; margin-left: 6px;">🎒 物品:</span>
-						<input type="number" id="input-cheat-item-id" placeholder="ID" min="1" max="255" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #ff3b6f; font-size: 8.5px; padding: 2px 4px; width: 70px; outline: none; text-align: center; border-radius: 2px;">
-						<button class="btn-dbg" onclick="cheatCustomItem()" style="color: #ff3b6f; border-color: rgba(255,59,111,0.25); background: rgba(255,59,111,0.05); padding: 2px 5px; font-size: 8.5px;">获得</button>
+						<input type="number" id="input-cheat-item-id" placeholder="ID" min="1" max="255"
+							style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #ff3b6f; font-size: 8.5px; padding: 2px 4px; width: 70px; outline: none; text-align: center; border-radius: 2px;">
+						<button class="btn-dbg" onclick="cheatCustomItem()"
+							style="color: #ff3b6f; border-color: rgba(255,59,111,0.25); background: rgba(255,59,111,0.05); padding: 2px 5px; font-size: 8.5px;">获得</button>
+
+						<button class="btn-dbg" onclick="cheatGold()"
+							style="color: #ffd000; border-color: rgba(255,208,0,0.25); background: rgba(255,208,0,0.05); padding: 2px 5px; font-size: 8.5px; margin-left: 6px;">🪙 满钱</button>
+						<button class="btn-dbg" onclick="cheatItems()"
+							style="color: #ff3b6f; border-color: rgba(255,59,111,0.25); background: rgba(255,59,111,0.05); padding: 2px 5px; font-size: 8.5px;">🎒 神药</button>
 					</div>
 
 					<!-- 右侧：变速齿轮 -->
@@ -844,41 +858,37 @@
 					</div>
 				</div>
 
-				<!-- 🔮 快速传送 & 🎬 场景切换 -->
+				<!-- 🎬 场景切换 & 📍 直接修改坐标 & 📝 坐标管理 -->
 				<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; border-top: 1px dotted rgba(255,255,255,0.03); padding-top: 5px;">
-					<!-- 快速传送 -->
+					<!-- 左侧：场景切换 & 坐标修改 -->
 					<div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-						<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">🔮 快速传送:</span>
-						<select id="select-teleport-scene" onchange="onQuickSceneSelect(this.value)" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; outline: none; width: 90px; cursor: pointer; border-radius: 2px;">
-							<!-- 动态渲染 -->
-						</select>
-						<input type="number" id="input-teleport-id" placeholder="ID" min="1" max="200" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 4px; width: 70px; outline: none; text-align: center; border-radius: 2px;">
-						<button class="btn-dbg" onclick="teleportCustomScene()" style="color: var(--glow-blue); border-color: rgba(0,225,255,0.25); background: rgba(0,225,255,0.05); padding: 2px 5px; font-size: 8.5px;">传送</button>
-					</div>
-
-					<!-- 🎬 场景切换 -->
-					<div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap; border-left: 1px dotted rgba(255,255,255,0.08); padding-left: 6px; margin-left: auto;">
+						<!-- 🎬 场景切换 -->
 						<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">🎬 场景切换:</span>
-						<input type="number" id="input-scene-switch-id" placeholder="场景ID" min="1" max="200" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #93c5fd; font-size: 8.5px; padding: 2px 4px; width: 70px; outline: none; text-align: center; border-radius: 2px;">
-						<button class="btn-dbg" onclick="changeCustomScene()" style="color: #93c5fd; border-color: rgba(147,197,253,0.25); background: rgba(147,197,253,0.05); padding: 2px 5px; font-size: 8.5px;">切换</button>
-					</div>
-				</div>
+						<input type="number" id="input-scene-switch-id" placeholder="场景ID" min="1" max="200"
+							style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #93c5fd; font-size: 8.5px; padding: 2px 4px; width: 70px; outline: none; text-align: center; border-radius: 2px;">
+						<button class="btn-dbg" onclick="changeCustomScene()"
+							style="color: #93c5fd; border-color: rgba(147,197,253,0.25); background: rgba(147,197,253,0.05); padding: 2px 5px; font-size: 8.5px;">切换</button>
 
-				<!-- 📍 直接修改坐标 & 📝 坐标管理 -->
-				<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; border-top: 1px dotted rgba(255,255,255,0.03); padding-top: 5px;">
-					<!-- 📍 直接修改坐标 -->
-					<div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+						<!-- 分割线 -->
+						<span style="border-left: 1px dotted rgba(255,255,255,0.15); height: 10px; margin: 0 4px;"></span>
+
+						<!-- 📍 直接修改坐标 -->
 						<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">📍 坐标:</span>
-						<input type="number" id="input-coord-x" placeholder="X" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #00ff9d; font-size: 8.5px; padding: 2px 4px; width: 70px; outline: none; text-align: center; border-radius: 2px;">
-						<input type="number" id="input-coord-y" placeholder="Y" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #00ff9d; font-size: 8.5px; padding: 2px 4px; width: 70px; outline: none; text-align: center; border-radius: 2px;">
-						<select id="select-coord-half" style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 2px; outline: none; width: 36px; cursor: pointer; border-radius: 2px;">
+						<input type="number" id="input-coord-x" placeholder="X"
+							style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #00ff9d; font-size: 8.5px; padding: 2px 4px; width: 70px; outline: none; text-align: center; border-radius: 2px;">
+						<input type="number" id="input-coord-y" placeholder="Y"
+							style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #00ff9d; font-size: 8.5px; padding: 2px 4px; width: 70px; outline: none; text-align: center; border-radius: 2px;">
+						<select id="select-coord-half"
+							style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 8.5px; padding: 2px 2px; outline: none; width: 36px; cursor: pointer; border-radius: 2px;">
 							<option value="0">全</option>
 							<option value="1">半</option>
 						</select>
-						<button class="btn-dbg" onclick="modifyPlayerCoord()" style="color: var(--glow-green); border-color: rgba(0,255,157,0.25); background: rgba(0,255,157,0.05); padding: 2px 5px; font-size: 8.5px;">修改</button>
+						<button class="btn-dbg" onclick="modifyPlayerCoord()"
+							style="color: var(--glow-green); border-color: rgba(0,255,157,0.25); background: rgba(0,255,157,0.05); padding: 2px 5px; font-size: 8.5px;">修改</button>
 					</div>
 
-					<button class="btn-dbg" onclick="toggleCoordsManager()" style="color: var(--glow-yellow); border-color: rgba(255,208,0,0.2); background: rgba(255,208,0,0.03); padding: 2px 6px; font-size: 8.5px; margin-left: auto;">📝 坐标管理</button>
+					<button class="btn-dbg" onclick="toggleCoordsManager()"
+						style="color: var(--glow-yellow); border-color: rgba(255,208,0,0.2); background: rgba(255,208,0,0.03); padding: 2px 6px; font-size: 8.5px; margin-left: auto;">📝 坐标管理</button>
 				</div>
 
 				<!-- 📝 坐标管理面板 (Collapsible coords editor) -->
