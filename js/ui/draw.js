@@ -187,10 +187,14 @@ export function drawEventObjectPos() {
 
 export function drawNpcIdsOnScreen() {
   const onlyHuman = window.ONLY_HUMAN_NPC !== false;
+  const onlyVisible = window.ONLY_VISIBLE_NPC === true;
+  const onlyHasTrig = window.ONLY_HAS_TRIG_NPC === true;
   for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
     const o = state.eventObjects[i];
     if (o && o.state > 0) {
       if (onlyHuman && o.mgoId === 0) continue;
+      if (onlyVisible && o.state === 0) continue;
+      if (onlyHasTrig && o.trigScr === 0) continue;
       // 绘制于 NPC 坐标稍微上方，使其清晰易读
       drawText('#' + o.id, o.x, o.y - 12, state.contexts.main, '#ffd700', 7);
     }
