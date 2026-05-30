@@ -81,25 +81,28 @@ export function roleWalk(sx, sy, shalf) {
 
 export function clearWithEffect() {}
 
-export function walkHeroByOffset(dx, dy) {
-  if (dx <= 65536 / 2) {
-    state.mapX += dx;
-  } else {
-    state.mapX -= 65536 - dx;
-  }
-  
-  if (dy <= 65536 / 2) {
-    state.mapY += dy;
-  } else {
-    state.mapY -= 65536 - dy;
-  }
+export function walkHeroByOffset(dx, dy, layer) {
+  // 步骤 1：将传入的无符号短整型平移量 dx, dy 转换为 16 位有符号像素偏移量
+  const offsetX = intToShort(dx);
+  const offsetY = intToShort(dy);
 
+  // 步骤 2：在当前相机视口像素中心的基础上累加坐标偏移
+  state.mapX += offsetX;
+  state.mapY += offsetY;
+
+  // 步骤 3：同步更新主角实体的绝对像素位置坐标
   state.roles[0].x = state.mapX;
   state.roles[0].y = state.mapY;
 
+  // 步骤 4：估算计算主角当前对应的瓦片地图网格坐标
   state.mx = Math.floor(state.mapX / 32);
   state.my = Math.floor(state.mapY / 16);
   state.mhalf = Math.round((state.mapX - state.mx * 32) / 16);
+
+  // 步骤 5：如果提供了第三个参数 layer，则将主角的渲染优先级层级同步设定为 layer * 8
+  if (layer !== undefined && layer !== null && layer !== 0xFFFF) {
+    state.roles[0].layer = layer * 8;
+  }
 
   refreshRoleCount(state.roles[0]);
 
@@ -331,13 +334,7 @@ export function setSceneEnterScr(sceneId, enterScriptId) {
 export function setNpcAutoScr(objId, autoScr) {
   const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
   if (!obj) return;
-  // obj.autoScr = autoScr;
-  // Script.startAutoScript(obj);
-  // if (obj.thread) {
-  //   obj.thread.scriptId = autoScr;
-  //   obj.thread.reset();
-  // }
-
+  obj.autoScr = autoScr;
   Script.setAutoThread(autoScr, obj, 'auto');
 }
 
