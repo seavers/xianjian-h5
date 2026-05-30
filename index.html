@@ -910,6 +910,7 @@
 				<div class="section-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding: 5px 8px;">
 					<span>💻 并行脚本指令流终端 (Active Threads Instruction Console)</span>
 					<div style="display: flex; align-items: center; gap: 8px;">
+						<span id="label-log-filter-mode" style="font-size: 8px; color: rgba(255,255,255,0.5);">默认仅显示非 auto 指令</span>
 						<label style="font-size: 8px; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 4px;">
 							容量限制:
 							<select id="select-log-limit" onchange="changeLogLimit(this.value)" style="background: #111; border: 1px solid var(--border-glass); color: #fff; font-size: 8px; border-radius: 2px; padding: 1px 2px; cursor: pointer; outline: none;">
@@ -919,6 +920,7 @@
 								<option value="1000">1000 条</option>
 							</select>
 						</label>
+						<button id="btn-toggle-all-logs" onclick="toggleShowAllScriptLogs()" style="background: rgba(0, 225, 255, 0.08); border: 1px solid rgba(0, 225, 255, 0.2); color: var(--glow-blue); padding: 1px 6px; font-size: 8px; font-weight: bold; border-radius: 2px; cursor: pointer; transition: all 0.15s; outline: none;" onmouseenter="this.style.background='rgba(0,225,255,0.16)'" onmouseleave="this.style.background=window.showAllScriptLogs ? 'rgba(255,208,0,0.16)' : 'rgba(0,225,255,0.08)'">显示全部</button>
 						<button onclick="clearScriptLogs()" style="background: rgba(255, 59, 111, 0.12); border: 1px solid rgba(255, 59, 111, 0.25); color: var(--glow-red); padding: 1px 6px; font-size: 8px; font-weight: bold; border-radius: 2px; cursor: pointer; transition: all 0.15s; outline: none;" onmouseenter="this.style.background='rgba(255,59,111,0.22)'" onmouseleave="this.style.background='rgba(255,59,111,0.12)'">🗑️ 清空日志</button>
 					</div>
 				</div>
@@ -1592,6 +1594,9 @@
 
 			document.getElementById('prof-timer-pause').innerText = 'No';
 			document.getElementById('prof-timer-pause').style.color = 'var(--glow-green)';
+
+			// 额外同步右侧指令区过滤状态，确保 NPC 选中切换时日志视图即时更新
+			syncScriptLogFilterView();
 		}
 
 		// 4. 解码某一个道具并填充 20 项底层高级指标
@@ -1635,9 +1640,11 @@
 			}
 		}
 
-		let lastLogItem = null;
-		let duplicateCount = 1;
 		window.logLimit = 200;
+		window.showAllScriptLogs = false;
+		window.scriptLogStore = [];
+		window.scriptLogStoreMax = 1000;
+		window.lastLogFilterSignature = '';
 
 		// 根据角色 ID 获取人物/NPC名称 (以支持右侧指令区对 auto 指令的执行 NPC 展示)
 		function getRoleName(roleId) {
@@ -1660,69 +1667,99 @@
 		}
 
 		function clearScriptLogs() {
-			const container = document.getElementById('container-logs');
-			if (container) {
-				container.innerHTML = '<div style="color: rgba(255,255,255,0.15)">日志已清空...</div>';
-			}
-			lastLogItem = null;
-			duplicateCount = 1;
+			// 1. 清空内存日志池，确保切换筛选条件时不会看到旧数据残留
+			window.scriptLogStore = [];
+
+			// 2. 强制刷新右侧日志视图，同步恢复为空态提示文案
+			renderScriptLogs({ force: true });
 		}
 
 		// 动态调整右侧指令区容量上限，多余的部分只清除最前面的一条/多条
 		function changeLogLimit(val) {
 			window.logLimit = parseInt(val) || 200;
-			const container = document.getElementById('container-logs');
-			if (container) {
-				while (container.children.length > window.logLimit) {
-					if (container.firstElementChild && container.firstElementChild.innerText.indexOf('等待') !== -1) {
-						break;
-					}
-					container.removeChild(container.firstChild);
+			
+			// 重新按新的容量限制裁剪可见日志列表
+			renderScriptLogs({ force: true });
+		}
+
+		function getSelectedNpcLogId() {
+			const state = window.state;
+			return state && Number.isInteger(state.highlightNpcId) ? state.highlightNpcId : null;
+		}
+
+		function getScriptLogFilterState() {
+			const selectedNpcId = getSelectedNpcLogId();
+			if (window.showAllScriptLogs) {
+				return { mode: 'all', selectedNpcId };
+			}
+			if (selectedNpcId !== null) {
+				return { mode: 'npc-auto', selectedNpcId };
+			}
+			return { mode: 'non-auto', selectedNpcId: null };
+		}
+
+		function isSameScriptLog(a, b) {
+			return !!a && !!b &&
+				a.hexCode === b.hexCode &&
+				a.param1 === b.param1 &&
+				a.param2 === b.param2 &&
+				a.param3 === b.param3 &&
+				a.type === b.type &&
+				a.scriptId === b.scriptId &&
+				a.npcId === b.npcId;
+		}
+
+		function shouldDisplayScriptLog(log) {
+			const filterState = getScriptLogFilterState();
+			if (filterState.mode === 'all') {
+				return true;
+			}
+			if (filterState.mode === 'npc-auto') {
+				return log.type === 'auto' && Number(log.npcId) === filterState.selectedNpcId;
+			}
+			return log.type !== 'auto';
+		}
+
+		function getScriptLogEmptyText() {
+			const filterState = getScriptLogFilterState();
+			if (filterState.mode === 'all') {
+				return '等待全部指令执行日志流式输入...';
+			}
+			if (filterState.mode === 'npc-auto') {
+				return `当前仅展示 NPC #${filterState.selectedNpcId} 的 auto 指令，暂未捕获到执行日志...`;
+			}
+			return '当前默认仅展示非 auto 类型指令...';
+		}
+
+		function updateScriptLogFilterUI() {
+			const filterState = getScriptLogFilterState();
+			const label = document.getElementById('label-log-filter-mode');
+			const btn = document.getElementById('btn-toggle-all-logs');
+
+			// 1. 同步顶部文案，让当前过滤模式始终可见
+			if (label) {
+				if (filterState.mode === 'all') {
+					label.innerText = '当前显示全部指令';
+					label.style.color = 'var(--glow-yellow)';
+				} else if (filterState.mode === 'npc-auto') {
+					label.innerText = `当前仅显示 NPC #${filterState.selectedNpcId} 的 auto 指令`;
+					label.style.color = 'var(--glow-green)';
+				} else {
+					label.innerText = '默认仅显示非 auto 指令';
+					label.style.color = 'rgba(255,255,255,0.5)';
 				}
+			}
+
+			// 2. 同步按钮状态，支持在“显示全部”和“恢复筛选”之间切换
+			if (btn) {
+				btn.innerText = window.showAllScriptLogs ? '恢复筛选' : '显示全部';
+				btn.style.color = window.showAllScriptLogs ? 'var(--glow-yellow)' : 'var(--glow-blue)';
+				btn.style.borderColor = window.showAllScriptLogs ? 'rgba(255,208,0,0.22)' : 'rgba(0,225,255,0.2)';
+				btn.style.background = window.showAllScriptLogs ? 'rgba(255,208,0,0.08)' : 'rgba(0,225,255,0.08)';
 			}
 		}
 
-		// 5. 并行指令流高速追加（已按照用户需求关闭 auto-scroll，并改为仅按需清理最前面的一条最老日志）
-		function appendScriptLog(log) {
-			const container = document.getElementById('container-logs');
-			if (!container) return;
-
-			if (container.firstElementChild && container.firstElementChild.innerText.indexOf('等待') !== -1) {
-				container.innerHTML = '';
-			}
-
-			// 智能去重合并同质高频空操作与相同指令
-			if (lastLogItem && 
-				lastLogItem.hexCode === log.hexCode &&
-				lastLogItem.param1 === log.param1 &&
-				lastLogItem.param2 === log.param2 &&
-				lastLogItem.param3 === log.param3 &&
-				lastLogItem.type === log.type) {
-				
-				duplicateCount++;
-				const lastDiv = container.lastElementChild;
-				if (lastDiv) {
-					// 寻找或创建一个黄色高亮的计数 badge
-					let badge = lastDiv.querySelector('.dup-badge');
-					if (!badge) {
-						badge = document.createElement('span');
-						badge.className = 'dup-badge';
-						badge.style.cssText = "background: var(--glow-yellow); color: #000; font-size: 7.5px; font-weight: 800; padding: 0px 3.5px; margin-left: 6px; border-radius: 2px; flex-shrink: 0; line-height: 11px; height: 11px; display: inline-flex; align-items: center; text-shadow: none;";
-						// 找到 leftSpan 元素追加进去
-						const leftSpan = lastDiv.firstElementChild;
-						if (leftSpan) {
-							leftSpan.appendChild(badge);
-						}
-					}
-					badge.innerText = `x${duplicateCount}`;
-				}
-				return;
-			}
-
-			// 重置计数
-			duplicateCount = 1;
-			lastLogItem = log;
-
+		function buildScriptLogElement(log, duplicateTimes) {
 			// 实时获取高度解密的附加信息
 			const detailInfo = getInstructionDetail(log.code, log.param1, log.param2, log.param3);
 
@@ -1761,23 +1798,94 @@
 				rightSpan.innerText = detailInfo || '';
 			}
 
+			// 若当前可见序列存在重复日志，则在单条 DOM 上展示合并计数
+			if (duplicateTimes > 1) {
+				const badge = document.createElement('span');
+				badge.className = 'dup-badge';
+				badge.style.cssText = "background: var(--glow-yellow); color: #000; font-size: 7.5px; font-weight: 800; padding: 0px 3.5px; margin-left: 6px; border-radius: 2px; flex-shrink: 0; line-height: 11px; height: 11px; display: inline-flex; align-items: center; text-shadow: none;";
+				badge.innerText = `x${duplicateTimes}`;
+				leftSpan.appendChild(badge);
+			}
+
 			logDiv.appendChild(leftSpan);
 			logDiv.appendChild(rightSpan);
-			container.appendChild(logDiv);
+			return logDiv;
+		}
 
-			// 限制内存溢出，裁剪超过容量限制的高频旧日志，每次只清除最前面的一条旧日志
-			while (container.children.length > window.logLimit) {
-				container.removeChild(container.firstChild);
-			}
-
-			// 仅当用户处于最底部的几行时，新日志追加才触发滚动到最底部，否则保持稳定不滚动
+		function renderScriptLogs(options = {}) {
+			const { force = false, stickToBottom = false } = options;
+			const container = document.getElementById('container-logs');
 			const wrapper = document.getElementById('container-logs-wrapper');
-			if (wrapper) {
-				const isAtBottom = wrapper.scrollHeight - wrapper.scrollTop - wrapper.clientHeight < 30;
-				if (isAtBottom) {
-					wrapper.scrollTop = wrapper.scrollHeight - wrapper.clientHeight;
-				}
+			if (!container) return;
+
+			const filterSignature = `${window.showAllScriptLogs ? 'all' : 'filtered'}:${getSelectedNpcLogId() ?? 'none'}:${window.logLimit}`;
+			if (!force && window.lastLogFilterSignature === filterSignature) {
+				updateScriptLogFilterUI();
+				return;
 			}
+
+			const shouldStick = wrapper ? (stickToBottom || wrapper.scrollHeight - wrapper.scrollTop - wrapper.clientHeight < 30) : false;
+			const visibleLogs = window.scriptLogStore.filter(shouldDisplayScriptLog).slice(-window.logLimit);
+			container.innerHTML = '';
+
+			// 1. 无日志时展示当前筛选模式对应的空态提示
+			if (!visibleLogs.length) {
+				container.innerHTML = `<div style="color: rgba(255,255,255,0.15)">${getScriptLogEmptyText()}</div>`;
+				window.lastLogFilterSignature = filterSignature;
+				updateScriptLogFilterUI();
+				return;
+			}
+
+			// 2. 按当前过滤后的可见序列做重复合并，避免高频刷屏
+			const mergedLogs = [];
+			for (const log of visibleLogs) {
+				const lastEntry = mergedLogs[mergedLogs.length - 1];
+				if (lastEntry && isSameScriptLog(lastEntry.log, log)) {
+					lastEntry.count++;
+					continue;
+				}
+				mergedLogs.push({ log, count: 1 });
+			}
+
+			// 3. 重绘可见日志列表，保证 NPC 切换后立刻反映新筛选结果
+			mergedLogs.forEach(({ log, count }) => {
+				container.appendChild(buildScriptLogElement(log, count));
+			});
+			window.lastLogFilterSignature = filterSignature;
+			updateScriptLogFilterUI();
+
+			// 4. 仅在原本贴底或显式要求贴底时滚动到底部，避免打断用户翻看旧日志
+			if (wrapper && shouldStick) {
+				wrapper.scrollTop = wrapper.scrollHeight - wrapper.clientHeight;
+			}
+		}
+
+		function syncScriptLogFilterView(force = false) {
+			const filterSignature = `${window.showAllScriptLogs ? 'all' : 'filtered'}:${getSelectedNpcLogId() ?? 'none'}:${window.logLimit}`;
+			if (!force && window.lastLogFilterSignature === filterSignature) {
+				updateScriptLogFilterUI();
+				return;
+			}
+			renderScriptLogs({ force: true });
+		}
+
+		function toggleShowAllScriptLogs() {
+			// 主动切换“显示全部”模式，并立即强制刷新当前日志面板
+			window.showAllScriptLogs = !window.showAllScriptLogs;
+			window.lastLogFilterSignature = '';
+			renderScriptLogs({ force: true, stickToBottom: true });
+		}
+
+		// 5. 并行指令流高速追加：先缓存日志，再按当前过滤模式重绘可见区域
+		function appendScriptLog(log) {
+			// 1. 维护统一日志池，供 NPC 切换和“显示全部”模式重复筛选复用
+			window.scriptLogStore.push(log);
+			if (window.scriptLogStore.length > window.scriptLogStoreMax) {
+				window.scriptLogStore.shift();
+			}
+
+			// 2. 新日志进入后立即按当前规则刷新视图，并按需保持底部跟随
+			renderScriptLogs({ force: true, stickToBottom: true });
 		}
 
 		// ==================== 🐛 脚本单步调试器 (Active Thread Step Debugger) 前端核心交互 ====================
@@ -2783,8 +2891,11 @@
 
 		window.modifyPlayerCoord = modifyPlayerCoord;
 
-		// 页面初始化时自动加载
-		document.addEventListener('DOMContentLoaded', loadCoords);
+		// 页面初始化时自动加载坐标配置，并同步右侧日志区的初始筛选文案
+		document.addEventListener('DOMContentLoaded', () => {
+			loadCoords();
+			syncScriptLogFilterView(true);
+		});
 
 		// ==================== 注册全局运行时钩子与数据联动 ====================
 		window.onSceneUpdate = () => {
