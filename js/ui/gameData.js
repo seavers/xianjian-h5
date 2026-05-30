@@ -35,7 +35,7 @@ function getWordImg(wordId, color = 0xFFFFFF) {
 function getItemNameHtml(itemId) {
   const canvas = getWordImg(itemId);
   if (canvas) {
-    return `<img src="${canvas.toDataURL()}" style="height: 12px; image-rendering: pixelated; vertical-align: middle;" />`;
+    return `<img src="${canvas.toDataURL()}" style="height: 20px; image-rendering: pixelated; vertical-align: middle;" />`;
   }
   return `物品 #${itemId}`;
 }
