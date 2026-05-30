@@ -216,6 +216,18 @@ export function npcWalk3(x, y, half) {
   Npc.anim(this, x, y, half, 2);
 }
 
+export function teamWalk(x, y, half) {
+  Npc.animTeam(state.roles[0], x, y, half, 2);
+}
+
+export function teamWalk2(x, y, half) {
+  Npc.animTeam(state.roles[0], x, y, half, 4);
+}
+
+export function teamWalk3(x, y, half) {
+  Npc.animTeam(state.roles[0], x, y, half, 6);
+}
+
 export function walkAtPlace() {
   loadFrameCount(this);
   
@@ -431,8 +443,9 @@ scriptCodes[0x10] = { func: npcWalk2, desc: 'NPC快速移动至坐标' };
 scriptCodes[0x11] = { func: npcWalk3, desc: 'NPC慢速移动至坐标' };
 scriptCodes[0x12] = { func: setNpcPos, desc: '设置NPC位置' };
 scriptCodes[0x7D] = { func: setNpcMove, desc: 'NPC偏移位置' };
-scriptCodes[0x3F] = { func: npcWalk3, desc: '队伍慢速骑乘到坐标' };
-scriptCodes[0x44] = { func: npcWalk2, desc: '队伍快速骑乘到坐标' };
+scriptCodes[0x3F] = { func: teamWalk, desc: '队伍慢速骑乘到坐标' };
+scriptCodes[0x44] = { func: teamWalk2, desc: '队伍常速骑乘到坐标' };
+scriptCodes[0x97] = { func: teamWalk3, desc: '队伍快速骑乘到坐标' };
 
 scriptCodes[0x59] = { func: setScene, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x50] = { func: toggleScene, desc: '执行场景切换' };
