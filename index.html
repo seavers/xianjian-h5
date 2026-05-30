@@ -1095,6 +1095,7 @@
 			<div style="background: rgba(0,0,0,0.4); padding: 6px 12px; border-bottom: 1px solid var(--border-glass); display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
 				<button class="btn-dbg gamedata-tab-btn active" id="gamedata-tab-role" onclick="switchGameDataTab('role')" style="color:var(--glow-yellow); border-color:var(--glow-yellow); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">👤 角色信息 (rgm.mkf / mgo.mkf)</button>
 				<button class="btn-dbg gamedata-tab-btn" id="gamedata-tab-npc" onclick="switchGameDataTab('npc')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">👾 NPC 信息 (sss.mkf #0)</button>
+				<button class="btn-dbg gamedata-tab-btn" id="gamedata-tab-item" onclick="switchGameDataTab('item')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">🎒 物品资料</button>
 				<button class="btn-dbg gamedata-tab-btn" id="gamedata-tab-script" onclick="switchGameDataTab('script')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">📜 脚本信息 (sss.mkf #4)</button>
 				<button class="btn-dbg gamedata-tab-btn" id="gamedata-tab-scene" onclick="switchGameDataTab('scene')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">🗺️ 场景信息 (sss.mkf #1 / gop.mkf)</button>
 			</div>
@@ -3102,6 +3103,7 @@
 			window.jumpToGameDataScript = module.jumpToGameDataScript;
 			window.searchGameDataScript = module.searchGameDataScript;
 			window.onGameDataSceneSelect = module.onGameDataSceneSelect;
+			window.onGameDataItemSelect = module.onGameDataItemSelect;
 			window.jumpToGameDataNpc = module.jumpToGameDataNpc;
 			window.toggleHeroAnim = module.toggleHeroAnim;
 		});
