@@ -37,8 +37,9 @@ export const Script = {
     // 限制单帧最大时间间隔为 250ms，防止浏览器在切后台挂起或极度卡顿时瞬间累加超长 deltaTime，导致异常大跨度追帧
     const clampedDt = Math.min(dt, 250);
 
-    // 如果 Timer 整体暂停，则不推进时钟累加器，也不执行逻辑 tick()
-    if (Timer.isPaused()) {
+    // 步骤 0：检测主循环全局暂停状态，如果被挂起，则仅重绘画面以保持渲染连贯，且不推进累加器及逻辑 tick
+    if (state.isPaused) {
+      update(true);
       return;
     }
 
@@ -68,20 +69,13 @@ export const Script = {
       }
     }
 
-    // 步骤 2：处理游戏挂起状态（如渐变动画中或 ESC 打开时）
-    if (state.isPaused) {
-      // 仅重绘画面以保持动画连贯，不步进任何游戏脚本
-      update(true);
-      return;
-    }
-
-    // 步骤 3：检测是否需要进行场景切换（一律在主循环头部做同步判定）
+    // 步骤 2：检测是否需要进行场景切换（一律在主循环头部做同步判定）
     if (state.nextSceneId !== state.sceneId && state.nextSceneId !== -1) {
       this.handleSceneSwitch();
       return;
     }
 
-    // 步骤 4：检测是否有延迟触发的 trigger 交互脚本需要激活
+    // 步骤 3：检测是否有延迟触发的 trigger 交互脚本需要激活
     if (state.nextTriggerScriptId !== undefined && state.nextTriggerScriptId !== null && state.nextTriggerScriptId !== -1) {
       const scriptId = state.nextTriggerScriptId;
       const obj = state.nextTriggerScriptObject;
@@ -94,7 +88,7 @@ export const Script = {
       // 激活后继续向下运行，以便在同一个 tick 中直接步进该脚本，保持高响应性
     }
 
-    // 步骤 5：步进当前活跃的非 auto 类主线程（进入场景脚本、交互触发脚本等）
+    // 步骤 4：步进当前活跃的非 auto 类主线程（进入场景脚本、交互触发脚本等）
     const t = Script.activeThread;
     if (t && !t.finish) {
       if (!t.pause) {
@@ -102,7 +96,7 @@ export const Script = {
       }
     }
 
-    // 步骤 6：步进 auto NPC 漫游线程。判定依据为事件物体的类型 type === 'npc'
+    // 步骤 5：步进 auto NPC 漫游线程。判定依据为事件物体的类型 type === 'npc'
     for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
       const o = state.eventObjects[i];
       if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc') continue;
@@ -119,7 +113,7 @@ export const Script = {
       }
     }
 
-    // 步骤 7：画面统一重绘同步
+    // 步骤 6：画面统一重绘同步
     update(true);
   },
 

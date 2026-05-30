@@ -4,6 +4,8 @@ import { Thread } from '../engine/thread.js';
 import { loadMsg, loadWord, loadPic, loadRgm } from '../resources/pal.js';
 import { registerBlank } from './input.js';
 
+export let isTalking = false;
+
 let tx = 0;
 let ty = 0;
 let rgmId = 0;
@@ -26,6 +28,7 @@ function fillText(word, x, y) {
 }
 
 function resetTalk() {
+  isTalking = false;
   rgm = null;
   who = null;
   tx = 80;
@@ -73,6 +76,7 @@ function showMessage() {
 }
 
 export function drawTalk(msgId) {
+  isTalking = true;
   if (message) {
     message = false;
     drawMessage(msgId);
@@ -216,6 +220,7 @@ function checkTalk(callback) {
 }
 
 function drawMessage(msgId) {
+  isTalking = true;
   const text = loadMsg(msgId);
   const texts = calcText(text);
   const length = texts.length;
@@ -262,6 +267,7 @@ function drawLineSync(texts, x, y) {
 }
 
 function drawTips(msgId) {
+  isTalking = true;
   const text = loadMsg(msgId);
   const texts = calcText(text);
   const length = texts.length;
@@ -281,5 +287,8 @@ export const Talk = {
   clearTalk,
   showTalkWait,
   updateTalk,
-  resetTalk
+  resetTalk,
+  get isTalking() {
+    return isTalking;
+  }
 };

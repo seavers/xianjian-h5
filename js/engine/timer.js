@@ -4,7 +4,6 @@ import { Script } from './script.js';
 
 let anims = []; // 注册的动画回调列表
 let animIndex = 0; // 纯自增计数器
-let pause = true; // 定时器是否暂停
 
 // 开启定时器。由于速度计算已完全整合至主循环的 accumulator 中进行动态帧率平滑匹配，此处保留空函数以向后兼容
 export function updateSpeed() {
@@ -44,15 +43,11 @@ export function queue(total, func, callback, force) {
 
 export function start() {
   update(true); // 立即 update 一次以同步画面
-  pause = false;
+  state.isPaused = false;
 }
 
 export function stop() {
-  pause = true;
-}
-
-export function isPaused() {
-  return pause;
+  state.isPaused = true;
 }
 
 export const Timer = {
@@ -61,7 +56,6 @@ export const Timer = {
   stop,
   clearTimer,
   updateSpeed,
-  isPaused,
   get DEBUG() {
     return {
       anims,
