@@ -24,25 +24,22 @@ export const Npc = {
     const zx = x * 32 + half * 16;
     const zy = y * 16 + half * 8;
 
-    const s = Math.max(Math.abs(zx - cx), Math.abs(zy - cy));
-    const step = Math.ceil(s);
-    const total = Math.ceil(step / speed);
+    const dx = zx - cx;
+    const dy = zy - cy;
+    const s = Math.max(Math.abs(dx), Math.abs(dy));
 
-    // 彻底弃用 Script.draw，改用 Script.stepProgress 步进器进行逻辑 tick 计算，并向上传递挂起状态
-    return Script.stepProgress(o, 1, (currStep) => {
-      calcNpcDir(o, zx, zy);
-      const curr = currStep * speed;
+    // 计算移动时的朝向，并更新步态动画帧
+    calcNpcDir(o, zx, zy);
 
-      if (step !== 0) {
-        o.x = (zx - cx) * curr / step + cx;
-        o.y = (zy - cy) * curr / step + cy;
-      }
-
-      if (Math.abs(curr) >= s) {
-        o.x = zx;
-        o.y = zy;
-      }
-    });
+    if (s > speed) {
+      o.x = cx + (dx / s) * speed;
+      o.y = cy + (dy / s) * speed;
+      return s - speed; // 未到站，返回剩余像素距离（非 0）以安全挂起指令
+    } else {
+      o.x = zx;
+      o.y = zy;
+      return 0; // 已到站，返回 0 结束当前移动指令
+    }
   },
 
   animTeam(o, x, y, half, speed) {
@@ -51,55 +48,52 @@ export const Npc = {
     const zx = x * 32 + half * 16;
     const zy = y * 16 + half * 8;
 
-    const s = Math.max(Math.abs(zx - cx), Math.abs(zy - cy));
-    const step = Math.ceil(s);
-    const total = Math.ceil(step / speed);
+    const dx = zx - cx;
+    const dy = zy - cy;
+    const s = Math.max(Math.abs(dx), Math.abs(dy));
 
-    // 彻底弃用 Script.draw，改用 Script.stepProgress 步进器进行逻辑 tick 计算，并向上传递挂起状态
-    return Script.stepProgress(o, total, (currStep) => {
-      // 1. 计算移动时的朝向，并更新步态动画帧
-      calcNpcDir(o, zx, zy);
-      const curr = currStep * speed;
+    // 1. 计算移动时的朝向，并更新步态动画帧
+    calcNpcDir(o, zx, zy);
 
-      // 2. 平滑更新移动中每一帧的主角、事件实体与相机视口像素坐标
-      if (step !== 0) {
-        const nx = (zx - cx) * curr / step + cx;
-        const ny = (zy - cy) * curr / step + cy;
+    if (s > speed) {
+      const nx = cx + (dx / s) * speed;
+      const ny = cy + (dy / s) * speed;
 
-        // 同步移动主角（Role 0）的坐标与相机偏移坐标
-        state.roles[0].x = nx;
-        state.roles[0].y = ny;
-        state.mapX = nx;
-        state.mapY = ny;
+      // 同步移动主角（Role 0）的坐标与相机偏移坐标
+      state.roles[0].x = nx;
+      state.roles[0].y = ny;
+      state.mapX = nx;
+      state.mapY = ny;
 
-        // 如果传入的首个参数 o 不是主角本身（例如是 eventObject / this），则同步更新其像素坐标
-        if (o !== state.roles[0]) {
-          o.x = nx;
-          o.y = ny;
-        }
-
-        // 同步估算当前的瓦片坐标以保持逻辑状态一致
-        state.mx = Math.floor(nx / 32);
-        state.my = Math.floor(ny / 16);
-        state.mhalf = Math.round((nx - state.mx * 32) / 16);
+      // 如果传入的首个参数 o 不是主角本身，则同步更新其像素坐标
+      if (o !== state.roles[0]) {
+        o.x = nx;
+        o.y = ny;
       }
-      
+
+      // 同步估算当前的瓦片坐标以保持逻辑状态一致
+      state.mx = Math.floor(nx / 32);
+      state.my = Math.floor(ny / 16);
+      state.mhalf = Math.round((nx - state.mx * 32) / 16);
+
+      return s - speed; // 未到站，返回剩余像素距离（非 0）以安全挂起指令
+    } else {
       // 3. 移动结束，修正误差并准确对齐到目标像素与瓦片位置
-      if (Math.abs(curr) >= s) {
-        state.roles[0].x = zx;
-        state.roles[0].y = zy;
-        state.mapX = zx;
-        state.mapY = zy;
+      state.roles[0].x = zx;
+      state.roles[0].y = zy;
+      state.mapX = zx;
+      state.mapY = zy;
 
-        if (o !== state.roles[0]) {
-          o.x = zx;
-          o.y = zy;
-        }
-
-        state.mx = x;
-        state.my = y;
-        state.mhalf = half;
+      if (o !== state.roles[0]) {
+        o.x = zx;
+        o.y = zy;
       }
-    });
+
+      state.mx = x;
+      state.my = y;
+      state.mhalf = half;
+
+      return 0; // 已到站，返回 0 结束当前移动指令
+    }
   },
 };

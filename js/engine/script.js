@@ -10,23 +10,6 @@ export const Script = {
   lastTime: 0,
   accumulator: 0,
 
-  // 步进执行动画/步态进度。如果动画正在进行则返回剩余步数，全部执行完毕则返回 0
-  stepProgress(obj, total, func) {
-    if (!obj.animStep) {
-      obj.animStep = 0;
-    }
-    
-    if (obj.animStep < total) {
-      if (func) func(obj.animStep + 1);
-      obj.animStep++;
-      return total - obj.animStep; // 返回剩余步数，以作为非零信号挂起指令
-    }
-    
-    // 执行完毕，重置状态并返回 0
-    obj.animStep = 0;
-    return 0;
-  },
-
   startScene(scene) {
     Script.start(scene.enterScriptId, scene, 'scene');
   },
@@ -237,6 +220,23 @@ export const Script = {
     if (thread) {
       thread.scriptId = scriptId;
     }
+  },
+
+  // 步进执行动画/步态进度。如果动画正在进行则返回剩余步数，全部执行完毕则返回 0
+  stepProgress(obj, total, func) {
+    if (!obj.animStep) {
+      obj.animStep = 0;
+    }
+    
+    if (obj.animStep < total) {
+      if (func) func(obj.animStep + 1);
+      obj.animStep++;
+      return total - obj.animStep; // 返回剩余步数，以作为非零信号挂起指令
+    }
+    
+    // 执行完毕，重置状态并返回 0
+    obj.animStep = 0;
+    return 0;
   },
 
   sub(scriptId) {
