@@ -298,7 +298,11 @@ export function setNpcTrigScr(objId, trigScr) {
 
 export function setNpcFrame(frame) {
   loadFrameCount(this);
-  this.frame = frame;
+  if (this.type == 'npc') {
+    this.frame = (this.frame + 1) % this.frameCount;
+  } else {
+    this.frame = frame;
+  }
   this.dir = 0;        // 强制指向南方(0)
 }
 
@@ -398,14 +402,18 @@ export function changeScript(scriptId, count) {
 }
 
 export function gotoScript(scriptId) {
-  Script.next(scriptId);
+  Script.next(scriptId - 1);
 }
 
 export function subScript(scriptId) {
-  Script.sub(scriptId);
+  Script.sub(scriptId - 1);
 }
 
-export function randomScript() {}
+export function randomScript(base, scriptId) {
+  if (Math.random() * 100 > base) {
+    Script.next(scriptId - 1);
+  }
+}
 
 export function talk(msgId) {
   window.Talk.drawTalk(msgId); // 绝对同步的对话框弹出
