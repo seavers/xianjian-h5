@@ -1845,9 +1845,9 @@
 			logDiv.className = `log-item ${log.type}`;
 			logDiv.style.cssText = "position: relative; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 4px; height: 15px; display: flex; align-items: center;";
 
-			// 左侧：原始 16 进制指令和基本描述，锁死宽度为 440px 以防遮盖
+			// 左侧：原始 16 进制指令和基本描述，锁死宽度为 490px 以防遮盖
 			const leftSpan = document.createElement('span');
-			leftSpan.style.cssText = "width: 440px; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0;";
+			leftSpan.style.cssText = "width: 490px; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0;";
 			leftSpan.innerHTML = `
 				<span class="log-time">${log.time}</span>
 				<span class="log-script-id">[${log.scriptId}]</span>
@@ -1857,9 +1857,9 @@
 				<span style="color:rgba(255,255,255,0.18); margin-left: 2px;">(${log.param1}, ${log.param2}, ${log.param3})</span>
 			`;
 
-			// 右侧：亮荧光绿色展示中文含义，精确定位在离指令最左边 450px 处，left: 450px，超宽时 ellipsis 自动切断
+			// 右侧：亮荧光绿色展示中文含义，精确定位在离指令最左边 500px 处，left: 500px，超宽时 ellipsis 自动切断
 			const rightSpan = document.createElement('span');
-			rightSpan.style.cssText = "color: var(--glow-green); font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; position: absolute; left: 450px; text-align: left; width: calc(100% - 460px); display: inline-block; white-space: nowrap;";
+			rightSpan.style.cssText = "color: var(--glow-green); font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; position: absolute; left: 490px; text-align: left; width: calc(100% - 500px); display: inline-block; white-space: nowrap;";
 
 			// 如果是 auto 类型的指令，右侧展示正在执行指令的 NPC 信息 (包含 ID 和 角色名)
 			if (log.type === 'auto') {
