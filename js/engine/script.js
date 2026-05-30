@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import { Thread } from './thread.js';
+import { isTalking } from '../ui/talk.js';
 import { scriptCodes, performToggleScene } from './command.js';
 import { Hex } from '../utils/hex.js';
 import { update } from '../ui/draw.js';
@@ -83,18 +84,21 @@ export const Script = {
     }
 
     // 步骤 4：步进 auto NPC 漫游线程。判定依据为事件物体的类型 type === 'npc'
-    for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
-      const o = state.eventObjects[i];
-      if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc') continue;
+    // 剧情对话 (isTalking) 展示期间，跳过 auto 漫游步进以完全挂起漫游 NPC
+    if (!isTalking) {
+      for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
+        const o = state.eventObjects[i];
+        if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc') continue;
 
-      if (o.autoScr) {
-        // 如果还没有 thread 或者 thread 已经结束，则惰性创建 thread 状态记录，但不当场运行
-        if (!o.thread || o.thread.finish) {
-          Script.setAutoThread(o.autoScr, o, 'auto');
-        }
-        
-        if (o.thread && !o.thread.finish && !o.thread.pause) {
-          this.stepOneInstruction(o.thread);
+        if (o.autoScr) {
+          // 如果还没有 thread 或者 thread 已经结束，则惰性创建 thread 状态记录，但不当场运行
+          if (!o.thread || o.thread.finish) {
+            Script.setAutoThread(o.autoScr, o, 'auto');
+          }
+          
+          if (o.thread && !o.thread.finish && !o.thread.pause) {
+            this.stepOneInstruction(o.thread);
+          }
         }
       }
     }

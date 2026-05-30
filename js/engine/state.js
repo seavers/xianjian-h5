@@ -1,5 +1,3 @@
-import { isTalking } from '../ui/talk.js';
-
 // 游戏统一状态管理模块，负责存放并共享原来所有的全局运行时变量
 export const state = {
   // 游戏画面基准尺寸（320x200，随后自适应缩放）
@@ -22,7 +20,7 @@ export const state = {
   get isPaused() {
     const startup = document.getElementById('startup');
     const isEscVisible = !!(startup && startup.style.display === 'block');
-    return isEscVisible || this._isTransitionPaused || isTalking;
+    return isEscVisible || this._isTransitionPaused;
   },
   set isPaused(val) {
     this._isTransitionPaused = val;
