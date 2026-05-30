@@ -293,13 +293,14 @@ function startFadeTransition(type, callback) {
     callback: callback
   };
 
-  // 设置起始帧遮罩并立即重绘，确保无白屏延迟
+  // 设置起始帧遮罩，根据转场类型决定是否立即同步重绘，确保无白屏延迟
   if (type === 'fadeOut') {
     state.fadeAlpha = 0;
+    // 淡出时不需要在此处进行同步的 renderScreen 重绘，保持上一帧画面连贯，消除闪烁！
   } else {
     state.fadeAlpha = 1;
+    renderScreen(true); // 淡入时同步渲染首帧黑色遮罩，盖住新地图以防穿帮闪烁
   }
-  renderScreen(true);
 }
 
 export function update(refreshBack, callback) {
