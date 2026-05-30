@@ -7,8 +7,6 @@ import { update } from '../ui/draw.js';
 
 export const Script = {
   activeThread: null,
-  lastTime: 0,
-  accumulator: 0,
 
   startScene(scene) {
     Script.start(scene.enterScriptId, scene, 'scene');
@@ -22,32 +20,9 @@ export const Script = {
     Script.start(obj.useScr, obj, 'item');
   },
 
-  // 1. requestAnimationFrame 中央高频驱动入口，接收系统时间戳，进行时间累加和变速计算
-  mainLoop(timestamp) {
-    if (!timestamp) {
-      timestamp = performance.now();
-    }
-    if (!Script.lastTime) {
-      Script.lastTime = timestamp;
-    }
-
-    const dt = timestamp - Script.lastTime;
-    Script.lastTime = timestamp;
-
-    // 限制单帧最大时间间隔为 250ms，防止浏览器在切后台挂起或极度卡顿时瞬间累加超长 deltaTime，导致异常大跨度追帧
-    const clampedDt = Math.min(dt, 250);
-
-
-
-    // 2. 动态读取变速齿轮 state.frameCount，实时计算每一逻辑帧所需的毫秒数
-    const frameInterval = 1000 / (state.frameCount || 6);
-    Script.accumulator += clampedDt;
-
-    // 3. 当时间片足够时，步进执行一个或多个 tick 逻辑帧，确保流畅的游戏节奏
-    while (Script.accumulator >= frameInterval) {
-      Script.tick();
-      Script.accumulator -= frameInterval;
-    }
+  // 1. 150ms 周期性调用的游戏主循环入口，每次只执行一次逻辑 tick
+  mainLoop() {
+    Script.tick();
   },
 
   // 4. 规范化的逻辑帧嘀嗒（负责原本单次游戏循环中的全部逻辑更新与统一渲染）

@@ -205,12 +205,10 @@ ready(() => {
     }
   }
 
-  // 5. 资源就绪及初始化完毕后，正式开启 requestAnimationFrame 驱动的主循环
-  function runLoop(timestamp) {
-    Script.mainLoop(timestamp);
-    requestAnimationFrame(runLoop);
-  }
-  requestAnimationFrame(runLoop);
+  // 5. 资源就绪及初始化完毕后，正式开启 setInterval 驱动的主循环，150ms 周期执行一次
+  setInterval(() => {
+    Script.mainLoop();
+  }, 150);
 });
 
 function commonEnter() {
