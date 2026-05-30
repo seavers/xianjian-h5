@@ -228,6 +228,31 @@ export function teamWalk3(x, y, half) {
   Npc.animTeam(this, x, y, half, 6);
 }
 
+export function faceNpcTrig(objId, dist, targetScriptId) {
+  const o = objId === 0xFFFF ? this : state.eventObjects[objId];
+  if (!o) return;
+
+  const player = state.roles[0];
+  let dx = o.x - player.x;
+  let dy = o.y - player.y;
+
+  // 1. 根据主角当前的朝向计算投影偏移量（0下、1左、2上、3右）
+  const dir = player.dir;
+  dx += (dir === 1 || dir === 0) ? 16 : -16;
+  dy += (dir === 1 || dir === 2) ? 8 : -8;
+
+  // 2. 根据 45 度等轴侧投影距离公式判定主角是否面朝并接近该 NPC
+  const success = Math.abs(dx) + Math.abs(dy * 2) < dist * 32 + 16;
+
+  // 3. 若面朝条件成立则重置 NPC 的交互触发脚本并启动它；若不满足则跳转至分支脚本地址
+  if (success) {
+    o.trigScr = targetScriptId;
+    startEventTrig(o);
+  } else {
+    Script.next(targetScriptId);
+  }
+}
+
 export function walkAtPlace() {
   loadFrameCount(this);
   
@@ -464,5 +489,6 @@ scriptCodes[0x6E] = { func: walkHeroByOffset, desc: '主角平移偏移距离' }
 scriptCodes[0x14] = { func: setNpcFrame, desc: '设置NPC活动动作帧' };
 scriptCodes[0x87] = { func: walkAtPlace, desc: '原地徘徊漫步' };
 scriptCodes[0x6F] = { func: replaceObject, desc: '替换并终结脚本实体' };
+scriptCodes[0x81] = { func: faceNpcTrig, desc: '面朝NPC触发脚本' };
 
 scriptCodes[0xFFFF] = { func: talk, desc: '展示剧情人物对话框' };
