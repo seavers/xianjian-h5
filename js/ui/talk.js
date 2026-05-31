@@ -77,24 +77,27 @@ function showMessage() {
 
 export async function drawTalk(msgId) {
   isTalking = true;
+
+  // 步骤 0：同步读取并暂存当前活跃脚本线程引用，杜绝对话打印 await 挂起期间由于 auto NPC 等微任务对 Thread.currentThread 全局变量的并发改写污染
+  const t = Thread.currentThread;
+
   if (message) {
     message = false;
-    await drawMessage(msgId);
+    await drawMessage(msgId, t);
     return;
   } else if (tips) {
     tips = false;
-    await drawTips(msgId);
+    await drawTips(msgId, t);
     return;
   }
   
-  const t = Thread.currentThread;
   if (!t) return;
 
   // 步骤 1：等待异步打印对话文本动作完成
   await drawTalk0(msgId);
 
-  // 步骤 2：等待玩家空格/回车或触屏按键确认对话推进
-  await checkTalk();
+  // 步骤 2：使用暂存的线程上下文等待玩家空格/回车或触屏按键确认对话推进
+  await checkTalk(t);
 }
 
 function drawTalk0(msgId) {
@@ -193,9 +196,8 @@ export function showTalkWait() {
   fillText(msg, 70, 100);
 }
 
-function checkTalk() {
+function checkTalk(t) {
   return new Promise((resolve) => {
-    const t = Thread.currentThread;
     if (!t) {
       resolve();
       return;
@@ -222,7 +224,7 @@ function checkTalk() {
   });
 }
 
-async function drawMessage(msgId) {
+async function drawMessage(msgId, t) {
   isTalking = true;
   const text = loadMsg(msgId);
   const texts = calcText(text);
@@ -232,7 +234,7 @@ async function drawMessage(msgId) {
   const y = ty;
 
   drawBack(length, x, y);
-  await drawLineSync(texts, x, y);
+  await drawLineSync(texts, x, y, t);
 }
 
 function drawBack(length, x, y) {
@@ -253,12 +255,11 @@ function drawBack(length, x, y) {
   if (picRight) talkCtx.drawImage(picRight, x + length * 16, y);
 }
 
-async function drawLineSync(texts, x, y) {
+async function drawLineSync(texts, x, y, t) {
   for (let i = 0; i < texts.length; i++) {
     drawWord(texts[i].charCode, x + i * 16, y + 9, texts[i].color);
   }
 
-  const t = Thread.currentThread;
   if (t) {
     // 步骤 1：不再手动挂起线程，直接 await 用户按键回调以非阻塞地完成等待
     await new Promise((resolve) => {
@@ -271,7 +272,7 @@ async function drawLineSync(texts, x, y) {
   }
 }
 
-async function drawTips(msgId) {
+async function drawTips(msgId, t) {
   isTalking = true;
   const text = loadMsg(msgId);
   const texts = calcText(text);
@@ -280,7 +281,7 @@ async function drawTips(msgId) {
   const x = tx - length * 16 / 2;
   const y = ty;
 
-  await drawLineSync(texts, x, y);
+  await drawLineSync(texts, x, y, t);
 }
 
 export const Talk = {

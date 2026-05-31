@@ -519,7 +519,7 @@ export async function subScript(scriptId, objId) {
   }
 
   // 步骤 2：启动子程序，并传入确定的目标实体对象以满足对象重定向的需求，使用 await 进行阻塞等待
-  await Script.sub(scriptId - 1, targetObj);
+  await Script.sub(scriptId, targetObj);
 }
 
 export function randomScript(base, scriptId) {

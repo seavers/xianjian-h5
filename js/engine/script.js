@@ -235,7 +235,7 @@ export const Script = {
     // 步骤 1：若提供了自定义目标物体 targetObj 则在新线程中绑定该物体，否则继承父线程的对象自身 thread.obj
     const activeObj = targetObj !== undefined ? targetObj : thread.obj;
     
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       const sub = new Thread(scriptId, activeObj, thread.type, () => {
         Script.activeThread = thread; // 子脚本执行完毕，将 activeThread 自适应恢复为父脚本
         thread.notify();
@@ -245,6 +245,7 @@ export const Script = {
       Script.activeThread = sub; // 将当前活跃的阻塞主线程推进为新启动的子脚本
 
       sub.start();
+      await this.stepThread(sub);
 
       if (window.onThreadsUpdate) {
         window.onThreadsUpdate();
@@ -332,12 +333,18 @@ export const Script = {
       console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
       if (code.func) {
+        // 步骤 1：在异步调用前确保 Thread.currentThread 设定为当前活跃执行的线程本身
+        Thread.currentThread = thread;
         const ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3);
+        // 步骤 2：异步 await 回归后，强制恢复 Thread.currentThread 上下文，防止并发转折时被篡改或丢失
+        Thread.currentThread = thread;
         
         // 核心协同挂起控制：
         // 如果指令返回 大于 0 的未完成帧计数，表示指令需要跨多 tick 进行状态步进
-        // 我们在此直接退出 While 循环，不递增指令指针 IP，等待下一 tick 重新执行该指令。
+        // 我们在此等待 150ms 逻辑帧，不递增指令指针 IP 并退出，以便下一逻辑帧重新执行。
         if (ret > 0) {
+          await new Promise(resolve => setTimeout(resolve, 150));
+          Thread.currentThread = thread;
           return;
         } else if (ret === -1) {
           thread.scriptId++;
