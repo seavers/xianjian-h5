@@ -328,21 +328,24 @@ export function startFadeTransition(type, callback) {
   }, interval);
 }
 
-export function update(refreshBack, callback) {
-  // 步骤 1：检测是否为特殊的淡入淡出过渡指令，是则触发过渡动画，返回 Promise 进行异步挂起
-  if (refreshBack === 'fadeOut' || refreshBack === 'fadeIn') {
-    return new Promise((resolve) => {
-      startFadeTransition(refreshBack, () => {
-        if (callback) callback();
-        resolve();
-      });
-    });
-  }
+export function fadeOut() {
+  // 步骤 1：触发并返回全屏淡出转场 Promise
+  return new Promise((resolve) => {
+    startFadeTransition('fadeOut', resolve);
+  });
+}
 
-  // 步骤 2：普通画面重绘逻辑，直接同步完成
+export function fadeIn() {
+  // 步骤 2：触发并返回全屏淡入转场 Promise
+  return new Promise((resolve) => {
+    startFadeTransition('fadeIn', resolve);
+  });
+}
+
+export function update(refreshBack, callback) {
+  // 普通画面重绘逻辑，直接同步完成
   renderScreen(refreshBack);
   if (callback) callback();
-  return Promise.resolve();
 }
 
 export function updateTalk() {

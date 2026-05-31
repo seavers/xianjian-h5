@@ -3,7 +3,7 @@ import { Script } from './script.js';
 import { Thread } from './thread.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
-import { update, drawMapAll } from '../ui/draw.js';
+import { update, drawMapAll, fadeIn, fadeOut } from '../ui/draw.js';
 import { intToShort } from '../utils/number.js';
 
 // 解决fadeIn渲染的问题，所以nextRolePos与setRolePos分开了
@@ -416,11 +416,11 @@ export async function fadeScreen(speed) {
 
   if (s < 0) {
     // 负数：淡出完后，触发淡入，最后解除挂起以恢复游戏推进
-    await update('fadeOut');
-    await update('fadeIn');
+    await fadeOut();
+    await fadeIn();
   } else {
     // 正数：直接单向执行淡入，并在结束后解除挂起
-    await update('fadeIn');
+    await fadeIn();
   }
 
   state.isPaused = false;
@@ -476,9 +476,9 @@ export function toggleScene(sceneId) {
 
       if (needFade) {
         state.isPaused = true;
-        update('fadeOut', () => {
+        fadeOut().then(() => {
           performToggleScene(targetSceneId);
-          update('fadeIn', () => {
+          fadeIn().then(() => {
             state.isPaused = false;
           });
         });

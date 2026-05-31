@@ -3,7 +3,7 @@ import { Thread } from './thread.js';
 import { isTalking } from '../ui/talk.js';
 import { scriptCodes, performToggleScene } from './command.js';
 import { Hex } from '../utils/hex.js';
-import { update } from '../ui/draw.js';
+import { update, fadeIn, fadeOut } from '../ui/draw.js';
 import { ESC } from '../esc/esc.js';
 
 export const Script = {
@@ -122,9 +122,9 @@ export const Script = {
       // 场景淡出切换流程，期间暂停主循环
       state.isPaused = true;
       
-      await update('fadeOut');
+      await fadeOut();
       performToggleScene(targetSceneId);
-      await update('fadeIn');
+      await fadeIn();
       
       state.isPaused = false;
     } else {
