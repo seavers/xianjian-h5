@@ -231,7 +231,7 @@ export function setNpcMove(objId, dx, dy) {
 }
 
 export function npcWalk2(x, y, half) {
-  return Npc.anim(this, x, y, half, 6);
+  return Npc.anim(this, x, y, half, 3);
 }
 
 export function npcWalk3(x, y, half) {
@@ -484,6 +484,7 @@ export function toggleScene(sceneId) {
 
 export function finishCode() {
   Script.finish(this);
+  return 1;
 }
 
 export function stopCode() {
@@ -492,6 +493,7 @@ export function stopCode() {
 
 export function changeScript(scriptId, count) {
   if (!count || ++this.scriptIdleFrameCountAuto < count) {
+    // 这里确实得使用 -1 ，不然小孩跳绳转不起来
     Script.next(scriptId - 1);
   } else {
     this.scriptIdleFrameCountAuto = 0;
@@ -499,7 +501,7 @@ export function changeScript(scriptId, count) {
 }
 
 export function gotoScript(scriptId) {
-  Script.next(scriptId - 1);
+  Script.next(scriptId);
 }
 
 export async function subScript(scriptId, objId) {
@@ -516,7 +518,7 @@ export async function subScript(scriptId, objId) {
 
 export function randomScript(base, scriptId) {
   if (Math.random() * 100 > base) {
-    Script.next(scriptId - 1);
+    Script.next(scriptId);
   }
 }
 

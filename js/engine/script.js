@@ -88,8 +88,8 @@ export const Script = {
 
         if (o.autoScr) {
           // 如果还没有 thread 或者 thread 已经结束，则惰性创建 thread 状态记录，但不当场运行
-          if (!o.thread || o.thread.finish) {
-            Script.setAutoThread(o.autoScr, o, 'auto');
+          if (!o.thread) {
+            o.thread = new Thread(o.autoScr, o, 'auto');
           }
           
           if (o.thread && !o.thread.finish && !o.thread.pause) {
@@ -172,6 +172,11 @@ export const Script = {
     }
     if(obj && obj.thread == thread) {
       obj.thread = null;
+    }
+
+    // 停止指令
+    if (obj.type == 'npc') {
+      obj.autoScr = null;
     }
     if (window.onThreadsUpdate) {
       window.onThreadsUpdate();
@@ -322,11 +327,6 @@ export const Script = {
         continue;
       }
 
-      if (script.code === 0) {
-        thread.stop();
-        break;
-      }
-
       const tab = thread.type.charAt(0).toUpperCase();
       console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
@@ -393,11 +393,6 @@ export const Script = {
     if (!code) {
       console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${thread.scriptId}]: execute ${Hex.toHex(script.code)}`);
       thread.scriptId++;
-      return logItem;
-    }
-
-    if (script.code === 0) {
-      thread.stop();
       return logItem;
     }
 
