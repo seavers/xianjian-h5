@@ -524,12 +524,12 @@ export async function talk(msgId) {
   await window.Talk.drawTalk(msgId); // 异步等待对话框弹出并确认推进完成
 }
 
-export function updateScreen() {
-  // 同步清屏和中间层重绘，这里可能改了队伍坐标，所以要重绘 mapBack
+export async function updateScreen() {
+  // 步骤 1：同步清屏和中间层重绘，重绘大地图以更新队伍坐标
   update(true);
 
-  // 这时不能用 -1 ，因为-1会再执行一波auto脚本，导致原先设定好的NPC帧变化掉
-  // return -1;
+  // 步骤 2：增加 80ms 的非阻塞式延迟，以满足剧情或转场时图像更新的视觉停留感要求
+  await new Promise(resolve => setTimeout(resolve, 80));
 }
 
 export function delayPeriod(time) {
