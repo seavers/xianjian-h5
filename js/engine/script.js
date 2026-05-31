@@ -4,6 +4,7 @@ import { isTalking } from '../ui/talk.js';
 import { scriptCodes, performToggleScene } from './command.js';
 import { Hex } from '../utils/hex.js';
 import { update } from '../ui/draw.js';
+import { ESC } from '../esc/esc.js';
 
 export const Script = {
   activeThread: null,
@@ -20,45 +21,37 @@ export const Script = {
     Script.start(obj.useScr, obj, 'item');
   },
 
-  // 1. 150ms 周期性调用的游戏主循环入口，每次只执行一次逻辑 tick
-  mainLoop() {
-    Script.tick();
+  isLoopRunning: false,
+
+  // 1. 150ms 周期性调用的游戏主循环入口，通过 isLoopRunning 并发锁，防止 await 期间新周期重入
+  async mainLoop() {
+    if (this.isLoopRunning) return;
+    this.isLoopRunning = true;
+    try {
+      await Script.tick();
+    } finally {
+      this.isLoopRunning = false;
+    }
   },
 
   // 4. 规范化的逻辑帧嘀嗒（负责原本单次游戏循环中的全部逻辑更新与统一渲染）
-  tick() {
+  async tick() {
+    // 步骤 1.5：检测是否需要挂起 ESC 菜单，支持全局挂起以实现非忙等暂停
+    if (ESC.pausePromise) {
+      await ESC.pausePromise;
+    }
+
     // 步骤 1：检测是否需要进行场景切换（一律在主循环头部做同步判定）
     if (state.nextSceneId !== state.sceneId && state.nextSceneId !== -1) {
-      this.handleSceneSwitch();
+      await this.handleSceneSwitch();
       return;
     }
 
-    // 步骤 2：步进场景渐变过渡动画任务（由主时钟 tick 同步驱动，支持变速齿轮自适应，且异步分发完成回调）
-    if (state.transitionTask) {
-      const task = state.transitionTask;
-      task.frame++;
-      if (task.frame <= task.duration) {
-        if (task.type === 'fadeOut') {
-          state.fadeAlpha = task.frame / task.duration;
-        } else {
-          state.fadeAlpha = 1 - task.frame / task.duration;
-        }
-      } else {
-        if (task.type === 'fadeOut') {
-          state.fadeAlpha = 1;
-        } else {
-          state.fadeAlpha = 0;
-        }
-        state.transitionTask = null;
-        if (task.callback) {
-          setTimeout(task.callback, 0); // 异步触发完成回调，彻底阻断重入竞态冲突
-        }
-      }
-    }
+    // 步骤 2：步进场景渐变过渡动画任务已由 draw.js 中的本地定时高帧率循环渲染替代，彻底移除原本的 tick 步进以支持自然阻塞
 
     // 步骤 3：处理游戏硬挂起状态（如渐变动画中或 ESC 打开时，仅重绘画面以保持动画连贯，不步进任何游戏脚本和 auto 漫游）
     if (state.isPaused) {
-      update(true);
+      await update(true);
       return;
     }
 
@@ -79,7 +72,7 @@ export const Script = {
     const t = Script.activeThread;
     if (t && !t.finish) {
       if (!t.pause) {
-        this.stepThread(t);
+        await this.stepThread(t);
       }
     }
 
@@ -114,10 +107,10 @@ export const Script = {
     }
 
     // 步骤 7：画面统一重绘同步
-    update(true);
+    await update(true);
   },
 
-  handleSceneSwitch() {
+  async handleSceneSwitch() {
     const targetSceneId = state.nextSceneId;
     const needFade = state.needToFadeIn;
 
@@ -129,12 +122,11 @@ export const Script = {
       // 场景淡出切换流程，期间暂停主循环
       state.isPaused = true;
       
-      update('fadeOut', () => {
-        performToggleScene(targetSceneId);
-        update('fadeIn', () => {
-          state.isPaused = false;
-        });
-      });
+      await update('fadeOut');
+      performToggleScene(targetSceneId);
+      await update('fadeIn');
+      
+      state.isPaused = false;
     } else {
       // 直接切换场景
       performToggleScene(targetSceneId);
@@ -235,25 +227,28 @@ export const Script = {
 
   sub(scriptId, targetObj) {
     const thread = Thread.currentThread;
-    if (!thread) return;
+    if (!thread) return Promise.resolve();
 
     thread.wait();
     
     // 步骤 1：若提供了自定义目标物体 targetObj 则在新线程中绑定该物体，否则继承父线程的对象自身 thread.obj
     const activeObj = targetObj !== undefined ? targetObj : thread.obj;
     
-    const sub = new Thread(scriptId, activeObj, thread.type, () => {
-      Script.activeThread = thread; // 子脚本执行完毕，将 activeThread 自适应恢复为父脚本
-      thread.notify();
+    return new Promise((resolve) => {
+      const sub = new Thread(scriptId, activeObj, thread.type, () => {
+        Script.activeThread = thread; // 子脚本执行完毕，将 activeThread 自适应恢复为父脚本
+        thread.notify();
+        resolve();
+      });
+      sub.parent = thread;
+      Script.activeThread = sub; // 将当前活跃的阻塞主线程推进为新启动的子脚本
+
+      sub.start();
+
+      if (window.onThreadsUpdate) {
+        window.onThreadsUpdate();
+      }
     });
-    sub.parent = thread;
-    Script.activeThread = sub; // 将当前活跃的阻塞主线程推进为新启动的子脚本
-
-    sub.start();
-
-    if (window.onThreadsUpdate) {
-      window.onThreadsUpdate();
-    }
   },
 
   isExec() {
@@ -270,7 +265,7 @@ export const Script = {
   },
 
   // 集中推进非 auto 类型的阻塞脚本主线程，运行 While 指令解析循环
-  stepThread(thread) {
+  async stepThread(thread) {
     if (thread.finish || thread.pause) return;
 
     Thread.currentThread = thread;
@@ -336,7 +331,7 @@ export const Script = {
       console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
       if (code.func) {
-        const ret = code.func.call(thread.obj, script.param1, script.param2, script.param3);
+        const ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3);
         
         // 核心协同挂起控制：
         // 如果指令返回 大于 0 的未完成帧计数，表示指令需要跨多 tick 进行状态步进

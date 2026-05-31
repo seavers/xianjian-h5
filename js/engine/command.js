@@ -400,7 +400,7 @@ export function fadeOutScene(fadeOutSpeed) {
   }
 }
 
-export function fadeScreen(speed) {
+export async function fadeScreen(speed) {
   // 步骤 1：利用 intToShort 将传入 the 无符号短整型 speed 转换为有符号短整型速度 s
   const s = intToShort(speed);
   state.fadeOutSpeed = Math.abs(s);
@@ -411,22 +411,19 @@ export function fadeScreen(speed) {
     return;
   }
 
-  // 步骤 3：将游戏状态置为暂停挂起，并在后台主时钟驱动下依次播放淡出、淡入的流畅渐变过渡
+  // 步骤 3：将游戏状态置为暂停挂起，并依次 await 播放淡出、淡入的流畅渐变过渡
   state.isPaused = true;
 
   if (s < 0) {
     // 负数：淡出完后，触发淡入，最后解除挂起以恢复游戏推进
-    update('fadeOut', () => {
-      update('fadeIn', () => {
-        state.isPaused = false;
-      });
-    });
+    await update('fadeOut');
+    await update('fadeIn');
   } else {
     // 正数：直接单向执行淡入，并在结束后解除挂起
-    update('fadeIn', () => {
-      state.isPaused = false;
-    });
+    await update('fadeIn');
   }
+
+  state.isPaused = false;
 }
 
 export function performToggleScene(targetSceneId) {
@@ -512,7 +509,7 @@ export function gotoScript(scriptId) {
   Script.next(scriptId - 1);
 }
 
-export function subScript(scriptId, objId) {
+export async function subScript(scriptId, objId) {
   // 步骤 1：分析第二个参数 objId，若为 0 或者是 0xFFFF 则说明子脚本沿用父线程当前主体 this
   // 否则从全局状态机 state.eventObjects 中获取对应的目标事件实体对象
   let targetObj = undefined;
@@ -520,8 +517,8 @@ export function subScript(scriptId, objId) {
     targetObj = state.eventObjects[objId];
   }
 
-  // 步骤 2：启动子程序，并传入确定的目标实体对象以满足对象重定向的需求
-  Script.sub(scriptId - 1, targetObj);
+  // 步骤 2：启动子程序，并传入确定的目标实体对象以满足对象重定向的需求，使用 await 进行阻塞等待
+  await Script.sub(scriptId - 1, targetObj);
 }
 
 export function randomScript(base, scriptId) {
@@ -530,8 +527,8 @@ export function randomScript(base, scriptId) {
   }
 }
 
-export function talk(msgId) {
-  window.Talk.drawTalk(msgId); // 绝对同步的对话框弹出
+export async function talk(msgId) {
+  await window.Talk.drawTalk(msgId); // 异步等待对话框弹出并确认推进完成
 }
 
 export function updateScreen() {

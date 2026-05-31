@@ -75,26 +75,29 @@ function showMessage() {
   color = null;
 }
 
-export function drawTalk(msgId) {
+export async function drawTalk(msgId) {
   isTalking = true;
   if (message) {
     message = false;
-    drawMessage(msgId);
+    await drawMessage(msgId);
     return;
   } else if (tips) {
     tips = false;
-    drawTips(msgId);
+    await drawTips(msgId);
     return;
   }
   
   const t = Thread.currentThread;
   if (!t) return;
 
-  t.wait();
-  drawTalk0(msgId, () => {
-    checkTalk(() => {
-      t.notify();
-    });
+  // 步骤 1：等待异步打印对话文本动作完成
+  await new Promise((resolve) => {
+    drawTalk0(msgId, resolve);
+  });
+
+  // 步骤 2：等待玩家空格/回车或触屏按键确认对话推进
+  await new Promise((resolve) => {
+    checkTalk(resolve);
   });
 }
 
@@ -219,7 +222,7 @@ function checkTalk(callback) {
   }
 }
 
-function drawMessage(msgId) {
+async function drawMessage(msgId) {
   isTalking = true;
   const text = loadMsg(msgId);
   const texts = calcText(text);
@@ -229,7 +232,7 @@ function drawMessage(msgId) {
   const y = ty;
 
   drawBack(length, x, y);
-  drawLineSync(texts, x, y);
+  await drawLineSync(texts, x, y);
 }
 
 function drawBack(length, x, y) {
@@ -250,23 +253,25 @@ function drawBack(length, x, y) {
   if (picRight) talkCtx.drawImage(picRight, x + length * 16, y);
 }
 
-function drawLineSync(texts, x, y) {
+async function drawLineSync(texts, x, y) {
   for (let i = 0; i < texts.length; i++) {
     drawWord(texts[i].charCode, x + i * 16, y + 9, texts[i].color);
   }
 
   const t = Thread.currentThread;
   if (t) {
-    t.wait();
-    registerBlank(() => {
-      resetTalk();
-      updateTalk();
-      t.notify();
+    // 步骤 1：不再手动挂起线程，直接 await 用户按键回调以非阻塞地完成等待
+    await new Promise((resolve) => {
+      registerBlank(() => {
+        resetTalk();
+        updateTalk();
+        resolve();
+      });
     });
   }
 }
 
-function drawTips(msgId) {
+async function drawTips(msgId) {
   isTalking = true;
   const text = loadMsg(msgId);
   const texts = calcText(text);
@@ -275,7 +280,7 @@ function drawTips(msgId) {
   const x = tx - length * 16 / 2;
   const y = ty;
 
-  drawLineSync(texts, x, y);
+  await drawLineSync(texts, x, y);
 }
 
 export const Talk = {

@@ -11,6 +11,35 @@ export const ESC = {
   showItem: false,
   showMenu: false,
 
+  pausePromise: null,
+  resolvePause: null,
+
+  // 步骤 1：展现 ESC 菜单画布，并同步创建全局的挂起 Promise，以便 mainLoop 头部 await 挂起逻辑帧
+  showMenuCanvas() {
+    const startupCanvas = document.getElementById('startup');
+    if (startupCanvas) {
+      startupCanvas.style.display = 'block';
+    }
+    if (!this.pausePromise) {
+      this.pausePromise = new Promise((resolve) => {
+        this.resolvePause = resolve;
+      });
+    }
+  },
+
+  // 步骤 2：隐藏 ESC 菜单画布，并触发 Promise resolve 以唤醒被阻塞暂停的主逻辑循环
+  hideMenuCanvas() {
+    const startupCanvas = document.getElementById('startup');
+    if (startupCanvas) {
+      startupCanvas.style.display = 'none';
+    }
+    if (this.resolvePause) {
+      this.resolvePause();
+      this.resolvePause = null;
+      this.pausePromise = null;
+    }
+  },
+
   onESC() {
     const startupCtx = state.contexts.startup;
     if (!startupCtx) return;
@@ -18,18 +47,12 @@ export const ESC = {
     if (fbp) {
       startupCtx.drawImage(fbp, 0, 0);
     }
-    const startupCanvas = document.getElementById('startup');
-    if (startupCanvas) {
-      startupCanvas.style.display = 'block';
-    }
+    ESC.showMenuCanvas();
   },
 
   onStatus() {
-    const startupCanvas = document.getElementById('startup');
-    if (!startupCanvas) return;
-
     if (ESC.ShowStatus) {
-      startupCanvas.style.display = 'none';
+      ESC.hideMenuCanvas();
     } else {
       const startupCtx = state.contexts.startup;
       if (startupCtx) {
@@ -38,17 +61,14 @@ export const ESC = {
           startupCtx.drawImage(fbp, 0, 0);
         }
       }
-      startupCanvas.style.display = 'block';
+      ESC.showMenuCanvas();
     }
     ESC.ShowStatus = !ESC.ShowStatus;
   },
 
   onRole() {
-    const startupCanvas = document.getElementById('startup');
-    if (!startupCanvas) return;
-
     if (ESC.showRole) {
-      startupCanvas.style.display = 'none';
+      ESC.hideMenuCanvas();
     } else {
       // 预留角色显示绘制
     }
@@ -73,10 +93,7 @@ export const ESC = {
         unbind();
       });
 
-    const startupCanvas = document.getElementById('startup');
-    if (startupCanvas) {
-      startupCanvas.style.display = 'block';
-    }
+    ESC.showMenuCanvas();
 
     document.addEventListener('touchend', function touchHandler(ev) {
       ev.preventDefault();
@@ -84,7 +101,6 @@ export const ESC = {
 
       const el = document.getElementById('startup');
       if (el) {
-        el.style.display = 'none';
         animHide(el);
       }
       document.removeEventListener('touchend', touchHandler);
@@ -120,10 +136,7 @@ export const ESC = {
         }
       });
 
-    const startupCanvas = document.getElementById('startup');
-    if (startupCanvas) {
-      startupCanvas.style.display = 'block';
-    }
+    ESC.showMenuCanvas();
   },
 
   onItem() {
@@ -154,16 +167,10 @@ export const ESC = {
       .show(2, 32)
       .onchange((value) => {
         Script.startItemScript(state.items[value]);
-        const startupCanvas = document.getElementById('startup');
-        if (startupCanvas) {
-          startupCanvas.style.display = 'none';
-        }
+        ESC.hideMenuCanvas();
       });
 
-    const startupCanvas = document.getElementById('startup');
-    if (startupCanvas) {
-      startupCanvas.style.display = 'block';
-    }
+    ESC.showMenuCanvas();
   },
 
   onEquipItem() {},
@@ -175,7 +182,6 @@ export const ESC = {
 function startNewStory() {
   const el = document.getElementById('startup');
   if (el) {
-    el.style.display = 'none';
     animHide(el);
   }
   newStory();
@@ -186,7 +192,7 @@ function animHide(el, callback) {
   el.style.opacity = 1;
   el.style.opacity = 0;
   setTimeout(() => {
-    el.style.display = 'none';
+    ESC.hideMenuCanvas();
     el.style.opacity = 1;
     if (callback) callback();
   }, 1200);
