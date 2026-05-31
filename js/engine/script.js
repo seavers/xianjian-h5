@@ -3,7 +3,8 @@ import { Thread } from './thread.js';
 import { isTalking } from '../ui/talk.js';
 import { scriptCodes, performToggleScene } from './command.js';
 import { Hex } from '../utils/hex.js';
-import { update, fadeIn, fadeOut } from '../ui/draw.js';
+import { update } from '../ui/draw.js';
+import { fadeIn, fadeOut } from '../ui/fade.js';
 import { ESC } from '../esc/esc.js';
 
 export const Script = {

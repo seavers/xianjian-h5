@@ -3,7 +3,8 @@ import { Script } from './script.js';
 import { Thread } from './thread.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
-import { update, drawMapAll, fadeIn, fadeOut } from '../ui/draw.js';
+import { update, drawMapAll } from '../ui/draw.js';
+import { fadeIn, fadeOut } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
 
 // 解决fadeIn渲染的问题，所以nextRolePos与setRolePos分开了

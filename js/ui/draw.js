@@ -248,7 +248,7 @@ export function drawMiddle() {
 }
 
 // 核心屏幕同步重绘逻辑
-function renderScreen(refreshBack) {
+export function renderScreen(refreshBack) {
   const tempCtx = state.contexts.temp;
   const mainCtx = state.contexts.main;
   if (!tempCtx || !mainCtx) return;
@@ -285,61 +285,6 @@ function renderScreen(refreshBack) {
   }
 
   updateCount[1]++;
-}
-
-// 执行全屏淡入淡出渐变动画过渡
-export function startFadeTransition(type, callback) {
-  const duration = 12;
-  let frame = 0;
-
-  // 步骤 1：设置起始帧遮罩，根据转场类型决定是否立即同步重绘，确保无白屏延迟
-  if (type === 'fadeOut') {
-    state.fadeAlpha = 0;
-  } else {
-    state.fadeAlpha = 1;
-    renderScreen(true); // 淡入时同步渲染首帧黑色遮罩，盖住新地图以防穿帮闪烁
-  }
-
-  // 步骤 2：开启平滑的本地渲染定时器，每 30ms 步进一次遮罩透明度，消除原本 150ms 帧步进的顿挫感
-  const interval = 30;
-  const timer = setInterval(() => {
-    frame++;
-    if (frame <= duration) {
-      if (type === 'fadeOut') {
-        state.fadeAlpha = frame / duration;
-      } else {
-        state.fadeAlpha = 1 - frame / duration;
-      }
-      renderScreen(type === 'fadeIn');
-    } else {
-      clearInterval(timer);
-      if (type === 'fadeOut') {
-        state.fadeAlpha = 1;
-      } else {
-        state.fadeAlpha = 0;
-      }
-      renderScreen(type === 'fadeIn');
-
-      // 步骤 3：淡入淡出转场结束，执行完成回调以恢复逻辑流程
-      if (callback) {
-        callback();
-      }
-    }
-  }, interval);
-}
-
-export function fadeOut() {
-  // 步骤 1：触发并返回全屏淡出转场 Promise
-  return new Promise((resolve) => {
-    startFadeTransition('fadeOut', resolve);
-  });
-}
-
-export function fadeIn() {
-  // 步骤 2：触发并返回全屏淡入转场 Promise
-  return new Promise((resolve) => {
-    startFadeTransition('fadeIn', resolve);
-  });
 }
 
 export function update(refreshBack, callback) {
