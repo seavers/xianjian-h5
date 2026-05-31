@@ -91,39 +91,37 @@ export async function drawTalk(msgId) {
   if (!t) return;
 
   // 步骤 1：等待异步打印对话文本动作完成
-  await new Promise((resolve) => {
-    drawTalk0(msgId, resolve);
-  });
+  await drawTalk0(msgId);
 
   // 步骤 2：等待玩家空格/回车或触屏按键确认对话推进
-  await new Promise((resolve) => {
-    checkTalk(resolve);
-  });
+  await checkTalk();
 }
 
-function drawTalk0(msgId, callback) {
-  const text = loadMsg(msgId);
-  if (Lang.endWiths(text, ':')) {
-    who = text;
-    callback();
-    return;
-  }
-
-  const x = tx;
-  const y = ty;
-  const talkCtx = state.contexts.talk;
-
-  if (clear) {
-    if (talkCtx) {
-      if (rgm) talkCtx.drawImage(rgm, rgmX, rgmY);
-      if (who) showLine(who, x, y);
+function drawTalk0(msgId) {
+  return new Promise((resolve) => {
+    const text = loadMsg(msgId);
+    if (Lang.endWiths(text, ':')) {
+      who = text;
+      resolve();
+      return;
     }
-    clear = false;
-    line = 0;
-  }
 
-  line++;
-  drawLine(text, x + 16, y + line * 16, callback);
+    const x = tx;
+    const y = ty;
+    const talkCtx = state.contexts.talk;
+
+    if (clear) {
+      if (talkCtx) {
+        if (rgm) talkCtx.drawImage(rgm, rgmX, rgmY);
+        if (who) showLine(who, x, y);
+      }
+      clear = false;
+      line = 0;
+    }
+
+    line++;
+    drawLine(text, x + 16, y + line * 16, resolve);
+  });
 }
 
 function drawWord(charCode, x, y, color) {
@@ -195,31 +193,33 @@ export function showTalkWait() {
   fillText(msg, 70, 100);
 }
 
-function checkTalk(callback) {
-  const t = Thread.currentThread;
-  if (!t) {
-    callback();
-    return;
-  }
+function checkTalk() {
+  return new Promise((resolve) => {
+    const t = Thread.currentThread;
+    if (!t) {
+      resolve();
+      return;
+    }
 
-  if (line > 3) {
-    registerBlank(() => {
-      updateTalk();
-      callback();
-    });
-  } else if (t.isNextTalk()) {
-    callback();
-  } else if (t.isNextTalks()) {
-    registerBlank(() => {
-      callback();
-    });
-  } else {
-    registerBlank(() => {
-      resetTalk();
-      updateTalk();
-      callback();
-    });
-  }
+    if (line > 3) {
+      registerBlank(() => {
+        updateTalk();
+        resolve();
+      });
+    } else if (t.isNextTalk()) {
+      resolve();
+    } else if (t.isNextTalks()) {
+      registerBlank(() => {
+        resolve();
+      });
+    } else {
+      registerBlank(() => {
+        resetTalk();
+        updateTalk();
+        resolve();
+      });
+    }
+  });
 }
 
 async function drawMessage(msgId) {
