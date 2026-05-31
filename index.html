@@ -772,13 +772,13 @@
 								<div class="ins-field"><span class="ins-f-label">买价价值</span><span class="ins-f-val" id="ins-val-buy">-</span></div>
 								<div class="ins-field"><span class="ins-f-label">卖价价值</span><span class="ins-f-val" id="ins-val-sell">-</span></div>
 								<div class="ins-field"><span class="ins-f-label">物品类型</span><span class="ins-f-val" id="ins-val-type">-</span></div>
-								<div class="ins-field"><span class="ins-f-label">装备槽位</span><span class="ins-f-val" id="ins-val-slot">-</span></div>
 								<div class="ins-field"><span class="ins-f-label">装备 ATK</span><span class="ins-f-val" id="ins-val-atk" style="color:var(--glow-green);">-</span></div>
 								<div class="ins-field"><span class="ins-f-label">装备 DEF</span><span class="ins-f-val" id="ins-val-def" style="color:var(--glow-green);">-</span></div>
 								<div class="ins-field"><span class="ins-f-label">装备 SPD</span><span class="ins-f-val" id="ins-val-spd">-</span></div>
 								<div class="ins-field"><span class="ins-f-label">装备 MAG</span><span class="ins-f-val" id="ins-val-mag">-</span></div>
 								<div class="ins-field"><span class="ins-f-label">装备 LCK</span><span class="ins-f-val" id="ins-val-lck">-</span></div>
 								<div class="ins-field"><span class="ins-f-label">自动脚本</span><span class="ins-f-val" id="ins-val-autoscr" style="color:var(--glow-red);">-</span></div>
+								<div class="ins-field"><span class="ins-f-label">触发脚本</span><span class="ins-f-val" id="ins-val-trigScr" style="color:var(--glow-red);">-</span></div>
 								<div class="ins-field"><span class="ins-f-label">使用脚本</span><span class="ins-f-val" id="ins-val-usescr" style="color:var(--glow-red);">-</span></div>
 								<div class="ins-field"><span class="ins-f-label">装备脚本</span><span class="ins-f-val" id="ins-val-equscr" style="color:var(--glow-blue);">-</span></div>
 								<div class="ins-field"><span class="ins-f-label">丢弃脚本</span><span class="ins-f-val" id="ins-val-dropscr">-</span></div>
@@ -1551,16 +1551,16 @@
 						document.getElementById('ins-val-buy').innerText = '无';
 						document.getElementById('ins-val-sell').innerText = '无';
 						document.getElementById('ins-val-type').innerText = 'NPC 实体物体';
-						document.getElementById('ins-val-slot').innerText = '无';
 						document.getElementById('ins-val-atk').innerText = '无';
 						document.getElementById('ins-val-def').innerText = '无';
 						document.getElementById('ins-val-spd').innerText = `方向: ${o.dir}`;
 						document.getElementById('ins-val-mag').innerText = `动作帧: ${o.frame}`;
 						document.getElementById('ins-val-lck').innerText = '无';
 						document.getElementById('ins-val-autoscr').innerText = o.autoScr ? '0x' + o.autoScr.toString(16).toUpperCase() : '无';
+						document.getElementById('ins-val-trigScr').innerText = o.trigScr ? '0x' + o.trigScr.toString(16).toUpperCase() : '无';
 						document.getElementById('ins-val-usescr').innerText = o.trigScr ? '0x' + o.trigScr.toString(16).toUpperCase() : '无';
-						document.getElementById('ins-val-equscr').innerText = o.autoScr ? '0x' + o.autoScr.toString(16).toUpperCase() : '无';
-						document.getElementById('ins-val-dropscr').innerText = '无';
+						document.getElementById('ins-val-equscr').innerText = o.equScr ? '0x' + o.equScr.toString(16).toUpperCase() : '无';
+						document.getElementById('ins-val-dropscr').innerText = o.dropScr ? '0x' + o.dropScr.toString(16).toUpperCase() : '无';
 						document.getElementById('ins-val-flags').innerText = `TrigMode: ${o.trigMode}`;
 						document.getElementById('ins-val-consumable').innerText = o.state === 0 ? '隐蔽 (Hidden)' : '活跃 (Active)';
 						document.getElementById('ins-val-throw').innerText = '否';
