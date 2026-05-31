@@ -51,13 +51,15 @@ export class Thread {
   }
 
   isNextTalk() {
-    const script = state.scripts[this.scriptId];
+    // 步骤 1：在 async/await 架构下，指令在 await 完结前 scriptId 尚未自增，因此探测下一条指令需要使用 scriptId + 1
+    const script = state.scripts[this.scriptId + 1];
     if (!script) return false;
     return script.code === 0xFFFF;
   }
 
   isNextTalks() {
-    const script = state.scripts[this.scriptId];
+    // 步骤 2：同理，探测下一条指令是否为对话相关的指令，也使用 scriptId + 1
+    const script = state.scripts[this.scriptId + 1];
     if (!script) return false;
     return script.code === 0xFFFF || script.code === 0x3C || script.code === 0x3D || script.code === 0x8E;
   }
