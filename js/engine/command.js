@@ -7,11 +7,6 @@ import { update, drawMapAll } from '../ui/draw.js';
 import { fadeIn, fadeOut } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
 
-// 解决fadeIn渲染的问题，所以nextRolePos与setRolePos分开了
-export function nextRolePos(sx, sy, shalf) {
-  state.nextRolePos = [sx, sy, shalf];
-}
-
 export function setRolePos(sx, sy, shalf) {
   state.mx = sx;
   state.my = sy;
@@ -441,12 +436,6 @@ export function performToggleScene(targetSceneId) {
 
   console.log('切换场景: ' + targetSceneId + ' 地图: ' + state.mapId);
 
-  if (state.nextRolePos) {
-    setRolePos(state.nextRolePos[0], state.nextRolePos[1], state.nextRolePos[2]);
-    state.nextRolePos = null;
-  }
-
-
   drawMapAll(); // 同步加载与绘制大地图
 
   update(true); // 重绘画面
@@ -533,10 +522,6 @@ export async function talk(msgId) {
 }
 
 export function updateScreen() {
-  if (state.nextRolePos) {
-    setRolePos(state.nextRolePos[0], state.nextRolePos[1], state.nextRolePos[2]);
-    state.nextRolePos = null;
-  }
   update(); // 同步清屏和中间层重绘
 }
 
@@ -642,7 +627,7 @@ scriptCodes[0x0F] = { func: setNpcDir, desc: '设置Npc朝向方向' };
 scriptCodes[0x43] = { func: setMusic, desc: '播放背景音乐' };
 scriptCodes[0x45] = { func: setFightMusic, desc: '设置战斗背景音乐' };
 scriptCodes[0x47] = { func: null, desc: '设置特技音效' };
-scriptCodes[0x46] = { func: nextRolePos, desc: '设置主角/队员瓦片位置' };
+scriptCodes[0x46] = { func: setRolePos, desc: '设置主角/队员瓦片位置' };
 scriptCodes[0x65] = { func: setRoleTile, desc: '设置主角/队员形象' };
 scriptCodes[0x15] = { func: setRoleIndex, desc: '设置队员动作方向/帧' };
 scriptCodes[0x75] = { func: setRoleGroup, desc: '设置组队伙伴' };
