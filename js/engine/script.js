@@ -211,19 +211,17 @@ export const Script = {
 
   // 步进执行动画/步态进度。如果动画正在进行则返回剩余步数，全部执行完毕则返回 0
   stepProgress(obj, total, func) {
-    if (!obj.animStep) {
+    const current = (obj.animStep || 0) + 1;
+    if (func) func(current);
+
+    if (current >= total) {
       obj.animStep = 0;
+      return 0;
     }
-    
-    if (obj.animStep < total) {
-      if (func) func(obj.animStep + 1);
-      obj.animStep++;
-      return total - obj.animStep; // 返回剩余步数，以作为非零信号挂起指令
-    }
-    
-    // 执行完毕，重置状态并返回 0
-    obj.animStep = 0;
-    return 0;
+    obj.animStep = current;
+
+    // 返回剩余步数，以作为非零信号挂起指令
+    return total - current;
   },
 
   sub(scriptId, targetObj) {
@@ -343,8 +341,6 @@ export const Script = {
         // 如果指令返回 大于 0 的未完成帧计数，表示指令需要跨多 tick 进行状态步进
         // 我们在此等待 150ms 逻辑帧，不递增指令指针 IP 并退出，以便下一逻辑帧重新执行。
         if (ret > 0) {
-          await new Promise(resolve => setTimeout(resolve, 150));
-          Thread.currentThread = thread;
           return;
         } else if (ret === -1) {
           thread.scriptId++;

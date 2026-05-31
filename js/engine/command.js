@@ -438,7 +438,10 @@ export function performToggleScene(targetSceneId) {
 
   drawMapAll(); // 同步加载与绘制大地图
 
-  update(true); // 重绘画面
+  // 等脚本都设置好场景中主角位置与形象后，再update
+  if(!scene.enterScriptId) {
+    update(true); // 重绘画面
+  }
 
   // 同步启动场景脚本
   Script.startScene(scene);
@@ -522,7 +525,11 @@ export async function talk(msgId) {
 }
 
 export function updateScreen() {
-  update(); // 同步清屏和中间层重绘
+  // 同步清屏和中间层重绘，这里可能改了队伍坐标，所以要重绘 mapBack
+  update(true);
+
+  // 这时不能用 -1 ，因为-1会再执行一波auto脚本，导致原先设定好的NPC帧变化掉
+  // return -1;
 }
 
 export function delayPeriod(time) {
