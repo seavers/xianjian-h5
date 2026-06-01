@@ -387,6 +387,38 @@ export async function addMagic(magicId, roleId) {
   }
 }
 
+export async function changeHpMp(toAll, value) {
+  // 步骤 1：利用 intToShort 将传入的无符号短整型 value 转换为 16 位有符号属性改变值
+  const changeValue = intToShort(value);
+
+  // 步骤 2：分析影响范围，若 toAll 为真则批量修改全队，否则仅修改当前绑定的角色（默认为 roles[0]）
+  const targetRoles = toAll ? state.roles : [state.roles[0]];
+
+  // 步骤 3：遍历目标角色列表，惰性初始化其 HP 与 MP 属性，并进行数值增减
+  for (let i = 0; i < targetRoles.length; i++) {
+    const role = targetRoles[i];
+    if (role) {
+      if (role.hp === undefined) {
+        role.hp = 100; // 默认满生命值设定为 100
+      }
+      if (role.mp === undefined) {
+        role.mp = 100; // 默认满法力值设定为 100
+      }
+
+      role.hp += changeValue;
+      role.mp += changeValue;
+    }
+  }
+
+  // 步骤 4：输出详细的 HP 与 MP 属性改变调试日志
+  const scope = toAll ? '全队伙伴' : '主角个人';
+  console.log(`[0x1D changeHpMp] 剧情改变角色属性 (${scope}), HP/MP 变动量: ${changeValue}`);
+
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 export function setSceneEnterScr(sceneId, enterScriptId) {
   const scene = state.scenes[sceneId];
   scene.enterScriptId = enterScriptId;
@@ -778,6 +810,7 @@ scriptCodes[0x6D] = { func: setSceneEnterScr, desc: '设置场景进入脚本' }
 scriptCodes[0x24] = { func: setNpcAutoScr, desc: '开启NPC自主运动自动脚本' };
 scriptCodes[0x25] = { func: setNpcTrigScr, desc: '配置NPC交互触发脚本' };
 
+scriptCodes[0x1D] = { func: changeHpMp, desc: '增减主角或全队HP与MP' };
 scriptCodes[0x1E] = { func: setMoney, desc: '金钱数值改变指令' };
 scriptCodes[0x1F] = { func: obtain, desc: '添加物品进主角包裹' };
 scriptCodes[0x20] = { func: removeItem, desc: '扣除主角背包里的物品' };
