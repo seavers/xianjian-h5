@@ -176,7 +176,61 @@ export const ESC = {
   onEquipItem() {},
 
   onMagic() {},
-  onSystem() {}
+
+  onSystem() {
+    // 步骤 1：创建并展示系统二级菜单，包含存储进度、读取进度、音乐、音效和结束游戏选项
+    PanelFactory.createList([11, 12, 13, 14, 15])
+      .show(28, 72)
+      .onchange((value) => {
+        // 步骤 2：根据用户确认选择的子项进行相应逻辑分发
+        switch (value) {
+          case 11:
+            ESC.onSaveGameMenu();
+            break;
+
+          case 12:
+            ESC.onLoadGameMenu();
+            break;
+
+          case 13:
+            console.log('系统设置 - 音乐选项选中');
+            ESC.hideMenuCanvas();
+            break;
+
+          case 14:
+            console.log('系统设置 - 音效选项选中');
+            ESC.hideMenuCanvas();
+            break;
+
+          case 15:
+            console.log('系统设置 - 结束游戏选项选中');
+            ESC.hideMenuCanvas();
+            break;
+        }
+      });
+  },
+
+  onSaveGameMenu() {
+    // 步骤 1：创建并展示存储进度的三级菜单，提供五个进度存档槽位
+    PanelFactory.createList([43, 44, 45, 46, 47])
+      .show(54, 90)
+      .onchange((value) => {
+        // 步骤 2：对选中的存档槽位执行进度保存逻辑，最后清屏隐藏菜单并解绑输入
+        console.log('存储进度至进度槽位:', value);
+        ESC.hideMenuCanvas();
+      });
+  },
+
+  onLoadGameMenu() {
+    // 步骤 1：创建并展示读取进度的三级菜单，提供五个进度读档槽位
+    PanelFactory.createList([43, 44, 45, 46, 47])
+      .show(54, 90)
+      .onchange((value) => {
+        // 步骤 2：对选中的读档槽位执行进度读取逻辑，最后清屏隐藏菜单并解绑输入
+        console.log('从进度槽位读取进度:', value);
+        ESC.hideMenuCanvas();
+      });
+  }
 };
 
 function startNewStory() {
