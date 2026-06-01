@@ -663,6 +663,14 @@ export function showFbp(fbpId, effect) {
   }
 }
 
+export function setBattlefield(battlefieldId) {
+  // 步骤 1：在全局状态机中记录当前的战场背景 ID (Battlefield ID)
+  state.battlefieldId = battlefieldId;
+
+  // 步骤 2：输出详细的设定战场背景调试日志，为战斗系统初始化预留框架
+  console.log(`[0x4A setBattlefield] 设置当前战斗背景 ID: ${battlefieldId}`);
+}
+
 export async function setRngAnimation(rngId) {
   // 步骤 1：在全局状态机中记录当前准备播放的剧情全屏动画 (RNG) ID
   state.curPlayingRngId = rngId;
@@ -781,6 +789,7 @@ scriptCodes[0x3E] = { func: (...args) => window.Talk.talkMessage(...args), desc:
 scriptCodes[0x16] = { func: setNpcTile, desc: '设置NPC特定形象与朝向' };
 scriptCodes[0x8E] = { func: (...args) => window.Talk.clearTalk(...args), desc: '清空/关闭对话框' };
 scriptCodes[0x49] = { func: setObjectStatus, desc: '改变NPC活动生命状态' };
+scriptCodes[0x4A] = { func: setBattlefield, desc: '设置当前战斗背景 ID' };
 scriptCodes[0x70] = { func: roleWalk, desc: '插值移动主角位置' };
 scriptCodes[0x73] = { func: clearWithEffect, desc: '动画淡出清除' };
 
