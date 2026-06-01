@@ -352,6 +352,18 @@ export function toggleDayNight(param1) {
   }
 }
 
+export async function useNightPalette() {
+  // 步骤 1：强制将全局昼夜状态变更为黑夜模式 (true)
+  state.fNightPalette = true;
+
+  // 步骤 2：输出详细的黑夜调色板生效调试日志，供以后转场特效滤镜渲染使用
+  console.log('[0x54 useNightPalette] 强制开启黑夜调色板模式');
+
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 export function setSceneEnterScr(sceneId, enterScriptId) {
   const scene = state.scenes[sceneId];
   scene.enterScriptId = enterScriptId;
@@ -705,6 +717,7 @@ scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
 
 scriptCodes[0x59] = { func: setSceneId, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
+scriptCodes[0x54] = { func: useNightPalette, desc: '切换使用黑夜调色板' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
