@@ -364,6 +364,29 @@ export async function useNightPalette() {
   }
 }
 
+export async function addMagic(magicId, roleId) {
+  // 步骤 1：分析主角索引位置，若 roleId 为 0 代表当前触发脚本的主角 (下标 0)，否则对应 roleId - 1
+  const roleIndex = roleId === 0 ? 0 : roleId - 1;
+  const role = state.roles[roleIndex];
+
+  // 步骤 2：在目标角色的状态数据中惰性初始化仙术列表，并将新增的仙术 ID 追加习得
+  if (role) {
+    if (!role.magics) {
+      role.magics = [];
+    }
+    if (!role.magics.includes(magicId)) {
+      role.magics.push(magicId);
+    }
+  }
+
+  // 步骤 3：输出详细的习得仙术调试日志，以利于后续战斗或法术菜单对接
+  console.log(`[0x55 addMagic] 角色 (Index: ${roleIndex}) 成功习得新仙术 (仙术 ID: ${magicId})`);
+
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 export function setSceneEnterScr(sceneId, enterScriptId) {
   const scene = state.scenes[sceneId];
   scene.enterScriptId = enterScriptId;
@@ -744,6 +767,7 @@ scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
 scriptCodes[0x59] = { func: setSceneId, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
 scriptCodes[0x54] = { func: useNightPalette, desc: '切换使用黑夜调色板' };
+scriptCodes[0x55] = { func: addMagic, desc: '使主角/伙伴习得新仙术' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
