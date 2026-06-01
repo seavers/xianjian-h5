@@ -276,7 +276,8 @@ export function faceNpcTrig(objId, dist, targetScriptId) {
       startEventTrig(o);
     }
   } else {
-    Script.next(targetScriptId);
+    // 这里的scriptId - 1 是因为主循环的下一步，是scriptId + 1 然后继续
+    Script.next(targetScriptId - 1);
   }
 }
 
