@@ -608,6 +608,14 @@ export function showFbp(fbpId, effect) {
   }
 }
 
+export async function setRngAnimation(rngId) {
+  // 步骤 1：在全局状态机中记录当前准备播放的剧情全屏动画 (RNG) ID
+  state.curPlayingRngId = rngId;
+
+  // 步骤 2：输出详细的设定 RNG 动画编号调试日志，为剧情播放预留框架切入
+  console.log(`[0x36 setRngAnimation] 设置当前播放剧情动画 (RNG ID: ${rngId})`);
+}
+
 export function setMoney(add) {
   state.money += add;
   if (window.onSceneUpdate) {
@@ -692,6 +700,7 @@ scriptCodes[0x75] = { func: setRoleGroup, desc: '设置组队伙伴' };
 scriptCodes[0x76] = { func: showFbp, desc: '展示全屏剧情背景图' };
 scriptCodes[0x77] = { func: stopMusic, desc: '停止当前背景音乐并淡出' };
 
+scriptCodes[0x36] = { func: setRngAnimation, desc: '设置当前播放剧情动画' };
 scriptCodes[0x3B] = { func: (...args) => window.Talk.talkTips(...args), desc: '显示系统通知 tips' };
 scriptCodes[0x3C] = { func: (...args) => window.Talk.talkUp(...args), desc: '在屏幕顶部显示对话' };
 scriptCodes[0x3D] = { func: (...args) => window.Talk.talkDown(...args), desc: '在屏幕底部显示对话' };
