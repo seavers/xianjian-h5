@@ -671,6 +671,11 @@ export function setBattlefield(battlefieldId) {
   console.log(`[0x4A setBattlefield] 设置当前战斗背景 ID: ${battlefieldId}`);
 }
 
+export function playEndingSceneAnimation() {
+  // 步骤 1：输出调试日志，由于原版 script.c 中此处为 FIXME 空指令占位，我们在 H5 引擎中以空桩形式兼容处理
+  console.log('[0x78 playEndingSceneAnimation] 播放结局或过场场景动画桩，此指令在原版中为空操作。');
+}
+
 export async function setRngAnimation(rngId) {
   // 步骤 1：在全局状态机中记录当前准备播放的剧情全屏动画 (RNG) ID
   state.curPlayingRngId = rngId;
@@ -803,6 +808,7 @@ scriptCodes[0x15] = { func: setRoleIndex, desc: '设置队员动作方向/帧' }
 scriptCodes[0x75] = { func: setRoleGroup, desc: '设置组队伙伴' };
 scriptCodes[0x76] = { func: showFbp, desc: '展示全屏剧情背景图' };
 scriptCodes[0x77] = { func: stopMusic, desc: '停止当前背景音乐并淡出' };
+scriptCodes[0x78] = { func: playEndingSceneAnimation, desc: '结局/过场场景动画占位桩' };
 
 scriptCodes[0x36] = { func: setRngAnimation, desc: '设置当前播放剧情动画' };
 scriptCodes[0x37] = { func: playRngAnimation, desc: '播放剧情RNG动画' };
