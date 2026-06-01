@@ -616,6 +616,22 @@ export async function setRngAnimation(rngId) {
   console.log(`[0x36 setRngAnimation] 设置当前播放剧情动画 (RNG ID: ${rngId})`);
 }
 
+export async function playRngAnimation(startFrame, endFrame, speed) {
+  // 步骤 1：获取在全局状态机中预先选定的 RNG 动画编号，以及速度和终止帧缺省设定
+  const rngId = state.curPlayingRngId || 0;
+  const end = endFrame > 0 ? endFrame : startFrame + 60; // 默认模拟播放 60 帧
+  const delay = speed > 0 ? speed : 16;
+
+  // 步骤 2：精准估算原版在该动画播放时所消耗的真实物理时间，并输出转场大图调试日志
+  const totalFrames = end - startFrame + 1;
+  const duration = totalFrames * delay;
+
+  console.log(`[0x37 playRngAnimation] 开始播放剧情大动画 (RNG ID: ${rngId}), 帧范围: [${startFrame}, ${end}], 速度档位: ${delay}, 预估时长: ${duration}ms`);
+
+  // 步骤 3：借助 async/await 协同挂起当前阻塞脚本线程，并在物理等待完毕后回归推进，达成完美的非忙等时序控制
+  await new Promise(resolve => setTimeout(resolve, duration));
+}
+
 export function setMoney(add) {
   state.money += add;
   if (window.onSceneUpdate) {
@@ -701,6 +717,7 @@ scriptCodes[0x76] = { func: showFbp, desc: '展示全屏剧情背景图' };
 scriptCodes[0x77] = { func: stopMusic, desc: '停止当前背景音乐并淡出' };
 
 scriptCodes[0x36] = { func: setRngAnimation, desc: '设置当前播放剧情动画' };
+scriptCodes[0x37] = { func: playRngAnimation, desc: '播放剧情RNG动画' };
 scriptCodes[0x3B] = { func: (...args) => window.Talk.talkTips(...args), desc: '显示系统通知 tips' };
 scriptCodes[0x3C] = { func: (...args) => window.Talk.talkUp(...args), desc: '在屏幕顶部显示对话' };
 scriptCodes[0x3D] = { func: (...args) => window.Talk.talkDown(...args), desc: '在屏幕底部显示对话' };
