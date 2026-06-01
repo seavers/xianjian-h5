@@ -752,6 +752,30 @@ export function inflictDamage(allEnemies, damage) {
   console.log(`[0x21 inflictDamage] 造成伤害: ${damage}, 目标: ${target}`);
 }
 
+export async function startBattle(battleId, failScriptId, fleeScriptId) {
+  // 步骤 1：输出战斗启动的详细调试日志，表明当前的战斗 ID 以及对应的跳转分支
+  console.log(`[0x07 startBattle] 开始战斗 (Battle ID: ${battleId}, 战败跳转: ${failScriptId}, 逃跑跳转: ${fleeScriptId})`);
+
+  // 步骤 2：使用弹窗提示让用户选择战斗结果，以便支持游戏内的必败剧情或逃跑剧情分支
+  let victory = true;
+  if (typeof window !== 'undefined' && window.confirm) {
+    victory = window.confirm(`[触发战斗 ID: ${battleId}]\n点击【确定】模拟战斗胜利，点击【取消】模拟战斗逃跑/战败。`);
+  }
+
+  // 步骤 3：根据选择的结果，若模拟失败/逃跑且对应分支存在，则精准跳转到对应的剧情脚本分支
+  if (!victory) {
+    if (fleeScriptId) {
+      console.log(`[0x07 startBattle] 模拟战斗逃跑，跳转至逃跑分支: ${fleeScriptId}`);
+      Script.next(fleeScriptId - 1);
+    } else if (failScriptId) {
+      console.log(`[0x07 startBattle] 模拟战斗战败，跳转至战败分支: ${failScriptId}`);
+      Script.next(failScriptId - 1);
+    }
+  } else {
+    console.log(`[0x07 startBattle] 模拟战斗胜利，继续后续主线剧情。`);
+  }
+}
+
 // 脚本指令集注册表
 export const scriptCodes = [];
 scriptCodes[0x00] = { func: finishCode, desc: '停止指令' };
@@ -761,6 +785,7 @@ scriptCodes[0x03] = { func: gotoScript, desc: '无条件跳转指令' };
 scriptCodes[0x04] = { func: subScript, desc: '执行子脚本指令' };
 scriptCodes[0x05] = { func: updateScreen, desc: '屏幕重绘指令' };
 scriptCodes[0x06] = { func: randomScript, desc: '概率随机分支指令' };
+scriptCodes[0x07] = { func: startBattle, desc: '触发战斗并处理胜利逃跑分支' };
 scriptCodes[0x09] = { func: updateScreenAndWait, desc: '重绘屏幕并等待' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
