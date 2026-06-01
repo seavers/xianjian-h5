@@ -310,7 +310,7 @@ export function moveViewport(dx, dy, frameCount) {
     if (window.onSceneUpdate) {
       window.onSceneUpdate();
     }
-    return Script.DELAY_SCRIPT;
+    return Script.NEXT_SCRIPT;
   }
 
   // 步骤 2：若 frameCount 为 0xFFFF，代表立即定位视口到指定的绝对瓦片坐标处
@@ -321,7 +321,7 @@ export function moveViewport(dx, dy, frameCount) {
     if (window.onSceneUpdate) {
       window.onSceneUpdate();
     }
-    return Script.DELAY_SCRIPT;
+    return Script.NEXT_SCRIPT;
   }
 
   // 步骤 3：否则进入平移动画模式，每逻辑帧以 speedX 和 speedY 偏移量移动视口，总共持续 frameCount 帧
@@ -455,7 +455,7 @@ export function setSceneId(sceneId) {
   }
 }
 
-export function fadeOutScene(fadeOutSpeed) {
+export async function fadeOutScene(fadeOutSpeed) {
   state.needToFadeIn = true;
   state.fadeOutSpeed = fadeOutSpeed;
 
@@ -463,6 +463,8 @@ export function fadeOutScene(fadeOutSpeed) {
   if (!Thread.currentThread) {
     toggleScene();
   }
+
+  await fadeOut();
 }
 
 export async function fadeScreen(speed) {
