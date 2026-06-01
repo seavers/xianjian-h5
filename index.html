@@ -900,6 +900,24 @@
 						style="color: var(--glow-yellow); border-color: rgba(255,208,0,0.2); background: rgba(255,208,0,0.03); padding: 2px 6px; font-size: 8.5px; margin-left: auto;">📝 坐标管理</button>
 				</div>
 
+				<!-- 💾 调试存档控制 (Debug Save/Load Controller) -->
+				<div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; border-top: 1px dotted rgba(255,255,255,0.03); padding-top: 5px;">
+					<!-- 左侧：指定进度ID的保存与读取 -->
+					<div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+						<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">💾 存档控制:</span>
+						<input type="number" id="input-save-slot-id" placeholder="进度ID" min="1" value="1"
+							style="background: #08080c; border: 1px solid rgba(255,255,255,0.06); color: #ffff00; font-size: 8.5px; padding: 2px 4px; width: 70px; outline: none; text-align: center; border-radius: 2px;">
+						<button class="btn-dbg" onclick="debugLoadGame()"
+							style="color: #93c5fd; border-color: rgba(147,197,253,0.25); background: rgba(147,197,253,0.05); padding: 2px 5px; font-size: 8.5px;">读取</button>
+						<button class="btn-dbg" onclick="debugSaveGame()"
+							style="color: var(--glow-green); border-color: rgba(0,255,157,0.25); background: rgba(0,255,157,0.05); padding: 2px 5px; font-size: 8.5px;">保存</button>
+					</div>
+
+					<!-- 右侧：立即保存按钮 -->
+					<button class="btn-dbg" onclick="debugSaveGameInstant()"
+						style="color: var(--glow-yellow); border-color: rgba(255,208,0,0.2); background: rgba(255,208,0,0.03); padding: 2px 6px; font-size: 8.5px; margin-left: auto;">⚡ 立即保存 (新槽位)</button>
+				</div>
+
 				<!-- 📝 坐标管理面板 (Collapsible coords editor) -->
 				<div id="coords-manager-panel" style="display: none; flex-direction: column; gap: 4px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.04); padding: 6px; border-radius: 2px; margin-top: 2px;">
 					<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dotted rgba(255, 255, 255, 0.05); padding-bottom: 2px; margin-bottom: 2px;">
@@ -3085,6 +3103,64 @@
 		}
 
 		window.cheatCustomItem = cheatCustomItem;
+
+		function debugSaveGame(slotId) {
+			if (!slotId) {
+				const inputEl = document.getElementById('input-save-slot-id');
+				slotId = parseInt(inputEl.value) || 1;
+			}
+			import('./js/esc/archive.js').then(({ saveArchive }) => {
+				saveArchive(slotId);
+				import('./js/ui/talk.js').then(({ Talk }) => {
+					Talk.talkTips(`⚙️ 调试控制：进度保存成功！当前进度 ID: #${slotId}`);
+				});
+			});
+		}
+
+		function debugLoadGame(slotId) {
+			if (!slotId) {
+				const inputEl = document.getElementById('input-save-slot-id');
+				slotId = parseInt(inputEl.value) || 1;
+			}
+			import('./js/esc/archive.js').then(({ loadArchive }) => {
+				loadArchive(slotId, () => {
+					import('./js/engine/command.js').then(({ setRolePos }) => {
+						import('./js/ui/draw.js').then(({ drawMapAll, update }) => {
+							setRolePos(window.state.mx, window.state.my, window.state.mhalf);
+							drawMapAll();
+							update(true);
+							import('./js/ui/talk.js').then(({ Talk }) => {
+								Talk.talkTips(`⚙️ 调试控制：进度读取成功！加载场景 #${window.state.sceneId}`);
+							});
+						});
+					});
+				});
+			});
+		}
+
+		function debugSaveGameInstant() {
+			let maxId = 0;
+			for (let i = 0; i < localStorage.length; i++) {
+				const key = localStorage.key(i);
+				const match = key.match(/^PAL_SAVE_SLOT_(\d+)$/);
+				if (match) {
+					const id = parseInt(match[1]);
+					if (id > maxId) {
+						maxId = id;
+					}
+				}
+			}
+			const nextSlotId = Math.max(5, maxId) + 1;
+			debugSaveGame(nextSlotId);
+			const inputEl = document.getElementById('input-save-slot-id');
+			if (inputEl) {
+				inputEl.value = nextSlotId;
+			}
+		}
+
+		window.debugSaveGame = debugSaveGame;
+		window.debugLoadGame = debugLoadGame;
+		window.debugSaveGameInstant = debugSaveGameInstant;
 
 		function teleportMarket() {
 			if (window.state && window.toggleScene) {
