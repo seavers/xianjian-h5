@@ -610,6 +610,42 @@ export function obtain(ballId) {
   }
 }
 
+export async function removeItem(itemId, count, failScriptId) {
+  // 步骤 1：若扣除数量为 0，则默认扣除 1 个
+  const amount = count === 0 ? 1 : count;
+
+  // 步骤 2：获取背包中当前拥有该物品的总数
+  const ownedCount = state.ownItems.filter(id => id === itemId).length;
+
+  // 步骤 3：如果背包数量充足，或者没有指定失败跳转脚本（即 failScriptId 为 0），则直接从背包执行扣除
+  if (ownedCount >= amount || !failScriptId) {
+    let removed = 0;
+    
+    // 逆向遍历删除背包中的指定道具
+    for (let i = state.ownItems.length - 1; i >= 0; i--) {
+      if (state.ownItems[i] === itemId) {
+        state.ownItems.splice(i, 1);
+        removed++;
+        if (removed === amount) {
+          break;
+        }
+      }
+    }
+
+    // 步骤 4：由于目前 H5 暂不支持复杂的穿戴装备属性和装备扣除，暂不执行装备栏扣除，直接输出扣除成功的调试日志
+    console.log(`[0x20 removeItem] 成功扣除物品 (ID: ${itemId}), 扣除数量: ${removed}/${amount}`);
+    
+    if (window.onSceneUpdate) {
+      window.onSceneUpdate();
+    }
+  } else {
+    // 步骤 5：背包数量不足且提供了失败跳转脚本，则扣除失败，跳转到指定的分支脚本
+    console.log(`[0x20 removeItem] 物品数量不足 (拥有: ${ownedCount}, 需扣除: ${amount}), 跳转至分支脚本: ${failScriptId}`);
+    
+    Script.next(failScriptId - 1);
+  }
+}
+
 export function inflictDamage(allEnemies, damage) {
   // 步骤 1：若战斗系统暂未实现，输出详细的伤害调试日志以供追踪意图
   const target = allEnemies ? '全体敌人' : `当前敌人 (ID: ${this?.id || '未知'})`;
@@ -681,6 +717,7 @@ scriptCodes[0x25] = { func: setNpcTrigScr, desc: '配置NPC交互触发脚本' }
 
 scriptCodes[0x1E] = { func: setMoney, desc: '金钱数值改变指令' };
 scriptCodes[0x1F] = { func: obtain, desc: '添加物品进主角包裹' };
+scriptCodes[0x20] = { func: removeItem, desc: '扣除主角背包里的物品' };
 scriptCodes[0x21] = { func: inflictDamage, desc: '对敌人造成伤害' };
 
 scriptCodes[0x6E] = { func: walkHeroByOffset, desc: '主角平移偏移距离' };
