@@ -310,7 +310,7 @@ export function moveViewport(dx, dy, frameCount) {
     if (window.onSceneUpdate) {
       window.onSceneUpdate();
     }
-    return Script.NEXT_SCRIPT;
+    return Script.DELAY_SCRIPT;
   }
 
   // 步骤 2：若 frameCount 为 0xFFFF，代表立即定位视口到指定的绝对瓦片坐标处
@@ -321,21 +321,21 @@ export function moveViewport(dx, dy, frameCount) {
     if (window.onSceneUpdate) {
       window.onSceneUpdate();
     }
-    return Script.NEXT_SCRIPT;
+    return Script.DELAY_SCRIPT;
   }
 
   // 步骤 3：否则进入平移动画模式，每逻辑帧以 speedX 和 speedY 偏移量移动视口，总共持续 frameCount 帧
   const speedX = intToShort(dx);
   const speedY = intToShort(dy);
 
-  return Script.stepProgress(this, frameCount, () => {
+  return delayOrNext(Script.stepProgress(this, frameCount, () => {
     state.mapX += speedX;
     state.mapY += speedY;
 
     if (window.onSceneUpdate) {
       window.onSceneUpdate();
     }
-  });
+  }));
 }
 
 export function toggleDayNight(param1) {
@@ -807,7 +807,7 @@ export async function startBattle(battleId, failScriptId, fleeScriptId) {
 }
 
 function delayOrNext(result) {
-  return result ? Script.DELAY_SCRIPT : Script.NEXT_SCRIPT;
+  return result ? Script.DELAY_SCRIPT : Script.YIELD_SCRIPT;
 }
 
 // 脚本指令集注册表
