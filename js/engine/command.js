@@ -73,7 +73,7 @@ export function roleWalk(sx, sy, shalf) {
   state.mx = sx;
   state.my = sy;
   state.mhalf = shalf;
-  return Npc.animTeam(state.roles[0], sx, sy, shalf, 4);
+  return delayOrNext(Npc.animTeam(state.roles[0], sx, sy, shalf, 4));
 }
 
 export function clearWithEffect() {}
@@ -231,27 +231,27 @@ export function setNpcMove(objId, dx, dy) {
 }
 
 export function npcWalk2(x, y, half) {
-  return Npc.anim(this, x, y, half, 3);
+  return delayOrNext(Npc.anim(this, x, y, half, 3));
 }
 
 export function npcWalk3(x, y, half) {
-  return Npc.anim(this, x, y, half, 2);
+  return delayOrNext(Npc.anim(this, x, y, half, 2));
 }
 
 export function teamWalk(x, y, half) {
-  return Npc.animTeam(this, x, y, half, 2);
+  return delayOrNext(Npc.animTeam(this, x, y, half, 2));
 }
 
 export function teamWalk2(x, y, half) {
-  return Npc.animTeam(this, x, y, half, 4);
+  return delayOrNext(Npc.animTeam(this, x, y, half, 4));
 }
 
 export function teamWalk3(x, y, half) {
-  return Npc.animTeam(this, x, y, half, 6);
+  return delayOrNext(Npc.animTeam(this, x, y, half, 6));
 }
 
 export function teamWalk4(x, y, half) {
-  return Npc.animTeam(this, x, y, half, 8);
+  return delayOrNext(Npc.animTeam(this, x, y, half, 8));
 }
 
 export function faceNpcTrig(objId, dist, targetScriptId) {
@@ -277,7 +277,8 @@ export function faceNpcTrig(objId, dist, targetScriptId) {
     }
   } else {
     // 这里的scriptId - 1 是因为主循环的下一步，是scriptId + 1 然后继续
-    Script.next(targetScriptId - 1);
+    Script.next(targetScriptId);
+    return Script.GOTO_SCRIPT;
   }
 }
 
@@ -309,7 +310,7 @@ export function moveViewport(dx, dy, frameCount) {
     if (window.onSceneUpdate) {
       window.onSceneUpdate();
     }
-    return 0;
+    return Script.NEXT_SCRIPT;
   }
 
   // 步骤 2：若 frameCount 为 0xFFFF，代表立即定位视口到指定的绝对瓦片坐标处
@@ -320,7 +321,7 @@ export function moveViewport(dx, dy, frameCount) {
     if (window.onSceneUpdate) {
       window.onSceneUpdate();
     }
-    return 0;
+    return Script.NEXT_SCRIPT;
   }
 
   // 步骤 3：否则进入平移动画模式，每逻辑帧以 speedX 和 speedY 偏移量移动视口，总共持续 frameCount 帧
@@ -552,24 +553,28 @@ export function toggleScene(sceneId) {
 
 export function finishCode() {
   Script.finish(this);
-  return 1;
+  return Script.FINISH_SCRIPT;
 }
 
 export function stopCode() {
   Script.stop();
+  return Script.STOP_SCRIPT;
 }
 
 export function changeScript(scriptId, count) {
   if (!count || ++this.scriptIdleFrameCountAuto < count) {
     // 这里确实得使用 -1 ，不然小孩跳绳转不起来
-    Script.next(scriptId - 1);
+    Script.next(scriptId);
+    return Script.CHANGE_SCRIPT;
   } else {
     this.scriptIdleFrameCountAuto = 0;
+    return Script.NEXT_SCRIPT;
   }
 }
 
 export function gotoScript(scriptId) {
   Script.next(scriptId);
+  return Script.GOTO_SCRIPT;
 }
 
 export async function subScript(scriptId, objId) {
@@ -587,6 +592,7 @@ export async function subScript(scriptId, objId) {
 export function randomScript(base, scriptId) {
   if (Math.random() * 100 > base) {
     Script.next(scriptId);
+    return Script.GOTO_SCRIPT;
   }
 }
 
@@ -610,25 +616,25 @@ export function delayPeriod(time) {
   // 步骤 2：输出详细的非阻塞延迟调试日志，辅助追踪时序同步
   console.log(`[0x85 delayPeriod] 剧情等待, 原版毫秒: ${time * 80}ms, H5换算帧数: ${ticks} 帧`);
 
-  return Script.stepProgress(this, ticks);
+  return delayOrNext(Script.stepProgress(this, ticks));
 }
 
 export function updateScreenAndWait(time) {
   if (time == 0) {
-    return -1;
+    return Script.YIELD_SCRIPT;
   }
 
   // 返回>0，跳出场景脚本循环，来重绘
-  return Script.stepProgress(this, time);
+  return delayOrNext(Script.stepProgress(this, time));
 }
 
 export function waitSecond(time) {
   // 原游戏是 80ms * time ，这里一帧150ms
-  return Script.stepProgress(this, time / 2);
+  return delayOrNext(Script.stepProgress(this, time / 2));
 }
 
 export function sleepFrame(frameCount, speed) {
-  return Script.stepProgress(this, frameCount * speed);
+  return delayOrNext(Script.stepProgress(this, frameCount * speed));
 }
 
 export function checkTalk() {
@@ -746,7 +752,8 @@ export async function removeItem(itemId, count, failScriptId) {
     // 步骤 5：背包数量不足且提供了失败跳转脚本，则扣除失败，跳转到指定的分支脚本
     console.log(`[0x20 removeItem] 物品数量不足 (拥有: ${ownedCount}, 需扣除: ${amount}), 跳转至分支脚本: ${failScriptId}`);
     
-    Script.next(failScriptId - 1);
+    Script.next(failScriptId);
+    return Script.GOTO_SCRIPT;
   }
 }
 
@@ -771,14 +778,20 @@ export async function startBattle(battleId, failScriptId, fleeScriptId) {
   if (!victory) {
     if (fleeScriptId) {
       console.log(`[0x07 startBattle] 模拟战斗逃跑，跳转至逃跑分支: ${fleeScriptId}`);
-      Script.next(fleeScriptId - 1);
+      Script.next(fleeScriptId);
+      return Script.GOTO_SCRIPT;
     } else if (failScriptId) {
       console.log(`[0x07 startBattle] 模拟战斗战败，跳转至战败分支: ${failScriptId}`);
-      Script.next(failScriptId - 1);
+      Script.next(failScriptId);
+      return Script.GOTO_SCRIPT;
     }
   } else {
     console.log(`[0x07 startBattle] 模拟战斗胜利，继续后续主线剧情。`);
   }
+}
+
+function delayOrNext(result) {
+  return result ? Script.DELAY_SCRIPT : Script.NEXT_SCRIPT;
 }
 
 // 脚本指令集注册表

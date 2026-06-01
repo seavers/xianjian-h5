@@ -8,6 +8,14 @@ import { fadeIn, fadeOut } from '../ui/fade.js';
 import { ESC } from '../esc/esc.js';
 
 export const Script = {
+  NEXT_SCRIPT: -1,      // 当前轮，直接继续下一条指令
+  GOTO_SCRIPT: 4,       // 当前轮，直接跳转至指定指令
+  FINISH_SCRIPT: 0,     // 结束指令，下一轮，没有指令
+  STOP_SCRIPT: 1,       // 停止指令，下一轮，可能有其它指令
+  CHANGE_SCRIPT: 2,     // 下一轮，是指定的指令，若无，就是下一条指令
+  DELAY_SCRIPT: -5,     // 下一轮，依然是同一条指令
+  YIELD_SCRIPT: -6,     // 下一轮，继续下一条指令
+
   activeThread: null,
 
   startScene(scene) {
@@ -340,10 +348,21 @@ export const Script = {
         // 核心协同挂起控制：
         // 如果指令返回 大于 0 的未完成帧计数，表示指令需要跨多 tick 进行状态步进
         // 我们在此等待 150ms 逻辑帧，不递增指令指针 IP 并退出，以便下一逻辑帧重新执行。
-        if (ret > 0) {
+        if (ret == this.NEXT_SCRIPT) {
+          // ...next
+        } else if (ret == this.DELAY_SCRIPT) {
           return;
-        } else if (ret === -1) {
+        } else if (ret === this.YIELD_SCRIPT) {
           thread.scriptId++;
+          return;
+        } else if (ret === this.GOTO_SCRIPT) {
+          continue;
+        } else if (ret === this.STOP_SCRIPT) {
+          thread.scriptId++;
+          return;
+        } else if (ret === this.FINISH_SCRIPT) {
+          return;
+        } else if (ret === this.CHANGE_SCRIPT) {
           return;
         }
       }
@@ -403,8 +422,23 @@ export const Script = {
       const ret = code.func.call(thread.obj, script.param1, script.param2, script.param3);
       
       // 同理，如果 auto NPC 执行指令尚未完成，直接退出且不递增指令指针 IP
-      if (typeof ret === 'number' && ret > 0) {
-        return logItem;
+      if (ret == this.NEXT_SCRIPT) {
+        // ...next
+      } else if (ret == this.DELAY_SCRIPT) {
+        return;
+      } else if (ret === this.YIELD_SCRIPT) {
+        thread.scriptId++;
+        return;
+      } else if (ret === this.GOTO_SCRIPT) {
+        // continue;
+        return;
+      } else if (ret === this.STOP_SCRIPT) {
+        thread.scriptId++;
+        return;
+      } else if (ret === this.FINISH_SCRIPT) {
+        return;
+      } else if (ret === this.CHANGE_SCRIPT) {
+        return;
       }
     }
 
