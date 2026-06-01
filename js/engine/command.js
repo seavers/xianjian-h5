@@ -619,6 +619,8 @@ export async function talk(msgId) {
 }
 
 export async function updateScreen() {
+  state.fadeAlpha = 0;
+
   // 步骤 1：同步清屏和中间层重绘，重绘大地图以更新队伍坐标
   update(true);
 
@@ -637,7 +639,9 @@ export function delayPeriod(time) {
   return delayOrNext(Script.stepProgress(this, ticks));
 }
 
-export function updateScreenAndWait(time) {
+export async function updateScreenAndWait(time) {
+  await updateScreen();
+  
   if (time == 0) {
     return Script.YIELD_SCRIPT;
   }
