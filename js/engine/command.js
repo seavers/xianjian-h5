@@ -596,6 +596,22 @@ export function randomScript(base, scriptId) {
   }
 }
 
+export function jumpIfObjectState(objId, stateVal, targetScriptId) {
+  // 步骤 1：分析第一个参数 objId，若为 0 或者是 0xFFFF 则说明当前操作主体为 this，否则从全局状态机中获取对应的 NPC 事件实体
+  const obj = (objId === 0 || objId === 0xFFFF) ? this : state.eventObjects[objId];
+  if (!obj) {
+    return;
+  }
+
+  // 步骤 2：输出详细的跳转条件判定调试日志，辅助时序与脚本流程分析
+  console.log(`[0x94 jumpIfObjectState] 判定物体 ID: ${obj.id || '当前'}, 状态: ${obj.state} (期望: ${stateVal}), 目标脚本: ${targetScriptId}`);
+
+  // 步骤 3：若物体的状态满足期望的值，使用 Script.next(targetScriptId - 1) 精准跳转至对应脚本分支
+  if (obj.state === stateVal) {
+    Script.next(targetScriptId - 1);
+  }
+}
+
 export async function talk(msgId) {
   await window.Talk.drawTalk(msgId); // 异步等待对话框弹出并确认推进完成
 }
@@ -854,6 +870,7 @@ scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
 scriptCodes[0x54] = { func: useNightPalette, desc: '切换使用黑夜调色板' };
 scriptCodes[0x55] = { func: addMagic, desc: '使主角/伙伴习得新仙术' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
+scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
 scriptCodes[0x85] = { func: delayPeriod, desc: '非阻塞时序延迟' };
