@@ -69,6 +69,9 @@ export const state = {
   chasespeedChangeCycles: 0,
   chaseRange: 1,
 
+  // 跟随者数量
+  nFollower: 0,
+
   // 变速齿轮帧数控制（原本为 core-timer.js 中的 frameCount）
   frameCount: 6,
 

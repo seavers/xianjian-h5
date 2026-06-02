@@ -205,6 +205,34 @@ export function jumpIfCurrentSceneEquals(sceneId, failScriptId) {
   console.log(`[0x95 jumpIfCurrentSceneEquals] 当前场景为 ${state.sceneId}，不等于 ${sceneId}，不跳转`);
 }
 
+export function setFollower(r1, r2) {
+  state.roles = state.roles.filter(r => !r.isFollower);
+
+  const ids = [r1, r2].filter(r => r > 0);
+  state.nFollower = ids.length;
+
+  for (let i = 0; i < ids.length; i++) {
+    const roleId = ids[i] - 1;
+    state.roles.push({
+      type: 'role',
+      x: state.roles[0].x,
+      y: state.roles[0].y,
+      layer: state.roles[0].layer,
+      tileId: 0,
+      frame: 0,
+      index: roleId,
+      count: 0,
+      isFollower: true
+    });
+  }
+
+  console.log(`[0x98 setFollower] 更新队伍跟随者，当前队伍全员 Index:`, state.roles.map(r => r.index));
+
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 export function walkHeroByOffset(dx, dy, layer) {
   // 步骤 1：将传入的无符号短整型平移量 dx, dy 转换为 16 位有符号像素偏移量
   const offsetX = intToShort(dx);
@@ -1482,6 +1510,7 @@ scriptCodes[0x7E] = { func: setObjectLayer, desc: '设置事件物体高度层�
 scriptCodes[0x3F] = { func: teamWalk, desc: '队伍慢速骑乘到坐标' };
 scriptCodes[0x44] = { func: teamWalk2, desc: '队伍常速骑乘到坐标' };
 scriptCodes[0x97] = { func: teamWalk3, desc: '队伍快速骑乘到坐标' };
+scriptCodes[0x98] = { func: setFollower, desc: '设置队伍随行临时跟随者' };
 scriptCodes[0x7A] = { func: teamWalk2, desc: '队伍快速行走至坐标' };
 scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
 

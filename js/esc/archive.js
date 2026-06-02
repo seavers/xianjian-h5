@@ -112,7 +112,7 @@ export function saveArchive(slotId) {
   view.setUint16(26, Math.floor(state.roles[0].layer / 8), true); // wLayer
   view.setUint16(28, state.chaseRange || 1, true); // wChaseRange
   view.setUint16(30, state.chasespeedChangeCycles || 0, true); // wChasespeedChangeCycles
-  view.setUint16(32, 0, true); // nFollower
+  view.setUint16(32, state.nFollower || 0, true); // nFollower
   view.setUint16(34, 0, true); // rgwReserved2[0]
   view.setUint16(36, 0, true); // rgwReserved2[1]
   view.setUint16(38, 0, true); // rgwReserved2[2]
@@ -357,6 +357,7 @@ function parseSaveData(byteArray) {
   state.sceneId = wNumScene;
   state.chaseRange = wChaseRange;
   state.chasespeedChangeCycles = wChasespeedChangeCycles;
+  state.nFollower = nFollower;
 
   const scene = state.scenes[wNumScene];
   if (scene) {
