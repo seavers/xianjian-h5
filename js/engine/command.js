@@ -78,7 +78,11 @@ export function roleWalk(sx, sy, shalf) {
   return delayOrNext(Npc.animTeam(state.roles[0], sx, sy, shalf, 4));
 }
 
-export function clearWithEffect() {}
+export async function clearWithEffect(effectType) {
+  console.log(`[0x73 clearWithEffect] 重新淡入当前场景, 特效类型: ${effectType}`);
+  await fadeIn();
+  await update(true);
+}
 
 export function walkHeroByOffset(dx, dy, layer) {
   // 步骤 1：将传入的无符号短整型平移量 dx, dy 转换为 16 位有符号像素偏移量
