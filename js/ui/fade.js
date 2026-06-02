@@ -4,7 +4,8 @@ import { renderScreen } from './draw.js';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // 步骤 1：使用纯 async/await 重构高帧率渐变过渡动画执行器，用 for 循环和 sleep 代替 setInterval，代码更加扁平优雅
-export async function startFadeTransition(type) {
+export async function startFadeTransition(type, color = '0, 0, 0') {
+  state.fadeColor = color;
   const duration = 12;
 
   // 步骤 1.1：根据渐变类型设定初始帧的半透明遮罩透明度
@@ -44,4 +45,9 @@ export async function fadeOut() {
 // 步骤 3：使用极简的 async/await 定义全屏淡入
 export async function fadeIn() {
   await startFadeTransition('fadeIn');
+}
+
+// 步骤 4：定义全屏淡出至红色 (Game Over 效果)
+export async function fadeScreenToRed() {
+  await startFadeTransition('fadeOut', '255, 0, 0');
 }

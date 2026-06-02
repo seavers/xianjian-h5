@@ -4,7 +4,7 @@ import { Thread } from './thread.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
 import { update, drawMapAll } from '../ui/draw.js';
-import { fadeIn, fadeOut } from '../ui/fade.js';
+import { fadeIn, fadeOut, fadeScreenToRed } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
 import { registerBlank } from '../ui/input.js';
 import { loadArchive } from '../esc/archive.js';
@@ -1150,6 +1150,11 @@ export async function loadLastSavedGame() {
   return Script.FINISH_SCRIPT;
 }
 
+export async function fadeToRed() {
+  console.log(`[0x4F fadeToRed] 执行渐变屏幕至红色 (Game Over)`);
+  await fadeScreenToRed();
+}
+
 export function setPlayerStatus(statusId, rounds) {
   const thread = Thread.currentThread;
   const roleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
@@ -1206,6 +1211,7 @@ scriptCodes[0x38] = { func: teleportOut, desc: '传送出当前迷宫场景' };
 scriptCodes[0x4B] = { func: nullifyObject, desc: '暂时隐蔽事件物体15帧' };
 scriptCodes[0x4D] = { func: waitForKey, desc: '等待按键' };
 scriptCodes[0x4E] = { func: loadLastSavedGame, desc: '重载上一个存档游戏' };
+scriptCodes[0x4F] = { func: fadeToRed, desc: '渐变屏幕至红色' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };

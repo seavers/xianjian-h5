@@ -278,9 +278,10 @@ export function renderScreen(refreshBack) {
     drawNpcIdsOnScreen();
   }
 
-  // 步骤 4：绘制全屏渐变半透明黑色遮罩，用于场景淡入淡出过渡
+  // 步骤 4：绘制全屏渐变半透明遮罩，用于场景淡入淡出过渡（支持黑色、红色等）
   if (state.fadeAlpha > 0) {
-    mainCtx.fillStyle = `rgba(0, 0, 0, ${state.fadeAlpha})`;
+    const color = state.fadeColor || '0, 0, 0';
+    mainCtx.fillStyle = `rgba(${color}, ${state.fadeAlpha})`;
     mainCtx.fillRect(0, 0, mainCtx.canvas.width, mainCtx.canvas.height);
   }
 
