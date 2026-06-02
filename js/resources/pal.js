@@ -126,7 +126,7 @@ export function createRleImage(data, isPal) {
     height = view.nextShort();
   }
 
-  if (width > 200 || height > 200 || width <= 0 || height <= 0) {
+  if (isNaN(width) || isNaN(height) || width > 200 || height > 200 || width <= 0 || height <= 0) {
     console.warn('[warning]: rle width/height invalid ' + width + ' ' + height);
     return;
   }

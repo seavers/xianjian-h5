@@ -236,6 +236,8 @@ export function drawMiddle() {
 
   for (let i = 0; i < tiles.length; i++) {
     const o = tiles[i];
+    if (!o.tile) continue; // 防御性判断：若图片资源加载失败，则跳过绘制
+
     if (o.type === 'tile') {
       drawImage(o.tile, o.x - o.tile.width / 2, o.y - o.tile.height + 7);
     } else if (o.type === 'npc') {
