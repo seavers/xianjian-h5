@@ -617,6 +617,18 @@ export function toggleDayNight(param1) {
   }
 }
 
+export async function useDayPalette() {
+  // 步骤 1：强制将全局昼夜状态变更为白天模式 (false)
+  state.fNightPalette = false;
+
+  // 步骤 2：输出详细的白天调色板生效调试日志，供滤镜渲染使用
+  console.log('[0x53 useDayPalette] 强制开启白天调色板模式');
+
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 export async function useNightPalette() {
   // 步骤 1：强制将全局昼夜状态变更为黑夜模式 (true)
   state.fNightPalette = true;
@@ -1613,6 +1625,7 @@ scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
 scriptCodes[0x59] = { func: setSceneId, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
 scriptCodes[0x51] = { func: fadeInScene, desc: '场景淡入' };
+scriptCodes[0x53] = { func: useDayPalette, desc: '切换使用白天调色板' };
 scriptCodes[0x54] = { func: useNightPalette, desc: '切换使用黑夜调色板' };
 scriptCodes[0x55] = { func: addMagic, desc: '使主角/伙伴习得新仙术' };
 scriptCodes[0x56] = { func: removeMagic, desc: '移除主角/伙伴的仙术' };
