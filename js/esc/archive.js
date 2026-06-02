@@ -42,6 +42,7 @@ function extractArrayBuffer(byteArray) {
  * 读档逻辑：优先从 localStorage 加载，如无本地进度则降级从服务端网络下载
  */
 export function loadArchive(slotId, callback) {
+  state.currentSaveSlot = slotId;
   const key = `PAL_SAVE_SLOT_${slotId}`;
   const base64Data = localStorage.getItem(key);
 
@@ -89,6 +90,7 @@ export function loadArchive(slotId, callback) {
  * 存档逻辑：按照标准的 DOS 存档格式序列化，并以 Base64 编码形式存入 localStorage
  */
 export function saveArchive(slotId) {
+  state.currentSaveSlot = slotId;
   // 步骤 1：初始化一块 183,488 字节的缓冲区块。若有元数据底板则拷贝，以防 H5 未用数据丢失
   const bytes = lastLoadedBuffer ? new Uint8Array(lastLoadedBuffer).slice(0) : new Uint8Array(183488);
   const view = new DataView(bytes.buffer);

@@ -7,6 +7,7 @@ import { update, drawMapAll } from '../ui/draw.js';
 import { fadeIn, fadeOut } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
 import { registerBlank } from '../ui/input.js';
+import { loadArchive } from '../esc/archive.js';
 
 export function setRolePos(sx, sy, shalf) {
   state.mx = sx;
@@ -1122,6 +1123,33 @@ export async function waitForKey() {
   console.log(`[0x4D waitForKey] 结束等待按键`);
 }
 
+export async function loadLastSavedGame() {
+  const slotId = state.currentSaveSlot || 1;
+  console.log(`[0x4E loadLastSavedGame] 开始重载上一个存档, 槽位: ${slotId}`);
+  
+  // 1. 淡出屏幕
+  await fadeOut();
+  
+  // 2. 加载存档
+  await new Promise((resolve) => {
+    loadArchive(slotId, () => {
+      setRolePos(state.mx, state.my, state.mhalf);
+      drawMapAll();
+      resolve();
+    });
+  });
+
+  // 3. 清空剧情脚本主线程
+  Script.activeThread = null;
+  
+  // 4. 淡入屏幕并刷新渲染
+  await fadeIn();
+  await update(true);
+  
+  console.log(`[0x4E loadLastSavedGame] 存档重载完成`);
+  return Script.FINISH_SCRIPT;
+}
+
 export function setPlayerStatus(statusId, rounds) {
   const thread = Thread.currentThread;
   const roleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
@@ -1177,6 +1205,7 @@ scriptCodes[0x2F] = { func: removePlayerStatus, desc: '消除角色异常状态'
 scriptCodes[0x38] = { func: teleportOut, desc: '传送出当前迷宫场景' };
 scriptCodes[0x4B] = { func: nullifyObject, desc: '暂时隐蔽事件物体15帧' };
 scriptCodes[0x4D] = { func: waitForKey, desc: '等待按键' };
+scriptCodes[0x4E] = { func: loadLastSavedGame, desc: '重载上一个存档游戏' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };

@@ -61,6 +61,9 @@ export const state = {
   // 金钱
   money: 0,
 
+  // 当前读写的存档槽位
+  currentSaveSlot: 1,
+
   // 变速齿轮帧数控制（原本为 core-timer.js 中的 frameCount）
   frameCount: 6,
 
