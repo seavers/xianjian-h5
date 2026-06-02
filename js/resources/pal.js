@@ -48,14 +48,20 @@ export function loadMap(mapId) {
 }
 
 export function loadPal(palId) {
-  return fromCache('pal_' + palId, () => {
+  return fromCache('pal_' + palId + '_' + state.fNightPalette, () => {
     const data = loadMkf('pat.mkf', palId);
+
+    var base = 0;
+    if (state.fNightPalette) {
+      base = 3 * 256;
+    }
+
     const palette = [];
     for (let i = 0; i < 256; i++) {
       palette[i] = 
-        (data.getByte(3 * i + 2) << 2  &  0x000000ff) +
-        (data.getByte(3 * i + 1) << 10 &  0x0000ff00) +
-        (data.getByte(3 * i + 0) << 18 &  0x00ff0000) +
+        (data.getByte(3 * i + 2 + base) << 2  &  0x000000ff) +
+        (data.getByte(3 * i + 1 + base) << 10 &  0x0000ff00) +
+        (data.getByte(3 * i + 0 + base) << 18 &  0x00ff0000) +
         (0xff000000); // alpha, 不透明		
     }
     return palette;
@@ -63,7 +69,7 @@ export function loadPal(palId) {
 }
 
 export function loadGop(mapId, gopId) {
-  const key = 'gop_' + mapId + '_' + gopId;
+  const key = 'gop_' + mapId + '_' + gopId + '_' + state.paletteId + '_' + state.fNightPalette;
   return fromCache(key, () => {
     const gops = loadMkf('gop.mkf', mapId);
     const gop = loadMkf2(gops, gopId);
@@ -73,7 +79,7 @@ export function loadGop(mapId, gopId) {
 }
 
 export function loadMgo(roleId, frame) {
-  const key = 'mgo_' + roleId + '_' + frame;
+  const key = 'mgo_' + roleId + '_' + frame + '_' + state.paletteId + '_' + state.fNightPalette;
   return fromCache(key, () => {
     const mgos = loadMkf('mgo.mkf', roleId);
     const dmgos = deyj(mgos);
@@ -89,7 +95,7 @@ export function loadMgoCount(roleId) {
 }
 
 export function loadRgm(rgmId) {
-  const key = 'rgm_' + rgmId;
+  const key = 'rgm_' + rgmId + '_' + state.paletteId + '_' + state.fNightPalette;
   return fromCache(key, () => {
     const rgm = loadMkf('rgm.mkf', rgmId);
     const img = createRleImage(rgm, true);
@@ -98,7 +104,7 @@ export function loadRgm(rgmId) {
 }
 
 export function loadFbp(fbpId) {
-  const key = 'fbp_' + fbpId;
+  const key = 'fbp_' + fbpId + '_' + state.paletteId + '_' + state.fNightPalette;
   return fromCache(key, () => {
     const fbp = loadMkf('fbp.mkf', fbpId);
     const dfbp = deyj(fbp);
@@ -148,7 +154,7 @@ export function createRleImage(data, isPal) {
 export function createPalImage(data, width, height) {
   if (!data) return;
 
-  const palette = loadPal(globalPalletteId);
+  const palette = loadPal(state.paletteId);
 
   const result = [];
   for (let i = 0; i < width * height; i++) {

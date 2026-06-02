@@ -611,6 +611,7 @@ export function toggleDayNight(param1) {
   const status = state.fNightPalette ? '黑夜模式' : '白天常态';
 
   console.log(`[0x80 toggleDayNight] 切换昼夜调色板, 当前状态: ${status}, 切换模式: ${mode}`);
+  update(true);
 
   if (window.onSceneUpdate) {
     window.onSceneUpdate();
@@ -623,6 +624,7 @@ export async function useDayPalette() {
 
   // 步骤 2：输出详细的白天调色板生效调试日志，供滤镜渲染使用
   console.log('[0x53 useDayPalette] 强制开启白天调色板模式');
+  update(true);
 
   if (window.onSceneUpdate) {
     window.onSceneUpdate();
@@ -635,6 +637,7 @@ export async function useNightPalette() {
 
   // 步骤 2：输出详细的黑夜调色板生效调试日志，供以后转场特效滤镜渲染使用
   console.log('[0x54 useNightPalette] 强制开启黑夜调色板模式');
+  update(true);
 
   if (window.onSceneUpdate) {
     window.onSceneUpdate();
