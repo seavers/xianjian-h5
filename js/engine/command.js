@@ -1056,6 +1056,10 @@ export function removeEquipment(roleId, partId) {
   }
 }
 
+export function buyMenu(storeId) {
+  console.log(`[0x26 buyMenu] 呼出商店买入菜单, 商店ID: ${storeId}`);
+}
+
 // 脚本指令集注册表
 export const scriptCodes = [];
 scriptCodes[0x00] = { func: finishCode, desc: '停止指令' };
@@ -1078,6 +1082,7 @@ scriptCodes[0x1B] = { func: changeHp, desc: '增减玩家角色HP属性值' };
 scriptCodes[0x1C] = { func: changeMp, desc: '增减玩家角色MP属性值' };
 scriptCodes[0x22] = { func: revivePlayer, desc: '复活濒死玩家角色' };
 scriptCodes[0x23] = { func: removeEquipment, desc: '卸除主角/队员装备' };
+scriptCodes[0x26] = { func: buyMenu, desc: '商店买入菜单' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };
