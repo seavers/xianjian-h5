@@ -253,6 +253,12 @@ export function changeSceneMap(sceneId, targetMapId) {
   }
 }
 
+export async function fadeToCurrentScene() {
+  console.log(`[0x9B fadeToCurrentScene] 执行渐变淡入当前场景`);
+  await fadeIn();
+  await update(true);
+}
+
 export function walkHeroByOffset(dx, dy, layer) {
   // 步骤 1：将传入的无符号短整型平移量 dx, dy 转换为 16 位有符号像素偏移量
   const offsetX = intToShort(dx);
@@ -1532,6 +1538,7 @@ scriptCodes[0x44] = { func: teamWalk2, desc: '队伍常速骑乘到坐标' };
 scriptCodes[0x97] = { func: teamWalk3, desc: '队伍快速骑乘到坐标' };
 scriptCodes[0x98] = { func: setFollower, desc: '设置队伍随行临时跟随者' };
 scriptCodes[0x99] = { func: changeSceneMap, desc: '切换指定场景所用地图' };
+scriptCodes[0x9B] = { func: fadeToCurrentScene, desc: '屏幕渐变淡入当前场景' };
 scriptCodes[0x7A] = { func: teamWalk2, desc: '队伍快速行走至坐标' };
 scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
 
