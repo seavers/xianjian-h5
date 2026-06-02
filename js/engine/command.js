@@ -1064,6 +1064,20 @@ export function sellMenu() {
   console.log('[0x27 sellMenu] 呼出商店卖出菜单');
 }
 
+export function curePoisonByKind(toAll, poisonId) {
+  const targetRoles = toAll ? state.roles : [state.roles[0]];
+  for (let i = 0; i < targetRoles.length; i++) {
+    const role = targetRoles[i];
+    if (role && role.poisons) {
+      role.poisons = role.poisons.filter(id => id !== poisonId);
+    }
+  }
+  console.log(`[0x2B curePoisonByKind] 解毒范围: ${toAll ? '全队' : '主角'}, 毒素ID: ${poisonId}`);
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 // 脚本指令集注册表
 export const scriptCodes = [];
 scriptCodes[0x00] = { func: finishCode, desc: '停止指令' };
@@ -1088,6 +1102,7 @@ scriptCodes[0x22] = { func: revivePlayer, desc: '复活濒死玩家角色' };
 scriptCodes[0x23] = { func: removeEquipment, desc: '卸除主角/队员装备' };
 scriptCodes[0x26] = { func: buyMenu, desc: '商店买入菜单' };
 scriptCodes[0x27] = { func: sellMenu, desc: '商店卖出菜单' };
+scriptCodes[0x2B] = { func: curePoisonByKind, desc: '根据毒物ID解玩家毒' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };
