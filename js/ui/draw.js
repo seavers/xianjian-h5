@@ -4,6 +4,12 @@ import { loadMap, loadGop, loadMgo, loadFon, u9s, u3s } from '../resources/pal.j
 export const updateCount = [0, 0, 0];
 let tiles = [];
 
+// 缓存上一次绘制的背景状态
+let lastMapId = null;
+let lastMapX = null;
+let lastMapY = null;
+let lastNightPalette = null;
+
 function drawImage(img, x, y, drawContext) {
   if (!img) return;
 
@@ -63,47 +69,66 @@ export function drawRhombus(x, y, drawContext1, color = '#888888') {
   ctx.closePath();
 }
 
-export function drawMapAll() {
-  const data = loadMap(state.mapId);
-  const mapCtx = state.contexts.map;
-  if (!mapCtx) return;
+export function drawMapBack() {
+  const backCtx = state.contexts.back;
+  if (!backCtx) return;
 
-  // 载入离屏大地图层 (128x128 瓦片)
-  for (let y = 0; y < 128; y++) {
-    for (let x = 0; x < 128; x++) {
+  // 1. 自动脏检查：如果镜头坐标、地图ID、调色板配置都未改变，跳过重绘背景
+  if (
+    state.mapId === lastMapId &&
+    state.mapX === lastMapX &&
+    state.mapY === lastMapY &&
+    state.fNightPalette === lastNightPalette
+  ) {
+    return;
+  }
+
+  const data = loadMap(state.mapId);
+  const mapX = state.mapX;
+  const mapY = state.mapY;
+
+  // 2. 视口裁剪：计算当前 320x200 视口对应的 128x128 瓦片范围 (瓦片步长 16px)
+  // 向外扩展 1~2 个瓦片进行容错，避免视野边缘露白
+  const startX = Math.max(0, Math.floor((mapX - 0xA0) / 16) - 1);
+  const endX = Math.min(127, startX + 22);
+  
+  const startY = Math.max(0, Math.floor((mapY - 0x70) / 16) - 1);
+  const endY = Math.min(127, startY + 15);
+
+  // 清除旧的背景
+  backCtx.clearRect(0, 0, 320, 200);
+
+  // 3. 局部按需渲染，直接将可视瓦片画入 backCtx 局部视口中
+  for (let y = startY; y <= endY; y++) {
+    for (let x = startX; x <= endX; x++) {
       const posX = 16 * x;
       const posY = 16 * y + (x % 2 === 0 ? 0 : 8);
       const index = y * 128 + x;
 
+      // 绘制第一层背景瓦片
       const tileId1 = u9s(data, index);
       const img1 = loadGop(state.mapId, tileId1);
       if (img1) {
-        mapCtx.drawImage(img1, posX - 16, posY - 8);
+        backCtx.drawImage(img1, posX - 16 - mapX + 0xA0, posY - 8 - mapY + 0x70);
       }
 
+      // 绘制第二层覆盖瓦片（如有）
       let tileId2 = u9s(data, index, 2);
       tileId2--;
-      if (tileId2 === -1) continue;
-
-      const img2 = loadGop(state.mapId, tileId2);
-      if (img2) {
-        mapCtx.drawImage(img2, posX - 16, posY - 8);
+      if (tileId2 !== -1) {
+        const img2 = loadGop(state.mapId, tileId2);
+        if (img2) {
+          backCtx.drawImage(img2, posX - 16 - mapX + 0xA0, posY - 8 - mapY + 0x70);
+        }
       }
     }
   }
-}
 
-export function drawMapBack() {
-  const backCtx = state.contexts.back;
-  const mapCtx = state.contexts.map;
-  if (!backCtx || !mapCtx) return;
-
-  const offsetX = state.mapX - 0xA0;
-  const offsetY = state.mapY - 0x70;
-
-  if (offsetX >= 0 && offsetY >= 0) {
-    backCtx.drawImage(mapCtx.canvas, offsetX, offsetY, 320, 200, 0, 0, 320, 200);
-  }
+  // 4. 更新上一次绘制的快照缓存
+  lastMapId = state.mapId;
+  lastMapX = state.mapX;
+  lastMapY = state.mapY;
+  lastNightPalette = state.fNightPalette;
 }
 
 export function drawEventObject() {
@@ -223,7 +248,7 @@ export function drawMiddle() {
 
     // 调试辅助线 TRACE 模式
     if (window.TRACE) {
-      drawText(i, o.x, o.y, state.contexts.temp);
+      drawText(i, o.x, o.y, state.contexts.main);
     }
 
     // 新增：雷达追踪高亮闪烁效果
@@ -249,11 +274,8 @@ export function drawMiddle() {
 
 // 核心屏幕同步重绘逻辑
 export function renderScreen(refreshBack) {
-  const tempCtx = state.contexts.temp;
   const mainCtx = state.contexts.main;
-  if (!tempCtx || !mainCtx) return;
-
-  tempCtx.clearRect(0, 0, tempCtx.canvas.width, tempCtx.canvas.height);
+  if (!mainCtx) return;
 
   if (refreshBack) {
     updateCount[0]++;

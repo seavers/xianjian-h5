@@ -120,9 +120,6 @@ function initDat() {
 function initContexts() {
   state.contexts.main = document.getElementById('canvas').getContext('2d');
   state.contexts.back = document.getElementById('back').getContext('2d');
-  state.contexts.map = document.getElementById('map').getContext('2d');
-  state.contexts.front = document.getElementById('front').getContext('2d');
-  state.contexts.temp = document.getElementById('temp').getContext('2d');
   state.contexts.talk = document.getElementById('talk').getContext('2d');
   state.contexts.startup = document.getElementById('startup').getContext('2d');
   

@@ -3,7 +3,7 @@ import { Script } from './script.js';
 import { Thread } from './thread.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
-import { update, drawMapAll, canWalk } from '../ui/draw.js';
+import { update, canWalk } from '../ui/draw.js';
 import { fadeIn, fadeOut, fadeScreenToRed } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
 import { registerBlank } from '../ui/input.js';
@@ -239,8 +239,7 @@ export function changeSceneMap(sceneId, targetMapId) {
       state.scenes[state.sceneId].mapId = targetMapId;
     }
     state.mapId = targetMapId;
-    drawMapAll();
-    console.log(`[0x99 changeSceneMap] 修改当前场景（ID: ${state.sceneId}）的地图为: ${targetMapId}，并立刻重载地图`);
+    console.log(`[0x99 changeSceneMap] 修改当前场景（ID: ${state.sceneId}）的地图为: ${targetMapId}`);
   } else {
     if (state.scenes[sceneId]) {
       state.scenes[sceneId].mapId = targetMapId;
@@ -836,8 +835,6 @@ export function performToggleScene(targetSceneId) {
   state.endEventId = scene.endEventId;
 
   console.log('切换场景: ' + targetSceneId + ' 地图: ' + state.mapId);
-
-  drawMapAll(); // 同步加载与绘制大地图
 
   // 等脚本都设置好场景中主角位置与形象后，再update
   if(!scene.enterScriptId) {

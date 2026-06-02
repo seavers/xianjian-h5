@@ -85,9 +85,6 @@ export const state = {
   contexts: {
     main: null,
     back: null,
-    map: null,
-    front: null,
-    temp: null,
     talk: null,
     startup: null
   }
