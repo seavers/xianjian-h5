@@ -823,6 +823,17 @@ export function replaceEntry() {
   }
 }
 
+export async function confirmMenu(failScriptId) {
+  let result = true;
+  if (typeof window !== 'undefined' && window.confirm) {
+    result = window.confirm("是否确定？\n点击【确定】选择是，点击【取消】选择否。");
+  }
+  if (!result) {
+    Script.next(failScriptId);
+    return Script.GOTO_SCRIPT;
+  }
+}
+
 // 脚本指令集注册表
 export const scriptCodes = [];
 scriptCodes[0x00] = { func: finishCode, desc: '停止指令' };
@@ -835,6 +846,7 @@ scriptCodes[0x06] = { func: randomScript, desc: '概率随机分支指令' };
 scriptCodes[0x07] = { func: startBattle, desc: '触发战斗并处理胜利逃跑分支' };
 scriptCodes[0x08] = { func: replaceEntry, desc: '替换交互脚本入口' };
 scriptCodes[0x09] = { func: updateScreenAndWait, desc: '重绘屏幕并等待' };
+scriptCodes[0x0A] = { func: confirmMenu, desc: '确认菜单选项' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };
