@@ -1009,6 +1009,26 @@ export function changeMp(toAll, value) {
   }
 }
 
+export function revivePlayer(toAll, hpPercent) {
+  const ratio = hpPercent / 10;
+  const targetRoles = toAll ? state.roles : [state.roles[0]];
+  let success = false;
+  for (let i = 0; i < targetRoles.length; i++) {
+    const role = targetRoles[i];
+    if (role && role.hp === 0) {
+      if (role.maxHp === undefined) role.maxHp = 100;
+      role.hp = Math.round(role.maxHp * ratio);
+      role.poisons = [];
+      role.status = {};
+      success = true;
+    }
+  }
+  console.log(`[0x22 revivePlayer] 范围: ${toAll ? '全队' : '主角'}, 恢复HP百分比: ${hpPercent * 10}%, 复活成功: ${success}`);
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 // 脚本指令集注册表
 export const scriptCodes = [];
 scriptCodes[0x00] = { func: finishCode, desc: '停止指令' };
@@ -1029,6 +1049,7 @@ scriptCodes[0x19] = { func: increasePlayerAttribute, desc: '永久增减玩家�
 scriptCodes[0x1A] = { func: setPlayerStat, desc: '设定玩家角色基础属性值' };
 scriptCodes[0x1B] = { func: changeHp, desc: '增减玩家角色HP属性值' };
 scriptCodes[0x1C] = { func: changeMp, desc: '增减玩家角色MP属性值' };
+scriptCodes[0x22] = { func: revivePlayer, desc: '复活濒死玩家角色' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };
