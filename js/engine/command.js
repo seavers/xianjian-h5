@@ -1029,6 +1029,33 @@ export function revivePlayer(toAll, hpPercent) {
   }
 }
 
+export function removeEquipment(roleId, partId) {
+  const roleIndex = roleId === 0 ? 0 : roleId - 1;
+  const role = state.roles[roleIndex];
+  if (role && role.equipments) {
+    if (partId === 0) {
+      for (const part in role.equipments) {
+        const itemId = role.equipments[part];
+        if (itemId && itemId !== 0) {
+          state.ownItems.push(itemId);
+          role.equipments[part] = 0;
+        }
+      }
+    } else {
+      const part = partId - 1;
+      const itemId = role.equipments[part];
+      if (itemId && itemId !== 0) {
+        state.ownItems.push(itemId);
+        role.equipments[part] = 0;
+      }
+    }
+  }
+  console.log(`[0x23 removeEquipment] 角色 Index: ${roleIndex}, 卸除装备部位: ${partId === 0 ? '全部' : partId}`);
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 // 脚本指令集注册表
 export const scriptCodes = [];
 scriptCodes[0x00] = { func: finishCode, desc: '停止指令' };
@@ -1050,6 +1077,7 @@ scriptCodes[0x1A] = { func: setPlayerStat, desc: '设定玩家角色基础属性
 scriptCodes[0x1B] = { func: changeHp, desc: '增减玩家角色HP属性值' };
 scriptCodes[0x1C] = { func: changeMp, desc: '增减玩家角色MP属性值' };
 scriptCodes[0x22] = { func: revivePlayer, desc: '复活濒死玩家角色' };
+scriptCodes[0x23] = { func: removeEquipment, desc: '卸除主角/队员装备' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };
