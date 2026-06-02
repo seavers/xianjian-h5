@@ -907,6 +907,43 @@ export function equipItem(partId, itemId) {
   }
 }
 
+const STAT_MAP = {
+  6: 'level',
+  7: 'maxHp',
+  8: 'maxMp',
+  9: 'hp',
+  10: 'mp',
+  17: 'attackStrength',
+  18: 'magicStrength',
+  19: 'defense',
+  20: 'dexterity',
+  21: 'fleeRate',
+  22: 'poisonResistance'
+};
+
+export function increasePlayerAttribute(statId, value, roleId) {
+  const thread = Thread.currentThread;
+  const triggeringRoleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
+  const roleIndex = roleId === 0 ? triggeringRoleIndex : roleId - 1;
+  const role = state.roles[roleIndex];
+  if (role) {
+    const key = STAT_MAP[statId];
+    if (key) {
+      if (role[key] === undefined) {
+        role[key] = (key === 'hp' || key === 'mp') ? 100 : 10;
+      }
+      role[key] += intToShort(value);
+      if (key === 'hp' && role.hp > (role.maxHp || 100)) role.hp = role.maxHp || 100;
+      if (key === 'mp' && role.mp > (role.maxMp || 100)) role.mp = role.maxMp || 100;
+      if (role[key] < 0) role[key] = 0;
+      console.log(`[0x19 increasePlayerAttribute] 角色 Index: ${roleIndex}, 属性: ${key}, 变动量: ${intToShort(value)}, 新值: ${role[key]}`);
+    }
+  }
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 // 脚本指令集注册表
 export const scriptCodes = [];
 scriptCodes[0x00] = { func: finishCode, desc: '停止指令' };
@@ -923,6 +960,7 @@ scriptCodes[0x0A] = { func: confirmMenu, desc: '确认菜单选项' };
 
 scriptCodes[0x17] = { func: setPlayerExtraAttribute, desc: '设置主角装备附加属性' };
 scriptCodes[0x18] = { func: equipItem, desc: '穿戴装备物品' };
+scriptCodes[0x19] = { func: increasePlayerAttribute, desc: '永久增减玩家角色基础属性值' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };
