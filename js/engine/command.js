@@ -69,8 +69,6 @@ export function refreshRoleCount(role) {
   role.frame = frame;
 }
 
-export function setRoleGroup() {}
-
 export function roleWalk(sx, sy, shalf) {
   state.mx = sx;
   state.my = sy;
@@ -82,6 +80,41 @@ export async function clearWithEffect(effectType) {
   console.log(`[0x73 clearWithEffect] 重新淡入当前场景, 特效类型: ${effectType}`);
   await fadeIn();
   await update(true);
+}
+
+export function setRoleGroup(r1, r2, r3) {
+  const ids = [r1, r2, r3].filter(r => r !== 0);
+  const newRoles = [];
+  
+  if (ids.length === 0) {
+    newRoles.push(state.roles[0]);
+  } else {
+    for (let i = 0; i < ids.length; i++) {
+      const roleIndex = ids[i] - 1;
+      const exist = state.roles.find(r => r && r.index === roleIndex);
+      if (exist) {
+        newRoles.push(exist);
+      } else {
+        newRoles.push({
+          type: 'role',
+          x: state.roles[0].x,
+          y: state.roles[0].y,
+          layer: state.roles[0].layer,
+          tileId: 0,
+          frame: 0,
+          index: roleIndex,
+          count: 0
+        });
+      }
+    }
+  }
+  
+  state.roles = newRoles;
+  console.log(`[0x75 setRoleGroup] 更新队伍成员列表，当前队伍角色 Index:`, state.roles.map(r => r.index));
+  
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
 }
 
 export function walkHeroByOffset(dx, dy, layer) {
