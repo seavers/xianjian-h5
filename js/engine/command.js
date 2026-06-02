@@ -178,6 +178,33 @@ export function npcWalk(objId, dx, dy) {
   Script.sleep(1);
 }
 
+function walkOneStep(dir) {
+  const obj = this;
+  if (!obj) return;
+
+  obj.dir = dir;
+
+  const xOffset = (dir === 1 || dir === 0) ? -4 : 4;
+  const yOffset = (dir === 1 || dir === 2) ? -2 : 2;
+
+  obj.x += xOffset;
+  obj.y += yOffset;
+
+  if (obj === state.roles[0]) {
+    state.mapX += xOffset;
+    state.mapY += yOffset;
+    state.mx = Math.floor(state.mapX / 32);
+    state.my = Math.floor(state.mapY / 16);
+    state.mhalf = Math.round((state.mapX - state.mx * 32) / 16);
+  }
+
+  refreshRoleCount(obj);
+
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 export function setEastDir(objId) {
   Script.sleep(2);
 }
@@ -191,7 +218,7 @@ export function setNorthDir(objId) {
 }
 
 export function setSouthDir(objId) {
-  Script.sleep(2);
+  walkOneStep.call(this, 0);
 }
 
 export function setNpcDir(dir) {
