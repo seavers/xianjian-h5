@@ -417,6 +417,24 @@ export async function addMagic(magicId, roleId) {
   }
 }
 
+export async function removeMagic(magicId, roleId) {
+  const roleIndex = roleId === 0 ? 0 : roleId - 1;
+  const role = state.roles[roleIndex];
+
+  if (role && role.magics) {
+    const idx = role.magics.indexOf(magicId);
+    if (idx > -1) {
+      role.magics.splice(idx, 1);
+    }
+  }
+
+  console.log(`[0x56 removeMagic] 角色 (Index: ${roleIndex}) 成功遗忘/移除仙术 (仙术 ID: ${magicId})`);
+
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 export async function changeHpMp(toAll, value) {
   // 步骤 1：利用 intToShort 将传入的无符号短整型 value 转换为 16 位有符号属性改变值
   const changeValue = intToShort(value);
@@ -1270,6 +1288,7 @@ scriptCodes[0x59] = { func: setSceneId, desc: '修改切换目的地场景 ID' }
 scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
 scriptCodes[0x54] = { func: useNightPalette, desc: '切换使用黑夜调色板' };
 scriptCodes[0x55] = { func: addMagic, desc: '使主角/伙伴习得新仙术' };
+scriptCodes[0x56] = { func: removeMagic, desc: '移除主角/伙伴的仙术' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
