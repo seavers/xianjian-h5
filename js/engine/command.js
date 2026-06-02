@@ -6,6 +6,7 @@ import { loadMgoCount } from '../resources/pal.js';
 import { update, drawMapAll } from '../ui/draw.js';
 import { fadeIn, fadeOut } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
+import { registerBlank } from '../ui/input.js';
 
 export function setRolePos(sx, sy, shalf) {
   state.mx = sx;
@@ -1113,6 +1114,14 @@ export function nullifyObject() {
   console.log(`[0x4B nullifyObject] 暂时隐蔽事件物体 15 帧, 实体: ${obj?.id || '自身'}`);
 }
 
+export async function waitForKey() {
+  console.log(`[0x4D waitForKey] 开始等待按键`);
+  await new Promise((resolve) => {
+    registerBlank(resolve);
+  });
+  console.log(`[0x4D waitForKey] 结束等待按键`);
+}
+
 export function setPlayerStatus(statusId, rounds) {
   const thread = Thread.currentThread;
   const roleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
@@ -1167,6 +1176,7 @@ scriptCodes[0x2D] = { func: setPlayerStatus, desc: '附加异常状态给角色'
 scriptCodes[0x2F] = { func: removePlayerStatus, desc: '消除角色异常状态' };
 scriptCodes[0x38] = { func: teleportOut, desc: '传送出当前迷宫场景' };
 scriptCodes[0x4B] = { func: nullifyObject, desc: '暂时隐蔽事件物体15帧' };
+scriptCodes[0x4D] = { func: waitForKey, desc: '等待按键' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };
