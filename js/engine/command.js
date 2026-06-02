@@ -196,6 +196,15 @@ export function placeItemUsedAsObject(targetObjectId, stateVal, failScriptId) {
   }
 }
 
+export function jumpIfCurrentSceneEquals(sceneId, failScriptId) {
+  if (state.sceneId === sceneId) {
+    console.log(`[0x95 jumpIfCurrentSceneEquals] 当前场景为 ${state.sceneId}，等于 ${sceneId}，跳转至脚本: ${failScriptId}`);
+    Script.next(failScriptId);
+    return Script.GOTO_SCRIPT;
+  }
+  console.log(`[0x95 jumpIfCurrentSceneEquals] 当前场景为 ${state.sceneId}，不等于 ${sceneId}，不跳转`);
+}
+
 export function walkHeroByOffset(dx, dy, layer) {
   // 步骤 1：将传入的无符号短整型平移量 dx, dy 转换为 16 位有符号像素偏移量
   const offsetX = intToShort(dx);
@@ -1489,6 +1498,7 @@ scriptCodes[0x62] = { func: pauseEnemyChase, desc: '暂停敌人的追击' };
 scriptCodes[0x63] = { func: speedUpEnemyChase, desc: '加速敌人的追击' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
+scriptCodes[0x95] = { func: jumpIfCurrentSceneEquals, desc: '若当前场景ID等于特定值则跳转' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
 scriptCodes[0x83] = { func: jumpIfNotInZone, desc: '若事件物体不在当前事件物体特定区域则跳转' };
