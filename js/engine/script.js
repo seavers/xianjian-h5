@@ -177,6 +177,9 @@ export const Script = {
       if (thread === Script.activeThread) {
         Script.activeThread = thread.parent || null;
       }
+      if (thread.type === 'trig' && thread.nextScriptId !== undefined && thread.nextScriptId !== null) {
+        thread.obj.trigScr = thread.nextScriptId;
+      }
     }
     if(obj && obj.thread == thread) {
       obj.thread = null;
@@ -195,7 +198,7 @@ export const Script = {
     const thread = Thread.currentThread;
     if (!thread) return;
 
-    scriptId = scriptId || thread.scriptId;
+    scriptId = (thread.nextScriptId !== undefined && thread.nextScriptId !== null) ? thread.nextScriptId : (scriptId || thread.scriptId);
 
     if (thread.type === 'auto') {
       // thread.obj.autoScr = scriptId;
