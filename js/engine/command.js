@@ -498,6 +498,18 @@ export function killPlayerImmediately() {
   }
 }
 
+export function pauseEnemyChase(cycles) {
+  state.chasespeedChangeCycles = cycles;
+  state.chaseRange = 0;
+  console.log(`[0x62 pauseEnemyChase] 敌方停止追击主角, 持续周期: ${cycles}`);
+}
+
+export function speedUpEnemyChase(cycles) {
+  state.chasespeedChangeCycles = cycles;
+  state.chaseRange = 3;
+  console.log(`[0x63 speedUpEnemyChase] 敌方加速追击主角, 持续周期: ${cycles}`);
+}
+
 export async function changeHpMp(toAll, value) {
   // 步骤 1：利用 intToShort 将传入的无符号短整型 value 转换为 16 位有符号属性改变值
   const changeValue = intToShort(value);
@@ -1356,6 +1368,8 @@ scriptCodes[0x57] = { func: setMagicBaseDamageByMp, desc: '根据当前MP设定�
 scriptCodes[0x58] = { func: jumpIfItemAmountLessThan, desc: '若道具持有数量少于特定值则跳转' };
 scriptCodes[0x5A] = { func: halvePlayerHp, desc: '角色HP减半' };
 scriptCodes[0x5F] = { func: killPlayerImmediately, desc: '使角色立即垂死' };
+scriptCodes[0x62] = { func: pauseEnemyChase, desc: '暂停敌人的追击' };
+scriptCodes[0x63] = { func: speedUpEnemyChase, desc: '加速敌人的追击' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };

@@ -65,6 +65,10 @@ export const state = {
   // 当前读写的存档槽位
   currentSaveSlot: 1,
 
+  // 驱魔香/十里香等产生的追逐速度与范围控制
+  chasespeedChangeCycles: 0,
+  chaseRange: 1,
+
   // 变速齿轮帧数控制（原本为 core-timer.js 中的 frameCount）
   frameCount: 6,
 
