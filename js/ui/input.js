@@ -226,6 +226,7 @@ function onXY(x, y, half, dir) {
       case 5: // 中距离触发，主要是切换场景
       case 6: // 远距离触发
       case 7: // 远距离触发
+      case 8: // 最远距离触发
         if (s < (o.trigMode - 4) * 32 + 16) {    
           startEventTrig(o);
         }
