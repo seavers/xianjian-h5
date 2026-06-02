@@ -435,6 +435,30 @@ export async function removeMagic(magicId, roleId) {
   }
 }
 
+export function setMagicBaseDamageByMp(magicId, multiplier) {
+  const thread = Thread.currentThread;
+  const triggeringRoleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
+  const role = state.roles[triggeringRoleIndex];
+  
+  if (role) {
+    if (role.mp === undefined) role.mp = 100;
+    const factor = multiplier === 0 ? 8 : multiplier;
+    const baseDamage = role.mp * factor;
+    
+    if (!role.magicBaseDamages) {
+      role.magicBaseDamages = {};
+    }
+    role.magicBaseDamages[magicId] = baseDamage;
+    role.mp = 0;
+    
+    console.log(`[0x57 setMagicBaseDamageByMp] 仙术 ID: ${magicId}, 当前 MP: ${baseDamage / factor}, 乘数: ${factor}, 计算基础伤害: ${baseDamage}, 随后扣除角色 MP 至 0`);
+  }
+  
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 export async function changeHpMp(toAll, value) {
   // 步骤 1：利用 intToShort 将传入的无符号短整型 value 转换为 16 位有符号属性改变值
   const changeValue = intToShort(value);
@@ -1289,6 +1313,7 @@ scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
 scriptCodes[0x54] = { func: useNightPalette, desc: '切换使用黑夜调色板' };
 scriptCodes[0x55] = { func: addMagic, desc: '使主角/伙伴习得新仙术' };
 scriptCodes[0x56] = { func: removeMagic, desc: '移除主角/伙伴的仙术' };
+scriptCodes[0x57] = { func: setMagicBaseDamageByMp, desc: '根据当前MP设定仙术基础伤害' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
