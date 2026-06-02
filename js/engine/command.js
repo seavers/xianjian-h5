@@ -469,6 +469,22 @@ export function jumpIfItemAmountLessThan(itemId, amount, failScriptId) {
   console.log(`[0x58 jumpIfItemAmountLessThan] 背包中物品 ID ${itemId} 的数量为 ${ownedCount}，不少于 ${amount}，不跳转`);
 }
 
+export function halvePlayerHp() {
+  const thread = Thread.currentThread;
+  const roleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
+  const role = state.roles[roleIndex];
+  if (role) {
+    if (role.hp === undefined) {
+      role.hp = 100;
+    }
+    role.hp = Math.floor(role.hp / 2);
+    console.log(`[0x5A halvePlayerHp] 角色 (Index: ${roleIndex}) HP 减半, 减半后 HP: ${role.hp}`);
+  }
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 export async function changeHpMp(toAll, value) {
   // 步骤 1：利用 intToShort 将传入的无符号短整型 value 转换为 16 位有符号属性改变值
   const changeValue = intToShort(value);
@@ -1325,6 +1341,7 @@ scriptCodes[0x55] = { func: addMagic, desc: '使主角/伙伴习得新仙术' };
 scriptCodes[0x56] = { func: removeMagic, desc: '移除主角/伙伴的仙术' };
 scriptCodes[0x57] = { func: setMagicBaseDamageByMp, desc: '根据当前MP设定仙术基础伤害' };
 scriptCodes[0x58] = { func: jumpIfItemAmountLessThan, desc: '若道具持有数量少于特定值则跳转' };
+scriptCodes[0x5A] = { func: halvePlayerHp, desc: '角色HP减半' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
