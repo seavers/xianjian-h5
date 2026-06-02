@@ -1103,6 +1103,19 @@ export function setPlayerStatus(statusId, rounds) {
   console.log(`[0x2D setPlayerStatus] 角色 Index: ${roleIndex}, 状态ID: ${statusId}, 持续回合: ${rounds}`);
 }
 
+export function removePlayerStatus(statusId) {
+  const thread = Thread.currentThread;
+  const roleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
+  const role = state.roles[roleIndex];
+  if (role && role.status) {
+    delete role.status[statusId];
+  }
+  console.log(`[0x2F removePlayerStatus] 角色 Index: ${roleIndex}, 移除状态ID: ${statusId}`);
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 // 脚本指令集注册表
 export const scriptCodes = [];
 scriptCodes[0x00] = { func: finishCode, desc: '停止指令' };
@@ -1130,6 +1143,7 @@ scriptCodes[0x27] = { func: sellMenu, desc: '商店卖出菜单' };
 scriptCodes[0x2B] = { func: curePoisonByKind, desc: '根据毒物ID解玩家毒' };
 scriptCodes[0x2C] = { func: curePoisonByLevel, desc: '根据级别解玩家毒' };
 scriptCodes[0x2D] = { func: setPlayerStatus, desc: '附加异常状态给角色' };
+scriptCodes[0x2F] = { func: removePlayerStatus, desc: '消除角色异常状态' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };
