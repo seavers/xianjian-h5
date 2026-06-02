@@ -1647,7 +1647,8 @@
 					}
 				}
 
-				const stateText = `S:${o.state}`;
+				// 根据 S 的状态构建显示文本。如果 S 为 0，则不需要显示 Dir(D) 和 Frame(F) 信息
+				const stateText = o.state === 0 ? 'S:0' : `S:${o.state} D:${o.dir} F:${o.frame}`;
 				const stateColor = o.state ? 'var(--glow-green)' : 'rgba(255,255,255,0.15)';
 				if (stateSpan.innerText !== stateText) {
 					stateSpan.innerText = stateText;
