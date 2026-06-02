@@ -485,6 +485,19 @@ export function halvePlayerHp() {
   }
 }
 
+export function killPlayerImmediately() {
+  const thread = Thread.currentThread;
+  const roleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
+  const role = state.roles[roleIndex];
+  if (role) {
+    role.hp = 0;
+    console.log(`[0x5F killPlayerImmediately] 角色 (Index: ${roleIndex}) 立即死亡 (HP 设为 0)`);
+  }
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 export async function changeHpMp(toAll, value) {
   // 步骤 1：利用 intToShort 将传入的无符号短整型 value 转换为 16 位有符号属性改变值
   const changeValue = intToShort(value);
@@ -1342,6 +1355,7 @@ scriptCodes[0x56] = { func: removeMagic, desc: '移除主角/伙伴的仙术' };
 scriptCodes[0x57] = { func: setMagicBaseDamageByMp, desc: '根据当前MP设定仙术基础伤害' };
 scriptCodes[0x58] = { func: jumpIfItemAmountLessThan, desc: '若道具持有数量少于特定值则跳转' };
 scriptCodes[0x5A] = { func: halvePlayerHp, desc: '角色HP减半' };
+scriptCodes[0x5F] = { func: killPlayerImmediately, desc: '使角色立即垂死' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
