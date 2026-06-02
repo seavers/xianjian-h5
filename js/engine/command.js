@@ -475,19 +475,47 @@ export function npcWalk3(x, y, half) {
 }
 
 export function teamWalk(x, y, half) {
-  return delayOrNext(Npc.animTeam(this, x, y, half, 2));
+  for(var i = 0; i < state.roles.length; i++) {
+    return delayOrNext(Npc.animTeam(state.roles[i], x, y, half, 2));
+  }
 }
 
 export function teamWalk2(x, y, half) {
-  return delayOrNext(Npc.animTeam(this, x, y, half, 4));
+  for(var i = 0; i < state.roles.length; i++) {
+    return delayOrNext(Npc.animTeam(state.roles[i], x, y, half, 4));
+  }
 }
 
 export function teamWalk3(x, y, half) {
-  return delayOrNext(Npc.animTeam(this, x, y, half, 6));
+  for(var i = 0; i < state.roles.length; i++) {
+    return delayOrNext(Npc.animTeam(state.roles[i], x, y, half, 6));
+  }
 }
 
 export function teamWalk4(x, y, half) {
-  return delayOrNext(Npc.animTeam(this, x, y, half, 8));
+  for(var i = 0; i < state.roles.length; i++) {
+    return delayOrNext(Npc.animTeam(state.roles[i], x, y, half, 8));
+  }
+}
+
+export function teamRide(x, y, half) {
+  Npc.anim(this, x, y, half, 2);
+  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 2));
+}
+
+export function teamRide2(x, y, half) {
+  Npc.anim(this, x, y, half, 4);
+  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 4));
+}
+
+export function teamRide3(x, y, half) {
+  Npc.anim(this, x, y, half, 6);
+  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 6));
+}
+
+export function teamRide4(x, y, half) {
+  Npc.anim(this, x, y, half, 8);
+  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 8));
 }
 
 export function faceNpcTrig(objId, dist, targetScriptId) {
@@ -1571,9 +1599,9 @@ scriptCodes[0x12] = { func: setNpcPos, desc: '设置NPC位置' };
 scriptCodes[0x13] = { func: setNpcPosAbsolute, desc: '设置NPC绝对像素位置' };
 scriptCodes[0x7D] = { func: setNpcMove, desc: 'NPC偏移位置' };
 scriptCodes[0x7E] = { func: setObjectLayer, desc: '设置事件物体高度层级' };
-scriptCodes[0x3F] = { func: teamWalk, desc: '队伍慢速骑乘到坐标' };
-scriptCodes[0x44] = { func: teamWalk2, desc: '队伍常速骑乘到坐标' };
-scriptCodes[0x97] = { func: teamWalk3, desc: '队伍快速骑乘到坐标' };
+scriptCodes[0x3F] = { func: teamRide, desc: '队伍慢速骑乘到坐标' };
+scriptCodes[0x44] = { func: teamRide2, desc: '队伍常速骑乘到坐标' };
+scriptCodes[0x97] = { func: teamRide3, desc: '队伍快速骑乘到坐标' };
 scriptCodes[0x98] = { func: setFollower, desc: '设置队伍随行临时跟随者' };
 scriptCodes[0x99] = { func: changeSceneMap, desc: '切换指定场景所用地图' };
 scriptCodes[0x9B] = { func: fadeToCurrentScene, desc: '屏幕渐变淡入当前场景' };

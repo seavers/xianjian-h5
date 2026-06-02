@@ -59,17 +59,18 @@ export const Npc = {
       const nx = cx + Math.sign(dx) * speed * 2;
       const ny = cy + Math.sign(dy) * speed;
 
+      // 不是主角，只移动位置
+      if (state.roles[0] !== o) {
+        o.x = nx;
+        o.y = ny;
+        return absDy - speed;
+      }
+      
       // 同步移动主角（Role 0）的坐标与相机偏移坐标
       state.roles[0].x = nx;
       state.roles[0].y = ny;
       state.mapX = nx;
       state.mapY = ny;
-
-      // 如果传入的首个参数 o 不是主角本身，则同步更新其像素坐标
-      if (o !== state.roles[0]) {
-        o.x = nx;
-        o.y = ny;
-      }
 
       // 同步估算当前的瓦片坐标以保持逻辑状态一致
       state.mx = Math.floor(nx / 32);
