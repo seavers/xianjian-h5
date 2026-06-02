@@ -755,8 +755,17 @@ export async function playRngAnimation(startFrame, endFrame, speed) {
   await new Promise(resolve => setTimeout(resolve, duration));
 }
 
-export function setMoney(add) {
-  state.money += add;
+export function setMoney(add, failScriptId) {
+  const change = intToShort(add);
+  if (change < 0 && state.money < -change) {
+    if (failScriptId) {
+      Script.next(failScriptId);
+      return Script.GOTO_SCRIPT;
+    }
+  } else {
+    state.money += change;
+    if (state.money < 0) state.money = 0;
+  }
   if (window.onSceneUpdate) {
     window.onSceneUpdate();
   }
