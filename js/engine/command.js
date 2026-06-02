@@ -259,6 +259,31 @@ export async function fadeToCurrentScene() {
   await update(true);
 }
 
+export function setPartySamePosition() {
+  if (state.roles.length <= 1) {
+    console.log(`[0xA1 setPartySamePosition] 队伍中只有主角一人，无需重置位置`);
+    return;
+  }
+
+  const leader = state.roles[0];
+  for (let i = 1; i < state.roles.length; i++) {
+    const role = state.roles[i];
+    if (role) {
+      role.x = leader.x;
+      role.y = leader.y - 1;
+      role.layer = leader.layer;
+      role.dir = leader.dir;
+      role.frame = leader.frame;
+    }
+  }
+
+  console.log(`[0xA1 setPartySamePosition] 队伍所有成员坐标已重置到跟主角重合 (像素: ${leader.x}, ${leader.y - 1})`);
+
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 export function walkHeroByOffset(dx, dy, layer) {
   // 步骤 1：将传入的无符号短整型平移量 dx, dy 转换为 16 位有符号像素偏移量
   const offsetX = intToShort(dx);
@@ -1539,6 +1564,7 @@ scriptCodes[0x97] = { func: teamWalk3, desc: '队伍快速骑乘到坐标' };
 scriptCodes[0x98] = { func: setFollower, desc: '设置队伍随行临时跟随者' };
 scriptCodes[0x99] = { func: changeSceneMap, desc: '切换指定场景所用地图' };
 scriptCodes[0x9B] = { func: fadeToCurrentScene, desc: '屏幕渐变淡入当前场景' };
+scriptCodes[0xA1] = { func: setPartySamePosition, desc: '使队伍全员位置和主角李逍遥重合' };
 scriptCodes[0x7A] = { func: teamWalk2, desc: '队伍快速行走至坐标' };
 scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
 
