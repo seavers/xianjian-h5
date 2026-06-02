@@ -4,7 +4,7 @@ import { UI, PanelFactory } from '../ui/panel.js';
 import { unbind } from '../ui/input.js';
 import { Script } from '../engine/script.js';
 import { toggleScene, setRolePos } from '../engine/command.js';
-import { drawMapAll, update } from '../ui/draw.js';
+import { update } from '../ui/draw.js';
 import { loadArchive, saveArchive } from './archive.js';
 
 export const ESC = {
@@ -247,7 +247,6 @@ export const ESC = {
         // 步骤 3：调用解耦的 loadArchive 接口读取进度，并在成功回调中刷新场景并渲染唤醒时钟
         loadArchive(slotId, () => {
           setRolePos(state.mx, state.my, state.mhalf);
-          drawMapAll();
           update(true);
           ESC.hideMenuCanvas();
         });

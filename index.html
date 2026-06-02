@@ -3118,9 +3118,8 @@
 			import('./js/esc/archive.js').then(({ loadArchive }) => {
 				loadArchive(slotId, () => {
 					import('./js/engine/command.js').then(({ setRolePos }) => {
-						import('./js/ui/draw.js').then(({ drawMapAll, update }) => {
+						import('./js/ui/draw.js').then(({ update }) => {
 							setRolePos(window.state.mx, window.state.my, window.state.mhalf);
-							drawMapAll();
 							update(true);
 							import('./js/ui/talk.js').then(({ Talk }) => {
 								Talk.talkTips(`⚙️ 调试控制：进度读取成功！加载场景 #${window.state.sceneId}`);

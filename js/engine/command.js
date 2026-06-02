@@ -1441,7 +1441,6 @@ export async function loadLastSavedGame() {
   await new Promise((resolve) => {
     loadArchive(slotId, () => {
       setRolePos(state.mx, state.my, state.mhalf);
-      drawMapAll();
       resolve();
     });
   });
