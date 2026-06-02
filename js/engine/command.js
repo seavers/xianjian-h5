@@ -1105,6 +1105,14 @@ export function teleportOut(failScriptId) {
   console.log(`[0x38 teleportOut] 执行传送出当前迷宫场景指令, 传送脚本: ${scene?.exitScriptId || '无'}`);
 }
 
+export function nullifyObject() {
+  const obj = this;
+  if (obj) {
+    obj.vanishTime = 15;
+  }
+  console.log(`[0x4B nullifyObject] 暂时隐蔽事件物体 15 帧, 实体: ${obj?.id || '自身'}`);
+}
+
 export function setPlayerStatus(statusId, rounds) {
   const thread = Thread.currentThread;
   const roleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
@@ -1158,6 +1166,7 @@ scriptCodes[0x2C] = { func: curePoisonByLevel, desc: '根据级别解玩家毒' 
 scriptCodes[0x2D] = { func: setPlayerStatus, desc: '附加异常状态给角色' };
 scriptCodes[0x2F] = { func: removePlayerStatus, desc: '消除角色异常状态' };
 scriptCodes[0x38] = { func: teleportOut, desc: '传送出当前迷宫场景' };
+scriptCodes[0x4B] = { func: nullifyObject, desc: '暂时隐蔽事件物体15帧' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };
