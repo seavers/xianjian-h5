@@ -1,3 +1,4 @@
+import { state } from '../engine/state.js';
 import { Canvas } from '../utils/canvas.js';
 import { deyj } from '../utils/deyj.js';
 import { load, loadMkf } from './loader.js';
@@ -61,11 +62,6 @@ export function loadPal(palId) {
   });
 }
 
-export let globalPalletteId = 0;
-export function setGlobalPalletteId(id) {
-  globalPalletteId = id;
-}
-
 export function loadGop(mapId, gopId) {
   const key = 'gop_' + mapId + '_' + gopId;
   return fromCache(key, () => {
@@ -115,7 +111,7 @@ export function createRleImage(data, isPal) {
   if (!data) return;
 
   const view = data.toDataView();
-  const palette = loadPal(globalPalletteId);
+  const palette = loadPal(state.paletteId);
 
   var width = view.nextShort();
   var height = view.nextShort();

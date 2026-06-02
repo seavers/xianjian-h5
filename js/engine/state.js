@@ -18,6 +18,8 @@ export const state = {
   fadeAlpha: 0,         // 场景渐变过渡的黑色遮罩透明度（0表示完全透明，1表示完全黑色）
   fadeColor: '0, 0, 0', // 场景渐变过渡遮罩的 RGB 颜色（默认为黑色 '0, 0, 0'，支持红色 '255, 0, 0' 等）
   _isTransitionPaused: false, // 标识切换过渡期间是否挂起主循环
+  paletteId: 0,  
+
   get isPaused() {
     const startup = document.getElementById('startup');
     const isEscVisible = !!(startup && startup.style.display === 'block');
