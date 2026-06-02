@@ -879,6 +879,34 @@ export function setPlayerExtraAttribute(partId, statId, value) {
   console.log(`[0x17 setPlayerExtraAttribute] 角色 Index: ${roleIndex}, 装备部件: ${partId - 0x0B}, 属性ID: ${statId}, 属性值: ${value}`);
 }
 
+export function equipItem(partId, itemId) {
+  const thread = Thread.currentThread;
+  const triggeringRoleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
+  const roleIndex = (this && this.type === 'role') ? this.index : triggeringRoleIndex;
+  const role = state.roles[roleIndex];
+  if (role) {
+    if (!role.equipments) {
+      role.equipments = {};
+    }
+    const part = partId - 0x0B;
+    const oldItem = role.equipments[part];
+    if (oldItem && oldItem !== 0) {
+      state.ownItems.push(oldItem);
+    }
+    role.equipments[part] = itemId;
+    if (itemId !== 0) {
+      const idx = state.ownItems.indexOf(itemId);
+      if (idx > -1) {
+        state.ownItems.splice(idx, 1);
+      }
+    }
+  }
+  console.log(`[0x18 equipItem] 角色 Index: ${roleIndex}, 装备位置: ${partId - 0x0B}, 装备物品 ID: ${itemId}`);
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 // 脚本指令集注册表
 export const scriptCodes = [];
 scriptCodes[0x00] = { func: finishCode, desc: '停止指令' };
@@ -894,6 +922,7 @@ scriptCodes[0x09] = { func: updateScreenAndWait, desc: '重绘屏幕并等待' }
 scriptCodes[0x0A] = { func: confirmMenu, desc: '确认菜单选项' };
 
 scriptCodes[0x17] = { func: setPlayerExtraAttribute, desc: '设置主角装备附加属性' };
+scriptCodes[0x18] = { func: equipItem, desc: '穿戴装备物品' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };
