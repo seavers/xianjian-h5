@@ -233,6 +233,26 @@ export function setFollower(r1, r2) {
   }
 }
 
+export function changeSceneMap(sceneId, targetMapId) {
+  if (sceneId === 0xFFFF) {
+    if (state.scenes[state.sceneId]) {
+      state.scenes[state.sceneId].mapId = targetMapId;
+    }
+    state.mapId = targetMapId;
+    drawMapAll();
+    console.log(`[0x99 changeSceneMap] 修改当前场景（ID: ${state.sceneId}）的地图为: ${targetMapId}，并立刻重载地图`);
+  } else {
+    if (state.scenes[sceneId]) {
+      state.scenes[sceneId].mapId = targetMapId;
+    }
+    console.log(`[0x99 changeSceneMap] 修改指定场景（ID: ${sceneId}）的地图为: ${targetMapId}`);
+  }
+  
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 export function walkHeroByOffset(dx, dy, layer) {
   // 步骤 1：将传入的无符号短整型平移量 dx, dy 转换为 16 位有符号像素偏移量
   const offsetX = intToShort(dx);
@@ -1511,6 +1531,7 @@ scriptCodes[0x3F] = { func: teamWalk, desc: '队伍慢速骑乘到坐标' };
 scriptCodes[0x44] = { func: teamWalk2, desc: '队伍常速骑乘到坐标' };
 scriptCodes[0x97] = { func: teamWalk3, desc: '队伍快速骑乘到坐标' };
 scriptCodes[0x98] = { func: setFollower, desc: '设置队伍随行临时跟随者' };
+scriptCodes[0x99] = { func: changeSceneMap, desc: '切换指定场景所用地图' };
 scriptCodes[0x7A] = { func: teamWalk2, desc: '队伍快速行走至坐标' };
 scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
 
