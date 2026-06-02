@@ -7,6 +7,7 @@ import { Hex } from './utils/hex.js';
 import { Talk } from './ui/talk.js';
 import { Script } from './engine/script.js';
 import { updateCount, update as updateGameScreen } from './ui/draw.js';
+import { loadArchive } from './esc/archive.js';
 
 // 获取 URL 参数是否为 debug 模式
 const DEBUG = location.search && location.search.indexOf('debug') !== -1;
@@ -170,38 +171,38 @@ ready(() => {
   if (!DEBUG) {
     ESC.onStartup();
   } else {
+    // 步骤 1：挂起主循环，防止读档完成前主逻辑提前步进
+    state.isPaused = true;
+
     commonEnter();
 
-    // 1. 获取 URL 中的 debug 参数作为 COORDS 数组的下标
-    const n = +new URLSearchParams(location.search).get('debug') || 0;
+    // 步骤 2：解析 URL 中的 debug 参数作为存档 ID
+    const debugParam = new URLSearchParams(location.search).get('debug');
+    const slotId = parseInt(debugParam) || 1;
 
-    // 2. 默认的坐标配置数组，与 index.html 保持一致
-    const DEFAULT_COORDS = [
-      { sceneId: 1, x: 49, y: 94, name: '逍遥卧室' },
-      { sceneId: 2, x: 26, y: 36, name: '客栈一楼' },
-      { sceneId: 3, x: 42, y: 18, name: '大娘病房' },
-      { sceneId: 4, x: 54, y: 87, name: '盛渔村集市' },
-      { sceneId: 5, x: 30, y: 30, name: '仙灵岛荷花池' },
-      { sceneId: 6, x: 20, y: 20, name: '仙灵岛水月宫' }
-    ];
+    // 步骤 3：调用 loadArchive 从 localStorage 或服务器读取载入对应存档进度
+    let loaded = false;
+    loadArchive(slotId, () => {
+      loaded = true;
+      
+      // 步骤 4：载入成功后，设定主角绝对瓦片坐标并重新计算视口位置
+      setRolePos(state.mx, state.my, state.mhalf);
+      updateGameScreen(true);
+      
+      // 步骤 5：恢复主逻辑循环运行
+      state.isPaused = false;
+      console.log(`[Debug] 成功从 localStorage/服务器 载入存档 ID: ${slotId}，进入场景: ${state.sceneId}`);
+    });
 
-    // 3. 从 localStorage 加载配置，如果没有，使用默认值
-    let coords = DEFAULT_COORDS;
-    try {
-      const saved = localStorage.getItem('PAL_COORDS');
-      if (saved) {
-        coords = JSON.parse(saved);
+    // 步骤 6：设置安全延时保护，若 2 秒内读取未响应则自动降级进入默认初始场景，避免黑屏挂起
+    setTimeout(() => {
+      if (!loaded) {
+        console.warn(`[Debug] 载入存档 ID: ${slotId} 超时或失败，降级切换至默认场景`);
+        setRolePos(49, 94, 0);
+        toggleScene(1);
+        state.isPaused = false;
       }
-    } catch (e) {
-      console.error('加载传送坐标配置失败，使用默认值', e);
-    }
-
-    // 4. 获取目标传送坐标并执行场景切换
-    const target = coords[n] || coords[0];
-    if (target) {
-      setRolePos(target.x, target.y, 0);
-      toggleScene(target.sceneId);
-    }
+    }, 2000);
   }
 
   // 5. 资源就绪及初始化完毕后，正式开启 setInterval 驱动的主循环，150ms 周期执行一次
