@@ -944,6 +944,24 @@ export function increasePlayerAttribute(statId, value, roleId) {
   }
 }
 
+export function setPlayerStat(statId, value, roleId) {
+  const thread = Thread.currentThread;
+  const triggeringRoleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
+  const roleIndex = roleId === 0 ? triggeringRoleIndex : roleId - 1;
+  const role = state.roles[roleIndex];
+  if (role) {
+    const key = STAT_MAP[statId];
+    if (key) {
+      role[key] = intToShort(value);
+      if (role[key] < 0) role[key] = 0;
+      console.log(`[0x1A setPlayerStat] 角色 Index: ${roleIndex}, 属性: ${key}, 设定值: ${role[key]}`);
+    }
+  }
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 // 脚本指令集注册表
 export const scriptCodes = [];
 scriptCodes[0x00] = { func: finishCode, desc: '停止指令' };
@@ -961,6 +979,7 @@ scriptCodes[0x0A] = { func: confirmMenu, desc: '确认菜单选项' };
 scriptCodes[0x17] = { func: setPlayerExtraAttribute, desc: '设置主角装备附加属性' };
 scriptCodes[0x18] = { func: equipItem, desc: '穿戴装备物品' };
 scriptCodes[0x19] = { func: increasePlayerAttribute, desc: '永久增减玩家角色基础属性值' };
+scriptCodes[0x1A] = { func: setPlayerStat, desc: '设定玩家角色基础属性值' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };
