@@ -217,7 +217,7 @@ function onXY(x, y, half, dir) {
 
   for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
     const o = state.eventObjects[i];
-    if (!o || o.state === 0) continue;
+    if (!o || o.state === 0 || o.nouse !== 0) continue;
 
     const s = Math.abs(o.x - posX) + Math.abs(o.y - posY) * 2;
 
@@ -272,7 +272,7 @@ export function onBlank() {
 
     for (let j = state.startEventId + 1; j <= state.endEventId; j++) {
       const o = state.eventObjects[j];
-      if (!o || o.state === 0) continue;
+      if (!o || o.state === 0 || o.nouse !== 0) continue;
 
       // 只处理 Search 模式（trigMode 1-3），且检查点索引不超过该模式允许的范围
       if (o.trigMode < 1 || o.trigMode > 3 || o.trigMode * 6 - 4 < i) continue;

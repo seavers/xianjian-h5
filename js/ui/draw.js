@@ -109,7 +109,7 @@ export function drawMapBack() {
 export function drawEventObject() {
   for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
     const o = state.eventObjects[i];
-    if (!o || o.mgoId === 0) continue;
+    if (!o || o.mgoId === 0 || o.nouse !== 0) continue;
 
     const mgo = loadMgo(o.mgoId, o.frame);
     if (!mgo) continue;

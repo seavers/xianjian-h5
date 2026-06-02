@@ -77,6 +77,14 @@ export const Script = {
       // 激活后继续向下运行，以便在同一个 tick 中直接步进该脚本，保持高响应性
     }
 
+    // 步骤 4.5：更新所有事件物体的 sVanishTime (即 nouse)
+    for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
+      const o = state.eventObjects[i];
+      if (o && o.nouse !== 0) {
+        o.nouse += (o.nouse < 0 ? 1 : -1);
+      }
+    }
+
     // 步骤 5：步进当前活跃的非 auto 类主线程（进入场景脚本、交互触发脚本等）
     const t = Script.activeThread;
     if (t && !t.finish) {
@@ -92,7 +100,7 @@ export const Script = {
 
       for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
         const o = state.eventObjects[i];
-        if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc') continue;
+        if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc' || o.nouse !== 0) continue;
 
         if (o.autoScr) {
           // 如果还没有 thread 或者 thread 已经结束，则惰性创建 thread 状态记录，但不当场运行

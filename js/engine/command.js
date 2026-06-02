@@ -1110,9 +1110,18 @@ export function teleportOut(failScriptId) {
 export function nullifyObject() {
   const obj = this;
   if (obj) {
-    obj.vanishTime = 15;
+    obj.nouse = 15;
   }
   console.log(`[0x4B nullifyObject] 暂时隐蔽事件物体 15 帧, 实体: ${obj?.id || '自身'}`);
+}
+
+export function hideEventObject(frames) {
+  const obj = this;
+  if (obj) {
+    obj.state *= -1;
+    obj.nouse = frames ? frames : 800;
+  }
+  console.log(`[0x52 hideEventObject] 隐藏事件物体, 实体: ${obj?.id || '自身'}, 帧数: ${obj?.nouse || 800}`);
 }
 
 export async function waitForKey() {
@@ -1212,6 +1221,7 @@ scriptCodes[0x4B] = { func: nullifyObject, desc: '暂时隐蔽事件物体15帧'
 scriptCodes[0x4D] = { func: waitForKey, desc: '等待按键' };
 scriptCodes[0x4E] = { func: loadLastSavedGame, desc: '重载上一个存档游戏' };
 scriptCodes[0x4F] = { func: fadeToRed, desc: '渐变屏幕至红色' };
+scriptCodes[0x52] = { func: hideEventObject, desc: '暂时隐藏事件物体' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };
