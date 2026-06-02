@@ -117,6 +117,17 @@ export function setRoleGroup(r1, r2, r3) {
   }
 }
 
+export function setObjectLayer(param1, layer) {
+  const obj = this;
+  if (obj) {
+    obj.layer = intToShort(layer);
+  }
+  console.log(`[0x7E setObjectLayer] 设置事件物体图层, 实体: ${obj?.id || '自身'}, 图层值: ${obj?.layer}`);
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
+}
+
 export function walkHeroByOffset(dx, dy, layer) {
   // 步骤 1：将传入的无符号短整型平移量 dx, dy 转换为 16 位有符号像素偏移量
   const offsetX = intToShort(dx);
@@ -1390,6 +1401,7 @@ scriptCodes[0x11] = { func: npcWalk3, desc: 'NPC慢速移动至坐标' };
 scriptCodes[0x12] = { func: setNpcPos, desc: '设置NPC位置' };
 scriptCodes[0x13] = { func: setNpcPosAbsolute, desc: '设置NPC绝对像素位置' };
 scriptCodes[0x7D] = { func: setNpcMove, desc: 'NPC偏移位置' };
+scriptCodes[0x7E] = { func: setObjectLayer, desc: '设置事件物体高度层级' };
 scriptCodes[0x3F] = { func: teamWalk, desc: '队伍慢速骑乘到坐标' };
 scriptCodes[0x44] = { func: teamWalk2, desc: '队伍常速骑乘到坐标' };
 scriptCodes[0x97] = { func: teamWalk3, desc: '队伍快速骑乘到坐标' };
