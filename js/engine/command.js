@@ -861,6 +861,24 @@ export async function confirmMenu(failScriptId) {
   }
 }
 
+export function setPlayerExtraAttribute(partId, statId, value) {
+  const thread = Thread.currentThread;
+  const triggeringRoleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
+  const roleIndex = (this && this.type === 'role') ? this.index : triggeringRoleIndex;
+  const role = state.roles[roleIndex];
+  if (role) {
+    if (!role.extraAttributes) {
+      role.extraAttributes = {};
+    }
+    const part = partId - 0x0B;
+    if (!role.extraAttributes[part]) {
+      role.extraAttributes[part] = {};
+    }
+    role.extraAttributes[part][statId] = value;
+  }
+  console.log(`[0x17 setPlayerExtraAttribute] 角色 Index: ${roleIndex}, 装备部件: ${partId - 0x0B}, 属性ID: ${statId}, 属性值: ${value}`);
+}
+
 // 脚本指令集注册表
 export const scriptCodes = [];
 scriptCodes[0x00] = { func: finishCode, desc: '停止指令' };
@@ -874,6 +892,8 @@ scriptCodes[0x07] = { func: startBattle, desc: '触发战斗并处理胜利逃�
 scriptCodes[0x08] = { func: replaceEntry, desc: '替换交互脚本入口' };
 scriptCodes[0x09] = { func: updateScreenAndWait, desc: '重绘屏幕并等待' };
 scriptCodes[0x0A] = { func: confirmMenu, desc: '确认菜单选项' };
+
+scriptCodes[0x17] = { func: setPlayerExtraAttribute, desc: '设置主角装备附加属性' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };
