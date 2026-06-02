@@ -284,6 +284,10 @@ export function setPartySamePosition() {
   }
 }
 
+export function skipAutoScript() {
+  console.log(`[0xA7 skipAutoScript] 空指令，直接跳过`);
+}
+
 export function walkHeroByOffset(dx, dy, layer) {
   // 步骤 1：将传入的无符号短整型平移量 dx, dy 转换为 16 位有符号像素偏移量
   const offsetX = intToShort(dx);
@@ -1565,6 +1569,7 @@ scriptCodes[0x98] = { func: setFollower, desc: '设置队伍随行临时跟随�
 scriptCodes[0x99] = { func: changeSceneMap, desc: '切换指定场景所用地图' };
 scriptCodes[0x9B] = { func: fadeToCurrentScene, desc: '屏幕渐变淡入当前场景' };
 scriptCodes[0xA1] = { func: setPartySamePosition, desc: '使队伍全员位置和主角李逍遥重合' };
+scriptCodes[0xA7] = { func: skipAutoScript, desc: '空指令直接跳过' };
 scriptCodes[0x7A] = { func: teamWalk2, desc: '队伍快速行走至坐标' };
 scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
 
