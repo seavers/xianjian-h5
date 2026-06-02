@@ -796,6 +796,19 @@ export async function fadeOutScene(fadeOutSpeed) {
   await fadeOut();
 }
 
+export async function fadeInScene(speed) {
+  // 步骤 1：利用 intToShort 将传入的无符号短整型 speed 转换为有符号短整型，并设定渐变速度
+  const s = intToShort(speed);
+  state.fadeOutSpeed = s > 0 ? s : 1;
+  state.needToFadeIn = false;
+
+  console.log(`[0x51 fadeInScene] 开始淡入当前屏幕，速度: ${state.fadeOutSpeed}`);
+
+  // 步骤 2：使用 await 异步等待淡入效果播放完毕，随后同步进行屏幕绘制更新
+  await fadeIn();
+  await update(true);
+}
+
 export async function fadeScreen(speed) {
   // 步骤 1：利用 intToShort 将传入 the 无符号短整型 speed 转换为有符号短整型速度 s
   const s = intToShort(speed);
@@ -1571,6 +1584,7 @@ scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
 
 scriptCodes[0x59] = { func: setSceneId, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
+scriptCodes[0x51] = { func: fadeInScene, desc: '场景淡入' };
 scriptCodes[0x54] = { func: useNightPalette, desc: '切换使用黑夜调色板' };
 scriptCodes[0x55] = { func: addMagic, desc: '使主角/伙伴习得新仙术' };
 scriptCodes[0x56] = { func: removeMagic, desc: '移除主角/伙伴的仙术' };
