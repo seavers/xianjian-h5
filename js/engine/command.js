@@ -1092,6 +1092,19 @@ export function curePoisonByLevel(toAll, maxLevel) {
   }
 }
 
+export function teleportOut(failScriptId) {
+  const scene = state.scenes[state.sceneId];
+  if (scene && scene.exitScriptId) {
+    Script.start(scene.exitScriptId, state.roles[0], 'trig');
+  } else {
+    if (failScriptId) {
+      Script.next(failScriptId);
+      return Script.GOTO_SCRIPT;
+    }
+  }
+  console.log(`[0x38 teleportOut] 执行传送出当前迷宫场景指令, 传送脚本: ${scene?.exitScriptId || '无'}`);
+}
+
 export function setPlayerStatus(statusId, rounds) {
   const thread = Thread.currentThread;
   const roleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
@@ -1144,6 +1157,7 @@ scriptCodes[0x2B] = { func: curePoisonByKind, desc: '根据毒物ID解玩家毒'
 scriptCodes[0x2C] = { func: curePoisonByLevel, desc: '根据级别解玩家毒' };
 scriptCodes[0x2D] = { func: setPlayerStatus, desc: '附加异常状态给角色' };
 scriptCodes[0x2F] = { func: removePlayerStatus, desc: '消除角色异常状态' };
+scriptCodes[0x38] = { func: teleportOut, desc: '传送出当前迷宫场景' };
 
 scriptCodes[0x0B] = { func: setSouthDir, desc: '主角/NPC面向南边' };
 scriptCodes[0x0C] = { func: setWestDir, desc: '主角/NPC面向西边' };
