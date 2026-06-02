@@ -128,6 +128,34 @@ export function setObjectLayer(param1, layer) {
   }
 }
 
+export function jumpIfNotInZone(targetObjectId, zone, failScriptId) {
+  const pCurrent = this;
+  if (!pCurrent) return;
+
+  if (targetObjectId <= state.startEventId || targetObjectId > state.endEventId) {
+    console.log(`[0x83 jumpIfNotInZone] 目标事件物体 ID ${targetObjectId} 不在当前场景内，跳转至脚本: ${failScriptId}`);
+    Script.next(failScriptId);
+    return Script.GOTO_SCRIPT;
+  }
+
+  const pEvtObj = state.eventObjects[targetObjectId];
+  if (!pEvtObj) return;
+
+  const dx = pEvtObj.x - pCurrent.x;
+  const dy = pEvtObj.y - pCurrent.y;
+
+  const distance = Math.abs(dx) + Math.abs(dy * 2);
+  const limit = zone * 32 + 16;
+
+  if (distance >= limit) {
+    console.log(`[0x83 jumpIfNotInZone] 目标事件物体 ID ${targetObjectId} 曼哈顿距离为 ${distance}，超出限制 ${limit} (Zone: ${zone})，跳转至脚本: ${failScriptId}`);
+    Script.next(failScriptId);
+    return Script.GOTO_SCRIPT;
+  }
+
+  console.log(`[0x83 jumpIfNotInZone] 目标事件物体 ID ${targetObjectId} 曼哈顿距离为 ${distance}，在限制 ${limit} 内，不跳转`);
+}
+
 export function walkHeroByOffset(dx, dy, layer) {
   // 步骤 1：将传入的无符号短整型平移量 dx, dy 转换为 16 位有符号像素偏移量
   const offsetX = intToShort(dx);
@@ -1423,6 +1451,7 @@ scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
+scriptCodes[0x83] = { func: jumpIfNotInZone, desc: '若事件物体不在当前事件物体特定区域则跳转' };
 scriptCodes[0x85] = { func: delayPeriod, desc: '非阻塞时序延迟' };
 scriptCodes[0x4C] = { func: sleepFrame, desc: '阻塞等待特定帧数' };
 
