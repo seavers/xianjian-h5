@@ -3,7 +3,7 @@ import { Script } from './script.js';
 import { Thread } from './thread.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
-import { update, drawMapAll } from '../ui/draw.js';
+import { update, drawMapAll, canWalk } from '../ui/draw.js';
 import { fadeIn, fadeOut, fadeScreenToRed } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
 import { registerBlank } from '../ui/input.js';
@@ -154,6 +154,46 @@ export function jumpIfNotInZone(targetObjectId, zone, failScriptId) {
   }
 
   console.log(`[0x83 jumpIfNotInZone] 目标事件物体 ID ${targetObjectId} 曼哈顿距离为 ${distance}，在限制 ${limit} 内，不跳转`);
+}
+
+export function placeItemUsedAsObject(targetObjectId, stateVal, failScriptId) {
+  const pCurrent = this;
+  if (!pCurrent) return;
+
+  if (targetObjectId <= state.startEventId || targetObjectId > state.endEventId) {
+    console.log(`[0x84 placeItemUsedAsObject] 目标事件物体 ID ${targetObjectId} 不在当前场景内，跳转至脚本: ${failScriptId}`);
+    Script.next(failScriptId);
+    return Script.GOTO_SCRIPT;
+  }
+
+  // 1. 计算主角前方的坐标
+  let tx = state.roles[0].x;
+  let ty = state.roles[0].y;
+  const dir = state.roles[0].dir;
+  tx += (dir === 1 || dir === 0) ? -16 : 16;
+  ty += (dir === 1 || dir === 2) ? -8 : 8;
+
+  // 2. 转换为瓦片坐标，进行障碍检测
+  const thalf = (tx % 32) ? 1 : 0;
+  const txTile = Math.floor(tx / 32);
+  const tyTile = Math.floor(ty / 16);
+
+  if (canWalk(txTile, tyTile, thalf) !== 0) {
+    console.log(`[0x84 placeItemUsedAsObject] 主角前方 (瓦片: ${txTile}, ${tyTile}, half: ${thalf}) 存在障碍物，不能放置，跳转至脚本: ${failScriptId}`);
+    Script.next(failScriptId);
+    return Script.GOTO_SCRIPT;
+  }
+
+  // 3. 放置当前物体
+  pCurrent.x = tx;
+  pCurrent.y = ty;
+  pCurrent.state = stateVal;
+
+  console.log(`[0x84 placeItemUsedAsObject] 成功放置事件物体，实体 ID: ${pCurrent.id}, 新位置像素: (${tx}, ${ty}), 状态: ${stateVal}`);
+  
+  if (window.onSceneUpdate) {
+    window.onSceneUpdate();
+  }
 }
 
 export function walkHeroByOffset(dx, dy, layer) {
@@ -1452,6 +1492,7 @@ scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件�
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
 scriptCodes[0x83] = { func: jumpIfNotInZone, desc: '若事件物体不在当前事件物体特定区域则跳转' };
+scriptCodes[0x84] = { func: placeItemUsedAsObject, desc: '放置当前使用道具为事件物体于场景' };
 scriptCodes[0x85] = { func: delayPeriod, desc: '非阻塞时序延迟' };
 scriptCodes[0x4C] = { func: sleepFrame, desc: '阻塞等待特定帧数' };
 
