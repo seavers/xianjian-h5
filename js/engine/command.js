@@ -206,7 +206,7 @@ function walkOneStep(dir) {
 }
 
 export function setEastDir(objId) {
-  Script.sleep(2);
+  walkOneStep.call(this, 3);
 }
 
 export function setWestDir(objId) {
