@@ -29,9 +29,9 @@ export function setRoleIndex(dir, frame, roleId) {
   state.roles[roleId].frame = frame;
   state.roles[roleId].count = -1;
 
-  if (dir) {
-    refreshRoleCount(state.roles[roleId]);
-  }
+  // if (dir) {
+  //   refreshRoleCount(state.roles[roleId]);
+  // }
 }
 
 export function calcMap() {
@@ -47,6 +47,11 @@ export function calcMap() {
 }
 
 export function refreshRoleCount(role) {
+  role.mgoCount = loadMgoCount(role.mgoId);
+  if (role.mgoCount <= 3) {
+    return ;
+  }
+
   role.count = role.count === undefined ? -1 : role.count; // 默认为 -1
   const count = role.count++;
   let frame = count === -1 ? 0 : (count % 2 + 1);
@@ -324,9 +329,9 @@ export function setNpcTile(objId, dir, frame) {
   obj.dir = dir;
   obj.frame = frame;
   obj.count = -1; // 重置 count
-  if (dir) {
-    refreshRoleCount(obj);
-  }
+  // if (dir) {
+  //   refreshRoleCount(obj);
+  // }
 }
 
 export function setObjectStatus(objId, stateVal) {
@@ -435,7 +440,7 @@ export function setNpcDir(dir) {
     this.frame = dir;
   } else {
     this.dir = dir;
-    refreshRoleCount(this);
+    //refreshRoleCount(this);
   }
 }
 
