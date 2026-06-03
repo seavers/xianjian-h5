@@ -480,27 +480,23 @@ export function npcWalk3(x, y, half) {
 }
 
 export function teamWalk(x, y, half) {
-  for(var i = 0; i < state.roles.length; i++) {
-    return delayOrNext(Npc.animTeam(state.roles[i], x, y, half, 2));
-  }
+  // 步骤 1：让队长开始行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
+  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 2));
 }
 
 export function teamWalk2(x, y, half) {
-  for(var i = 0; i < state.roles.length; i++) {
-    return delayOrNext(Npc.animTeam(state.roles[i], x, y, half, 4));
-  }
+  // 步骤 1：让队长开始快速行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
+  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 4));
 }
 
 export function teamWalk3(x, y, half) {
-  for(var i = 0; i < state.roles.length; i++) {
-    return delayOrNext(Npc.animTeam(state.roles[i], x, y, half, 6));
-  }
+  // 步骤 1：让队长开始中速行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
+  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 6));
 }
 
 export function teamWalk4(x, y, half) {
-  for(var i = 0; i < state.roles.length; i++) {
-    return delayOrNext(Npc.animTeam(state.roles[i], x, y, half, 8));
-  }
+  // 步骤 1：让队长开始极速行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
+  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 8));
 }
 
 export function teamRide(x, y, half) {

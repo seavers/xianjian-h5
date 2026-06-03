@@ -193,11 +193,55 @@ export function drawMapFront() {
 }
 
 export function drawRole() {
-  const role = state.roles[0];
-  const roleImg = loadMgo(role.tileId, role.frame);
-  if (roleImg) {
-    role.tile = roleImg;
-    tiles.push(role);
+  const leader = state.roles[0];
+  
+  // 步骤 1：如果有跟随者，根据主角当前的方向和索引更新跟随者的坐标与状态，使其依次排列在身后
+  if (leader) {
+    for (let i = 1; i < state.roles.length; i++) {
+      const follower = state.roles[i];
+      if (follower) {
+        let dx = 1;
+        let dy = 1;
+        
+        switch (leader.dir) {
+          case 0: // 下 (South)
+            dx = 1;
+            dy = -1;
+            break;
+          case 1: // 左 (West)
+            dx = 1;
+            dy = 1;
+            break;
+          case 2: // 上 (North)
+            dx = -1;
+            dy = 1;
+            break;
+          case 3: // 右 (East)
+            dx = -1;
+            dy = -1;
+            break;
+        }
+
+        follower.x = leader.x + dx * i * 32;
+        follower.y = leader.y + dy * i * 16;
+        follower.dir = leader.dir;
+        follower.frame = leader.frame;
+        follower.layer = leader.layer;
+      }
+    }
+  }
+
+  // 步骤 2：遍历队伍中的所有成员，加载其对应的 MGO 图像并加入渲染队列
+  for (let i = 0; i < state.roles.length; i++) {
+    const role = state.roles[i];
+    if (role) {
+      const roleImg = loadMgo(role.tileId, role.frame);
+      if (roleImg) {
+        role.tile = roleImg;
+        role.type = 'role';
+        tiles.push(role);
+      }
+    }
   }
 }
 
