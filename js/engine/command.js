@@ -960,12 +960,20 @@ export function stopCode() {
 }
 
 export function changeScript(scriptId, count) {
-  if (!count || ++this.idleFrameCountAuto < count) {
-    // 这里确实得使用 -1 ，不然小孩跳绳转不起来
-    Script.next(scriptId);
-    return Script.CHANGE_SCRIPT;
+  // 步骤 1：根据当前线程类型决定空闲计数器属性名，并在物体上进行初始化
+  const isAuto = Thread.currentThread?.type === 'auto';
+  const countKey = isAuto ? 'wScriptIdleFrameCountAuto' : 'nScriptIdleFrame';
+
+  if (!this[countKey]) {
+    this[countKey] = 0;
+  }
+
+  // 步骤 2：若无需等待或空闲帧计数未达到上限，则终止运行并改写触发入口，否则清零计数器继续向下执行
+  if (!count || ++this[countKey] < count) {
+    Script.stop(scriptId);
+    return Script.STOP_SCRIPT;
   } else {
-    this.idleFrameCountAuto = 0;
+    this[countKey] = 0;
     return Script.NEXT_SCRIPT;
   }
 }
