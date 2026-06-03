@@ -281,7 +281,19 @@ export function setPartySamePosition() {
     }
   }
 
-  console.log(`[0xA1 setPartySamePosition] 队伍所有成员坐标已重置到跟主角重合 (像素: ${leader.x}, ${leader.y - 1})`);
+  // 步骤 1：重置移动历史轨迹，使其所有点都重合在主角当前坐标上，以实现跟随者重合且随移动逐渐走出
+  state.roleHistory = [];
+  for (let i = 0; i <= state.roles.length; i++) {
+    state.roleHistory.push({
+      x: leader.x,
+      y: leader.y,
+      dir: leader.dir,
+      frame: leader.frame,
+      layer: leader.layer
+    });
+  }
+
+  console.log(`[0xA1 setPartySamePosition] 队伍所有成员坐标已重置到跟主角重合 (像素: ${leader.x}, ${leader.y - 1})，轨迹已重合`);
 
   if (window.onSceneUpdate) {
     window.onSceneUpdate();

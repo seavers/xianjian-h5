@@ -192,46 +192,121 @@ export function drawMapFront() {
   }
 }
 
+// 根据主角当前的朝向初始化跟随者默认相对位置的轨迹点
+function initRoleHistory(leader) {
+  state.roleHistory = [];
+
+  let dx = 1;
+  let dy = 1;
+  switch (leader.dir) {
+    case 0: // 下 (South)
+      dx = 1;
+      dy = -1;
+      break;
+    case 1: // 左 (West)
+      dx = 1;
+      dy = 1;
+      break;
+    case 2: // 上 (North)
+      dx = -1;
+      dy = 1;
+      break;
+    case 3: // 右 (East)
+      dx = -1;
+      dy = -1;
+      break;
+  }
+
+  // 填充从后往前的历史路径点，使每个跟随者默认位于身后相隔一格瓦片距离的位置
+  for (let i = 0; i <= state.roles.length; i++) {
+    state.roleHistory.push({
+      x: leader.x + dx * i * 32,
+      y: leader.y + dy * i * 16,
+      dir: leader.dir,
+      frame: leader.frame,
+      layer: leader.layer
+    });
+  }
+}
+
+// 在轨迹历史中获取累计 Y 像素距离为 targetDist 的历史坐标和状态
+function getPositionAtDistance(history, targetDist) {
+  if (history.length === 0) return null;
+  if (history.length === 1) return history[0];
+
+  let accumulatedDist = 0;
+  for (let j = 0; j < history.length - 1; j++) {
+    const p1 = history[j];
+    const p2 = history[j + 1];
+    const segmentDist = Math.abs(p1.y - p2.y);
+
+    if (accumulatedDist + segmentDist >= targetDist) {
+      const needed = targetDist - accumulatedDist;
+      const ratio = segmentDist === 0 ? 0 : needed / segmentDist;
+      return {
+        x: p1.x + (p2.x - p1.x) * ratio,
+        y: p1.y + (p2.y - p1.y) * ratio,
+        dir: p2.dir,
+        frame: p2.frame,
+        layer: p2.layer
+      };
+    }
+    accumulatedDist += segmentDist;
+  }
+  return history[history.length - 1];
+}
+
 export function drawRole() {
   const leader = state.roles[0];
   
-  // 步骤 1：如果有跟随者，根据主角当前的方向和索引更新跟随者的坐标与状态，使其依次排列在身后
+  // 步骤 1：记录并更新主角移动轨迹，用于跟随者平滑追踪运动
+  if (leader) {
+    const dist = state.roleHistory.length > 0
+      ? Math.abs(leader.x - state.roleHistory[0].x) + Math.abs(leader.y - state.roleHistory[0].y) * 2
+      : 0;
+
+    if (state.roleHistory.length === 0 || dist > 64) {
+      // 轨迹为空或发生大范围瞬移，重置初始化跟随者轨迹
+      initRoleHistory(leader);
+    } else if (dist > 0) {
+      // 主角移动时，记录新坐标至历史队列头部，并限制最大轨迹缓存长度
+      state.roleHistory.unshift({
+        x: leader.x,
+        y: leader.y,
+        dir: leader.dir,
+        frame: leader.frame,
+        layer: leader.layer
+      });
+      if (state.roleHistory.length > 200) {
+        state.roleHistory.pop();
+      }
+    } else {
+      // 原地未动时，实时同步当前的动画帧、方向与层级
+      state.roleHistory[0].dir = leader.dir;
+      state.roleHistory[0].frame = leader.frame;
+      state.roleHistory[0].layer = leader.layer;
+    }
+  }
+
+  // 步骤 2：如果有跟随者，根据累计移动的 Y 像素距离从历史轨迹中获取其位置和状态
   if (leader) {
     for (let i = 1; i < state.roles.length; i++) {
       const follower = state.roles[i];
       if (follower) {
-        let dx = 1;
-        let dy = 1;
-        
-        switch (leader.dir) {
-          case 0: // 下 (South)
-            dx = 1;
-            dy = -1;
-            break;
-          case 1: // 左 (West)
-            dx = 1;
-            dy = 1;
-            break;
-          case 2: // 上 (North)
-            dx = -1;
-            dy = 1;
-            break;
-          case 3: // 右 (East)
-            dx = -1;
-            dy = -1;
-            break;
+        const targetDist = 16 * i; // 每个跟随者相隔 16 像素 Y 距离（即一格瓦片距离）
+        const pos = getPositionAtDistance(state.roleHistory, targetDist);
+        if (pos) {
+          follower.x = pos.x;
+          follower.y = pos.y;
+          follower.dir = pos.dir;
+          follower.frame = pos.frame;
+          follower.layer = pos.layer;
         }
-
-        follower.x = leader.x + dx * i * 32;
-        follower.y = leader.y + dy * i * 16;
-        follower.dir = leader.dir;
-        follower.frame = leader.frame;
-        follower.layer = leader.layer;
       }
     }
   }
 
-  // 步骤 2：遍历队伍中的所有成员，加载其对应的 MGO 图像并加入渲染队列
+  // 步骤 3：遍历队伍中的所有成员，加载其对应的 MGO 图像并加入渲染队列
   for (let i = 0; i < state.roles.length; i++) {
     const role = state.roles[i];
     if (role) {

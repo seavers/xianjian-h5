@@ -85,6 +85,9 @@ export const state = {
   // 当前被高亮追踪的 NPC ID
   highlightNpcId: null,
 
+  // 主角移动历史轨迹，用于跟随者平滑跟随
+  roleHistory: [],
+
   // 各层 Canvas 上下文引用
   contexts: {
     main: null,
