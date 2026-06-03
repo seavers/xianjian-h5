@@ -99,7 +99,7 @@ export function saveArchive(slotId) {
   view.setUint16(0, 1, true); // wSavedTimes
   view.setUint16(2, state.roles[0].x, true); // wViewportX
   view.setUint16(4, state.roles[0].y, true); // wViewportY
-  view.setUint16(6, state.roles.length || 1, true); // nPartyMember
+  view.setUint16(6, state.roles.length > 0 ? state.roles.length - 1 : 0, true); // nPartyMember
   view.setUint16(8, state.sceneId, true); // wNumScene
   view.setUint16(10, state.fNightPalette ? 0x180 : 0, true); // wPaletteOffset
   view.setUint16(12, state.roles[0].dir, true); // wPartyDirection
@@ -119,6 +119,25 @@ export function saveArchive(slotId) {
 
   // 步骤 3：写入金钱数据 (offset 40)
   view.setUint32(40, state.money || 0, true);
+
+  // 步骤 3.5：写入队伍成员信息 rgParty (offset 44)
+  for (let i = 0; i < 5; i++) {
+    const role = state.roles[i];
+    const offsetParty = 44 + i * 10;
+    if (role) {
+      view.setUint16(offsetParty + 0, role.index, true); // wPlayerRole (0-based)
+      view.setInt16(offsetParty + 2, role.x, true); // x (signed)
+      view.setInt16(offsetParty + 4, role.y, true); // y (signed)
+      view.setUint16(offsetParty + 6, role.frame, true); // wFrame
+      view.setUint16(offsetParty + 8, role.tileId || 0, true); // wImageOffset
+    } else {
+      view.setUint16(offsetParty + 0, 0, true);
+      view.setInt16(offsetParty + 2, 0, true);
+      view.setInt16(offsetParty + 4, 0, true);
+      view.setUint16(offsetParty + 6, 0, true);
+      view.setUint16(offsetParty + 8, 0, true);
+    }
+  }
 
   // 步骤 4：重构背包道具 rgInventory (offset 1728)
   const itemCounts = {};
@@ -244,9 +263,35 @@ function parseSaveData(byteArray) {
   const nFollower = view.nextShort();
   view.skipByte(6); // 跳过 rgwReserved2[3]
 
-  // 2. 读取资金，并跳过 rgParty, rgTrail, Exp, PlayerRoles, rgPoisonStatus
+  // 2. 读取资金，并读取 rgParty，跳过 rgTrail, Exp, PlayerRoles, rgPoisonStatus
   const dwCash = view.nextInt();
-  view.skipByte(50); // rgParty (5 * 10B)
+  
+  const savedRoles = [];
+  const partySize = nPartyMember + 1; // nPartyMember 实际为 wMaxPartyMemberIndex，所以全队人数为 +1
+  for (let i = 0; i < 5; i++) {
+    const wPlayerRole = view.nextShort();
+    let rx = view.nextShort();
+    rx = rx >= 32768 ? rx - 65536 : rx;
+    let ry = view.nextShort();
+    ry = ry >= 32768 ? ry - 65536 : ry;
+    const wFrame = view.nextShort();
+    const wImageOffset = view.nextShort(); // 对应 tileId
+    
+    if (i < partySize) {
+      savedRoles.push({
+        type: 'role',
+        x: rx,
+        y: ry,
+        layer: wLayer * 8,
+        tileId: wImageOffset,
+        frame: wFrame,
+        dir: wPartyDirection,
+        index: wPlayerRole,
+        count: 0
+      });
+    }
+  }
+  
   view.skipByte(30); // rgTrail (5 * 6B)
   view.skipByte(384); // Exp (ALLEXPERIENCE: 384B)
   view.skipByte(900); // PlayerRoles (900B)
@@ -346,9 +391,7 @@ function parseSaveData(byteArray) {
   // 7. 同步覆盖还原全局 state 的具体核心属性
   state.money = dwCash;
   state.ownItems = ownItems;
-  state.roles[0].x = wViewportX;
-  state.roles[0].y = wViewportY;
-  state.roles[0].dir = wPartyDirection;
+  state.roles = savedRoles;
   state.mapX = wViewportX;
   state.mapY = wViewportY;
   state.mx = Math.floor(wViewportX / 32);
@@ -358,6 +401,7 @@ function parseSaveData(byteArray) {
   state.chaseRange = wChaseRange;
   state.chasespeedChangeCycles = wChasespeedChangeCycles;
   state.nFollower = nFollower;
+  state.roleHistory = []; // 清空移动历史以便起步重新计算
 
   const scene = state.scenes[wNumScene];
   if (scene) {
