@@ -38,58 +38,229 @@ function extractArrayBuffer(byteArray) {
   );
 }
 
+// ==================== 💽 IndexedDB 存档引擎核心实现 ====================
+const DB_NAME = 'PAL_DB';
+const STORE_NAME = 'PAL_SAVES';
+const DB_VERSION = 1;
+
+let db = null;
+let dbPromise = null;
+
+// 步骤 1：初始化并打开 IndexedDB 数据库
+function initDB() {
+  if (dbPromise) return dbPromise;
+
+  dbPromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = (event) => {
+      const database = event.target.result;
+      if (!database.objectStoreNames.contains(STORE_NAME)) {
+        database.createObjectStore(STORE_NAME);
+      }
+    };
+
+    request.onsuccess = (event) => {
+      db = event.target.result;
+      resolve(db);
+    };
+
+    request.onerror = (event) => {
+      console.error('[IndexedDB] 数据库打开失败:', event.target.error);
+      reject(event.target.error);
+    };
+  });
+
+  return dbPromise;
+}
+
+// 步骤 2：检查并从 localStorage 迁移已有存档数据至 IndexedDB
+async function checkAndMigrate() {
+  if (localStorage.getItem('PAL_SAVEDB_MIGRATED') === 'true') {
+    return;
+  }
+
+  try {
+    const database = await initDB();
+    const transaction = database.transaction([STORE_NAME], 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+
+    // 遍历 localStorage 查找所有符合命名规则的存档槽位并复制迁移
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('PAL_SAVE_SLOT_')) {
+        const base64Data = localStorage.getItem(key);
+        if (base64Data) {
+          try {
+            const buffer = base64ToArrayBuffer(base64Data);
+            store.put(buffer, key);
+            console.log(`[IndexedDB Migration] 成功迁移存档: ${key}`);
+          } catch (e) {
+            console.error(`[IndexedDB Migration] 迁移存档失败: ${key}`, e);
+          }
+        }
+      }
+    }
+
+    // 等待迁移事务顺利全部提交完成
+    await new Promise((resolve, reject) => {
+      transaction.oncomplete = resolve;
+      transaction.onerror = (event) => reject(event.target.error);
+    });
+
+    localStorage.setItem('PAL_SAVEDB_MIGRATED', 'true');
+    console.log('[IndexedDB Migration] 所有 localStorage 存档成功复制到 indexedDB！');
+  } catch (e) {
+    console.error('[IndexedDB Migration] 迁移过程发生错误:', e);
+  }
+}
+
+// 步骤 3：获取指定槽位存档的异步数据封装
+async function getArchiveData(slotId) {
+  await checkAndMigrate();
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction([STORE_NAME], 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const key = `PAL_SAVE_SLOT_${slotId}`;
+    const request = store.get(key);
+
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+  });
+}
+
+// 步骤 4：保存指定槽位存档的异步数据封装
+async function saveArchiveData(slotId, buffer) {
+  await checkAndMigrate();
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction([STORE_NAME], 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const key = `PAL_SAVE_SLOT_${slotId}`;
+    const request = store.put(buffer, key);
+
+    request.onsuccess = () => {
+      resolve();
+    };
+
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+  });
+}
+
+// 步骤 5：异步获取所有键中最大的存档槽位 ID
+export async function getMaxSaveSlotId() {
+  await checkAndMigrate();
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction([STORE_NAME], 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.getAllKeys();
+
+    request.onsuccess = () => {
+      let maxId = 0;
+      const keys = request.result;
+      for (const key of keys) {
+        if (typeof key === 'string') {
+          const match = key.match(/^PAL_SAVE_SLOT_(\d+)$/);
+          if (match) {
+            const id = parseInt(match[1]);
+            if (id > maxId) {
+              maxId = id;
+            }
+          }
+        }
+      }
+      resolve(maxId);
+    };
+
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+  });
+}
+
+// 触发首次运行的后台数据库检查与自动迁移
+checkAndMigrate();
+
 /**
- * 读档逻辑：优先从 localStorage 加载，如无本地进度则降级从服务端网络下载
+ * 读档逻辑：优先从 indexedDB 加载，如无本地进度则降级从服务端网络下载
  */
 export function loadArchive(slotId, callback) {
   state.currentSaveSlot = slotId;
-  const key = `PAL_SAVE_SLOT_${slotId}`;
-  const base64Data = localStorage.getItem(key);
 
-  if (base64Data) {
-    console.log(`[Archive] 优先从本地 localStorage 发现进度: ${key}`);
-    try {
-      const buffer = base64ToArrayBuffer(base64Data);
-      const byteArray = new ByteArray(new Uint8Array(buffer));
-      
-      // 步骤 1：记录当前读取的 Buffer 作为后续保存的元数据基准底板
+  getArchiveData(slotId).then((buffer) => {
+    if (buffer) {
+      console.log(`[Archive] 优先从本地 indexedDB 发现进度: PAL_SAVE_SLOT_${slotId}`);
+      try {
+        const byteArray = new ByteArray(new Uint8Array(buffer));
+
+        // 步骤 1：记录当前读取的 Buffer 作为后续保存的元数据基准底板
+        lastLoadedBuffer = buffer;
+
+        // 步骤 2：对本地存档执行高精度二进制解包还原至全局 state
+        parseSaveData(byteArray);
+
+        console.log(`[Archive] 本地进度 #${slotId} 读取并还原成功！`);
+        if (callback) callback();
+        return;
+      } catch (e) {
+        console.error('[Archive] 本地存档解析失败，降级为服务端加载:', e);
+      }
+    }
+
+    const filename = `${slotId}.RPG`;
+    console.log(`[Archive] 本地进度未找到，正在从服务端下载: pal/${filename}`);
+
+    // 步骤 3：本地无进度，向服务端发起 AJAX 请求读取 .RPG 文件并解析
+    Lang.ajaxByteArray(filename, (byteArray) => {
+      if (!byteArray || byteArray.length === 0) {
+        console.error(`[Archive] 无法从服务端读取文件: ${filename}`);
+        return;
+      }
+
+      const buffer = extractArrayBuffer(byteArray);
       lastLoadedBuffer = buffer;
-      
-      // 步骤 2：对本地存档执行高精度二进制解包还原至全局 state
+
       parseSaveData(byteArray);
-      
-      console.log(`[Archive] 本地进度 #${slotId} 读取并还原成功！`);
+
+      console.log(`[Archive] 服务端进度 #${slotId} 下载并还原成功！`);
       if (callback) callback();
-      return;
-    } catch (e) {
-      console.error('[Archive] 本地存档解析失败，降级为服务端加载:', e);
-    }
-  }
+    });
+  }).catch((err) => {
+    console.error('[Archive] 读取 indexedDB 失败，降级为服务端加载:', err);
+    const filename = `${slotId}.RPG`;
+    Lang.ajaxByteArray(filename, (byteArray) => {
+      if (!byteArray || byteArray.length === 0) {
+        console.error(`[Archive] 无法从服务端读取文件: ${filename}`);
+        return;
+      }
 
-  const filename = `${slotId}.RPG`;
-  console.log(`[Archive] 本地进度未找到，正在从服务端下载: pal/${filename}`);
+      const buffer = extractArrayBuffer(byteArray);
+      lastLoadedBuffer = buffer;
 
-  // 步骤 3：本地无进度，向服务端发起 AJAX 请求读取 .RPG 文件并解析
-  Lang.ajaxByteArray(filename, (byteArray) => {
-    if (!byteArray || byteArray.length === 0) {
-      console.error(`[Archive] 无法从服务端读取文件: ${filename}`);
-      return;
-    }
+      parseSaveData(byteArray);
 
-    const buffer = extractArrayBuffer(byteArray);
-    lastLoadedBuffer = buffer;
-
-    parseSaveData(byteArray);
-    
-    console.log(`[Archive] 服务端进度 #${slotId} 下载并还原成功！`);
-    if (callback) callback();
+      console.log(`[Archive] 服务端进度 #${slotId} 下载并还原成功！`);
+      if (callback) callback();
+    });
   });
 }
 
 /**
- * 存档逻辑：按照标准的 DOS 存档格式序列化，并以 Base64 编码形式存入 localStorage
+ * 存档逻辑：按照标准的 DOS 存档格式序列化，并以二进制形式存入 indexedDB
  */
-export function saveArchive(slotId) {
+export function saveArchive(slotId, callback) {
   state.currentSaveSlot = slotId;
   // 步骤 1：初始化一块 183,488 字节的缓冲区块。若有元数据底板则拷贝，以防 H5 未用数据丢失
   const bytes = lastLoadedBuffer ? new Uint8Array(lastLoadedBuffer).slice(0) : new Uint8Array(183488);
@@ -227,14 +398,15 @@ export function saveArchive(slotId) {
     }
   }
 
-  // 步骤 8：序列化为 Base64 并安全持久化至 localStorage
-  const base64Data = arrayBufferToBase64(bytes.buffer);
-  const key = `PAL_SAVE_SLOT_${slotId}`;
-  localStorage.setItem(key, base64Data);
-
-  // 同步更新元数据底板，使得下一次写入在最新基础上叠加
-  lastLoadedBuffer = bytes.buffer;
-  console.log(`[Archive] 进度槽位 #${slotId} 成功序列化保存至本地 localStorage！`);
+  // 步骤 8：安全持久化至 indexedDB
+  saveArchiveData(slotId, bytes.buffer).then(() => {
+    // 同步更新元数据底板，使得下一次写入在最新基础上叠加
+    lastLoadedBuffer = bytes.buffer;
+    console.log(`[Archive] 进度槽位 #${slotId} 成功保存至本地 indexedDB！`);
+    if (callback) callback();
+  }).catch((err) => {
+    console.error(`[Archive] 保存进度至 indexedDB 失败:`, err);
+  });
 }
 
 /**

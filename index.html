@@ -3104,9 +3104,10 @@
 				slotId = parseInt(inputEl.value) || 1;
 			}
 			import('./js/esc/archive.js').then(({ saveArchive }) => {
-				saveArchive(slotId);
-				import('./js/ui/talk.js').then(({ Talk }) => {
-					Talk.talkTips(`⚙️ 调试控制：进度保存成功！当前进度 ID: #${slotId}`);
+				saveArchive(slotId, () => {
+					import('./js/ui/talk.js').then(({ Talk }) => {
+						Talk.talkTips(`⚙️ 调试控制：进度保存成功！当前进度 ID: #${slotId}`);
+					});
 				});
 			});
 		}
@@ -3132,23 +3133,18 @@
 		}
 
 		function debugSaveGameInstant() {
-			let maxId = 0;
-			for (let i = 0; i < localStorage.length; i++) {
-				const key = localStorage.key(i);
-				const match = key.match(/^PAL_SAVE_SLOT_(\d+)$/);
-				if (match) {
-					const id = parseInt(match[1]);
-					if (id > maxId) {
-						maxId = id;
+			import('./js/esc/archive.js').then(({ getMaxSaveSlotId }) => {
+				getMaxSaveSlotId().then((maxId) => {
+					const nextSlotId = Math.max(5, maxId) + 1;
+					debugSaveGame(nextSlotId);
+					const inputEl = document.getElementById('input-save-slot-id');
+					if (inputEl) {
+						inputEl.value = nextSlotId;
 					}
-				}
-			}
-			const nextSlotId = Math.max(5, maxId) + 1;
-			debugSaveGame(nextSlotId);
-			const inputEl = document.getElementById('input-save-slot-id');
-			if (inputEl) {
-				inputEl.value = nextSlotId;
-			}
+				}).catch((err) => {
+					console.error('获取最大存档槽位失败:', err);
+				});
+			});
 		}
 
 		window.debugSaveGame = debugSaveGame;
