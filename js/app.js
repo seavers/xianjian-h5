@@ -33,15 +33,13 @@ function initEventObject() {
       state: view.nextShort(),
       trigMode: view.nextShort(),
       mgoId: view.nextShort(),
-      frame: view.nextShort(),
+      frameWalkCount: view.nextShort(),
       dir: view.nextShort(),
-      unknown1: view.nextShort(),
-      unknown2: view.nextShort(),
-      modsRef: view.nextShort(),
-      unknown3: view.nextShort(),
-      unknown4: view.nextShort(),
-
-      scriptIdleFrameCountAuto: 0,
+      frame: view.nextShort(),
+      idleFrame: view.nextShort(),
+      ptrOffset: view.nextShort(),
+      frameAutoCount: view.nextShort(),
+      idleFrameCountAuto: view.nextShort(),
     };
     state.eventObjects[i + 1] = obj;
   }

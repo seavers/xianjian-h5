@@ -194,13 +194,13 @@ export function saveArchive(slotId) {
       view.setUint16(offset + i * 32 + 12, npc.state, true);
       view.setUint16(offset + i * 32 + 14, npc.trigMode, true);
       view.setUint16(offset + i * 32 + 16, npc.mgoId, true);
-      view.setUint16(offset + i * 32 + 18, npc.frame, true);
+      view.setUint16(offset + i * 32 + 18, npc.frameWalkCount, true);
       view.setUint16(offset + i * 32 + 20, npc.dir, true);
-      view.setUint16(offset + i * 32 + 22, npc.unknown1, true);
-      view.setUint16(offset + i * 32 + 24, npc.unknown2, true);
-      view.setUint16(offset + i * 32 + 26, npc.modsRef, true);
-      view.setUint16(offset + i * 32 + 28, npc.unknown3, true);
-      view.setUint16(offset + i * 32 + 30, npc.unknown4, true);
+      view.setUint16(offset + i * 32 + 22, npc.frame, true);
+      view.setUint16(offset + i * 32 + 24, npc.idleFrame, true);
+      view.setUint16(offset + i * 32 + 26, npc.ptrOffset, true);
+      view.setUint16(offset + i * 32 + 28, npc.frameAutoCount, true);
+      view.setUint16(offset + i * 32 + 30, npc.idleFrameCountAuto, true);
     } else {
       for (let f = 0; f < 16; f++) {
         view.setUint16(offset + i * 32 + f * 2, 0, true);
@@ -333,13 +333,13 @@ function parseSaveData(byteArray) {
       state.eventObjects[i + 1].state = sState;
       state.eventObjects[i + 1].trigMode = wTriggerMode;
       state.eventObjects[i + 1].mgoId = wSpriteNum;
-      state.eventObjects[i + 1].frame = nSpriteFrames;
+      state.eventObjects[i + 1].frameWalkCount = nSpriteFrames;
       state.eventObjects[i + 1].dir = wDirection;
-      state.eventObjects[i + 1].unknown1 = wCurrentFrameNum;
-      state.eventObjects[i + 1].unknown2 = nScriptIdleFrame;
-      state.eventObjects[i + 1].modsRef = wSpritePtrOffset;
-      state.eventObjects[i + 1].unknown3 = nSpriteFramesAuto;
-      state.eventObjects[i + 1].unknown4 = wScriptIdleFrameCountAuto;
+      state.eventObjects[i + 1].frame = wCurrentFrameNum;
+      state.eventObjects[i + 1].idleFrame = nScriptIdleFrame;
+      state.eventObjects[i + 1].ptrOffset = wSpritePtrOffset;
+      state.eventObjects[i + 1].frameAutoCount = nSpriteFramesAuto;
+      state.eventObjects[i + 1].idleFrameCountAuto = wScriptIdleFrameCountAuto;
     }
   }
 

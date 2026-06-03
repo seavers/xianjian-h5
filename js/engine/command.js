@@ -948,12 +948,12 @@ export function stopCode() {
 }
 
 export function changeScript(scriptId, count) {
-  if (!count || ++this.scriptIdleFrameCountAuto < count) {
+  if (!count || ++this.idleFrameCountAuto < count) {
     // 这里确实得使用 -1 ，不然小孩跳绳转不起来
     Script.next(scriptId);
     return Script.CHANGE_SCRIPT;
   } else {
-    this.scriptIdleFrameCountAuto = 0;
+    this.idleFrameCountAuto = 0;
     return Script.NEXT_SCRIPT;
   }
 }
