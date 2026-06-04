@@ -329,7 +329,8 @@ export const Script = {
         param1: script.param1,
         param2: script.param2,
         param3: script.param3,
-        time: new Date().toLocaleTimeString()
+        time: new Date().toLocaleTimeString(),
+        timestamp: Date.now()
       };
 
       state.scriptLogs.push(logItem);
@@ -413,7 +414,8 @@ export const Script = {
       param1: script.param1,
       param2: script.param2,
       param3: script.param3,
-      time: new Date().toLocaleTimeString()
+      time: new Date().toLocaleTimeString(),
+      timestamp: Date.now()
     };
 
     state.scriptLogs.push(logItem);

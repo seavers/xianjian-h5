@@ -580,6 +580,29 @@
 		.log-code { color: #ec4899; font-weight: bold; }
 		.log-desc { color: #93c5fd; }
 
+		.log-tab-btn {
+			background: transparent;
+			border: none;
+			color: rgba(255,255,255,0.45);
+			font-size: 8.5px;
+			font-weight: bold;
+			padding: 2px 8px;
+			border-radius: 2px;
+			cursor: pointer;
+			transition: all 0.15s;
+			outline: none;
+		}
+		.log-tab-btn:hover {
+			color: #fff;
+			background: rgba(255,255,255,0.05);
+		}
+		.log-tab-btn.active {
+			background: rgba(0, 255, 157, 0.15);
+			border: 1px solid rgba(0, 255, 157, 0.2);
+			color: var(--glow-green);
+			text-shadow: 0 0 4px rgba(0, 255, 157, 0.2);
+		}
+
 		/* ⚙️ 调试控制互动功能与变速齿轮 */
 		.debugger-footer {
 			background: rgba(0, 0, 0, 0.3);
@@ -939,9 +962,16 @@
 			<!-- 横栏六：💻 并行脚本指令流终端 ＆ 系统极客剖析指标 -->
 			<div class="terminal-section" style="border-top: 1px solid var(--border-glass);">
 				<div class="section-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding: 5px 8px;">
-					<span>💻 并行脚本指令流终端 (Active Threads Instruction Console)</span>
 					<div style="display: flex; align-items: center; gap: 8px;">
-						<span id="label-log-filter-mode" style="font-size: 8px; color: rgba(255,255,255,0.5);">默认仅显示非 auto 指令</span>
+						<span style="font-size: 9px; font-weight: bold;">💻 终端:</span>
+						<div style="display: flex; background: rgba(255,255,255,0.03); padding: 1.5px; border-radius: 2px; border: 1px solid rgba(255,255,255,0.04); gap: 1px;">
+							<button id="tab-log-main" onclick="switchLogTab('main')" class="log-tab-btn active">主指令</button>
+							<button id="tab-log-npc" onclick="switchLogTab('npc')" class="log-tab-btn">NPC指令</button>
+							<button id="tab-log-summary" onclick="switchLogTab('summary')" class="log-tab-btn">全部汇总</button>
+						</div>
+					</div>
+					<div style="display: flex; align-items: center; gap: 8px;">
+						<span id="label-log-filter-mode" style="font-size: 8px; color: rgba(255,255,255,0.5);">当前展示非 auto 主指令</span>
 						<label style="font-size: 8px; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 4px;">
 							容量限制:
 							<select id="select-log-limit" onchange="changeLogLimit(this.value)" style="background: #111; border: 1px solid var(--border-glass); color: #fff; font-size: 8px; border-radius: 2px; padding: 1px 2px; cursor: pointer; outline: none;">
@@ -951,7 +981,6 @@
 								<option value="1000">1000 条</option>
 							</select>
 						</label>
-						<button id="btn-toggle-all-logs" onclick="toggleShowAllScriptLogs()" style="background: rgba(0, 225, 255, 0.08); border: 1px solid rgba(0, 225, 255, 0.2); color: var(--glow-blue); padding: 1px 6px; font-size: 8px; font-weight: bold; border-radius: 2px; cursor: pointer; transition: all 0.15s; outline: none;" onmouseenter="this.style.background='rgba(0,225,255,0.16)'" onmouseleave="this.style.background=window.showAllScriptLogs ? 'rgba(255,208,0,0.16)' : 'rgba(0,225,255,0.08)'">显示全部</button>
 						<button onclick="clearScriptLogs()" style="background: rgba(255, 59, 111, 0.12); border: 1px solid rgba(255, 59, 111, 0.25); color: var(--glow-red); padding: 1px 6px; font-size: 8px; font-weight: bold; border-radius: 2px; cursor: pointer; transition: all 0.15s; outline: none;" onmouseenter="this.style.background='rgba(255,59,111,0.22)'" onmouseleave="this.style.background='rgba(255,59,111,0.12)'">🗑️ 清空日志</button>
 					</div>
 				</div>
@@ -1819,58 +1848,69 @@
 		window.scriptLogStore = [];
 		window.scriptLogStoreMax = 1000;
 		window.lastLogFilterSignature = '';
+		window.currentLogTab = 'main'; // 默认 Tab 处于主指令区
+		window.scriptMainLogs = []; // 主指令内存池（非auto）
+		window.scriptNpcLogs = {}; // 每个 NPC 独立的分组日志映射表，键为 npcId，值为数组
 
 		// 根据角色 ID 获取人物/NPC名称 (以支持右侧指令区对 auto 指令的执行 NPC 展示)
 		function getRoleName(mgoId) {
 			if (!mgoId || mgoId <= 0) {
 				return "角色 -";
 			}
-			const names = {
-				// 0: '李逍遥',
-				// 1: '赵灵儿',
-				// 2: '林月如',
-				// 3: '阿奴',
-				// 4: '赵灵儿(蛇)',
-				// 10: '李大娘',
-				// 11: '苗人首领',
-				// 12: '苗人手下',
-				// 21: '村口黄狗',
-				// 53: '集市商贩'
-			};
+			const names = {};
 			return names[mgoId] || `角色 #${mgoId}`;
 		}
 
+		// 1. 清空所有指令终端内存池数据并重置 UI 视图
 		function clearScriptLogs() {
-			// 1. 清空内存日志池，确保切换筛选条件时不会看到旧数据残留
 			window.scriptLogStore = [];
+			window.scriptMainLogs = [];
+			window.scriptNpcLogs = {};
 
-			// 2. 强制刷新右侧日志视图，同步恢复为空态提示文案
 			renderScriptLogs({ force: true });
 		}
 
-		// 动态调整右侧指令区容量上限，多余的部分只清除最前面的一条/多条
+		// 2. 容量限制下拉菜单联动：动态调整并截断主指令池中多出的数据
 		function changeLogLimit(val) {
 			window.logLimit = parseInt(val) || 200;
 			
-			// 重新按新的容量限制裁剪可见日志列表
+			if (window.scriptMainLogs.length > window.logLimit) {
+				window.scriptMainLogs.splice(0, window.scriptMainLogs.length - window.logLimit);
+			}
+			
 			renderScriptLogs({ force: true });
 		}
 
-		function getSelectedNpcLogId() {
-			const state = window.state;
-			return state && Number.isInteger(state.highlightNpcId) ? state.highlightNpcId : null;
-		}
-
-		function getScriptLogFilterState() {
-			const selectedNpcId = getSelectedNpcLogId();
-			if (window.showAllScriptLogs) {
-				return { mode: 'all', selectedNpcId };
+		// 3. 实现 Tab 切换联动逻辑与顶部说明文本的同步
+		function switchLogTab(tab) {
+			window.currentLogTab = tab;
+			
+			// 切换激活按钮的高亮状态
+			document.querySelectorAll('.log-tab-btn').forEach(btn => {
+				btn.classList.remove('active');
+			});
+			const activeBtn = document.getElementById(`tab-log-${tab}`);
+			if (activeBtn) activeBtn.classList.add('active');
+			
+			// 同步顶部过滤模式的提示文字
+			const label = document.getElementById('label-log-filter-mode');
+			if (label) {
+				if (tab === 'main') {
+					label.innerText = '当前展示非 auto 主指令';
+					label.style.color = 'rgba(255,255,255,0.5)';
+				} else if (tab === 'npc') {
+					label.innerText = '当前展示每个 NPC 独立指令流';
+					label.style.color = 'var(--glow-green)';
+				} else if (tab === 'summary') {
+					label.innerText = '当前展示全部指令汇总 (按时间排序)';
+					label.style.color = 'var(--glow-yellow)';
+				}
 			}
-			if (selectedNpcId !== null) {
-				return { mode: 'npc-auto', selectedNpcId };
-			}
-			return { mode: 'non-auto', selectedNpcId: null };
+			
+			// 切换 Tab 后强制重绘终端，并滚动回最底端以提供良好的流式日志体验
+			renderScriptLogs({ force: true, stickToBottom: true });
 		}
+		window.switchLogTab = switchLogTab;
 
 		function isSameScriptLog(a, b) {
 			return !!a && !!b &&
@@ -1883,65 +1923,14 @@
 				a.npcId === b.npcId;
 		}
 
-		function shouldDisplayScriptLog(log) {
-			const filterState = getScriptLogFilterState();
-			if (filterState.mode === 'all') {
-				return true;
-			}
-			if (filterState.mode === 'npc-auto') {
-				return log.type === 'auto' && Number(log.npcId) === filterState.selectedNpcId;
-			}
-			return log.type !== 'auto';
-		}
-
-		function getScriptLogEmptyText() {
-			const filterState = getScriptLogFilterState();
-			if (filterState.mode === 'all') {
-				return '等待全部指令执行日志流式输入...';
-			}
-			if (filterState.mode === 'npc-auto') {
-				return `当前仅展示 NPC #${filterState.selectedNpcId} 的 auto 指令，暂未捕获到执行日志...`;
-			}
-			return '当前默认仅展示非 auto 类型指令...';
-		}
-
-		function updateScriptLogFilterUI() {
-			const filterState = getScriptLogFilterState();
-			const label = document.getElementById('label-log-filter-mode');
-			const btn = document.getElementById('btn-toggle-all-logs');
-
-			// 1. 同步顶部文案，让当前过滤模式始终可见
-			if (label) {
-				if (filterState.mode === 'all') {
-					label.innerText = '当前显示全部指令';
-					label.style.color = 'var(--glow-yellow)';
-				} else if (filterState.mode === 'npc-auto') {
-					label.innerText = `当前仅显示 NPC #${filterState.selectedNpcId} 的 auto 指令`;
-					label.style.color = 'var(--glow-green)';
-				} else {
-					label.innerText = '默认仅显示非 auto 指令';
-					label.style.color = 'rgba(255,255,255,0.5)';
-				}
-			}
-
-			// 2. 同步按钮状态，支持在“显示全部”和“恢复筛选”之间切换
-			if (btn) {
-				btn.innerText = window.showAllScriptLogs ? '恢复筛选' : '显示全部';
-				btn.style.color = window.showAllScriptLogs ? 'var(--glow-yellow)' : 'var(--glow-blue)';
-				btn.style.borderColor = window.showAllScriptLogs ? 'rgba(255,208,0,0.22)' : 'rgba(0,225,255,0.2)';
-				btn.style.background = window.showAllScriptLogs ? 'rgba(255,208,0,0.08)' : 'rgba(0,225,255,0.08)';
-			}
-		}
-
+		// 4. 为主指令和全部汇总终端生成通用的行指令 DOM 节点（宽度 490px / 500px 对齐）
 		function buildScriptLogElement(log, duplicateTimes) {
-			// 实时获取高度解密的附加信息
 			const detailInfo = getInstructionDetail(log.code, log.param1, log.param2, log.param3);
 
 			const logDiv = document.createElement('div');
 			logDiv.className = `log-item ${log.type}`;
 			logDiv.style.cssText = "position: relative; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 4px; height: 15px; display: flex; align-items: center;";
 
-			// 左侧：原始 16 进制指令和基本描述，锁死宽度为 490px 以防遮盖
 			const leftSpan = document.createElement('span');
 			leftSpan.style.cssText = "width: 490px; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0;";
 			leftSpan.innerHTML = `
@@ -1953,16 +1942,13 @@
 				<span style="color:rgba(255,255,255,0.18); margin-left: 2px;">(${log.param1}, ${log.param2}, ${log.param3})</span>
 			`;
 
-			// 右侧：亮荧光绿色展示中文含义，精确定位在离指令最左边 500px 处，left: 500px，超宽时 ellipsis 自动切断
 			const rightSpan = document.createElement('span');
 			rightSpan.style.cssText = "color: var(--glow-green); font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; position: absolute; left: 490px; text-align: left; width: calc(100% - 500px); display: inline-block; white-space: nowrap;";
 
-			// 如果是 auto 类型的指令，右侧展示正在执行指令的 NPC 信息 (包含 ID 和 角色名)
 			if (log.type === 'auto') {
 				const roleName = getRoleName(log.mgoId);
 				const npcText = `🤖 NPC #${log.npcId} (${roleName})`;
 
-				// 若有具体指令细节描述则进行拼接显示，增强调试信息极客感
 				if (detailInfo) {
 					rightSpan.innerHTML = `<span style="color: var(--glow-yellow); font-weight: bold; margin-right: 8px;">${npcText}</span><span style="color: var(--glow-green);">${detailInfo}</span>`;
 				} else {
@@ -1972,7 +1958,6 @@
 				rightSpan.innerText = detailInfo || '';
 			}
 
-			// 若当前可见序列存在重复日志，则在单条 DOM 上展示合并计数
 			if (duplicateTimes > 1) {
 				const badge = document.createElement('span');
 				badge.className = 'dup-badge';
@@ -1986,79 +1971,198 @@
 			return logDiv;
 		}
 
+		// 5. 专门为 NPC 分组展示卡片定制的高密度、抗自适应排版行指令生成函数
+		function buildScriptLogElementForNpcCard(log, duplicateTimes) {
+			const detailInfo = getInstructionDetail(log.code, log.param1, log.param2, log.param3);
+			
+			const logDiv = document.createElement('div');
+			logDiv.style.cssText = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 2.5px 4px; font-size: 8px; background: rgba(255,255,255,0.015); border-left: 1.5px solid var(--glow-blue); display: flex; flex-direction: column; gap: 1px; margin-bottom: 2px; border-radius: 1px;";
+			
+			const topRow = document.createElement('div');
+			topRow.style.cssText = "display: flex; align-items: center; justify-content: space-between;";
+			topRow.innerHTML = `
+				<span>
+					<span style="color: rgba(255,255,255,0.25); font-size: 7.5px; margin-right: 3px;">${log.time}</span>
+					<span style="color: #ffd000; font-size: 7.5px; margin-right: 3px; font-weight: bold;">[${log.scriptId}]</span>
+					<span style="color: #00e1ff; font-family: monospace; font-size: 7.5px;">${log.hexCode}</span>
+				</span>
+				<span style="color: rgba(255,255,255,0.35); font-size: 7.5px;">(${log.param1}, ${log.param2}, ${log.param3})</span>
+			`;
+			
+			const bottomRow = document.createElement('div');
+			bottomRow.style.cssText = "display: flex; align-items: center; justify-content: space-between; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
+			
+			const descSpan = document.createElement('span');
+			descSpan.style.cssText = "color: rgba(255,255,255,0.7); font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
+			descSpan.innerText = log.desc;
+			
+			const detailSpan = document.createElement('span');
+			detailSpan.style.cssText = "color: var(--glow-green); font-size: 8px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: 6px;";
+			detailSpan.innerText = detailInfo || '';
+			
+			bottomRow.appendChild(descSpan);
+			bottomRow.appendChild(detailSpan);
+			
+			if (duplicateTimes > 1) {
+				const badge = document.createElement('span');
+				badge.style.cssText = "background: var(--glow-yellow); color: #000; font-size: 7px; font-weight: 800; padding: 0px 2px; margin-left: 4px; border-radius: 1.5px; line-height: 9px; height: 9px; display: inline-flex; align-items: center;";
+				badge.innerText = `x${duplicateTimes}`;
+				topRow.appendChild(badge);
+			}
+			
+			logDiv.appendChild(topRow);
+			logDiv.appendChild(bottomRow);
+			return logDiv;
+		}
+
+		// 6. 重绘核心指令控制终端。根据当前所处的 Tab，分别完成主指令列表、全部汇总列表（按时间排序）以及 NPC 分卡片网格渲染
 		function renderScriptLogs(options = {}) {
 			const { force = false, stickToBottom = false } = options;
 			const container = document.getElementById('container-logs');
 			const wrapper = document.getElementById('container-logs-wrapper');
 			if (!container) return;
 
-			const filterSignature = `${window.showAllScriptLogs ? 'all' : 'filtered'}:${getSelectedNpcLogId() ?? 'none'}:${window.logLimit}`;
+			// 生成缓存哈希标签，避免高频 tick 驱动无意义的 DOM 重绘
+			const activeNpcCount = Object.keys(window.scriptNpcLogs).length;
+			const filterSignature = `${window.currentLogTab}:${window.logLimit}:${activeNpcCount}`;
 			if (!force && window.lastLogFilterSignature === filterSignature) {
-				updateScriptLogFilterUI();
 				return;
 			}
 
 			const shouldStick = wrapper ? (stickToBottom || wrapper.scrollHeight - wrapper.scrollTop - wrapper.clientHeight < 30) : false;
-			const visibleLogs = window.scriptLogStore.filter(shouldDisplayScriptLog).slice(-window.logLimit);
 			container.innerHTML = '';
 
-			// 1. 无日志时展示当前筛选模式对应的空态提示
-			if (!visibleLogs.length) {
-				container.innerHTML = `<div style="color: rgba(255,255,255,0.15)">${getScriptLogEmptyText()}</div>`;
-				window.lastLogFilterSignature = filterSignature;
-				updateScriptLogFilterUI();
-				return;
-			}
-
-			// 2. 按当前过滤后的可见序列做重复合并，避免高频刷屏
-			const mergedLogs = [];
-			for (const log of visibleLogs) {
-				const lastEntry = mergedLogs[mergedLogs.length - 1];
-				if (lastEntry && isSameScriptLog(lastEntry.log, log)) {
-					lastEntry.count++;
-					continue;
+			// 步骤 A: 主指令模式 或 全部汇总模式（这两种模式在布局上非常一致，皆为垂直滚动流）
+			if (window.currentLogTab === 'main' || window.currentLogTab === 'summary') {
+				let visibleLogs = [];
+				if (window.currentLogTab === 'main') {
+					visibleLogs = window.scriptMainLogs.slice(-window.logLimit);
+				} else {
+					// 汇总模式下执行完全的时间戳 (timestamp) 升序排序
+					visibleLogs = [...window.scriptLogStore]
+						.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
+						.slice(-window.logLimit);
 				}
-				mergedLogs.push({ log, count: 1 });
+
+				if (!visibleLogs.length) {
+					const emptyText = window.currentLogTab === 'main' ? '暂无非 auto 主指令日志...' : '暂无任何指令日志...';
+					container.innerHTML = `<div style="color: rgba(255,255,255,0.15)">${emptyText}</div>`;
+					window.lastLogFilterSignature = filterSignature;
+					return;
+				}
+
+				// 对数据进行快速去重，减少终端高频刷屏负担
+				const mergedLogs = [];
+				for (const log of visibleLogs) {
+					const lastEntry = mergedLogs[mergedLogs.length - 1];
+					if (lastEntry && isSameScriptLog(lastEntry.log, log)) {
+						lastEntry.count++;
+						continue;
+					}
+					mergedLogs.push({ log, count: 1 });
+				}
+
+				// 将日志节点依次贴入容器
+				mergedLogs.forEach(({ log, count }) => {
+					container.appendChild(buildScriptLogElement(log, count));
+				});
+			} else if (window.currentLogTab === 'npc') {
+				// 步骤 B: 渲染 NPC 分组网格视图
+				const npcIds = Object.keys(window.scriptNpcLogs).sort((a, b) => {
+					const logsA = window.scriptNpcLogs[a];
+					const logsB = window.scriptNpcLogs[b];
+					const lastA = logsA[logsA.length - 1];
+					const lastB = logsB[logsB.length - 1];
+					return (lastB?.timestamp || 0) - (lastA?.timestamp || 0); // 按照最后更新的活跃时间排序
+				});
+
+				if (npcIds.length === 0) {
+					container.innerHTML = '<div style="color: rgba(255,255,255,0.15)">暂未捕捉到任何 NPC 的 auto 漫游指令...</div>';
+					window.lastLogFilterSignature = filterSignature;
+					return;
+				}
+
+				// 构建响应式平铺 Grid 容器，充分占据 Dashboard 可变宽度
+				const npcGrid = document.createElement('div');
+				npcGrid.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; width: 100%; box-sizing: border-box; padding: 4px;";
+
+				npcIds.forEach(npcId => {
+					const logs = window.scriptNpcLogs[npcId];
+					const lastLog = logs[logs.length - 1];
+					const roleName = getRoleName(lastLog?.mgoId);
+
+					const card = document.createElement('div');
+					card.style.cssText = "background: rgba(255, 255, 255, 0.015); border: 1px solid rgba(255, 255, 255, 0.04); border-radius: 3px; display: flex; flex-direction: column; overflow: hidden; height: 220px; transition: border-color 0.15s;";
+					card.onmouseenter = () => card.style.borderColor = 'rgba(0, 255, 157, 0.2)';
+					card.onmouseleave = () => card.style.borderColor = 'rgba(255, 255, 255, 0.04)';
+
+					const header = document.createElement('div');
+					header.style.cssText = "background: rgba(255, 255, 255, 0.03); border-bottom: 1px solid rgba(255, 255, 255, 0.04); padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;";
+					header.innerHTML = `
+						<span style="font-size: 9px; font-weight: bold; color: var(--glow-yellow);">🤖 NPC #${npcId} (${roleName})</span>
+						<span style="font-size: 8px; color: rgba(0, 255, 157, 0.7); background: rgba(0, 255, 157, 0.08); padding: 0px 4px; border-radius: 1.5px;">${logs.length} / 30 条</span>
+					`;
+
+					const body = document.createElement('div');
+					body.style.cssText = "padding: 4px; display: flex; flex-direction: column; gap: 2.5px; overflow-y: auto; flex: 1; min-height: 0;";
+
+					// 为单个 NPC 的独立日志流进行去重优化
+					const mergedNpcLogs = [];
+					for (const logItem of logs) {
+						const lastEntry = mergedNpcLogs[mergedNpcLogs.length - 1];
+						if (lastEntry && isSameScriptLog(lastEntry.log, logItem)) {
+							lastEntry.count++;
+							continue;
+						}
+						mergedNpcLogs.push({ log: logItem, count: 1 });
+					}
+
+					mergedNpcLogs.forEach(({ log, count }) => {
+						const itemEl = buildScriptLogElementForNpcCard(log, count);
+						body.appendChild(itemEl);
+					});
+
+					card.appendChild(header);
+					card.appendChild(body);
+					npcGrid.appendChild(card);
+				});
+
+				container.appendChild(npcGrid);
 			}
 
-			// 3. 重绘可见日志列表，保证 NPC 切换后立刻反映新筛选结果
-			mergedLogs.forEach(({ log, count }) => {
-				container.appendChild(buildScriptLogElement(log, count));
-			});
 			window.lastLogFilterSignature = filterSignature;
-			updateScriptLogFilterUI();
 
-			// 4. 仅在原本贴底或显式要求贴底时滚动到底部，避免打断用户翻看旧日志
+			// 若原本贴底或有要求，则驱动外层容器自动滚动到底端
 			if (wrapper && shouldStick) {
 				wrapper.scrollTop = wrapper.scrollHeight - wrapper.clientHeight;
 			}
 		}
 
-		function syncScriptLogFilterView(force = false) {
-			const filterSignature = `${window.showAllScriptLogs ? 'all' : 'filtered'}:${getSelectedNpcLogId() ?? 'none'}:${window.logLimit}`;
-			if (!force && window.lastLogFilterSignature === filterSignature) {
-				updateScriptLogFilterUI();
-				return;
-			}
-			renderScriptLogs({ force: true });
-		}
-
-		function toggleShowAllScriptLogs() {
-			// 主动切换“显示全部”模式，并立即强制刷新当前日志面板
-			window.showAllScriptLogs = !window.showAllScriptLogs;
-			window.lastLogFilterSignature = '';
-			renderScriptLogs({ force: true, stickToBottom: true });
-		}
-
-		// 5. 并行指令流高速追加：先缓存日志，再按当前过滤模式重绘可见区域
+		// 7. 新增的并行指令流单条高速追加逻辑
 		function appendScriptLog(log) {
-			// 1. 维护统一日志池，供 NPC 切换和“显示全部”模式重复筛选复用
 			window.scriptLogStore.push(log);
 			if (window.scriptLogStore.length > window.scriptLogStoreMax) {
 				window.scriptLogStore.shift();
 			}
 
-			// 2. 新日志进入后立即按当前规则刷新视图，并按需保持底部跟随
+			// 将日志分流至主指令或 NPC 独立池中
+			if (log.type !== 'auto') {
+				window.scriptMainLogs.push(log);
+				const currentLimit = window.logLimit || 200;
+				if (window.scriptMainLogs.length > currentLimit) {
+					window.scriptMainLogs.shift();
+				}
+			} else {
+				const npcId = log.npcId;
+				if (!window.scriptNpcLogs[npcId]) {
+					window.scriptNpcLogs[npcId] = [];
+				}
+				window.scriptNpcLogs[npcId].push(log);
+				if (window.scriptNpcLogs[npcId].length > 30) {
+					window.scriptNpcLogs[npcId].shift();
+				}
+			}
+
 			renderScriptLogs({ force: true, stickToBottom: true });
 		}
 
@@ -3065,10 +3169,10 @@
 
 		window.modifyPlayerCoord = modifyPlayerCoord;
 
-		// 页面初始化时自动加载坐标配置，并同步右侧日志区的初始筛选文案
+		// 页面初始化时自动加载坐标配置，并初始化右侧指令区渲染
 		document.addEventListener('DOMContentLoaded', () => {
 			loadCoords();
-			syncScriptLogFilterView(true);
+			renderScriptLogs({ force: true });
 		});
 
 		// ==================== 注册全局运行时钩子与数据联动 ====================
@@ -3081,11 +3185,36 @@
 		window.onScriptExecute = (logItemOrArray) => {
 			if (Array.isArray(logItemOrArray)) {
 				logItemOrArray.forEach(item => {
+					// 1. 塞入全部汇总
 					window.scriptLogStore.push(item);
+
+					// 2. 按指令类型进行分流存储
+					if (item.type !== 'auto') {
+						window.scriptMainLogs.push(item);
+					} else {
+						const npcId = item.npcId;
+						if (!window.scriptNpcLogs[npcId]) {
+							window.scriptNpcLogs[npcId] = [];
+						}
+						window.scriptNpcLogs[npcId].push(item);
+						if (window.scriptNpcLogs[npcId].length > 30) {
+							window.scriptNpcLogs[npcId].shift();
+						}
+					}
 				});
+
+				// 3. 限制全部汇总的数组大小
 				if (window.scriptLogStore.length > window.scriptLogStoreMax) {
 					window.scriptLogStore.splice(0, window.scriptLogStore.length - window.scriptLogStoreMax);
 				}
+
+				// 4. 限制主指令列表的容量
+				const currentLimit = window.logLimit || 200;
+				if (window.scriptMainLogs.length > currentLimit) {
+					window.scriptMainLogs.splice(0, window.scriptMainLogs.length - currentLimit);
+				}
+
+				// 5. 渲染当前视图
 				renderScriptLogs({ force: true, stickToBottom: true });
 			} else {
 				appendScriptLog(logItemOrArray);
