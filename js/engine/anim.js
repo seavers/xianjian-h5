@@ -59,16 +59,19 @@ export const Npc = {
       const nx = cx + Math.sign(dx) * speed * 2;
       const ny = cy + Math.sign(dy) * speed;
 
+      const leader = state.party[0] || state.roles[0];
       // 不是主角，只移动位置
-      if (state.roles[0] !== o) {
+      if (leader !== o) {
         o.x = nx;
         o.y = ny;
         return absDy - speed;
       }
       
       // 同步移动主角（Role 0）的坐标与相机偏移坐标
-      state.roles[0].x = nx;
-      state.roles[0].y = ny;
+      if (leader) {
+        leader.x = nx;
+        leader.y = ny;
+      }
       state.mapX = nx;
       state.mapY = ny;
 
@@ -80,12 +83,15 @@ export const Npc = {
       return absDy - speed; // 未到站，返回剩余像素距离（非 0）以安全挂起指令
     } else {
       // 3. 移动结束，修正误差并准确对齐到目标像素与瓦片位置
-      state.roles[0].x = zx;
-      state.roles[0].y = zy;
+      const leader = state.party[0] || state.roles[0];
+      if (leader) {
+        leader.x = zx;
+        leader.y = zy;
+      }
       state.mapX = zx;
       state.mapY = zy;
 
-      if (o !== state.roles[0]) {
+      if (o !== leader) {
         o.x = zx;
         o.y = zy;
       }
