@@ -1,6 +1,5 @@
 import { state } from './state.js';
 import { Thread } from './thread.js';
-import { isTalking } from '../ui/talk.js';
 import { scriptCodes, performToggleScene } from './command.js';
 import { Hex } from '../utils/hex.js';
 import { update } from '../ui/draw.js';
@@ -100,8 +99,8 @@ export const Script = {
     }
 
     // 步骤 6：步进 auto NPC 漫游线程。判定依据为事件物体的类型 type === 'npc'
-    // 剧情对话 (isTalking) 展示期间，跳过 auto 漫游步进以完全挂起漫游 NPC，杜绝对话期间 NPC 步态和移位
-    if (!isTalking) {
+    // 特殊情况，跳过 auto 漫游步进以完全挂起漫游 NPC，杜绝对话期间 NPC 步态和移位
+    if (true) {
       const autoLogs = [];
 
       for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
@@ -205,7 +204,7 @@ export const Script = {
     }
 
     // 兜底释放：如果没有任何阻塞主线程，且当前依然是对话状态，强制退出 talk 模式并清空画布
-    if (!Script.activeThread && window.Talk && window.Talk.isTalking) {
+    if (!Script.activeThread) {
       window.Talk.resetTalk();
       window.Talk.updateTalk();
     }
@@ -236,7 +235,7 @@ export const Script = {
     }
 
     // 兜底释放：如果没有任何阻塞主线程，且当前依然是对话状态，强制退出 talk 模式并清空画布
-    if (!Script.activeThread && window.Talk && window.Talk.isTalking) {
+    if (!Script.activeThread) {
       window.Talk.resetTalk();
       window.Talk.updateTalk();
     }

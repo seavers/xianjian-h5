@@ -357,9 +357,11 @@ export function setNpcTile(objId, dir, frame) {
   obj.dir = dir;
   obj.frame = frame;
   obj.count = -1; // 重置 count
-  // if (dir) {
-  //   refreshRoleCount(obj);
-  // }
+
+  // 这里得刷新，不然场景1的8067脚本有问题
+  if (dir) {
+    refreshRoleCount(obj);
+  }
 }
 
 export function setObjectStatus(objId, stateVal) {
