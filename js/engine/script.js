@@ -204,10 +204,9 @@ export const Script = {
     }
 
     // 兜底释放：如果没有任何阻塞主线程，且当前依然是对话状态，强制退出 talk 模式并清空画布
-    if (!Script.activeThread) {
-      window.Talk.resetTalk();
-      window.Talk.updateTalk();
-    }
+    // if (!Script.activeThread) {
+    //   window.Talk.clearTalk();
+    // }
 
     if (window.onThreadsUpdate) {
       window.onThreadsUpdate();
@@ -235,10 +234,10 @@ export const Script = {
     }
 
     // 兜底释放：如果没有任何阻塞主线程，且当前依然是对话状态，强制退出 talk 模式并清空画布
-    if (!Script.activeThread) {
-      window.Talk.resetTalk();
-      window.Talk.updateTalk();
-    }
+    // if (!Script.activeThread) {
+    //   window.Talk.resetTalk();
+    //   window.Talk.updateTalk();
+    // }
 
     if (window.onThreadsUpdate) {
       window.onThreadsUpdate();

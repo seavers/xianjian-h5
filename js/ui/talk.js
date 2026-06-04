@@ -90,14 +90,15 @@ function waitKey() {
 
 function resetTalk() {
   isTalking = false;
+  who = null;
+  rgm = null;
 }
 
 async function showUp(pRgmId) {
   // 如果当前正在对话且有正文，切换位置前必须先让玩家按键确认
   if (isTalking && line > 0) {
     await waitKey();
-    updateTalk();
-    line = 0;
+    clearDraw();
     who = null;
   }
 
@@ -128,8 +129,7 @@ async function showDown(pRgmId) {
   // 同理，如果切换位置时有残留对话，需等待玩家按键确认
   if (isTalking && line > 0) {
     await waitKey();
-    updateTalk();
-    line = 0;
+    clearDraw();
     who = null;
   }
 
@@ -190,9 +190,7 @@ export async function drawTalk(msgId) {
   // 步骤 1：如果满 4 行翻页，等待按键并清空画布，重置状态
   if (line >= 4) {
     await waitKey();
-    updateTalk();
-    line = 0;
-    clear = true;
+    clearDraw();
   }
 
   // 步骤 2：等待异步打印对话文本动作完成
@@ -200,9 +198,7 @@ export async function drawTalk(msgId) {
 
   if(!t.isNextTalk()) {
     await waitKey();
-    updateTalk();
-    line = 0;
-    clear = true;
+    clearDraw();
   } else if(t.isNextTalks()) {
     await waitKey();
   }
@@ -301,14 +297,15 @@ export async function clearTalk() {
     await waitKey();
   }
   resetTalk();
-  updateTalk();
+  clearDraw();
 }
 
-export function updateTalk() {
+export function clearDraw() {
   const talkCtx = state.contexts.talk;
   if (talkCtx) {
     talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
   }
+  line = 0;
   clear = true;
 }
 
@@ -397,7 +394,7 @@ async function drawLineSync(texts, x, y, t) {
     
     await waitKey();
     resetTalk();
-    updateTalk();
+    clearDraw();
   }
 }
 
@@ -420,12 +417,7 @@ export const Talk = {
   talkMessage: showMessage,
   drawTalk,
   clearTalk,
-  showTalkWait,
-  clearTalkWait,
   tickArrow,
-  updateTalk,
-  resetTalk,
-  registerTalkResolve,
   onInput,
   get isTalking() {
     return isTalking;
