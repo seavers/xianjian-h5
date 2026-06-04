@@ -218,7 +218,7 @@ function initRoleHistory(leader) {
   }
 
   // 填充从后往前的历史路径点，使每个跟随者默认位于身后相隔一格瓦片距离的位置
-  for (let i = 0; i <= state.roles.length; i++) {
+  for (let i = 0; i <= state.party.length; i++) {
     state.roleHistory.push({
       x: leader.x + dx * i * 32,
       y: leader.y + dy * i * 16,
@@ -257,7 +257,7 @@ function getPositionAtDistance(history, targetDist) {
 }
 
 export function drawRole() {
-  const leader = state.roles[0];
+  const leader = state.party[0];
   
   // 步骤 1：记录并更新主角移动轨迹，用于跟随者平滑追踪运动
   if (leader) {
@@ -290,8 +290,8 @@ export function drawRole() {
 
   // 步骤 2：如果有跟随者，根据累计移动的 Y 像素距离从历史轨迹中获取其位置和状态
   if (leader) {
-    for (let i = 1; i < state.roles.length; i++) {
-      const follower = state.roles[i];
+    for (let i = 1; i < state.party.length; i++) {
+      const follower = state.party[i];
       if (follower) {
         const targetDist = 16 * i; // 每个跟随者相隔 16 像素 Y 距离（即一格瓦片距离）
         const pos = getPositionAtDistance(state.roleHistory, targetDist);
@@ -307,8 +307,8 @@ export function drawRole() {
   }
 
   // 步骤 3：遍历队伍中的所有成员，加载其对应的 MGO 图像并加入渲染队列
-  for (let i = 0; i < state.roles.length; i++) {
-    const role = state.roles[i];
+  for (let i = 0; i < state.party.length; i++) {
+    const role = state.party[i];
     if (role) {
       const roleImg = loadMgo(role.tileId, role.frame);
       if (roleImg) {
@@ -487,7 +487,10 @@ export function drawCanWalk() {
 }
 
 export function drawEventArea() {
-  drawRhombus(state.roles[0].x, state.roles[0].y);
+  const leader = state.party[0] || state.roles[0];
+  if (leader) {
+    drawRhombus(leader.x, leader.y);
+  }
   for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
     const o = state.eventObjects[i];
     if (o) {
