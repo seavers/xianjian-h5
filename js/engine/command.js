@@ -105,7 +105,7 @@ export function setRoleGroup(r1, r2, r3) {
           x: state.roles[0].x,
           y: state.roles[0].y,
           layer: state.roles[0].layer,
-          tileId: 0,
+          tileId: [2,3,7,5][roleIndex],
           frame: 0,
           index: roleIndex,
           count: 0
@@ -488,6 +488,11 @@ export function npcWalk2(x, y, half) {
 }
 
 export function npcWalk3(x, y, half) {
+  return delayOrNext(Npc.anim(this, x, y, half, 2));
+}
+
+export function npcWalk4(x, y, half) {
+  // 步骤 1：调用 Npc.anim 使得当前 NPC 移动到指定的目标瓦片坐标，折算实际移动步长为中速 (2)
   return delayOrNext(Npc.anim(this, x, y, half, 2));
 }
 
@@ -1645,6 +1650,7 @@ scriptCodes[0xA1] = { func: setPartySamePosition, desc: '使队伍全员位置�
 scriptCodes[0xA7] = { func: skipAutoScript, desc: '空指令直接跳过' };
 scriptCodes[0x7A] = { func: teamWalk2, desc: '队伍快速行走至坐标' };
 scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
+scriptCodes[0x7C] = { func: npcWalk4, desc: 'NPC以中速行走移动至坐标' };
 
 scriptCodes[0x59] = { func: setSceneId, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
