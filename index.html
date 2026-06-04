@@ -1098,6 +1098,7 @@
 				<button class="btn-dbg image-tab-btn" id="tab-msg" onclick="switchImageType('msg')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">剧情文本 (msg)</button>
 				<button class="btn-dbg image-tab-btn" id="tab-wor16" onclick="switchImageType('wor16')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">点阵字库 (wor16.asc)</button>
 				<button class="btn-dbg image-tab-btn" id="tab-word" onclick="switchImageType('word')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">短语资源 (word.dat)</button>
+				<button class="btn-dbg image-tab-btn" id="tab-rng" onclick="switchImageType('rng')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">全屏动画 (rng.mkf)</button>
 			</div>
 
 			<!-- 二级筛选项控制栏 (根据选中的类型动态显示) -->
@@ -2425,6 +2426,7 @@
 		// 动态载入图片浏览与解包所需的全部底层 API 接口
 		let palResources = null;
 		let loaderModule = null;
+		let rngModule = null;
 
 		import('./js/resources/pal.js').then((module) => {
 			palResources = module;
@@ -2435,6 +2437,10 @@
 
 		import('./js/resources/loader.js').then((module) => {
 			loaderModule = module;
+		});
+
+		import('./js/engine/rng.js').then((module) => {
+			rngModule = module;
 		});
 
 		// ==================== 🖼️ 通用图片精灵资源浏览器前端核心逻辑 ====================
@@ -2456,11 +2462,13 @@
 
 		// 3. 关闭图片资源浏览器浮层
 		function closeImageExplorer() {
+			if (window.clearAllRngTimers) window.clearAllRngTimers();
 			document.getElementById('image-explorer-modal').style.display = 'none';
 		}
 
 		// 4. 切换浏览的精灵大类（例如头像、角色动作、大背景图、剧情文本等）
 		function switchImageType(type) {
+			if (window.clearAllRngTimers) window.clearAllRngTimers();
 			imageExplorerState.currentType = type;
 			imageExplorerState.currentPage = 0;
 
@@ -2511,6 +2519,8 @@
 					imageExplorerState.currentScale = 2;
 				} else if (type === 'word') {
 					imageExplorerState.currentScale = 2;
+				} else if (type === 'rng') {
+					imageExplorerState.currentScale = 1;
 				}
 			}
 
@@ -2601,6 +2611,9 @@
 				} else if (type === 'word') {
 					const data = loaderModule.load('word.dat');
 					imageExplorerState.totalItems = data.length / 10;
+				} else if (type === 'rng') {
+					const data = loaderModule.load('rng.mkf');
+					imageExplorerState.totalItems = data.getInt(0) / 4 - 1;
 				}
 			} catch (e) {
 				console.error("获取精灵包大小时发生异常:", e);
@@ -2693,12 +2706,162 @@
 					card = renderSingleItem(i, `FON #${i}\n0x${code.toString(16).toUpperCase()}`, (id) => palResources.loadFon(id));
 				} else if (type === 'word') {
 					card = renderWordItem(i, `WORD #${i}`);
+				} else if (type === 'rng') {
+					card = renderRngItem(i, `RNG #${i}`);
 				}
 
 				if (card) {
 					gallery.appendChild(card);
 				}
 			}
+		}
+
+		// ==================== 🎬 RNG 动画播放核心控制器 ====================
+		window.activeRngTimers = [];
+		window.clearAllRngTimers = function() {
+			if (window.activeRngTimers) {
+				window.activeRngTimers.forEach(t => {
+					if (t.timeoutId) clearTimeout(t.timeoutId);
+					if (t.onStop) t.onStop();
+				});
+				window.activeRngTimers = [];
+			}
+		};
+
+		function drawBufferToCanvas(canvas, buffer, palette) {
+			const ctx = canvas.getContext('2d');
+			const imageData = ctx.createImageData(320, 200);
+			const data = imageData.data;
+			for (let i = 0; i < 64000; i++) {
+				const color = palette[buffer[i]];
+				data[i * 4 + 0] = (color >> 16) & 0xFF;
+				data[i * 4 + 1] = (color >> 8) & 0xFF;
+				data[i * 4 + 2] = color & 0xFF;
+				data[i * 4 + 3] = (color >> 24) & 0xFF;
+			}
+			ctx.putImageData(imageData, 0, 0);
+		}
+
+		// 10.0 针对全屏剧情动画 (rng.mkf) 的微型互动 Canvas 播放渲染引擎
+		function renderRngItem(rngId, labelText) {
+			const card = document.createElement('div');
+			card.style.cssText = "background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.02); border-radius:2px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px; transition:all 0.1s; position:relative; width: 156px; box-sizing:border-box;";
+
+			card.onmouseenter = () => {
+				card.style.borderColor = 'var(--glow-green)';
+				card.style.background = 'rgba(0, 255, 157, 0.02)';
+			};
+			card.onmouseleave = () => {
+				if (!isPlaying) {
+					card.style.borderColor = 'rgba(255,255,255,0.02)';
+					card.style.background = 'rgba(255,255,255,0.015)';
+				}
+			};
+
+			const canvas = document.createElement('canvas');
+			canvas.width = 320;
+			canvas.height = 200;
+			canvas.style.cssText = "width: 140px; height: 88px; background: #000; border-radius: 1px; image-rendering: pixelated; display: block;";
+			card.appendChild(canvas);
+
+			const label = document.createElement('span');
+			label.style.cssText = "font-size: 8px; color: rgba(255,255,255,0.3); font-weight: bold; margin-top: 4px; text-align: center;";
+			card.appendChild(label);
+
+			const playBtn = document.createElement('button');
+			playBtn.innerText = "▶ 播放";
+			playBtn.style.cssText = "background: rgba(0, 255, 157, 0.1); border: 1px solid rgba(0, 255, 157, 0.2); color: var(--glow-green); font-size: 8px; padding: 2px 8px; margin-top: 4px; border-radius: 2px; cursor: pointer; font-weight: bold; outline: none; transition: all 0.1s;";
+			playBtn.onmouseenter = () => { if (!isPlaying) playBtn.style.background = 'rgba(0, 255, 157, 0.2)'; };
+			playBtn.onmouseleave = () => { if (!isPlaying) playBtn.style.background = 'rgba(0, 255, 157, 0.1)'; };
+			card.appendChild(playBtn);
+
+			let isPlaying = false;
+			const timerControl = {
+				timeoutId: null,
+				onStop: () => {
+					isPlaying = false;
+					playBtn.innerText = "▶ 播放";
+					playBtn.style.background = 'rgba(0, 255, 157, 0.1)';
+					playBtn.style.color = 'var(--glow-green)';
+					playBtn.style.borderColor = 'rgba(0, 255, 157, 0.2)';
+					card.style.borderColor = 'rgba(255,255,255,0.02)';
+					card.style.background = 'rgba(255,255,255,0.015)';
+				}
+			};
+
+			window.activeRngTimers.push(timerControl);
+
+			try {
+				const rngChunk = loaderModule.loadMkf('rng.mkf', rngId);
+				if (!rngChunk) {
+					card.innerHTML = `<span style="font-size:8px; color:rgba(255,255,255,0.15);">${labelText}\n[无数据]</span>`;
+					return card;
+				}
+
+				const firstOffset = rngChunk.getInt(0);
+				const totalFrames = Math.floor((firstOffset - 4) / 4);
+				label.innerText = `${labelText} (${totalFrames} 帧)`;
+
+				const palette = palResources.loadPal(window.state ? window.state.paletteId : 0);
+				const frameBuffer = new Uint8Array(320 * 200);
+
+				// 载入并直接绘制首帧预览
+				const success = rngModule.decodeRngFrame(rngChunk, 0, frameBuffer);
+				if (success) {
+					drawBufferToCanvas(canvas, frameBuffer, palette);
+				}
+
+				playBtn.onclick = () => {
+					if (isPlaying) {
+						isPlaying = false;
+						if (timerControl.timeoutId) {
+							clearTimeout(timerControl.timeoutId);
+							timerControl.timeoutId = null;
+						}
+						timerControl.onStop();
+					} else {
+						// 独占播放：先清理所有其他的播放器
+						window.clearAllRngTimers();
+
+						// 将我们自己重新注册回活动计时器中
+						window.activeRngTimers.push(timerControl);
+
+						isPlaying = true;
+						playBtn.innerText = "⏸ 暂停";
+						playBtn.style.background = 'rgba(255, 59, 111, 0.15)';
+						playBtn.style.color = 'var(--glow-red)';
+						playBtn.style.borderColor = 'rgba(255, 59, 111, 0.25)';
+						card.style.borderColor = 'var(--glow-green)';
+						card.style.background = 'rgba(0, 255, 157, 0.02)';
+
+						let currentFrame = 0;
+						frameBuffer.fill(0);
+
+						function playNext() {
+							if (!isPlaying) return;
+							if (currentFrame >= totalFrames) {
+								currentFrame = 0;
+								frameBuffer.fill(0);
+							}
+							const ok = rngModule.decodeRngFrame(rngChunk, currentFrame, frameBuffer);
+							if (ok) {
+								drawBufferToCanvas(canvas, frameBuffer, palette);
+								currentFrame++;
+								timerControl.timeoutId = setTimeout(playNext, 62.5);
+							} else {
+								timerControl.onStop();
+							}
+						}
+						playNext();
+					}
+				};
+
+			} catch (e) {
+				console.error(`初始化 RNG #${rngId} 失败:`, e);
+				card.innerHTML = `<span style="font-size:8px; color:var(--glow-red);">${labelText}\n[解析失败]</span>`;
+			}
+
+			return card;
 		}
 
 		// 10. 针对剧情文本 (msg) 用游戏字库原生 16x16 点阵字顺次拼接绘制的特殊渲染引擎
