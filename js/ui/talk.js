@@ -45,11 +45,30 @@ export function onInput(input) {
   }
 }
 
-// 检测文本是否为说话人名，支持全角、半角和 Win95 专用比号 
+// 检测文本是否为说话人名，支持全角、半角和 Win95 专用比号的二进制字节检测
 function isNameText(text) {
   if (!text || text.length === 0) return false;
-  const lastChar = text.charAt(text.length - 1);
-  return lastChar === ':' || lastChar === '：' || lastChar === '∶';
+  const len = text.length;
+  const lastByte = text.getByte(len - 1);
+
+  // 1. 半角英文冒号 ':' (0x3A = 58)
+  if (lastByte === 58) {
+    return true;
+  }
+
+  // 2. 繁体中文 Big5 全角冒号 '：' (0xA1 = 161, 0x47 = 71)
+  if (len >= 2) {
+    const prevByte = text.getByte(len - 2);
+    if (prevByte === 161 && lastByte === 71) {
+      return true;
+    }
+    // 3. 简体中文 GBK 全角冒号 '：' (0xA3 = 163, 0xBA = 186)
+    if (prevByte === 163 && lastByte === 186) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 // 封装阻塞式按键/点击等待逻辑
