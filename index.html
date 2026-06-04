@@ -1417,7 +1417,7 @@
 			document.getElementById('val-attr-r-wind').innerText = isCheated ? '85%' : '10%';
 			document.getElementById('val-attr-r-earth').innerText = isCheated ? '85%' : '10%';
 			
-			const role = state.roles[0];
+			const role = state.party[0] || state.roles[0];
 			if (role) {
 				// 实时更新主角动作帧像素立绘 Canvas
 				if (loadMgoFn) {
