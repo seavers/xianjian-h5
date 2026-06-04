@@ -1099,6 +1099,8 @@
 				<button class="btn-dbg image-tab-btn" id="tab-wor16" onclick="switchImageType('wor16')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">点阵字库 (wor16.asc)</button>
 				<button class="btn-dbg image-tab-btn" id="tab-word" onclick="switchImageType('word')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">短语资源 (word.dat)</button>
 				<button class="btn-dbg image-tab-btn" id="tab-rng" onclick="switchImageType('rng')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">全屏动画 (rng.mkf)</button>
+				<button class="btn-dbg image-tab-btn" id="tab-music" onclick="switchImageType('music')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">背景音乐 (midi.mkf)</button>
+				<button class="btn-dbg image-tab-btn" id="tab-sound" onclick="switchImageType('sound')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">游戏音效 (voc.mkf)</button>
 			</div>
 
 			<!-- 二级筛选项控制栏 (根据选中的类型动态显示) -->
@@ -2443,6 +2445,17 @@
 			rngModule = module;
 		});
 
+		let musicModule = null;
+		let soundModule = null;
+
+		import('./js/resources/music.js').then((module) => {
+			musicModule = module;
+		});
+
+		import('./js/resources/sound.js').then((module) => {
+			soundModule = module;
+		});
+
 		// ==================== 🖼️ 通用图片精灵资源浏览器前端核心逻辑 ====================
 		// 1. 初始化核心状态管理器，用于记录当前分类、分页、像素放大倍率和子过滤ID
 		const imageExplorerState = {
@@ -2521,6 +2534,10 @@
 					imageExplorerState.currentScale = 2;
 				} else if (type === 'rng') {
 					imageExplorerState.currentScale = 1;
+				} else if (type === 'music') {
+					imageExplorerState.currentScale = 1;
+				} else if (type === 'sound') {
+					imageExplorerState.currentScale = 1;
 				}
 			}
 
@@ -2572,7 +2589,7 @@
 		}
 
 		// 8. 精密计算当前选定资源包内含有的物理总块数
-		function updateTotalItemsAndRender() {
+		async function updateTotalItemsAndRender() {
 			if (!palResources || !loaderModule) {
 				setTimeout(updateTotalItemsAndRender, 50);
 				return;
@@ -2614,6 +2631,34 @@
 				} else if (type === 'rng') {
 					const data = loaderModule.load('rng.mkf');
 					imageExplorerState.totalItems = data.getInt(0) / 4 - 1;
+				} else if (type === 'music') {
+					if (musicModule) {
+						await musicModule.initMusic();
+						const midiMkf = musicModule.getMidiMkf();
+						const musMkf = musicModule.getMusMkf();
+						const mkf = midiMkf || musMkf;
+						if (mkf) {
+							imageExplorerState.totalItems = Math.floor(mkf.getInt(0) / 4) - 1;
+						} else {
+							imageExplorerState.totalItems = 100;
+						}
+					} else {
+						imageExplorerState.totalItems = 100;
+					}
+				} else if (type === 'sound') {
+					if (soundModule) {
+						await soundModule.initSound();
+						const vocMkf = soundModule.getVocMkf();
+						const soundsMkf = soundModule.getSoundsMkf();
+						const mkf = vocMkf || soundsMkf;
+						if (mkf) {
+							imageExplorerState.totalItems = Math.floor(mkf.getInt(0) / 4) - 1;
+						} else {
+							imageExplorerState.totalItems = 250;
+						}
+					} else {
+						imageExplorerState.totalItems = 250;
+					}
 				}
 			} catch (e) {
 				console.error("获取精灵包大小时发生异常:", e);
@@ -2708,6 +2753,10 @@
 					card = renderWordItem(i, `WORD #${i}`);
 				} else if (type === 'rng') {
 					card = renderRngItem(i, `RNG #${i}`);
+				} else if (type === 'music') {
+					card = renderMusicItem(i, `BGM #${i}`);
+				} else if (type === 'sound') {
+					card = renderSoundItem(i, `SFX #${i}`);
 				}
 
 				if (card) {
@@ -2859,6 +2908,207 @@
 			} catch (e) {
 				console.error(`初始化 RNG #${rngId} 失败:`, e);
 				card.innerHTML = `<span style="font-size:8px; color:var(--glow-red);">${labelText}\n[解析失败]</span>`;
+			}
+
+			return card;
+		}
+
+		// 10.0.1 针对背景音乐 (midi.mkf / mus.mkf / Musics) 的微型互动播放卡片渲染引擎
+		function renderMusicItem(musicId, labelText) {
+			const card = document.createElement('div');
+			card.style.cssText = "background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.02); " +
+				"border-radius:2px; display:flex; flex-direction:column; align-items:center; " +
+				"justify-content:center; padding:10px; transition:all 0.1s; position:relative; " +
+				"width: 140px; box-sizing:border-box; gap: 6px;";
+
+			card.onmouseenter = () => {
+				card.style.borderColor = 'var(--glow-yellow)';
+				card.style.background = 'rgba(253, 220, 132, 0.02)';
+			};
+			card.onmouseleave = () => {
+				if (!isPlaying) {
+					card.style.borderColor = 'rgba(255,255,255,0.02)';
+					card.style.background = 'rgba(255,255,255,0.015)';
+				}
+			};
+
+			const icon = document.createElement('span');
+			icon.innerHTML = "🎵";
+			icon.style.fontSize = "20px";
+			card.appendChild(icon);
+
+			const label = document.createElement('span');
+			label.innerText = labelText;
+			label.style.cssText = "font-size: 8.5px; color: rgba(255,255,255,0.4); font-weight: bold; text-align: center;";
+			card.appendChild(label);
+
+			const playBtn = document.createElement('button');
+			playBtn.innerText = "▶ 播放";
+			playBtn.style.cssText = "background: rgba(253, 220, 132, 0.1); border: 1px solid rgba(253, 220, 132, 0.2); " +
+				"color: var(--glow-yellow); font-size: 8px; padding: 2px 8px; border-radius: 2px; " +
+				"cursor: pointer; font-weight: bold; outline: none; transition: all 0.1s; width: 100%; text-align: center;";
+			playBtn.onmouseenter = () => { if (!isPlaying) playBtn.style.background = 'rgba(253, 220, 132, 0.2)'; };
+			playBtn.onmouseleave = () => { if (!isPlaying) playBtn.style.background = 'rgba(253, 220, 132, 0.1)'; };
+			card.appendChild(playBtn);
+
+			let isPlaying = false;
+
+			playBtn.onclick = () => {
+				if (!musicModule) return;
+				if (isPlaying) {
+					musicModule.stopMusic();
+					isPlaying = false;
+					playBtn.innerText = "▶ 播放";
+					playBtn.style.background = 'rgba(253, 220, 132, 0.1)';
+					playBtn.style.borderColor = 'rgba(253, 220, 132, 0.2)';
+					playBtn.style.color = 'var(--glow-yellow)';
+				} else {
+					// 独占播放：先停止所有其它正在播放的音乐卡片
+					document.querySelectorAll('.btn-music-stop').forEach(btn => {
+						btn.click();
+					});
+					musicModule.playMusic(musicId, true, 0);
+					isPlaying = true;
+					playBtn.innerText = "■ 停止";
+					playBtn.classList.add('btn-music-stop');
+					playBtn.style.background = 'rgba(255, 59, 111, 0.15)';
+					playBtn.style.borderColor = 'rgba(255, 59, 111, 0.3)';
+					playBtn.style.color = '#ff3b6f';
+					card.style.borderColor = 'var(--glow-yellow)';
+				}
+			};
+
+			const downloadBtn = document.createElement('button');
+			downloadBtn.innerText = "📥 下载 MIDI";
+			downloadBtn.style.cssText = "background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); " +
+				"color: rgba(255,255,255,0.7); font-size: 8px; padding: 2px 4px; border-radius: 2px; " +
+				"cursor: pointer; outline: none; transition: all 0.1s; width: 100%; text-align: center;";
+			downloadBtn.onmouseenter = () => { downloadBtn.style.background = 'rgba(255,255,255,0.08)'; };
+			downloadBtn.onmouseleave = () => { downloadBtn.style.background = 'rgba(255, 255, 255, 0.03)'; };
+			card.appendChild(downloadBtn);
+
+			downloadBtn.onclick = () => {
+				if (!musicModule) return;
+				const midiMkf = musicModule.getMidiMkf();
+				const musMkf = musicModule.getMusMkf();
+				const mkf = midiMkf || musMkf;
+				if (!mkf) {
+					alert("当前环境未检测到 midi.mkf / mus.mkf 归档文件。");
+					return;
+				}
+				const total = Math.floor(mkf.getInt(0) / 4) - 1;
+				if (musicId >= total) {
+					alert(`背景音乐索引 #${musicId} 越界 (归档文件内最大索引为: ${total - 1})`);
+					return;
+				}
+				const start = mkf.getInt(musicId * 4);
+				const end = mkf.getInt(musicId * 4 + 4);
+				if (end <= start) {
+					alert("该索引对应的音频块数据为空。");
+					return;
+				}
+				const chunk = mkf.slice(start, end);
+				const bytes = new Uint8Array(chunk.length);
+				for (let k = 0; k < chunk.length; k++) {
+					bytes[k] = chunk.getByte(k);
+				}
+				const blob = new Blob([bytes], { type: 'audio/midi' });
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement('a');
+				const ext = midiMkf ? 'mid' : 'rix';
+				a.href = url;
+				a.download = `music_${musicId}.${ext}`;
+				a.click();
+				URL.revokeObjectURL(url);
+			};
+
+			return card;
+		}
+
+		// 10.0.2 针对特技音效 (voc.mkf / sounds.mkf) 的微型互动播放卡片渲染引擎
+		function renderSoundItem(soundId, labelText) {
+			const card = document.createElement('div');
+			card.style.cssText = "background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.02); " +
+				"border-radius:2px; display:flex; flex-direction:column; align-items:center; " +
+				"justify-content:center; padding:10px; transition:all 0.1s; position:relative; " +
+				"width: 140px; box-sizing:border-box; gap: 6px;";
+
+			card.onmouseenter = () => {
+				card.style.borderColor = 'var(--glow-green)';
+				card.style.background = 'rgba(0, 255, 157, 0.02)';
+			};
+			card.onmouseleave = () => {
+				card.style.borderColor = 'rgba(255,255,255,0.02)';
+				card.style.background = 'rgba(255,255,255,0.015)';
+			};
+
+			const icon = document.createElement('span');
+			icon.innerHTML = soundId === 0 ? "🔇" : "🔊";
+			icon.style.fontSize = "20px";
+			card.appendChild(icon);
+
+			const label = document.createElement('span');
+			label.innerText = soundId === 0 ? "全部静音" : labelText;
+			label.style.cssText = "font-size: 8.5px; color: rgba(255,255,255,0.4); font-weight: bold; text-align: center;";
+			card.appendChild(label);
+
+			const playBtn = document.createElement('button');
+			playBtn.innerText = soundId === 0 ? "■ 静音" : "▶ 播放";
+			playBtn.style.cssText = soundId === 0 ?
+				"background: rgba(255, 59, 111, 0.1); border: 1px solid rgba(255, 59, 111, 0.2); color: #ff3b6f; " +
+				"font-size: 8px; padding: 2px 8px; border-radius: 2px; cursor: pointer; font-weight: bold; outline: none; transition: all 0.1s; width: 100%; text-align: center;" :
+				"background: rgba(0, 255, 157, 0.1); border: 1px solid rgba(0, 255, 157, 0.2); color: var(--glow-green); " +
+				"font-size: 8px; padding: 2px 8px; border-radius: 2px; cursor: pointer; font-weight: bold; outline: none; transition: all 0.1s; width: 100%; text-align: center;";
+			playBtn.onmouseenter = () => { playBtn.style.background = soundId === 0 ? 'rgba(255, 59, 111, 0.2)' : 'rgba(0, 255, 157, 0.2)'; };
+			playBtn.onmouseleave = () => { playBtn.style.background = soundId === 0 ? 'rgba(255, 59, 111, 0.1)' : 'rgba(0, 255, 157, 0.1)'; };
+			card.appendChild(playBtn);
+
+			playBtn.onclick = async () => {
+				if (!soundModule) return;
+				if (soundId === 0) {
+					soundModule.stopAllSounds();
+				} else {
+					await soundModule.playSound(soundId);
+				}
+			};
+
+			if (soundId > 0) {
+				const downloadBtn = document.createElement('button');
+				downloadBtn.innerText = "📥 下载 VOC";
+				downloadBtn.style.cssText = "background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); " +
+					"color: rgba(255,255,255,0.7); font-size: 8px; padding: 2px 4px; border-radius: 2px; " +
+					"cursor: pointer; outline: none; transition: all 0.1s; width: 100%; text-align: center;";
+				downloadBtn.onmouseenter = () => { downloadBtn.style.background = 'rgba(255,255,255,0.08)'; };
+				downloadBtn.onmouseleave = () => { downloadBtn.style.background = 'rgba(255, 255, 255, 0.03)'; };
+				card.appendChild(downloadBtn);
+
+				downloadBtn.onclick = () => {
+					if (!soundModule) return;
+					const vocMkf = soundModule.getVocMkf();
+					const soundsMkf = soundModule.getSoundsMkf();
+					const mkf = vocMkf || soundsMkf;
+					if (!mkf) {
+						alert("当前环境未检测到 voc.mkf / sounds.mkf 归档文件。");
+						return;
+					}
+					const chunk = soundModule.getMkfChunk(mkf, soundId);
+					if (!chunk) {
+						alert(`无法获取特技音效索引 #${soundId} 的数据块`);
+						return;
+					}
+					const bytes = new Uint8Array(chunk.length);
+					for (let k = 0; k < chunk.length; k++) {
+						bytes[k] = chunk.getByte(k);
+					}
+					const ext = soundModule.isVoc(chunk) ? 'voc' : 'wav';
+					const blob = new Blob([bytes], { type: 'application/octet-stream' });
+					const url = URL.createObjectURL(blob);
+					const a = document.createElement('a');
+					a.href = url;
+					a.download = `sound_${soundId}.${ext}`;
+					a.click();
+					URL.revokeObjectURL(url);
+				};
 			}
 
 			return card;
