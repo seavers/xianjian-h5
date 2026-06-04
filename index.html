@@ -1798,8 +1798,8 @@
 			document.getElementById('prof-timer-pause').innerText = 'No';
 			document.getElementById('prof-timer-pause').style.color = 'var(--glow-green)';
 
-			// 额外同步右侧指令区过滤状态，确保 NPC 选中切换时日志视图即时更新
-			syncScriptLogFilterView();
+			// 额外渲染右侧指令区，确保终端视图即时同步
+			renderScriptLogs();
 		}
 
 		// 4. 解码某一个道具并填充 20 项底层高级指标
