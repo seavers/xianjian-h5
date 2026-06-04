@@ -90,19 +90,6 @@ function waitKey() {
 
 function resetTalk() {
   isTalking = false;
-  rgm = null;
-  who = null;
-  tx = 80;
-  ty = 8;
-  titleX = 80;
-  titleY = 8;
-  clear = true;
-  color = null;
-  tips = false;
-  message = false;
-  line = 0;
-  arrowX = 0;
-  arrowY = 0;
 }
 
 async function showUp(pRgmId) {
@@ -210,6 +197,15 @@ export async function drawTalk(msgId) {
 
   // 步骤 2：等待异步打印对话文本动作完成
   await drawTalk0(msgId);
+
+  if(!t.isNextTalk()) {
+    await waitKey();
+    updateTalk();
+    line = 0;
+    clear = true;
+  } else if(t.isNextTalks()) {
+    await waitKey();
+  }
 }
 
 function drawTalk0(msgId) {
