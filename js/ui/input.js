@@ -283,13 +283,6 @@ function onXY(x, y, half, dir) {
 }
 
 export function onBlank() {
-  if (blankCallback) {
-    const bcb = blankCallback;
-    blankCallback = null;
-    bcb();
-    return;
-  }
-
   // 计算主角脚底的像素坐标
   const x = state.mx * 32 + state.mhalf * 16;
   const y = state.my * 16 + state.mhalf * 8;
