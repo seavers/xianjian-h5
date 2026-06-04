@@ -39,7 +39,7 @@ async function loadMkfFile(filename) {
 // 初始化音频包，确保 voc.mkf 与 sounds.mkf 加载完成
 export async function initSound() {
   if (!vocMkf) vocMkf = await loadMkfFile('voc.mkf');
-  if (!soundsMkf) soundsMkf = await loadMkfFile('sounds.mkf');
+  // if (!soundsMkf) soundsMkf = await loadMkfFile('sounds.mkf');
 }
 
 export function getVocMkf() { return vocMkf; }

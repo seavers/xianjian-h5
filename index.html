@@ -1180,6 +1180,54 @@
 		</div>
 	</div>
 
+	<!-- ==================== 🎬 RNG 剧情动画多尺寸独立播放器浮层 ==================== -->
+	<div id="rng-player-modal" style="display: none; position: fixed; z-index: 100000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
+		<div style="background: rgba(10,10,15,0.98); border: 1px solid var(--glow-green); border-radius: 4px; box-shadow: 0 0 30px rgba(0, 255, 157, 0.2); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
+			<!-- 播放器头部 -->
+			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
+				<div style="display: flex; align-items: center; gap: 6px;">
+					<div style="width: 5px; height: 5px; background: var(--glow-green); border-radius: 50%; box-shadow: 0 0 6px var(--glow-green);"></div>
+					<span style="font-size: 11px; font-weight: bold; color: var(--glow-green); letter-spacing: 0.5px;">🎬 RNG 剧情全屏动画高清播放器</span>
+				</div>
+				<button onclick="closeRngPlayer()" style="background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer; transition: color 0.15s; outline:none;" onmouseenter="this.style.color='#ff3b6f'" onmouseleave="this.style.color='rgba(255,255,255,0.4)'">✕</button>
+			</div>
+
+			<!-- 播放画面区 -->
+			<div style="flex: 1; display: flex; align-items: center; justify-content: center; background: #000; padding: 20px; overflow: auto; min-width: 360px; min-height: 240px;">
+				<canvas id="rng-modal-canvas" width="320" height="200" style="display: block; image-rendering: pixelated; background: #000; box-shadow: 0 0 20px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.05); width: 640px; height: 400px;"></canvas>
+			</div>
+
+			<!-- 控制条控制区 -->
+			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-top: 1px solid var(--border-glass); display: flex; flex-direction: column; gap: 6px;">
+				<!-- 进度条 -->
+				<div style="display: flex; align-items: center; gap: 10px;">
+					<input type="range" id="rng-modal-slider" min="0" max="100" value="0" oninput="onRngSliderChange(this.value)" style="flex: 1; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; outline: none; appearance: none; cursor: pointer; accent-color: var(--glow-green);">
+					<span id="rng-modal-frame-lbl" style="font-size: 9px; color: var(--glow-yellow); font-weight: bold; font-family:'JetBrains Mono', monospace; min-width: 60px; text-align: right;">0 / 0 帧</span>
+				</div>
+
+				<div style="display: flex; justify-content: space-between; align-items: center;">
+					<span id="rng-modal-title" style="font-size: 8.5px; color: rgba(255,255,255,0.4);">正在播放: RNG #0</span>
+					
+					<div style="display: flex; gap: 8px; align-items: center;">
+						<!-- 尺寸选择器 -->
+						<div style="display: flex; align-items: center; gap: 4px; margin-right: 8px;">
+							<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">📺 分辨率:</span>
+							<select id="select-rng-scale" onchange="changeRngModalScale(this.value)" style="background: #08080c; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 8.5px; padding: 2px 4px; outline: none; cursor: pointer; border-radius: 2px;">
+								<option value="1">320x200 (1X)</option>
+								<option value="2" selected>640x400 (2X)</option>
+								<option value="3">960x600 (3X)</option>
+								<option value="4">1280x800 (4X)</option>
+							</select>
+						</div>
+
+						<button class="btn-dbg" id="btn-rng-modal-play" onclick="toggleRngModalPlay()" style="color: var(--glow-green); border-color: rgba(0, 255, 157, 0.2); padding: 2px 10px; font-size: 9px; cursor: pointer; font-weight: bold;">⏸ 暂停</button>
+						<button class="btn-dbg" onclick="closeRngPlayer()" style="color: #fff; border-color: rgba(255,255,255,0.1); padding: 2px 10px; font-size: 9px; cursor: pointer;">关闭</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
 	<!-- ==================== 📚 仙剑奇侠传游戏资料监视与调试弹窗 ==================== -->
 	<div id="game-data-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
 		<div style="background: rgba(15,13,8,0.96); border: 1px solid var(--glow-yellow); border-radius: 4px; box-shadow: 0 0 25px rgba(255, 215, 0, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
@@ -1207,6 +1255,9 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- ==================== MIDI 合成器 ==================== -->
+	<script src="js/utils/webaudio-tinysynth.js"></script>
 
 	<!-- ==================== 主程序入口 ==================== -->
 	<script type="module" src="js/app.js"></script>
@@ -2477,12 +2528,14 @@
 		// 3. 关闭图片资源浏览器浮层
 		function closeImageExplorer() {
 			if (window.clearAllRngTimers) window.clearAllRngTimers();
+			if (window.closeRngPlayer) window.closeRngPlayer();
 			document.getElementById('image-explorer-modal').style.display = 'none';
 		}
 
 		// 4. 切换浏览的精灵大类（例如头像、角色动作、大背景图、剧情文本等）
 		function switchImageType(type) {
 			if (window.clearAllRngTimers) window.clearAllRngTimers();
+			if (window.closeRngPlayer) window.closeRngPlayer();
 			imageExplorerState.currentType = type;
 			imageExplorerState.currentPage = 0;
 
@@ -2792,6 +2845,153 @@
 			ctx.putImageData(imageData, 0, 0);
 		}
 
+		// ==================== 🎬 RNG 独立大尺寸弹窗播放器控制器 ====================
+		window.rngModalState = {
+			rngId: 0,
+			totalFrames: 0,
+			currentFrame: 0,
+			isPlaying: false,
+			rngChunk: null,
+			palette: null,
+			frameBuffer: new Uint8Array(320 * 200),
+			timeoutId: null
+		};
+
+		function openRngPlayer(rngId, labelText) {
+			window.clearAllRngTimers();
+
+			const modal = document.getElementById('rng-player-modal');
+			modal.style.display = 'flex';
+
+			const rngChunk = loaderModule.loadMkf('rng.mkf', rngId);
+			const firstOffset = rngChunk.getInt(0);
+			const totalFrames = Math.floor((firstOffset - 4) / 4);
+
+			window.rngModalState = {
+				rngId: rngId,
+				totalFrames: totalFrames,
+				currentFrame: 0,
+				isPlaying: true,
+				rngChunk: rngChunk,
+				palette: palResources.loadPal(window.state ? window.state.paletteId : 0),
+				frameBuffer: new Uint8Array(320 * 200),
+				timeoutId: null
+			};
+
+			document.getElementById('rng-modal-title').innerText = `正在播放: ${labelText}`;
+			
+			const slider = document.getElementById('rng-modal-slider');
+			slider.max = totalFrames - 1;
+			slider.value = 0;
+
+			const selectScale = document.getElementById('select-rng-scale');
+			const scale = parseInt(selectScale.value) || 2;
+			changeRngModalScale(scale);
+
+			const playBtn = document.getElementById('btn-rng-modal-play');
+			playBtn.innerText = "⏸ 暂停";
+			playBtn.style.color = "var(--glow-red)";
+			playBtn.style.borderColor = "rgba(255, 59, 111, 0.25)";
+			playBtn.style.background = "rgba(255, 59, 111, 0.05)";
+
+			runRngModalLoop();
+		}
+
+		function closeRngPlayer() {
+			window.rngModalState.isPlaying = false;
+			if (window.rngModalState.timeoutId) {
+				clearTimeout(window.rngModalState.timeoutId);
+				window.rngModalState.timeoutId = null;
+			}
+			document.getElementById('rng-player-modal').style.display = 'none';
+		}
+
+		function runRngModalLoop() {
+			if (!window.rngModalState.isPlaying) return;
+
+			const { rngChunk, currentFrame, totalFrames, frameBuffer, palette } = window.rngModalState;
+			const canvas = document.getElementById('rng-modal-canvas');
+
+			if (window.rngModalState.currentFrame >= totalFrames) {
+				window.rngModalState.currentFrame = 0;
+				frameBuffer.fill(0);
+			}
+
+			const f = window.rngModalState.currentFrame;
+			const ok = rngModule.decodeRngFrame(rngChunk, f, frameBuffer);
+			if (ok) {
+				drawBufferToCanvas(canvas, frameBuffer, palette);
+				
+				document.getElementById('rng-modal-slider').value = f;
+				document.getElementById('rng-modal-frame-lbl').innerText = `${f + 1} / ${totalFrames} 帧`;
+				
+				window.rngModalState.currentFrame++;
+				window.rngModalState.timeoutId = setTimeout(runRngModalLoop, 62.5);
+			} else {
+				toggleRngModalPlay();
+			}
+		}
+
+		function toggleRngModalPlay() {
+			const playBtn = document.getElementById('btn-rng-modal-play');
+			if (window.rngModalState.isPlaying) {
+				window.rngModalState.isPlaying = false;
+				if (window.rngModalState.timeoutId) {
+					clearTimeout(window.rngModalState.timeoutId);
+					window.rngModalState.timeoutId = null;
+				}
+				playBtn.innerText = "▶ 播放";
+				playBtn.style.color = "var(--glow-green)";
+				playBtn.style.borderColor = "rgba(0, 255, 157, 0.25)";
+				playBtn.style.background = "rgba(0, 255, 157, 0.05)";
+			} else {
+				window.rngModalState.isPlaying = true;
+				playBtn.innerText = "⏸ 暂停";
+				playBtn.style.color = "var(--glow-red)";
+				playBtn.style.borderColor = "rgba(255, 59, 111, 0.25)";
+				playBtn.style.background = "rgba(255, 59, 111, 0.05)";
+				runRngModalLoop();
+			}
+		}
+
+		function changeRngModalScale(scale) {
+			const canvas = document.getElementById('rng-modal-canvas');
+			if (canvas) {
+				canvas.style.width = (320 * scale) + 'px';
+				canvas.style.height = (200 * scale) + 'px';
+			}
+		}
+
+		function onRngSliderChange(val) {
+			const targetFrame = parseInt(val);
+			const { rngChunk, totalFrames, frameBuffer, palette } = window.rngModalState;
+			const canvas = document.getElementById('rng-modal-canvas');
+
+			if (window.rngModalState.timeoutId) {
+				clearTimeout(window.rngModalState.timeoutId);
+				window.rngModalState.timeoutId = null;
+			}
+
+			frameBuffer.fill(0);
+			for (let f = 0; f <= targetFrame; f++) {
+				rngModule.decodeRngFrame(rngChunk, f, frameBuffer);
+			}
+			drawBufferToCanvas(canvas, frameBuffer, palette);
+
+			window.rngModalState.currentFrame = targetFrame;
+			document.getElementById('rng-modal-frame-lbl').innerText = `${targetFrame + 1} / ${totalFrames} 帧`;
+
+			if (window.rngModalState.isPlaying) {
+				window.rngModalState.timeoutId = setTimeout(runRngModalLoop, 62.5);
+			}
+		}
+
+		window.openRngPlayer = openRngPlayer;
+		window.closeRngPlayer = closeRngPlayer;
+		window.toggleRngModalPlay = toggleRngModalPlay;
+		window.changeRngModalScale = changeRngModalScale;
+		window.onRngSliderChange = onRngSliderChange;
+
 		// 10.0 针对全屏剧情动画 (rng.mkf) 的微型互动 Canvas 播放渲染引擎
 		function renderRngItem(rngId, labelText) {
 			const card = document.createElement('div');
@@ -2818,12 +3018,35 @@
 			label.style.cssText = "font-size: 8px; color: rgba(255,255,255,0.3); font-weight: bold; margin-top: 4px; text-align: center;";
 			card.appendChild(label);
 
+			const btnContainer = document.createElement('div');
+			btnContainer.style.cssText = "display: flex; gap: 4px; margin-top: 4px; width: 100%; justify-content: center;";
+			card.appendChild(btnContainer);
+
 			const playBtn = document.createElement('button');
 			playBtn.innerText = "▶ 播放";
-			playBtn.style.cssText = "background: rgba(0, 255, 157, 0.1); border: 1px solid rgba(0, 255, 157, 0.2); color: var(--glow-green); font-size: 8px; padding: 2px 8px; margin-top: 4px; border-radius: 2px; cursor: pointer; font-weight: bold; outline: none; transition: all 0.1s;";
+			playBtn.style.cssText = "background: rgba(0, 255, 157, 0.1); border: 1px solid rgba(0, 255, 157, 0.2); color: var(--glow-green); font-size: 8.5px; padding: 2px 6px; border-radius: 2px; cursor: pointer; font-weight: bold; outline: none; transition: all 0.1s;";
 			playBtn.onmouseenter = () => { if (!isPlaying) playBtn.style.background = 'rgba(0, 255, 157, 0.2)'; };
 			playBtn.onmouseleave = () => { if (!isPlaying) playBtn.style.background = 'rgba(0, 255, 157, 0.1)'; };
-			card.appendChild(playBtn);
+			btnContainer.appendChild(playBtn);
+
+			const zoomBtn = document.createElement('button');
+			zoomBtn.innerText = "🔍 放大";
+			zoomBtn.style.cssText = "background: rgba(0, 225, 255, 0.1); border: 1px solid rgba(0, 225, 255, 0.2); color: var(--glow-blue); font-size: 8.5px; padding: 2px 6px; border-radius: 2px; cursor: pointer; font-weight: bold; outline: none; transition: all 0.1s;";
+			zoomBtn.onmouseenter = () => { zoomBtn.style.background = 'rgba(0, 225, 255, 0.2)'; };
+			zoomBtn.onmouseleave = () => { zoomBtn.style.background = 'rgba(0, 225, 255, 0.1)'; };
+			zoomBtn.onclick = () => {
+				if (isPlaying) {
+					isPlaying = false;
+					if (timerControl.timeoutId) {
+						clearTimeout(timerControl.timeoutId);
+						timerControl.timeoutId = null;
+					}
+					timerControl.onStop();
+				}
+				window.clearAllRngTimers();
+				openRngPlayer(rngId, labelText);
+			};
+			btnContainer.appendChild(zoomBtn);
 
 			let isPlaying = false;
 			const timerControl = {
