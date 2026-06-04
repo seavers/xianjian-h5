@@ -1045,6 +1045,26 @@ export async function talk(msgId) {
   await window.Talk.drawTalk(msgId); // 异步等待对话框弹出并确认推进完成
 }
 
+export async function talkTips(msgId) {
+  await window.Talk.talkTips(msgId);
+}
+
+export async function talkUp(rgmId) {
+  await window.Talk.talkUp(rgmId);
+}
+
+export async function talkDown(rgmId) {
+  await window.Talk.talkDown(rgmId);
+}
+
+export async function talkMessage(msgId) {
+  await window.Talk.talkMessage(msgId);
+}
+
+export async function clearTalk() {
+  await window.Talk.clearTalk();
+}
+
 export async function updateScreen() {
   state.fadeAlpha = 0;
 
@@ -1639,13 +1659,13 @@ scriptCodes[0x78] = { func: playEndingSceneAnimation, desc: '结局/过场场景
 
 scriptCodes[0x36] = { func: setRngAnimation, desc: '设置当前播放剧情动画' };
 scriptCodes[0x37] = { func: playRngAnimation, desc: '播放剧情RNG动画' };
-scriptCodes[0x3B] = { func: (...args) => window.Talk.talkTips(...args), desc: '显示系统通知 tips' };
-scriptCodes[0x3C] = { func: (...args) => window.Talk.talkUp(...args), desc: '在屏幕顶部显示对话' };
-scriptCodes[0x3D] = { func: (...args) => window.Talk.talkDown(...args), desc: '在屏幕底部显示对话' };
-scriptCodes[0x3E] = { func: (...args) => window.Talk.talkMessage(...args), desc: '显示弹出框信息 alert' };
+scriptCodes[0x3B] = { func: talkTips, desc: '显示系统通知 tips' };
+scriptCodes[0x3C] = { func: talkUp, desc: '在屏幕顶部显示对话' };
+scriptCodes[0x3D] = { func: talkDown, desc: '在屏幕底部显示对话' };
+scriptCodes[0x3E] = { func: talkMessage, desc: '显示弹出框信息 alert' };
 
 scriptCodes[0x16] = { func: setNpcTile, desc: '设置NPC特定形象与朝向' };
-scriptCodes[0x8E] = { func: (...args) => window.Talk.clearTalk(...args), desc: '清空/关闭对话框' };
+scriptCodes[0x8E] = { func: clearTalk, desc: '清空/关闭对话框' };
 scriptCodes[0x49] = { func: setObjectStatus, desc: '改变NPC活动生命状态' };
 scriptCodes[0x4A] = { func: setBattlefield, desc: '设置当前战斗背景 ID' };
 scriptCodes[0x70] = { func: roleWalk, desc: '插值移动主角位置' };
