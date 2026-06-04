@@ -1,14 +1,30 @@
 import { ByteArray } from '../utils/view.js';
+import { DBOPL } from '../utils/dbopl.js';
+import { RixPlayer } from '../utils/rixplayer.js';
 
-// 全局音频文件归档与状态
-let midiMkf = null;
+// 全局背景音乐状态与 Web Audio 节点
 let musMkf = null;
-let currentAudio = null;
 let currentMusicNum = -1;
 let currentLoop = true;
-let synth = null;
 
-// 异步加载背景音乐资源归档
+let audioCtx = null;
+let oplInstance = null;
+let rixPlayer = null;
+let scriptNode = null;
+let gainNode = null;
+
+// 获取或惰性初始化 Web Audio 上下文，并处理浏览器的暂停安全限制
+function getAudioContext() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+// 异步加载音乐归档包文件
 async function loadMkfFile(filename) {
   try {
     const response = await fetch(`pal/${filename}`);
@@ -27,29 +43,14 @@ async function loadMkfFile(filename) {
   }
 }
 
-// 获取或惰性初始化 Web Audio MIDI 合成器
-function getMidiSynth() {
-  if (!synth) {
-    if (typeof WebAudioTinySynth !== 'undefined') {
-      synth = new WebAudioTinySynth();
-      synth.setQuality(1); // 开启 FM 合成音质
-    } else {
-      console.warn('[Music] 全局未检测到 WebAudioTinySynth 构造器，无法进行 MIDI 软合成');
-    }
-  }
-  return synth;
-}
-
-// 确保音乐归档就绪
+// 初始化背景音乐包
 export async function initMusic() {
-  if (!midiMkf) midiMkf = await loadMkfFile('midi.mkf');
   if (!musMkf) musMkf = await loadMkfFile('mus.mkf');
 }
 
-export function getMidiMkf() { return midiMkf; }
 export function getMusMkf() { return musMkf; }
 
-// 从已载入的 MKF 数据中提取指定索引的 chunk 视图
+// 从已载入的 MKF 数据中提取指定索引的 RIX 数据切片
 function getMkfChunk(mkf, index) {
   if (!mkf || index < 0) return null;
   const total = Math.floor(mkf.getInt(0) / 4) - 1;
@@ -60,183 +61,175 @@ function getMkfChunk(mkf, index) {
   return mkf.slice(start, end);
 }
 
-// 将 ByteArray 的子切片视图完整复制到一个新的 ArrayBuffer 中供 TinySynth 解码
-function toArrayBuffer(byteArray) {
+// 将自定义 ByteArray 视图转换为标准的 JS Uint8Array 数组供播放器使用
+function toUint8Array(byteArray) {
   const bytes = new Uint8Array(byteArray.length);
   for (let i = 0; i < byteArray.length; i++) {
     bytes[i] = byteArray.getByte(i);
   }
-  return bytes.buffer;
+  return bytes;
 }
 
-// 播放指定编号的背景音乐，支持从 midi.mkf 解包软合成播放，若无则降级从 Musics 目录查找音频流
+// 播放指定编号的背景音乐，使用 OPL3 FM 芯片硬件级 PCM 音频合成播放
 export async function playMusic(musicNum, loop = true, fadeTime = 0) {
   if (musicNum <= 0) {
-    stopMusic();
+    stopMusic(fadeTime);
     return;
   }
-  
-  const mSynth = getMidiSynth();
-  const isSynthPlaying = mSynth && mSynth.playing;
-  if (currentMusicNum === musicNum && (currentAudio && !currentAudio.paused || isSynthPlaying)) {
-    return; // 已经在此背景音乐中播放，跳过以避免重头播放
+
+  // 若已经在播放同编号背景音乐，跳过以避免打断
+  if (currentMusicNum === musicNum && rixPlayer && !rixPlayer.play_end) {
+    return;
   }
-  
-  stopMusic();
-  
+
+  // 停止正在播放的背景音乐（无缝淡出）
+  stopMusic(0);
+
   currentMusicNum = musicNum;
   currentLoop = loop;
-  
+
   await initMusic();
-  
-  // 优先判定：若支持 TinySynth 且存在 midi.mkf，从 midi.mkf 读取并合成播放
-  if (mSynth && midiMkf) {
-    const chunk = getMkfChunk(midiMkf, musicNum);
-    if (chunk) {
-      try {
-        const arrayBuf = toArrayBuffer(chunk);
-        mSynth.loadMIDI(arrayBuf);
-        mSynth.setLoop(loop);
-        
-        if (fadeTime > 0) {
-          mSynth.setMasterVol(0);
-          mSynth.playMIDI();
-          fadeInSynth(mSynth, fadeTime);
-        } else {
-          mSynth.setMasterVol(0.5);
-          mSynth.playMIDI();
+  if (!musMkf) {
+    console.warn('[Music] mus.mkf 背景音乐库未载入，无法合成播放音乐 ID:', musicNum);
+    return;
+  }
+
+  const chunk = getMkfChunk(musMkf, musicNum);
+  if (!chunk) {
+    console.warn(`[Music] 未在 mus.mkf 中找到编号为 ${musicNum} 的音乐块`);
+    return;
+  }
+
+  const rixData = toUint8Array(chunk);
+  const ctx = getAudioContext();
+
+  // 实例化 OPL3 合成核心（配置采样率及双声道）
+  oplInstance = new DBOPL.OPL(ctx.sampleRate, 2);
+
+  // 初始化 RIX 播放器逻辑
+  rixPlayer = new RixPlayer(oplInstance);
+  rixPlayer.load(rixData);
+
+  // 精准计算 70Hz 背景音乐节拍在当前上下文采样率下的样本步长
+  const samplesPerTick = ctx.sampleRate / 70;
+  let sampleCounter = 0;
+
+  // 创建 PCM 采样混音 ScriptProcessorNode (缓冲区设为 4096 双通道输出)
+  scriptNode = ctx.createScriptProcessor(4096, 2, 2);
+  scriptNode.onaudioprocess = (e) => {
+    const outputBuffer = e.outputBuffer;
+    const left = outputBuffer.getChannelData(0);
+    const right = outputBuffer.getChannelData(1);
+    const len = outputBuffer.length;
+
+    let offset = 0;
+    while (offset < len) {
+      // 算出到达下一个播放器 Tick 时钟所需的渲染样本数
+      const nextTickSamples = Math.ceil(samplesPerTick - sampleCounter);
+      const toRender = Math.min(len - offset, nextTickSamples);
+
+      if (toRender > 0) {
+        let rendered = 0;
+        while (rendered < toRender) {
+          // 由于 DBOPL 合成器每次输出样本数有 2-512 的硬性规范，做分块与凑样处理
+          let chunk = Math.min(toRender - rendered, 512);
+          if (chunk < 2) {
+            chunk = 2;
+          }
+
+          const buf = oplInstance.generate(chunk);
+          const activeSamples = Math.min(chunk, toRender - rendered);
+          for (let i = 0; i < activeSamples; i++) {
+            const outIdx = offset + rendered + i;
+            left[outIdx] = buf[i * 2] / 32768.0;
+            right[outIdx] = buf[i * 2 + 1] / 32768.0;
+          }
+          rendered += activeSamples;
         }
-        console.log(`[Music] 成功从 midi.mkf 读取并利用 TinySynth 软合成播放背景音乐 ID: ${musicNum}`);
-        return;
+
+        offset += toRender;
+        sampleCounter += toRender;
+      }
+
+      // 累加样本到达节拍步长，触发 RixPlayer 状态步进
+      if (sampleCounter >= samplesPerTick) {
+        sampleCounter -= samplesPerTick;
+        if (rixPlayer) {
+          const active = rixPlayer.update();
+          if (!active) {
+            if (currentLoop) {
+              // 循环播放模式：重新加载 RIX 缓存重头开始
+              rixPlayer.load(rixData);
+            } else {
+              // 单次播放模式：填充剩余静音并终止
+              left.fill(0, offset);
+              right.fill(0, offset);
+              stopMusic(0);
+              break;
+            }
+          }
+        }
+      }
+    }
+  };
+
+  // 创建音量 GainNode 并根据是否淡入设置音量渐变
+  gainNode = ctx.createGain();
+  const now = ctx.currentTime;
+  if (fadeTime > 0) {
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(0.5, now + fadeTime);
+  } else {
+    gainNode.gain.setValueAtTime(0.5, now);
+  }
+
+  // 链接 Web Audio 节点图
+  scriptNode.connect(gainNode);
+  gainNode.connect(ctx.destination);
+
+  console.log(`[Music] OPL3 PCM 合成器成功播放背景音乐 RIX ID: ${musicNum}`);
+}
+
+// 停止背景音乐，支持 GainNode 级别的平滑淡出以消除爆音
+export function stopMusic(fadeTime = 0) {
+  const ctx = audioCtx;
+  const currentGainNode = gainNode;
+  const currentScriptNode = scriptNode;
+
+  // 提前断开引用的全局控制，允许下一首音乐无冲突快速播放
+  gainNode = null;
+  scriptNode = null;
+  rixPlayer = null;
+  oplInstance = null;
+  currentMusicNum = -1;
+
+  if (ctx && currentGainNode) {
+    const now = ctx.currentTime;
+    if (fadeTime > 0) {
+      currentGainNode.gain.setValueAtTime(currentGainNode.gain.value, now);
+      currentGainNode.gain.linearRampToValueAtTime(0, now + fadeTime);
+      
+      // 在淡出时间到了之后，真正释放节点链路
+      setTimeout(() => {
+        try {
+          if (currentScriptNode) currentScriptNode.disconnect();
+          if (currentGainNode) currentGainNode.disconnect();
+        } catch (e) {
+          // 防止节点已经被垃圾回收导致异常
+        }
+      }, fadeTime * 1000);
+    } else {
+      try {
+        if (currentScriptNode) currentScriptNode.disconnect();
+        if (currentGainNode) currentGainNode.disconnect();
       } catch (e) {
-        console.error(`[Music] 利用 TinySynth 播放 midi.mkf 音轨发生错误:`, e);
+        // 静默处理断开异常
       }
     }
   }
-  
-  // 降级判定：使用外部音频文件播放 (如 mp3/ogg)
-  const padNum = String(musicNum).padStart(3, '0');
-  const audio = new Audio();
-  audio.loop = loop;
-  
-  audio.src = `pal/Musics/${padNum}.mp3`;
-  audio.onerror = () => {
-    if (audio.src.endsWith('.mp3')) {
-      audio.src = `pal/Musics/${padNum}.ogg`;
-    } else if (audio.src.endsWith('.ogg')) {
-      audio.src = `pal/Musics/${padNum}.wav`;
-    } else {
-      console.warn(`[Music] 背景音乐 ${musicNum} 在各种支持格式中均无法载入播放`);
-    }
-  };
-  
-  // 处理淡入延迟逻辑
-  if (fadeTime > 0) {
-    audio.volume = 0;
-    audio.play().then(() => {
-      fadeInAudio(audio, fadeTime);
-    }).catch(e => {
-      console.log(`[Music] 音乐播放由于浏览器安全交互限制被拦截:`, e);
-    });
-  } else {
-    audio.volume = 1.0;
-    audio.play().catch(e => {
-      console.log(`[Music] 音乐播放由于浏览器安全交互限制被拦截:`, e);
-    });
-  }
-  
-  currentAudio = audio;
-}
-
-// 停止背景音乐并应用音量渐变淡出
-export function stopMusic(fadeTime = 0) {
-  const mSynth = getMidiSynth();
-  if (mSynth) {
-    if (fadeTime > 0) {
-      fadeOutSynth(mSynth, fadeTime);
-    } else {
-      mSynth.stopMIDI();
-    }
-  }
-
-  if (currentAudio) {
-    const audio = currentAudio;
-    currentAudio = null;
-    if (fadeTime > 0) {
-      fadeOutAudio(audio, fadeTime);
-    } else {
-      audio.pause();
-    }
-  }
-  
-  currentMusicNum = -1;
 }
 
 // 获取当前正在播放的背景音乐编号
 export function getCurrentMusicNum() {
   return currentMusicNum;
-}
-
-// 合成器淡入逻辑
-function fadeInSynth(mSynth, fadeTime) {
-  const steps = 20;
-  const interval = (fadeTime * 1000) / steps;
-  let currentStep = 0;
-  
-  const timer = setInterval(() => {
-    currentStep++;
-    mSynth.setMasterVol(0.5 * (currentStep / steps));
-    if (currentStep >= steps) {
-      clearInterval(timer);
-      mSynth.setMasterVol(0.5);
-    }
-  }, interval);
-}
-
-// 合成器淡出逻辑
-function fadeOutSynth(mSynth, fadeTime) {
-  const steps = 20;
-  const interval = (fadeTime * 1000) / steps;
-  let currentStep = steps;
-  
-  const timer = setInterval(() => {
-    currentStep--;
-    mSynth.setMasterVol(Math.max(0, 0.5 * (currentStep / steps)));
-    if (currentStep <= 0) {
-      clearInterval(timer);
-      mSynth.stopMIDI();
-    }
-  }, interval);
-}
-
-// 处理 HTML5 Audio 音量淡入逻辑
-function fadeInAudio(audio, fadeTime) {
-  const steps = 20;
-  const interval = (fadeTime * 1000) / steps;
-  let currentStep = 0;
-  
-  const timer = setInterval(() => {
-    currentStep++;
-    audio.volume = currentStep / steps;
-    if (currentStep >= steps) {
-      clearInterval(timer);
-      audio.volume = 1.0;
-    }
-  }, interval);
-}
-
-// 处理 HTML5 Audio 音量淡出逻辑，淡出后暂停播放
-function fadeOutAudio(audio, fadeTime) {
-  const steps = 20;
-  const interval = (fadeTime * 1000) / steps;
-  let currentStep = steps;
-  
-  const timer = setInterval(() => {
-    currentStep--;
-    audio.volume = Math.max(0, currentStep / steps);
-    if (currentStep <= 0) {
-      clearInterval(timer);
-      audio.pause();
-    }
-  }, interval);
 }

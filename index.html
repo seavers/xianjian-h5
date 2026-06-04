@@ -1100,7 +1100,7 @@
 				<button class="btn-dbg image-tab-btn" id="tab-wor16" onclick="switchImageType('wor16')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">点阵字库 (wor16.asc)</button>
 				<button class="btn-dbg image-tab-btn" id="tab-word" onclick="switchImageType('word')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">短语资源 (word.dat)</button>
 				<button class="btn-dbg image-tab-btn" id="tab-rng" onclick="switchImageType('rng')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">全屏动画 (rng.mkf)</button>
-				<button class="btn-dbg image-tab-btn" id="tab-music" onclick="switchImageType('music')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">背景音乐 (midi.mkf)</button>
+				<button class="btn-dbg image-tab-btn" id="tab-music" onclick="switchImageType('music')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">背景音乐 (mus.mkf)</button>
 				<button class="btn-dbg image-tab-btn" id="tab-sound" onclick="switchImageType('sound')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">游戏音效 (voc.mkf)</button>
 			</div>
 
@@ -1256,8 +1256,7 @@
 		</div>
 	</div>
 
-	<!-- ==================== MIDI 合成器 ==================== -->
-	<script src="js/utils/webaudio-tinysynth.js"></script>
+
 
 	<!-- ==================== 主程序入口 ==================== -->
 	<script type="module" src="js/app.js"></script>
@@ -2688,9 +2687,8 @@
 				} else if (type === 'music') {
 					if (musicModule) {
 						await musicModule.initMusic();
-						const midiMkf = musicModule.getMidiMkf();
 						const musMkf = musicModule.getMusMkf();
-						const mkf = midiMkf || musMkf;
+						const mkf = musMkf;
 						if (mkf) {
 							imageExplorerState.totalItems = Math.floor(mkf.getInt(0) / 4) - 1;
 						} else {
@@ -3221,7 +3219,7 @@
 			};
 
 			const downloadBtn = document.createElement('button');
-			downloadBtn.innerText = "📥 下载 MIDI";
+			downloadBtn.innerText = "📥 下载 RIX";
 			downloadBtn.style.cssText = "background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); " +
 				"color: rgba(255,255,255,0.7); font-size: 8px; padding: 2px 4px; border-radius: 2px; " +
 				"cursor: pointer; outline: none; transition: all 0.1s; width: 100%; text-align: center;";
@@ -3231,11 +3229,10 @@
 
 			downloadBtn.onclick = () => {
 				if (!musicModule) return;
-				const midiMkf = musicModule.getMidiMkf();
 				const musMkf = musicModule.getMusMkf();
-				const mkf = midiMkf || musMkf;
+				const mkf = musMkf;
 				if (!mkf) {
-					alert("当前环境未检测到 midi.mkf / mus.mkf 归档文件。");
+					alert("当前环境未检测到 mus.mkf 归档文件。");
 					return;
 				}
 				const total = Math.floor(mkf.getInt(0) / 4) - 1;
@@ -3254,10 +3251,10 @@
 				for (let k = 0; k < chunk.length; k++) {
 					bytes[k] = chunk.getByte(k);
 				}
-				const blob = new Blob([bytes], { type: 'audio/midi' });
+				const blob = new Blob([bytes], { type: 'application/octet-stream' });
 				const url = URL.createObjectURL(blob);
 				const a = document.createElement('a');
-				const ext = midiMkf ? 'mid' : 'rix';
+				const ext = 'rix';
 				a.href = url;
 				a.download = `music_${musicId}.${ext}`;
 				a.click();
