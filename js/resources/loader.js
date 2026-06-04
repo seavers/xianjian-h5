@@ -134,7 +134,7 @@ export function loadMkf(file, index) {
   const start = data.getInt(index * 4);
   const end = data.getInt(index * 4 + 4);
   
-  if (end - start > 655360) {
+  if (end - start > 6553600) {
     console.warn(`[warning]: mkf 数据块过大: ${file} index:${index} size:${end - start}`);
     return;
   }
