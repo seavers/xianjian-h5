@@ -17,17 +17,17 @@ export function setRolePos(sx, sy, shalf) {
 }
 
 export function setRoleTile(roleId, tileId, bool) {
-  state.roles[roleId].tileId = tileId;
+  if (state.roles[roleId]) {
+    state.roles[roleId].tileId = tileId;
+  }
 }
 
 export function setRoleIndex(dir, frame, roleId) {
-  if (state.roles.length <= roleId) {
-    // debugger;
-    return ;
+  if (state.roles[roleId]) {
+    state.roles[roleId].dir = dir;
+    state.roles[roleId].frame = frame;
+    state.roles[roleId].count = -1;
   }
-  state.roles[roleId].dir = dir;
-  state.roles[roleId].frame = frame;
-  state.roles[roleId].count = -1;
 
   // if (dir) {
   //   refreshRoleCount(state.roles[roleId]);
@@ -38,8 +38,11 @@ export function calcMap() {
   state.mapX = state.mx * 32 + state.mhalf * 16; // mhalf 则加一半
   state.mapY = state.my * 16 + state.mhalf * 8;
 
-  state.roles[0].x = state.mapX;
-  state.roles[0].y = state.mapY;
+  const leader = state.party[0] || state.roles[0];
+  if (leader) {
+    leader.x = state.mapX;
+    leader.y = state.mapY;
+  }
 
   if (window.onSceneUpdate) {
     window.onSceneUpdate();
@@ -78,7 +81,7 @@ export function roleWalk(sx, sy, shalf) {
   state.mx = sx;
   state.my = sy;
   state.mhalf = shalf;
-  return delayOrNext(Npc.animTeam(state.roles[0], sx, sy, shalf, 4));
+  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], sx, sy, shalf, 4));
 }
 
 export async function clearWithEffect(effectType) {
@@ -89,33 +92,38 @@ export async function clearWithEffect(effectType) {
 
 export function setRoleGroup(r1, r2, r3) {
   const ids = [r1, r2, r3].filter(r => r !== 0);
-  const newRoles = [];
+  const newParty = [];
+  const leader = state.party[0] || state.roles[0];
   
   if (ids.length === 0) {
-    newRoles.push(state.roles[0]);
+    if (state.roles[0]) {
+      newParty.push(state.roles[0]);
+    }
   } else {
     for (let i = 0; i < ids.length; i++) {
       const roleIndex = ids[i] - 1;
-      const exist = state.roles.find(r => r && r.index === roleIndex);
+      const exist = state.roles[roleIndex];
       if (exist) {
-        newRoles.push(exist);
+        newParty.push(exist);
       } else {
-        newRoles.push({
+        const newRole = {
           type: 'role',
-          x: state.roles[0].x,
-          y: state.roles[0].y,
-          layer: state.roles[0].layer,
-          tileId: [2,3,7,5][roleIndex],
+          x: leader ? leader.x : 0,
+          y: leader ? leader.y : 0,
+          layer: leader ? leader.layer : 0,
+          tileId: [2, 3, 7, 5][roleIndex] || 0,
           frame: 0,
           index: roleIndex,
           count: 0
-        });
+        };
+        state.roles[roleIndex] = newRole;
+        newParty.push(newRole);
       }
     }
   }
   
-  state.roles = newRoles;
-  console.log(`[0x75 setRoleGroup] 更新队伍成员列表，当前队伍角色 Index:`, state.roles.map(r => r.index));
+  state.party = newParty;
+  console.log(`[0x75 setRoleGroup] 更新队伍成员列表，当前队伍角色 Index:`, state.party.map(r => r.index));
   
   if (window.onSceneUpdate) {
     window.onSceneUpdate();
@@ -172,9 +180,10 @@ export function placeItemUsedAsObject(targetObjectId, stateVal, failScriptId) {
   }
 
   // 1. 计算主角前方的坐标
-  let tx = state.roles[0].x;
-  let ty = state.roles[0].y;
-  const dir = state.roles[0].dir;
+  const leader = state.party[0] || state.roles[0];
+  let tx = leader ? leader.x : 0;
+  let ty = leader ? leader.y : 0;
+  const dir = leader ? leader.dir : 0;
   tx += (dir === 1 || dir === 0) ? -16 : 16;
   ty += (dir === 1 || dir === 2) ? -8 : 8;
 
@@ -211,18 +220,19 @@ export function jumpIfCurrentSceneEquals(sceneId, failScriptId) {
 }
 
 export function setFollower(r1, r2) {
-  state.roles = state.roles.filter(r => !r.isFollower);
+  state.party = state.party.filter(r => !r.isFollower);
 
   const ids = [r1, r2].filter(r => r > 0);
   state.nFollower = ids.length;
 
+  const leader = state.party[0] || state.roles[0];
   for (let i = 0; i < ids.length; i++) {
     const roleId = ids[i] - 1;
-    state.roles.push({
+    state.party.push({
       type: 'role',
-      x: state.roles[0].x,
-      y: state.roles[0].y,
-      layer: state.roles[0].layer,
+      x: leader ? leader.x : 0,
+      y: leader ? leader.y : 0,
+      layer: leader ? leader.layer : 0,
       tileId: 0,
       frame: 0,
       index: roleId,
@@ -231,7 +241,7 @@ export function setFollower(r1, r2) {
     });
   }
 
-  console.log(`[0x98 setFollower] 更新队伍跟随者，当前队伍全员 Index:`, state.roles.map(r => r.index));
+  console.log(`[0x98 setFollower] 更新队伍跟随者，当前队伍全员 Index:`, state.party.map(r => r.index));
 
   if (window.onSceneUpdate) {
     window.onSceneUpdate();
@@ -264,14 +274,14 @@ export async function fadeToCurrentScene() {
 }
 
 export function setPartySamePosition() {
-  if (state.roles.length <= 1) {
+  if (state.party.length <= 1) {
     console.log(`[0xA1 setPartySamePosition] 队伍中只有主角一人，无需重置位置`);
     return;
   }
 
-  const leader = state.roles[0];
-  for (let i = 1; i < state.roles.length; i++) {
-    const role = state.roles[i];
+  const leader = state.party[0] || state.roles[0];
+  for (let i = 1; i < state.party.length; i++) {
+    const role = state.party[i];
     if (role) {
       role.x = leader.x;
       role.y = leader.y - 1;
@@ -283,7 +293,7 @@ export function setPartySamePosition() {
 
   // 步骤 1：重置移动历史轨迹，使其所有点都重合在主角当前坐标上，以实现跟随者重合且随移动逐渐走出
   state.roleHistory = [];
-  for (let i = 0; i <= state.roles.length; i++) {
+  for (let i = 0; i <= state.party.length; i++) {
     state.roleHistory.push({
       x: leader.x,
       y: leader.y,
@@ -314,8 +324,11 @@ export function walkHeroByOffset(dx, dy, layer) {
   state.mapY += offsetY;
 
   // 步骤 3：同步更新主角实体的绝对像素位置坐标
-  state.roles[0].x = state.mapX;
-  state.roles[0].y = state.mapY;
+  const leader = state.party[0] || state.roles[0];
+  if (leader) {
+    leader.x = state.mapX;
+    leader.y = state.mapY;
+  }
 
   // 步骤 4：估算计算主角当前对应的瓦片地图网格坐标
   state.mx = Math.floor(state.mapX / 32);
@@ -324,10 +337,14 @@ export function walkHeroByOffset(dx, dy, layer) {
 
   // 步骤 5：如果提供了第三个参数 layer，则将主角的渲染优先级层级同步设定为 layer * 8
   if (layer !== undefined && layer !== null && layer !== 0xFFFF) {
-    state.roles[0].layer = layer * 8;
+    if (leader) {
+      leader.layer = layer * 8;
+    }
   }
 
-  refreshRoleCount(state.roles[0]);
+  if (leader) {
+    refreshRoleCount(leader);
+  }
 
   if (window.onSceneUpdate) {
     window.onSceneUpdate();
@@ -416,7 +433,7 @@ function walkOneStep(dir) {
   obj.x += xOffset;
   obj.y += yOffset;
 
-  if (obj === state.roles[0]) {
+  if (obj === (state.party[0] || state.roles[0])) {
     state.mapX += xOffset;
     state.mapY += yOffset;
     state.mx = Math.floor(state.mapX / 32);
@@ -460,8 +477,9 @@ export function setNpcPos(objId, dx, dy) {
   const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
   if (!obj) return;
 
-  obj.x = state.roles[0].x + intToShort(dx);
-  obj.y = state.roles[0].y + intToShort(dy);
+  const leader = state.party[0] || state.roles[0];
+  obj.x = (leader ? leader.x : 0) + intToShort(dx);
+  obj.y = (leader ? leader.y : 0) + intToShort(dy);
 }
 
 export function setNpcPosAbsolute(objId, x, y) {
@@ -498,49 +516,49 @@ export function npcWalk4(x, y, half) {
 
 export function teamWalk(x, y, half) {
   // 步骤 1：让队长开始行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
-  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 2));
+  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 2));
 }
 
 export function teamWalk2(x, y, half) {
   // 步骤 1：让队长开始快速行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
-  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 4));
+  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 4));
 }
 
 export function teamWalk3(x, y, half) {
   // 步骤 1：让队长开始中速行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
-  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 6));
+  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 6));
 }
 
 export function teamWalk4(x, y, half) {
   // 步骤 1：让队长开始极速行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
-  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 8));
+  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 8));
 }
 
 export function teamRide(x, y, half) {
   Npc.anim(this, x, y, half, 2);
-  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 2));
+  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 2));
 }
 
 export function teamRide2(x, y, half) {
   Npc.anim(this, x, y, half, 4);
-  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 4));
+  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 4));
 }
 
 export function teamRide3(x, y, half) {
   Npc.anim(this, x, y, half, 6);
-  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 6));
+  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 6));
 }
 
 export function teamRide4(x, y, half) {
   Npc.anim(this, x, y, half, 8);
-  return delayOrNext(Npc.animTeam(state.roles[0], x, y, half, 8));
+  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 8));
 }
 
 export function faceNpcTrig(objId, dist, targetScriptId) {
   const o = objId === 0xFFFF ? this : state.eventObjects[objId];
   if (!o) return;
 
-  const player = state.roles[0];
+  const player = state.party[0] || state.roles[0];
   let dx = o.x - player.x;
   let dy = o.y - player.y;
 
@@ -586,8 +604,9 @@ export function replaceObject() {
 export function moveViewport(dx, dy, frameCount) {
   // 步骤 1：若首参数和次参数均为 0，代表需要恢复视口对焦中心为主角位置，使其正常对焦
   if (dx === 0 && dy === 0) {
-    state.mapX = state.roles[0].x;
-    state.mapY = state.roles[0].y;
+    const leader = state.party[0] || state.roles[0];
+    state.mapX = leader ? leader.x : 0;
+    state.mapY = leader ? leader.y : 0;
     
     if (window.onSceneUpdate) {
       window.onSceneUpdate();
@@ -783,7 +802,7 @@ export async function changeHpMp(toAll, value) {
   const changeValue = intToShort(value);
 
   // 步骤 2：分析影响范围，若 toAll 为真则批量修改全队，否则仅修改当前绑定的角色（默认为 roles[0]）
-  const targetRoles = toAll ? state.roles : [state.roles[0]];
+  const targetRoles = toAll ? state.party : [state.party[0] || state.roles[0]];
 
   // 步骤 3：遍历目标角色列表，惰性初始化其 HP 与 MP 属性，并进行数值增减
   for (let i = 0; i < targetRoles.length; i++) {
@@ -1355,7 +1374,7 @@ export function setPlayerStat(statId, value, roleId) {
 
 export function changeHp(toAll, value) {
   const changeValue = intToShort(value);
-  const targetRoles = toAll ? state.roles : [state.roles[0]];
+  const targetRoles = toAll ? state.party : [state.party[0] || state.roles[0]];
   for (let i = 0; i < targetRoles.length; i++) {
     const role = targetRoles[i];
     if (role) {
@@ -1374,7 +1393,7 @@ export function changeHp(toAll, value) {
 
 export function changeMp(toAll, value) {
   const changeValue = intToShort(value);
-  const targetRoles = toAll ? state.roles : [state.roles[0]];
+  const targetRoles = toAll ? state.party : [state.party[0] || state.roles[0]];
   for (let i = 0; i < targetRoles.length; i++) {
     const role = targetRoles[i];
     if (role) {
@@ -1393,7 +1412,7 @@ export function changeMp(toAll, value) {
 
 export function revivePlayer(toAll, hpPercent) {
   const ratio = hpPercent / 10;
-  const targetRoles = toAll ? state.roles : [state.roles[0]];
+  const targetRoles = toAll ? state.party : [state.party[0] || state.roles[0]];
   let success = false;
   for (let i = 0; i < targetRoles.length; i++) {
     const role = targetRoles[i];
@@ -1447,7 +1466,7 @@ export function sellMenu() {
 }
 
 export function curePoisonByKind(toAll, poisonId) {
-  const targetRoles = toAll ? state.roles : [state.roles[0]];
+  const targetRoles = toAll ? state.party : [state.party[0] || state.roles[0]];
   for (let i = 0; i < targetRoles.length; i++) {
     const role = targetRoles[i];
     if (role && role.poisons) {
@@ -1461,7 +1480,7 @@ export function curePoisonByKind(toAll, poisonId) {
 }
 
 export function curePoisonByLevel(toAll, maxLevel) {
-  const targetRoles = toAll ? state.roles : [state.roles[0]];
+  const targetRoles = toAll ? state.party : [state.party[0] || state.roles[0]];
   for (let i = 0; i < targetRoles.length; i++) {
     const role = targetRoles[i];
     if (role) {
@@ -1477,7 +1496,7 @@ export function curePoisonByLevel(toAll, maxLevel) {
 export function teleportOut(failScriptId) {
   const scene = state.scenes[state.sceneId];
   if (scene && scene.exitScriptId) {
-    Script.start(scene.exitScriptId, state.roles[0], 'trig');
+    Script.start(scene.exitScriptId, state.party[0] || state.roles[0], 'trig');
   } else {
     if (failScriptId) {
       Script.next(failScriptId);
