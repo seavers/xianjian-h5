@@ -119,6 +119,7 @@ export class Panel {
     this.arr = arr;
     this.style = style; // 如使用的是 10 号 style, 则左上角pic的picId = 10
     this.value = 0;
+    this.scrollRow = 0;
     this.closable = true;
     this.width = null;
     this.height = null;
@@ -151,37 +152,47 @@ export class Panel {
 
   draw() {
     this.width = this.width || 2;
-    this.height = this.height || this.arr.length;
+    const style = this.style;
+    const arr = this.arr;
+
+    // 步骤 1：确定当前面板的列数与总行数
+    const cols = (style >= 10) ? 3 : 1;
+    this.height = this.height || Math.ceil(arr.length / cols);
+    const totalRows = Math.ceil(arr.length / cols);
+
+    // 步骤 2：根据当前选中的项索引计算其所在行，并动态调整滚动条起始行位置以保证选中项可见
+    const itemRow = Math.floor(this.value / cols);
+    if (itemRow < this.scrollRow) {
+      this.scrollRow = itemRow;
+    } else if (itemRow >= this.scrollRow + this.height) {
+      this.scrollRow = itemRow - this.height + 1;
+    }
+    this.scrollRow = Math.max(0, Math.min(this.scrollRow, totalRows - this.height));
 
     let x = this.x;
     let y = this.y;
     const height = this.height;
     const width = this.width;
-    const style = this.style;
-    const arr = this.arr;
-    
-    let xx = 0;
-    let yy = 0;
 
+    // 步骤 3：绘制面板背景区域
     if (style) {
       UI.drawArea(x, y, width, height, style);
       x += 12;
       y += 12;
     }
 
+    // 步骤 4：迭代绘制仅在当前可视范围内的项，并根据滚动偏移量计算其相对 y 轴显示坐标
     for (let i = 0; i < arr.length; i++) {
+      const rowIdx = Math.floor(i / cols);
+      if (rowIdx < this.scrollRow || rowIdx >= this.scrollRow + height) {
+        continue;
+      }
+
+      const xx = i % cols;
+      const yy = rowIdx - this.scrollRow;
       const color = this.value === i ? 0xF4E46C : 0xD4D0C0;
 
       UI.drawWord(arr[i], x + xx * 100, y + yy * 18, color);
-
-      if (style >= 10) {
-        if (++xx >= 3) {
-          yy++;
-          xx = 0;
-        }
-      } else {
-        yy++;
-      }
     }
   }
 
@@ -194,7 +205,7 @@ export class Panel {
   }
 
   listen() {
-    const n = this.width < 10 ? 1 : 3;
+    const cols = (this.style >= 10) ? 3 : 1;
 
     bind((ev) => {
       switch (ev.keyCode) {
@@ -220,7 +231,7 @@ export class Panel {
           break;
         }
         case 38: { // 上
-          this._calc(-n, true);
+          this._calc(-cols, true);
           this.change();
           break;
         }
@@ -230,7 +241,7 @@ export class Panel {
           break;
         }
         case 40: { // 下
-          this._calc(+n, true);
+          this._calc(+cols, true);
           this.change();
           break;
         }
@@ -241,10 +252,11 @@ export class Panel {
   _calc(add, bool) {
     let value = this.value;
     const total = this.arr.length;
-    const n = this.width < 10 ? 1 : 3;
+    const cols = (this.style >= 10) ? 3 : 1;
 
-    if (n === 1) {
-      if (bool) { // 上下
+    // 步骤 1：针对单列（列表）与多列（表格）执行不同的光标移动规则
+    if (cols === 1) {
+      if (bool) { // 上下移动
         value = value + add;
         if (value < 0) {
           value = value + total;
@@ -252,12 +264,12 @@ export class Panel {
         value = value % total;
       }
     } else {
-      if (!bool) { // 左右
+      if (!bool) { // 左右移动
         const mod = value % 3;
         if (mod + add >= 0 && mod + add < 3 && value + add < total) {
           value = value + add;
         }
-      } else { // 上下
+      } else { // 上下移动
         if (value + add >= 0 && value + add < total) {
           value = value + add;
         }
