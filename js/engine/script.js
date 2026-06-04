@@ -197,6 +197,13 @@ export const Script = {
     if (obj.type == 'npc') {
       obj.autoScr = null;
     }
+
+    // 兜底释放：如果没有任何阻塞主线程，且当前依然是对话状态，强制退出 talk 模式并清空画布
+    if (!Script.activeThread && window.Talk && window.Talk.isTalking) {
+      window.Talk.resetTalk();
+      window.Talk.updateTalk();
+    }
+
     if (window.onThreadsUpdate) {
       window.onThreadsUpdate();
     }
@@ -220,6 +227,12 @@ export const Script = {
     thread.stop();
     if (thread === Script.activeThread) {
       Script.activeThread = thread.parent || null;
+    }
+
+    // 兜底释放：如果没有任何阻塞主线程，且当前依然是对话状态，强制退出 talk 模式并清空画布
+    if (!Script.activeThread && window.Talk && window.Talk.isTalking) {
+      window.Talk.resetTalk();
+      window.Talk.updateTalk();
     }
 
     if (window.onThreadsUpdate) {

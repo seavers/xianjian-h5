@@ -5,8 +5,11 @@ import { loadMsg, loadWord, loadPic, loadRgm } from '../resources/pal.js';
 
 export let isTalking = false;
 
+// 模块级对话坐标与状态管理
 let tx = 0;
 let ty = 0;
+let titleX = 0;
+let titleY = 0;
 let rgmId = 0;
 let rgm = null;
 let rgmX = 0;
@@ -16,7 +19,7 @@ let tips = false;
 let message = false;
 let color = null;
 let clear = true;
-let line = 0; // 第几行
+let line = 0; // 当前写入的正文行数 (0-indexed)
 
 function fillText(word, x, y) {
   const ctx = state.contexts.talk;
@@ -42,6 +45,21 @@ export function onInput(input) {
   }
 }
 
+// 检测文本是否为说话人名，支持全角、半角和 Win95 专用比号 
+function isNameText(text) {
+  if (!text || text.length === 0) return false;
+  const lastChar = text.charAt(text.length - 1);
+  return lastChar === ':' || lastChar === '：' || lastChar === '∶';
+}
+
+// 封装阻塞式按键/点击等待逻辑
+function waitKey() {
+  showTalkWait();
+  return new Promise((resolve) => {
+    registerTalkResolve(resolve);
+  });
+}
+
 function resetTalk() {
   isTalking = false;
   state.currentMode = 'game'; // 恢复为常规游戏探索模式
@@ -49,31 +67,77 @@ function resetTalk() {
   who = null;
   tx = 80;
   ty = 8;
+  titleX = 80;
+  titleY = 8;
   clear = true;
   color = null;
   tips = false;
   message = false;
+  line = 0;
 }
 
-function showUp(pRgmId) {
-  tx = 80;
-  ty = 8;
+async function showUp(pRgmId) {
+  // 如果当前正在对话且有正文，切换位置前必须先让玩家按键确认
+  if (isTalking && line > 0) {
+    await waitKey();
+    updateTalk();
+    line = 0;
+    who = null;
+  }
+
+  isTalking = true;
+  state.currentMode = 'talk';
+
   rgmId = pRgmId;
+  rgm = rgmId && loadRgm(rgmId);
+
+  // 根据 SDLPAL 原理，有无头像的坐标分配不同
+  if (rgm) {
+    titleX = 80;
+    titleY = 8;
+    tx = 96;
+    ty = 26;
+  } else {
+    titleX = 12;
+    titleY = 8;
+    tx = 44;
+    ty = 26;
+  }
+
   rgmX = 8;
   rgmY = 8;
-
-  rgm = rgmId && loadRgm(rgmId);
   clear = true;
 }
 
-function showDown(pRgmId) {
-  tx = 5;
-  ty = 110;
+async function showDown(pRgmId) {
+  // 同理，如果切换位置时有残留对话，需等待玩家按键确认
+  if (isTalking && line > 0) {
+    await waitKey();
+    updateTalk();
+    line = 0;
+    who = null;
+  }
+
+  isTalking = true;
+  state.currentMode = 'talk';
+
   rgmId = pRgmId;
+  rgm = rgmId && loadRgm(pRgmId);
+
+  if (rgm) {
+    titleX = 4;
+    titleY = 108;
+    tx = 20;
+    ty = 126;
+  } else {
+    titleX = 12;
+    titleY = 108;
+    tx = 44;
+    ty = 126;
+  }
+
   rgmX = 230;
   rgmY = 100;
-
-  rgm = rgmId && loadRgm(pRgmId);
   clear = true;
 }
 
@@ -110,37 +174,46 @@ export async function drawTalk(msgId) {
   
   if (!t) return;
 
-  // 步骤 1：等待异步打印对话文本动作完成
-  await drawTalk0(msgId);
+  // 步骤 1：如果满 4 行翻页，等待按键并清空画布，重置状态
+  if (line >= 4) {
+    await waitKey();
+    updateTalk();
+    line = 0;
+    clear = true;
+  }
 
-  // 步骤 2：使用暂存的线程上下文等待玩家空格/回车或触屏按键确认对话推进
-  await checkTalk(t);
+  // 步骤 2：等待异步打印对话文本动作完成
+  await drawTalk0(msgId);
 }
 
 function drawTalk0(msgId) {
   return new Promise((resolve) => {
     const text = loadMsg(msgId);
-    if (Lang.endWiths(text, ':')) {
+    if (isNameText(text)) {
       who = text;
       resolve();
       return;
     }
 
-    const x = tx;
-    const y = ty;
     const talkCtx = state.contexts.talk;
 
     if (clear) {
       if (talkCtx) {
         if (rgm) talkCtx.drawImage(rgm, rgmX, rgmY);
-        if (who) showLine(who, x, y);
+        if (who) showLine(who, titleX, titleY, 0x00FFFF); // 使用青色绘制说话人
       }
       clear = false;
       line = 0;
     }
 
-    line++;
-    drawLine(text, x + 16, y + line * 16, resolve);
+    // 动态决定 Y 坐标：有说话人时根据 ty 排，无说话人时整体上移到 titleY 排以填补空间
+    const x = tx;
+    const y = who ? (ty + line * 18) : (titleY + line * 18);
+
+    drawLine(text, x, y, () => {
+      line++;
+      resolve();
+    });
   });
 }
 
@@ -189,14 +262,19 @@ function calcText(text) {
   return r;
 }
 
-function showLine(text, x, y) {
+function showLine(text, x, y, customColor) {
   const texts = calcText(text);
   for (let i = 0; i < texts.length; i++) {
-    drawWord(texts[i].charCode, x + i * 16, y, texts[i].color);
+    const wordColor = customColor !== undefined ? customColor : texts[i].color;
+    drawWord(texts[i].charCode, x + i * 16, y, wordColor);
   }
 }
 
-export function clearTalk() {
+export async function clearTalk() {
+  if (isTalking && line > 0) {
+    await waitKey();
+  }
+  resetTalk();
   updateTalk();
 }
 
@@ -210,35 +288,9 @@ export function updateTalk() {
 
 export function showTalkWait() {
   const msg = '>';
-  fillText(msg, 70, 100);
-}
-
-function checkTalk(t) {
-  return new Promise((resolve) => {
-    if (!t) {
-      resolve();
-      return;
-    }
-
-    if (line > 3) {
-      registerTalkResolve(() => {
-        updateTalk();
-        resolve();
-      });
-    } else if (t.isNextTalk()) {
-      resolve();
-    } else if (t.isNextTalks()) {
-      registerTalkResolve(() => {
-        resolve();
-      });
-    } else {
-      registerTalkResolve(() => {
-        resetTalk();
-        updateTalk();
-        resolve();
-      });
-    }
-  });
+  const x = 300;
+  const y = ty < 100 ? 40 : 140;
+  fillText(msg, x, y);
 }
 
 async function drawMessage(msgId, t) {
