@@ -2831,6 +2831,17 @@
 			}
 		};
 
+		// ==================== 🎵 背景音乐播放核心控制器 ====================
+		window.activeMusicControls = [];
+		window.clearAllMusicControls = function() {
+			if (window.activeMusicControls) {
+				window.activeMusicControls.forEach(c => {
+					if (c.onStop) c.onStop();
+				});
+				window.activeMusicControls = [];
+			}
+		};
+
 		function drawBufferToCanvas(canvas, buffer, palette) {
 			const ctx = canvas.getContext('2d');
 			const imageData = ctx.createImageData(320, 200);
@@ -3176,29 +3187,36 @@
 			card.appendChild(playBtn);
 
 			let isPlaying = false;
-
-			playBtn.onclick = () => {
-				if (!musicModule) return;
-				if (isPlaying) {
-					musicModule.stopMusic();
+			const musicControl = {
+				onStop: () => {
 					isPlaying = false;
 					playBtn.innerText = "▶ 播放";
 					playBtn.style.background = 'rgba(253, 220, 132, 0.1)';
 					playBtn.style.borderColor = 'rgba(253, 220, 132, 0.2)';
 					playBtn.style.color = 'var(--glow-yellow)';
+					card.style.borderColor = 'rgba(255, 255, 255, 0.02)';
+					card.style.background = 'rgba(255, 255, 255, 0.015)';
+				}
+			};
+
+			playBtn.onclick = () => {
+				if (!musicModule) return;
+				if (isPlaying) {
+					musicModule.stopMusic();
+					musicControl.onStop();
 				} else {
-					// 独占播放：先停止所有其它正在播放的音乐卡片
-					document.querySelectorAll('.btn-music-stop').forEach(btn => {
-						btn.click();
-					});
+					// 独占播放：先停止并重置所有其它正在播放的音乐卡片 UI
+					window.clearAllMusicControls();
+
 					musicModule.playMusic(musicId, true, 0);
 					isPlaying = true;
 					playBtn.innerText = "■ 停止";
-					playBtn.classList.add('btn-music-stop');
 					playBtn.style.background = 'rgba(255, 59, 111, 0.15)';
 					playBtn.style.borderColor = 'rgba(255, 59, 111, 0.3)';
 					playBtn.style.color = '#ff3b6f';
 					card.style.borderColor = 'var(--glow-yellow)';
+
+					window.activeMusicControls.push(musicControl);
 				}
 			};
 
