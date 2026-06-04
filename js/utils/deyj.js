@@ -72,7 +72,7 @@ export function deyj(src) {
       temp.skipByte(4);
       buf = [];
       for (let j = 0; j < bUncompressedLength; j++) {
-        buf.push(temp.getByte());
+        buf.push(temp.nextByte());
       }
       continue;
     }

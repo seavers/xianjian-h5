@@ -8,6 +8,8 @@ import { fadeIn, fadeOut, fadeScreenToRed } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
 import { loadArchive } from '../esc/archive.js';
 import { playRng } from './rng.js';
+import { playMusic, stopMusic as stopBgMusic } from '../resources/music.js';
+import { playSound } from '../resources/sound.js';
 
 
 export function setRolePos(sx, sy, shalf) {
@@ -1114,20 +1116,38 @@ export function checkTalk() {
   console.log('global checkTalk');
 }
 
-export function setMusic() {
-  // 背景音乐播放桩，暂未支持音频播放
+export function setMusic(musicNum, playFlag) {
+  // 步骤 1：在状态机中记录当前背景音乐编号
+  state.wNumMusic = musicNum;
+
+  // 步骤 2：解析循环与淡入标志参数 (若 playFlag 不为 1 则循环播放)
+  const loop = playFlag !== 1;
+  const fadeTime = (playFlag === 3 && musicNum !== 9) ? 3.0 : 0.0;
+
+  // 步骤 3：调用音乐管理模块开始播放音乐
+  console.log(`[0x43 setMusic] 播放背景音乐 ID: ${musicNum}, 循环: ${loop}, 渐入时间: ${fadeTime} 秒`);
+  playMusic(musicNum, loop, fadeTime);
 }
 
-export function setFightMusic() {
-  // 战斗音乐播放桩，暂未支持音频播放
+export function setFightMusic(musicNum) {
+  // 步骤 1：记录当前设定的战斗背景音乐
+  state.wNumBattleMusic = musicNum;
+  console.log(`[0x45 setFightMusic] 设置战斗背景音乐 ID: ${musicNum}`);
+}
+
+export function playSoundEffect(soundId) {
+  // 步骤 1：触发播放特技音效，调用音效模块解析并播放
+  console.log(`[0x47 playSoundEffect] 播放特技音效 ID: ${soundId}`);
+  playSound(soundId);
 }
 
 export function stopMusic(fadeTime) {
   // 步骤 1：若淡出时间参数为 0，默认为 2 秒淡出，否则按参数乘 3 换算为秒数
   const seconds = fadeTime === 0 ? 2 : fadeTime * 3;
 
-  // 步骤 2：输出详细的停止音乐调试日志，以供后续接入音频框架时参考
+  // 步骤 2：停止当前背景音乐并触发渐变淡出
   console.log(`[0x77 stopMusic] 停止当前播放背景音乐，淡出时间: ${seconds} 秒`);
+  stopBgMusic(seconds);
 }
 
 export function showFbp(fbpId, effect) {
@@ -1646,7 +1666,7 @@ scriptCodes[0x0F] = { func: setNpcDir, desc: '设置Npc朝向方向' };
 
 scriptCodes[0x43] = { func: setMusic, desc: '播放背景音乐' };
 scriptCodes[0x45] = { func: setFightMusic, desc: '设置战斗背景音乐' };
-scriptCodes[0x47] = { func: null, desc: '设置特技音效' };
+scriptCodes[0x47] = { func: playSoundEffect, desc: '设置特技音效' };
 scriptCodes[0x46] = { func: setRolePos, desc: '设置主角/队员瓦片位置' };
 scriptCodes[0x65] = { func: setRoleTile, desc: '设置主角/队员形象' };
 scriptCodes[0x15] = { func: setRoleIndex, desc: '设置队员动作方向/帧' };
