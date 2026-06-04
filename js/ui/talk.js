@@ -2,6 +2,7 @@ import { state } from '../engine/state.js';
 import { Lang } from '../utils/lang.js';
 import { Thread } from '../engine/thread.js';
 import { loadMsg, loadWord, loadPic, loadRgm } from '../resources/pal.js';
+import { updateTalk } from './draw.js';
 
 export let isTalking = false;
 
