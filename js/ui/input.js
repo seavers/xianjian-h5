@@ -146,7 +146,9 @@ export function onLeft() {
     y--;
     half = 1;
   }
-  state.roles[0].dir = 1;
+  if (state.party[0]) {
+    state.party[0].dir = 1;
+  }
 
   onXY(x, y, half, 1);
 }
@@ -163,7 +165,9 @@ export function onRight() {
     y++;
     half = 0;
   }
-  state.roles[0].dir = 3;
+  if (state.party[0]) {
+    state.party[0].dir = 3;
+  }
 
   onXY(x, y, half, 3);
 }
@@ -180,7 +184,9 @@ export function onUp() {
     x++;
     half = 0;
   }
-  state.roles[0].dir = 2;
+  if (state.party[0]) {
+    state.party[0].dir = 2;
+  }
 
   onXY(x, y, half, 2);
 }
@@ -197,13 +203,17 @@ export function onDown() {
     y++;
     half = 0;
   }
-  state.roles[0].dir = 0;
+  if (state.party[0]) {
+    state.party[0].dir = 0;
+  }
 
   onXY(x, y, half, 0);
 }
 
 function onXY(x, y, half, dir) {
-  refreshRoleCount(state.roles[0]);
+  if (state.party[0]) {
+    refreshRoleCount(state.party[0]);
+  }
 
   // 0能走, 1不能走
   if (canWalk(x, y, half) !== 0) {
@@ -248,7 +258,8 @@ export function onBlank() {
   const y = state.my * 16 + state.mhalf * 8;
 
   // 根据主角朝向计算搜索方向的偏移量
-  const dir = state.roles[0].dir;
+  const leader = state.party[0] || state.roles[0];
+  const dir = leader ? leader.dir : 0;
   const xOffset = (dir === 2 || dir === 3) ? 16 : -16;
   const yOffset = (dir === 0 || dir === 3) ? 8 : -8;
 
