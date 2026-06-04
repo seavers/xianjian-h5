@@ -268,19 +268,20 @@ export function saveArchive(slotId, callback) {
 
   // 步骤 2：写入头部 40 字节元数据
   view.setUint16(0, 1, true); // wSavedTimes
-  view.setUint16(2, state.roles[0].x, true); // wViewportX
-  view.setUint16(4, state.roles[0].y, true); // wViewportY
-  view.setUint16(6, state.roles.length > 0 ? state.roles.length - 1 : 0, true); // nPartyMember
+  const leader = state.party[0] || state.roles[0];
+  view.setUint16(2, leader ? leader.x : 0, true); // wViewportX
+  view.setUint16(4, leader ? leader.y : 0, true); // wViewportY
+  view.setUint16(6, state.party.length > 0 ? state.party.length - 1 : 0, true); // nPartyMember
   view.setUint16(8, state.sceneId, true); // wNumScene
   view.setUint16(10, state.fNightPalette ? 0x180 : 0, true); // wPaletteOffset
-  view.setUint16(12, state.roles[0].dir, true); // wPartyDirection
+  view.setUint16(12, leader ? leader.dir : 0, true); // wPartyDirection
   view.setUint16(14, 0, true); // wNumMusic
   view.setUint16(16, 0, true); // wNumBattleMusic
   view.setUint16(18, 0, true); // wNumBattleField
   view.setUint16(20, 0, true); // wScreenWave
   view.setUint16(22, 2, true); // wBattleSpeed
   view.setUint16(24, 0, true); // wCollectValue
-  view.setUint16(26, Math.floor(state.roles[0].layer / 8), true); // wLayer
+  view.setUint16(26, leader ? Math.floor(leader.layer / 8) : 0, true); // wLayer
   view.setUint16(28, state.chaseRange || 1, true); // wChaseRange
   view.setUint16(30, state.chasespeedChangeCycles || 0, true); // wChasespeedChangeCycles
   view.setUint16(32, state.nFollower || 0, true); // nFollower
@@ -293,7 +294,7 @@ export function saveArchive(slotId, callback) {
 
   // 步骤 3.5：写入队伍成员信息 rgParty (offset 44)
   for (let i = 0; i < 5; i++) {
-    const role = state.roles[i];
+    const role = state.party[i];
     const offsetParty = 44 + i * 10;
     if (role) {
       view.setUint16(offsetParty + 0, role.index, true); // wPlayerRole (0-based)
@@ -438,7 +439,7 @@ function parseSaveData(byteArray) {
   // 2. 读取资金，并读取 rgParty，跳过 rgTrail, Exp, PlayerRoles, rgPoisonStatus
   const dwCash = view.nextInt();
   
-  const savedRoles = [];
+  const savedParty = [];
   const partySize = nPartyMember + 1; // nPartyMember 实际为 wMaxPartyMemberIndex，所以全队人数为 +1
   for (let i = 0; i < 5; i++) {
     const wPlayerRole = view.nextShort();
@@ -450,17 +451,38 @@ function parseSaveData(byteArray) {
     const wImageOffset = view.nextShort(); // 对应 tileId
     
     if (i < partySize) {
-      savedRoles.push({
-        type: 'role',
-        x: rx,
-        y: ry,
-        layer: wLayer * 8,
-        tileId: wImageOffset,
-        frame: wFrame,
-        dir: wPartyDirection,
-        index: wPlayerRole,
-        count: 0
-      });
+      const isFollower = i >= (partySize - nFollower);
+      if (isFollower) {
+        savedParty.push({
+          type: 'role',
+          x: rx,
+          y: ry,
+          layer: wLayer * 8,
+          tileId: wImageOffset,
+          frame: wFrame,
+          dir: wPartyDirection,
+          index: wPlayerRole,
+          count: 0,
+          isFollower: true
+        });
+      } else {
+        let role = state.roles[wPlayerRole];
+        if (!role) {
+          role = {
+            type: 'role',
+            index: wPlayerRole,
+            count: 0
+          };
+          state.roles[wPlayerRole] = role;
+        }
+        role.x = rx;
+        role.y = ry;
+        role.layer = wLayer * 8;
+        role.tileId = wImageOffset;
+        role.frame = wFrame;
+        role.dir = wPartyDirection;
+        savedParty.push(role);
+      }
     }
   }
   
@@ -563,7 +585,7 @@ function parseSaveData(byteArray) {
   // 7. 同步覆盖还原全局 state 的具体核心属性
   state.money = dwCash;
   state.ownItems = ownItems;
-  state.roles = savedRoles;
+  state.party = savedParty;
   state.mapX = wViewportX;
   state.mapY = wViewportY;
   state.mx = Math.floor(wViewportX / 32);
