@@ -21,6 +21,12 @@ let color = null;
 let clear = true;
 let line = 0; // 当前写入的正文行数 (0-indexed)
 
+// 向下闪烁箭头动画坐标与时间状态管理
+let arrowX = 0;
+let arrowY = 0;
+let lastArrowTickTime = 0;
+let currentArrowIcon = 67;
+
 function fillText(word, x, y) {
   const ctx = state.contexts.talk;
   if (!ctx) return;
@@ -73,16 +79,17 @@ function isNameText(text) {
 
 // 封装阻塞式按键/点击等待逻辑
 function waitKey() {
-  state.currentMode = 'talk'; // 确保在等待期间，输入模式必定为 talk，以防止被并发模块意外篡改
   showTalkWait();
   return new Promise((resolve) => {
-    registerTalkResolve(resolve);
+    registerTalkResolve(() => {
+      clearTalkWait();
+      resolve();
+    });
   });
 }
 
 function resetTalk() {
   isTalking = false;
-  state.currentMode = 'game'; // 恢复为常规游戏探索模式
   rgm = null;
   who = null;
   tx = 80;
@@ -94,6 +101,8 @@ function resetTalk() {
   tips = false;
   message = false;
   line = 0;
+  arrowX = 0;
+  arrowY = 0;
 }
 
 async function showUp(pRgmId) {
@@ -106,7 +115,6 @@ async function showUp(pRgmId) {
   }
 
   isTalking = true;
-  state.currentMode = 'talk';
 
   rgmId = pRgmId;
   rgm = rgmId && loadRgm(rgmId);
@@ -139,7 +147,6 @@ async function showDown(pRgmId) {
   }
 
   isTalking = true;
-  state.currentMode = 'talk';
 
   rgmId = pRgmId;
   rgm = rgmId && loadRgm(pRgmId);
@@ -177,7 +184,6 @@ function showMessage() {
 
 export async function drawTalk(msgId) {
   isTalking = true;
-  state.currentMode = 'talk'; // 切换为对话模式，拦截常规输入
 
   // 步骤 0：同步读取并暂存当前活跃脚本线程引用，杜绝对话打印 await 挂起期间由于 auto NPC 等微任务对 Thread.currentThread 全局变量的并发改写污染
   const t = Thread.currentThread;
@@ -232,6 +238,10 @@ function drawTalk0(msgId) {
 
     drawLine(text, x, y, () => {
       line++;
+      // 记录最后一个字后面的相对坐标 (X: 最后一个字右侧, Y: 所在行 Y 坐标)
+      const texts = calcText(text);
+      arrowX = x + texts.length * 16;
+      arrowY = y;
       resolve();
     });
   });
@@ -306,16 +316,50 @@ export function updateTalk() {
   clear = true;
 }
 
+export function tickArrow() {
+  const now = Date.now();
+  if (now - lastArrowTickTime >= 300) {
+    currentArrowIcon = currentArrowIcon === 67 ? 68 : 67;
+    lastArrowTickTime = now;
+
+    const talkCtx = state.contexts.talk;
+    if (talkCtx && arrowX && arrowY) {
+      // 擦除向下箭头对应的 9x6 区域 (文字底对齐，Y偏移 9，高 6，宽 9)
+      talkCtx.clearRect(arrowX, arrowY + 9, 9, 6);
+      
+      const img = loadPic(currentArrowIcon);
+      if (img) {
+        talkCtx.drawImage(img, arrowX, arrowY + 9);
+      }
+    }
+  }
+}
+
+export function clearTalkWait() {
+  const talkCtx = state.contexts.talk;
+  if (talkCtx && arrowX && arrowY) {
+    talkCtx.clearRect(arrowX, arrowY + 9, 9, 6);
+  }
+  arrowX = 0;
+  arrowY = 0;
+}
+
 export function showTalkWait() {
-  const msg = '>';
-  const x = 300;
-  const y = ty < 100 ? 40 : 140;
-  fillText(msg, x, y);
+  currentArrowIcon = 67;
+  lastArrowTickTime = Date.now();
+  
+  const talkCtx = state.contexts.talk;
+  if (talkCtx && arrowX && arrowY) {
+    talkCtx.clearRect(arrowX, arrowY + 9, 9, 6);
+    const img = loadPic(currentArrowIcon);
+    if (img) {
+      talkCtx.drawImage(img, arrowX, arrowY + 9);
+    }
+  }
 }
 
 async function drawMessage(msgId, t) {
   isTalking = true;
-  state.currentMode = 'talk'; // 切换为对话模式
   const text = loadMsg(msgId);
   const texts = calcText(text);
   const length = texts.length;
@@ -351,20 +395,18 @@ async function drawLineSync(texts, x, y, t) {
   }
 
   if (t) {
-    // 步骤 1：不再手动挂起线程，直接 await 用户按键回调以非阻塞地完成等待
-    await new Promise((resolve) => {
-      registerTalkResolve(() => {
-        resetTalk();
-        updateTalk();
-        resolve();
-      });
-    });
+    // 统一定位向下箭头，因为是在文字底部对齐 (y+9 是文字顶)
+    arrowX = x + texts.length * 16;
+    arrowY = y + 9;
+    
+    await waitKey();
+    resetTalk();
+    updateTalk();
   }
 }
 
 async function drawTips(msgId, t) {
   isTalking = true;
-  state.currentMode = 'talk'; // 切换为对话模式
   const text = loadMsg(msgId);
   const texts = calcText(text);
   const length = texts.length;
@@ -383,11 +425,16 @@ export const Talk = {
   drawTalk,
   clearTalk,
   showTalkWait,
+  clearTalkWait,
+  tickArrow,
   updateTalk,
   resetTalk,
   registerTalkResolve,
   onInput,
   get isTalking() {
     return isTalking;
+  },
+  get isWaiting() {
+    return !!talkPromiseResolve;
   }
 };

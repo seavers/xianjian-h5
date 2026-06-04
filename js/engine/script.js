@@ -50,6 +50,12 @@ export const Script = {
       return;
     }
 
+    // 步骤 1.8：如果当前正处于对话按键等待挂起状态，单独步进闪烁箭头动画，并直接挂起逻辑帧，避免调用整体重绘 update(true)
+    if (window.Talk && window.Talk.isWaiting) {
+      window.Talk.tickArrow();
+      return;
+    }
+
     // 步骤 1：检测是否需要进行场景切换（一律在主循环头部做同步判定）
     if (state.nextSceneId !== state.sceneId && state.nextSceneId !== -1) {
       await this.handleSceneSwitch();

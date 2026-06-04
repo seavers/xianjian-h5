@@ -1524,11 +1524,9 @@ export function hideEventObject(frames) {
 
 export async function waitForKey() {
   console.log(`[0x4D waitForKey] 开始等待按键`);
-  state.currentMode = 'talk';
   await new Promise((resolve) => {
     window.Talk.registerTalkResolve(resolve);
   });
-  state.currentMode = 'game';
   console.log(`[0x4D waitForKey] 结束等待按键`);
 }
 
