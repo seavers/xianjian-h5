@@ -281,10 +281,12 @@ export class Panel {
 
   onchange(callback) {
     this.listeners.push(callback);
+    return this;
   }
 
   onclose(callback) {
     this.listeners.push(callback);
+    return this;
   }
 
   fire() {
