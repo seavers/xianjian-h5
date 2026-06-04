@@ -8,6 +8,7 @@ import { Talk } from './ui/talk.js';
 import { Script } from './engine/script.js';
 import { updateCount, update as updateGameScreen } from './ui/draw.js';
 import { loadArchive } from './esc/archive.js';
+import './ui/input.js';
 
 // 获取 URL 参数是否为 debug 模式
 const DEBUG = location.search && location.search.indexOf('debug') !== -1;
