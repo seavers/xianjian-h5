@@ -2,7 +2,6 @@ import { state } from '../engine/state.js';
 import { Lang } from '../utils/lang.js';
 import { Thread } from '../engine/thread.js';
 import { loadMsg, loadWord, loadPic, loadRgm } from '../resources/pal.js';
-import { registerBlank } from './input.js';
 
 export let isTalking = false;
 
@@ -27,8 +26,25 @@ function fillText(word, x, y) {
   ctx.fillText(word, x, y);
 }
 
+let talkPromiseResolve = null;
+
+export function registerTalkResolve(resolve) {
+  talkPromiseResolve = resolve;
+}
+
+export function onInput(input) {
+  if (input === 'blank') {
+    if (talkPromiseResolve) {
+      const resolve = talkPromiseResolve;
+      talkPromiseResolve = null;
+      resolve();
+    }
+  }
+}
+
 function resetTalk() {
   isTalking = false;
+  state.currentMode = 'game'; // 恢复为常规游戏探索模式
   rgm = null;
   who = null;
   tx = 80;
@@ -77,6 +93,7 @@ function showMessage() {
 
 export async function drawTalk(msgId) {
   isTalking = true;
+  state.currentMode = 'talk'; // 切换为对话模式，拦截常规输入
 
   // 步骤 0：同步读取并暂存当前活跃脚本线程引用，杜绝对话打印 await 挂起期间由于 auto NPC 等微任务对 Thread.currentThread 全局变量的并发改写污染
   const t = Thread.currentThread;
@@ -204,18 +221,18 @@ function checkTalk(t) {
     }
 
     if (line > 3) {
-      registerBlank(() => {
+      registerTalkResolve(() => {
         updateTalk();
         resolve();
       });
     } else if (t.isNextTalk()) {
       resolve();
     } else if (t.isNextTalks()) {
-      registerBlank(() => {
+      registerTalkResolve(() => {
         resolve();
       });
     } else {
-      registerBlank(() => {
+      registerTalkResolve(() => {
         resetTalk();
         updateTalk();
         resolve();
@@ -226,6 +243,7 @@ function checkTalk(t) {
 
 async function drawMessage(msgId, t) {
   isTalking = true;
+  state.currentMode = 'talk'; // 切换为对话模式
   const text = loadMsg(msgId);
   const texts = calcText(text);
   const length = texts.length;
@@ -263,7 +281,7 @@ async function drawLineSync(texts, x, y, t) {
   if (t) {
     // 步骤 1：不再手动挂起线程，直接 await 用户按键回调以非阻塞地完成等待
     await new Promise((resolve) => {
-      registerBlank(() => {
+      registerTalkResolve(() => {
         resetTalk();
         updateTalk();
         resolve();
@@ -274,6 +292,7 @@ async function drawLineSync(texts, x, y, t) {
 
 async function drawTips(msgId, t) {
   isTalking = true;
+  state.currentMode = 'talk'; // 切换为对话模式
   const text = loadMsg(msgId);
   const texts = calcText(text);
   const length = texts.length;
@@ -294,6 +313,8 @@ export const Talk = {
   showTalkWait,
   updateTalk,
   resetTalk,
+  registerTalkResolve,
+  onInput,
   get isTalking() {
     return isTalking;
   }

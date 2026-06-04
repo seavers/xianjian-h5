@@ -4,100 +4,129 @@ import { refreshRoleCount, setRolePos, startEventTrig } from '../engine/command.
 import { canWalk, update } from './draw.js';
 import { ESC } from '../esc/esc.js';
 
-export let blankCallback = null;
+import { Talk } from './talk.js';
 
-// 只有用户点击空格后，执行回调
-export function registerBlank(callback) {
-  blankCallback = callback;
-}
+// 保留空函数以维持兼容性，防止其它模块导入失败
+export function registerBlank(callback) {}
+export function bind(callback, scope) {}
+export function unbind() {}
 
-export let bindCallback = null;
-
-export function bind(callback, scope) {
-  bindCallback = callback.bind(scope || window);
-}
-
-export function unbind() {
-  bindCallback = null;
+function convertKeyToInput(keyCode) {
+  switch (keyCode) {
+    case 38: // 上箭头
+    case 73: // I
+      return 'up';
+    case 40: // 下箭头
+    case 75: // K
+      return 'down';
+    case 37: // 左箭头
+    case 74: // J
+      return 'left';
+    case 39: // 右箭头
+    case 76: // L
+      return 'right';
+    case 32: // 空格
+    case 13: // 回车
+      return 'blank';
+    case 27: // ESC
+      return 'ESC';
+    default:
+      // 字母键 A-Z
+      if (keyCode >= 65 && keyCode <= 90) {
+        return String.fromCharCode(keyCode).toLowerCase();
+      }
+      return null;
+  }
 }
 
 // 绑定键盘按下事件
 if (typeof document !== 'undefined') {
   document.addEventListener('keydown', (ev) => {
-    // 步骤 1：如果当前存在注册的交互绑定回调（例如菜单弹窗等），优先处理并直接返回，以免被全局暂停拦截
-    if (bindCallback) {
-      bindCallback(ev);
-      return;
-    }
+    const input = convertKeyToInput(ev.keyCode);
+    if (!input) return;
 
-    // 步骤 2：允许在硬暂停或菜单显示状态下，使用特定的系统控制键（如 ESC、E、S）来响应菜单的呼出与关闭
-    if (ev.keyCode === 27 || ev.keyCode === 69 || ev.keyCode === 83) {
-      switch (ev.keyCode) {
-        case 27: { // ESC
-          ev.preventDefault();
-          ESC.onMenu();
-          break;
-        }
-        case 69: { // E键呼出物品栏
-          ev.preventDefault();
-          ESC.onItem();
-          break;
-        }
-        case 83: { // S键呼出状态栏
-          ev.preventDefault();
-          ESC.onStatus();
-          break;
-        }
-      }
-      return;
-    }
+    const mode = state.currentMode;
 
-    // 步骤 3：如果当前处于硬暂停（如转场渐变过渡中），直接拦截丢弃键盘输入，禁止后台非法移动
-    if (state.isPaused) {
+    // 步骤 1：启动或菜单模式，交由 ESC 模块处理
+    if (mode === 'startup' || mode === 'esc') {
       ev.preventDefault();
+      ESC.onInput(input);
       return;
     }
 
-    // 同步判断是否处于脚本并行执行阻塞中
-    if (Script.isExec()) {
-      if (ev.keyCode !== 32 || !blankCallback) {
-        return;
-      }
+    // 步骤 2：对话模式，交由 Talk 模块处理
+    if (mode === 'talk') {
+      ev.preventDefault();
+      Talk.onInput(input);
+      return;
     }
 
-    switch (ev.keyCode) {
-      case 32: { // 空格
-        ev.preventDefault();
-        onBlank();
-        break;
-      }
-
-      case 37: // 左箭头
-      case 74: { // J
-        ev.preventDefault();
-        onLeft();
-        break;
-      }
-      case 39: // 右箭头
-      case 76: { // L
-        ev.preventDefault();
-        onRight();
-        break;
-      }
-      case 38: // 上箭头
-      case 73: { // I
-        ev.preventDefault();
-        onUp();
-        break;
-      }
-      case 40: // 下箭头
-      case 75: { // K
-        ev.preventDefault();
-        onDown();
-        break;
-      }
+    // 步骤 3：探索游戏模式，常规按键处理
+    if (mode === 'game') {
+      handleGameInput(input, ev);
     }
   });
+}
+
+function handleGameInput(input, ev) {
+  // 步骤 1：特殊快捷键激活 ESC 系统模块
+  if (input === 'ESC') {
+    ev.preventDefault();
+    ESC.onMenu();
+    return;
+  }
+  if (input === 'e') {
+    ev.preventDefault();
+    ESC.onItem();
+    return;
+  }
+  if (input === 's') {
+    ev.preventDefault();
+    ESC.onStatus();
+    return;
+  }
+
+  // 步骤 2：如果当前处于硬暂停，丢弃输入
+  if (state.isPaused) {
+    ev.preventDefault();
+    return;
+  }
+
+  // 步骤 3：脚本正在运行阻塞中，只允许空格或回车（blank）操作
+  if (Script.isExec()) {
+    if (input !== 'blank') {
+      return;
+    }
+  }
+
+  // 步骤 4：常规移动和按键交互分发
+  switch (input) {
+    case 'blank': {
+      ev.preventDefault();
+      onBlank();
+      break;
+    }
+    case 'left': {
+      ev.preventDefault();
+      onLeft();
+      break;
+    }
+    case 'right': {
+      ev.preventDefault();
+      onRight();
+      break;
+    }
+    case 'up': {
+      ev.preventDefault();
+      onUp();
+      break;
+    }
+    case 'down': {
+      ev.preventDefault();
+      onDown();
+      break;
+    }
+  }
 }
 
 if (typeof document !== 'undefined') {
@@ -106,30 +135,38 @@ if (typeof document !== 'undefined') {
   }, { passive: false });
 
   document.addEventListener('touchend', (ev) => {
-    if (!Script.isExec()) {
-      if (!blankCallback) return;
-    }
-
     ev.preventDefault();
 
-    if (blankCallback) {
-      const bcb = blankCallback;
-      blankCallback = null;
-      bcb();
+    const mode = state.currentMode;
+
+    // 步骤 1：在剧情对话期间，点击屏幕任意区域代表确认推进
+    if (mode === 'talk') {
+      Talk.onInput('blank');
       return;
     }
 
+    // 步骤 2：触屏坐标方向转换
     const endX = ev.changedTouches[0].pageX;
     const endY = ev.changedTouches[0].pageY;
+    let input = null;
 
     if (endX < 160 && endY < 100) {
-      onLeft();
+      input = 'left';
     } else if (endX < 160 && endY > 100) {
-      onDown();
+      input = 'down';
     } else if (endX > 160 && endY > 100) {
-      onRight();
+      input = 'right';
     } else if (endX > 160 && endY < 100) {
-      onUp();
+      input = 'up';
+    }
+
+    if (!input) return;
+
+    // 步骤 3：分发触屏输入
+    if (mode === 'startup' || mode === 'esc') {
+      ESC.onInput(input);
+    } else if (mode === 'game') {
+      handleGameInput(input, ev);
     }
   });
 }

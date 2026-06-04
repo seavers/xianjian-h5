@@ -45,9 +45,9 @@ export const Script = {
 
   // 4. 规范化的逻辑帧嘀嗒（负责原本单次游戏循环中的全部逻辑更新与统一渲染）
   async tick() {
-    // 步骤 1.5：检测是否需要挂起 ESC 菜单，支持全局挂起以实现非忙等暂停
-    if (ESC.pausePromise) {
-      await ESC.pausePromise;
+    // 步骤 1.5：检测是否处于系统菜单或启动画面状态，直接跳过脚本和漫游步进以挂起时钟
+    if (state.currentMode === 'esc' || state.currentMode === 'startup') {
+      return;
     }
 
     // 步骤 1：检测是否需要进行场景切换（一律在主循环头部做同步判定）

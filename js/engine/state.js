@@ -12,6 +12,9 @@ export const state = {
   mapY: 0,
   mapId: 12,
   
+  // 集中式状态分发：游戏当前的运行交互模式
+  currentMode: 'startup',
+  
   sceneId: -1,
   nextSceneId: -1,
   needToFadeIn: false,  // 标识是否fadeIn、fadeOut 场景

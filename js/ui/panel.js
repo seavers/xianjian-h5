@@ -1,6 +1,5 @@
 import { state } from '../engine/state.js';
 import { loadPic, loadWord } from '../resources/pal.js';
-import { bind, unbind } from './input.js';
 
 export const UI = {
   drawLabel(x, y, size) {
@@ -146,7 +145,6 @@ export class Panel {
     this.x = x;
     this.y = y;
     this.draw();
-    this.listen();
     return this;
   }
 
@@ -204,49 +202,51 @@ export class Panel {
     this.fire();
   }
 
-  listen() {
+  oncancel(callback) {
+    this.cancelListener = callback;
+    return this;
+  }
+
+  cancel() {
+    if (!this.closable) return;
+    if (this.cancelListener) {
+      this.cancelListener();
+    }
+  }
+
+  onInput(input) {
     const cols = (this.style >= 10) ? 3 : 1;
-
-    bind((ev) => {
-      switch (ev.keyCode) {
-        case 27: // ESC
-        case 69: { // E
-          const startupCanvas = document.getElementById('startup');
-          if (startupCanvas) {
-            startupCanvas.style.display = 'none';
-          }
-          unbind();
-          break;
-        }
-
-        case 13: // 回车
-        case 32: { // 空格
-          unbind();
-          this.choose();
-          break;
-        }
-        case 37: { // 左
-          this._calc(-1, false);
-          this.change();
-          break;
-        }
-        case 38: { // 上
-          this._calc(-cols, true);
-          this.change();
-          break;
-        }
-        case 39: { // 右
-          this._calc(+1, false);
-          this.change();
-          break;
-        }
-        case 40: { // 下
-          this._calc(+cols, true);
-          this.change();
-          break;
-        }
+    switch (input) {
+      case 'ESC':
+      case 'e': { // 取消并返回
+        this.cancel();
+        break;
       }
-    }, this);
+      case 'blank': { // 确认选择
+        this.choose();
+        break;
+      }
+      case 'left': {
+        this._calc(-1, false);
+        this.change();
+        break;
+      }
+      case 'up': {
+        this._calc(-cols, true);
+        this.change();
+        break;
+      }
+      case 'right': {
+        this._calc(+1, false);
+        this.change();
+        break;
+      }
+      case 'down': {
+        this._calc(+cols, true);
+        this.change();
+        break;
+      }
+    }
   }
 
   _calc(add, bool) {

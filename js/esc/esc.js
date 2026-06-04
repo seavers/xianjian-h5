@@ -1,7 +1,6 @@
 import { state } from '../engine/state.js';
-import { loadFbp, loadPic, loadBall } from '../resources/pal.js';
+import { loadFbp, loadPic } from '../resources/pal.js';
 import { UI, PanelFactory } from '../ui/panel.js';
-import { unbind } from '../ui/input.js';
 import { Script } from '../engine/script.js';
 import { toggleScene, setRolePos } from '../engine/command.js';
 import { update } from '../ui/draw.js';
@@ -13,89 +12,128 @@ export const ESC = {
   showItem: false,
   showMenu: false,
 
-  pausePromise: null,
-  resolvePause: null,
+  // 菜单管理栈，包含当前所有激活的菜单层级
+  menuStack: [],
 
-  // 步骤 1：展现 ESC 菜单画布，并同步创建全局的挂起 Promise，以便 mainLoop 头部 await 挂起逻辑帧
+  pushMenu(name, panel, renderFn, onInputFn) {
+    this.menuStack.push({ name, panel, render: renderFn, onInput: onInputFn });
+    this.renderAll();
+  },
+
+  popMenu() {
+    this.menuStack.pop();
+    if (this.menuStack.length === 0) {
+      this.clearMenus();
+    } else {
+      this.renderAll();
+    }
+  },
+
+  clearMenus() {
+    this.menuStack = [];
+    this.hideMenuCanvas();
+    state.currentMode = 'game'; // 恢复为游戏正常探索行走状态
+  },
+
+  renderAll() {
+    const startupCtx = state.contexts.startup;
+    if (!startupCtx) return;
+    
+    // 步骤 1：清空当前启动/系统菜单画布以准备重绘
+    startupCtx.clearRect(0, 0, startupCtx.canvas.width, startupCtx.canvas.height);
+
+    // 步骤 2：自底向上依次渲染菜单栈中的全部活跃菜单界面
+    for (let i = 0; i < this.menuStack.length; i++) {
+      const menu = this.menuStack[i];
+      if (menu.render) {
+        menu.render();
+      }
+    }
+  },
+
+  // 接收分发自 input.js 的标准化键盘/触屏输入
+  onInput(input) {
+    // 步骤 1：若按下 ESC，根据设计直接关闭所有菜单退回游戏，不需要逐级 pop
+    if (input === 'ESC') {
+      this.clearMenus();
+      return;
+    }
+
+    if (this.menuStack.length === 0) return;
+
+    // 步骤 2：转发给栈顶活跃菜单的对应输入接口
+    const activeMenu = this.menuStack[this.menuStack.length - 1];
+    if (activeMenu.onInput) {
+      activeMenu.onInput(input);
+    } else if (activeMenu.panel) {
+      activeMenu.panel.onInput(input);
+    }
+  },
+
+  // 展现 ESC 菜单画布，不使用任何挂起 Promise
   showMenuCanvas() {
     const startupCanvas = document.getElementById('startup');
     if (startupCanvas) {
       startupCanvas.style.display = 'block';
     }
-    if (!this.pausePromise) {
-      this.pausePromise = new Promise((resolve) => {
-        this.resolvePause = resolve;
-      });
-    }
   },
 
-  // 步骤 2：隐藏 ESC 菜单画布，并触发 Promise resolve 以唤醒被阻塞暂停的主逻辑循环
+  // 隐藏 ESC 菜单画布
   hideMenuCanvas() {
     const startupCanvas = document.getElementById('startup');
     if (startupCanvas) {
       startupCanvas.style.display = 'none';
     }
-    if (this.resolvePause) {
-      this.resolvePause();
-      this.resolvePause = null;
-      this.pausePromise = null;
-    }
-  },
-
-  onESC() {
-    const startupCtx = state.contexts.startup;
-    if (!startupCtx) return;
-    const fbp = loadFbp(0);
-    if (fbp) {
-      startupCtx.drawImage(fbp, 0, 0);
-    }
-    ESC.showMenuCanvas();
   },
 
   onStatus() {
-    if (ESC.ShowStatus) {
-      ESC.hideMenuCanvas();
-    } else {
+    const fbp = loadFbp(0);
+    const renderFn = () => {
       const startupCtx = state.contexts.startup;
-      if (startupCtx) {
-        const fbp = loadFbp(0);
-        if (fbp) {
-          startupCtx.drawImage(fbp, 0, 0);
-        }
+      if (startupCtx && fbp) {
+        startupCtx.drawImage(fbp, 0, 0);
       }
-      ESC.showMenuCanvas();
-    }
-    ESC.ShowStatus = !ESC.ShowStatus;
-  },
+    };
 
-  onRole() {
-    if (ESC.showRole) {
-      ESC.hideMenuCanvas();
-    } else {
-      // 预留角色显示绘制
-    }
-    ESC.showRole = !ESC.showRole;
+    const onInputFn = (input) => {
+      // 状态栏展示时，按 E 键、S 键、空格或回车均可退回主菜单
+      if (input === 'e' || input === 's' || input === 'blank') {
+        ESC.popMenu();
+      }
+    };
+
+    ESC.showMenuCanvas();
+    state.currentMode = 'esc';
+    ESC.pushMenu('status', null, renderFn, onInputFn);
   },
 
   onStartup() {
+    state.currentMode = 'startup';
+    ESC.showMenuCanvas();
+
     const startupCtx = state.contexts.startup;
     if (!startupCtx) return;
 
     const fbpId = 0x3C;
     const fbp = loadFbp(fbpId);
-    if (fbp) {
-      startupCtx.drawImage(fbp, 0, 0);
-    }
 
-    PanelFactory.createList([7, 8])
-      .canClose(false)
-      .show(124, 96)
-      .onchange((value) => {
-        startNewStory();
-        unbind();
-      });
+    const startupPanel = PanelFactory.createList([7, 8])
+      .canClose(false);
+    startupPanel.x = 124;
+    startupPanel.y = 96;
 
-    ESC.showMenuCanvas();
+    const renderFn = () => {
+      if (fbp) {
+        startupCtx.drawImage(fbp, 0, 0);
+      }
+      startupPanel.draw();
+    };
+
+    startupPanel.onchange(() => {
+      startNewStory();
+    });
+
+    ESC.pushMenu('startup', startupPanel, renderFn);
 
     document.addEventListener('touchend', function touchHandler(ev) {
       ev.preventDefault();
@@ -110,69 +148,90 @@ export const ESC = {
   },
 
   onMenu() {
-    const startupCtx = state.contexts.startup;
-    if (!startupCtx) return;
-
-    startupCtx.clearRect(0, 0, startupCtx.canvas.width, startupCtx.canvas.height);
-
-    UI.drawLabel(0, 0, 5);
-    UI.drawWord(0x15, 10, 8, 0x000000); // 绘制金钱文本标签
-    UI.drawNum(state.money || 0, 85, 15); // 动态展示运行时金钱！
-
-    PanelFactory.createList([3, 4, 5, 6])
-      .show(2, 36)
-      .onchange((value) => {
-        switch (value) {
-          case 3:
-            ESC.onStatus();
-            break;
-          case 4:
-            ESC.onMagic();
-            break;
-          case 5:
-            ESC.onItem();
-            break;
-          case 6:
-            ESC.onSystem();
-            break;
-        }
-      });
-
     ESC.showMenuCanvas();
+    state.currentMode = 'esc';
+    ESC.menuStack = [];
+
+    const mainPanel = PanelFactory.createList([3, 4, 5, 6]);
+    mainPanel.x = 2;
+    mainPanel.y = 36;
+
+    const renderFn = () => {
+      UI.drawLabel(0, 0, 5);
+      UI.drawWord(0x15, 10, 8, 0x000000); // 绘制金钱文本标签
+      UI.drawNum(state.money || 0, 85, 15); // 动态展示运行时金钱
+      mainPanel.draw();
+    };
+
+    mainPanel.onchange((value) => {
+      switch (value) {
+        case 3:
+          ESC.onStatus();
+          break;
+        case 4:
+          ESC.onMagic();
+          break;
+        case 5:
+          ESC.onItem();
+          break;
+        case 6:
+          ESC.onSystem();
+          break;
+      }
+    }).oncancel(() => {
+      ESC.clearMenus();
+    });
+
+    ESC.pushMenu('main', mainPanel, renderFn);
   },
 
   onItem() {
-    PanelFactory.createList([22,23])
-      .show(28, 60)
-      .onchange((value) => {
-        switch (value) {
-          case 22:
-            ESC.onEquipItem();
-            break;
-            case 23:
-            ESC.onUseItem();
-            break;
-        }
-      });
+    const itemPanel = PanelFactory.createList([22, 23]);
+    itemPanel.x = 28;
+    itemPanel.y = 60;
 
+    const renderFn = () => {
+      itemPanel.draw();
+    };
+
+    itemPanel.onchange((value) => {
+      switch (value) {
+        case 22:
+          ESC.onEquipItem();
+          break;
+        case 23:
+          ESC.onUseItem();
+          break;
+      }
+    }).oncancel(() => {
+      ESC.popMenu();
+    });
+
+    ESC.pushMenu('item', itemPanel, renderFn);
   },
 
   onUseItem() {
-    // 默认如果无物品，给予桂花酒作为初始体验
     if (!state.ownItems || state.ownItems.length === 0) {
       state.ownItems = [99];
     }
 
-    PanelFactory.createTable(state.ownItems)
-      .skin(10)
-      .size(18, 8)
-      .show(2, 32)
-      .onchange((value) => {
-        Script.startItemScript(state.items[value]);
-        ESC.hideMenuCanvas();
-      });
+    const useItemPanel = PanelFactory.createTable(state.ownItems);
+    useItemPanel.skin(10).size(18, 8);
+    useItemPanel.x = 2;
+    useItemPanel.y = 32;
 
-    ESC.showMenuCanvas();
+    const renderFn = () => {
+      useItemPanel.draw();
+    };
+
+    useItemPanel.onchange((value) => {
+      Script.startItemScript(state.items[value]);
+      ESC.clearMenus();
+    }).oncancel(() => {
+      ESC.popMenu();
+    });
+
+    ESC.pushMenu('useItem', useItemPanel, renderFn);
   },
 
   onEquipItem() {},
@@ -180,86 +239,106 @@ export const ESC = {
   onMagic() {},
 
   onSystem() {
-    // 步骤 1：创建并展示系统二级菜单，包含存储进度、读取进度、音乐、音效和结束游戏选项
-    PanelFactory.createList([11, 12, 13, 14, 15])
-      .show(28, 72)
-      .onchange((value) => {
-        // 步骤 2：根据用户确认选择的子项进行相应逻辑分发
-        switch (value) {
-          case 11:
-            ESC.onSaveGameMenu();
-            break;
+    const systemPanel = PanelFactory.createList([11, 12, 13, 14, 15]);
+    systemPanel.x = 28;
+    systemPanel.y = 72;
 
-          case 12:
-            ESC.onLoadGameMenu();
-            break;
+    const renderFn = () => {
+      systemPanel.draw();
+    };
 
-          case 13:
-            console.log('系统设置 - 音乐选项选中');
-            ESC.hideMenuCanvas();
-            break;
+    systemPanel.onchange((value) => {
+      switch (value) {
+        case 11:
+          ESC.onSaveGameMenu();
+          break;
+        case 12:
+          ESC.onLoadGameMenu();
+          break;
+        case 13:
+          console.log('系统设置 - 音乐选项选中');
+          ESC.clearMenus();
+          break;
+        case 14:
+          console.log('系统设置 - 音效选项选中');
+          ESC.clearMenus();
+          break;
+        case 15:
+          console.log('系统设置 - 结束游戏选项选中');
+          ESC.clearMenus();
+          break;
+      }
+    }).oncancel(() => {
+      ESC.popMenu();
+    });
 
-          case 14:
-            console.log('系统设置 - 音效选项选中');
-            ESC.hideMenuCanvas();
-            break;
-
-          case 15:
-            console.log('系统设置 - 结束游戏选项选中');
-            ESC.hideMenuCanvas();
-            break;
-        }
-      });
+    ESC.pushMenu('system', systemPanel, renderFn);
   },
 
   onSaveGameMenu() {
-    // 步骤 1：创建并展示存储进度的三级菜单，提供五个进度存档槽位
-    PanelFactory.createList([43, 44, 45, 46, 47])
-      .show(54, 90)
-      .onchange((value) => {
-        // 步骤 2：对选中的存档槽位换算出具体对应的存档槽位号（1 - 5）
-        let slotId = 1;
-        if (value === 43 || value === 0x43) slotId = 1;
-        else if (value === 44 || value === 0x44) slotId = 2;
-        else if (value === 45 || value === 0x45) slotId = 3;
-        else if (value === 46 || value === 0x46) slotId = 4;
-        else if (value === 47 || value === 0x47) slotId = 5;
+    const savePanel = PanelFactory.createList([43, 44, 45, 46, 47]);
+    savePanel.x = 54;
+    savePanel.y = 90;
 
-        // 步骤 3：调用解耦的 saveArchive 接口保存进度，随后隐藏菜单
-        saveArchive(slotId);
-        ESC.hideMenuCanvas();
-      });
+    const renderFn = () => {
+      savePanel.draw();
+    };
+
+    savePanel.onchange((value) => {
+      let slotId = 1;
+      if (value === 43 || value === 0x43) slotId = 1;
+      else if (value === 44 || value === 0x44) slotId = 2;
+      else if (value === 45 || value === 0x45) slotId = 3;
+      else if (value === 46 || value === 0x46) slotId = 4;
+      else if (value === 47 || value === 0x47) slotId = 5;
+
+      saveArchive(slotId);
+      ESC.clearMenus();
+    }).oncancel(() => {
+      ESC.popMenu();
+    });
+
+    ESC.pushMenu('saveGame', savePanel, renderFn);
   },
 
   onLoadGameMenu() {
-    // 步骤 1：创建并展示读取进度的三级菜单，提供五个进度读档槽位
-    PanelFactory.createList([43, 44, 45, 46, 47])
-      .show(54, 90)
-      .onchange((value) => {
-        // 步骤 2：对选中的读档槽位换算出具体对应的存档槽位号（1 - 5）
-        let slotId = 1;
-        if (value === 43 || value === 0x43) slotId = 1;
-        else if (value === 44 || value === 0x44) slotId = 2;
-        else if (value === 45 || value === 0x45) slotId = 3;
-        else if (value === 46 || value === 0x46) slotId = 4;
-        else if (value === 47 || value === 0x47) slotId = 5;
+    const loadPanel = PanelFactory.createList([43, 44, 45, 46, 47]);
+    loadPanel.x = 54;
+    loadPanel.y = 90;
 
-        // 步骤 3：调用解耦的 loadArchive 接口读取进度，并在成功回调中刷新场景并渲染唤醒时钟
-        loadArchive(slotId, () => {
-          setRolePos(state.mx, state.my, state.mhalf);
-          update(true);
-          ESC.hideMenuCanvas();
-        });
+    const renderFn = () => {
+      loadPanel.draw();
+    };
+
+    loadPanel.onchange((value) => {
+      let slotId = 1;
+      if (value === 43 || value === 0x43) slotId = 1;
+      else if (value === 44 || value === 0x44) slotId = 2;
+      else if (value === 45 || value === 0x45) slotId = 3;
+      else if (value === 46 || value === 0x46) slotId = 4;
+      else if (value === 47 || value === 0x47) slotId = 5;
+
+      loadArchive(slotId, () => {
+        setRolePos(state.mx, state.my, state.mhalf);
+        update(true);
+        ESC.clearMenus();
       });
+    }).oncancel(() => {
+      ESC.popMenu();
+    });
+
+    ESC.pushMenu('loadGame', loadPanel, renderFn);
   }
 };
 
 function startNewStory() {
+  ESC.menuStack = []; // 清空菜单栈，防止在淡出过渡期间重复按键触发
   const el = document.getElementById('startup');
   if (el) {
-    animHide(el);
+    animHide(el, () => {
+      newStory();
+    });
   }
-  newStory();
 }
 
 function animHide(el, callback) {
@@ -274,6 +353,7 @@ function animHide(el, callback) {
 }
 
 function newStory() {
-  state.isPaused = false; // 正式启动游戏主循环时钟暂停状态，激活核心 tick()
+  state.currentMode = 'game'; // 激活常规游戏行走模式
+  state.isPaused = false; 
   toggleScene(1);
 }

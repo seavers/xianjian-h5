@@ -6,7 +6,6 @@ import { loadMgoCount } from '../resources/pal.js';
 import { update, canWalk } from '../ui/draw.js';
 import { fadeIn, fadeOut, fadeScreenToRed } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
-import { registerBlank } from '../ui/input.js';
 import { loadArchive } from '../esc/archive.js';
 
 export function setRolePos(sx, sy, shalf) {
@@ -1525,9 +1524,11 @@ export function hideEventObject(frames) {
 
 export async function waitForKey() {
   console.log(`[0x4D waitForKey] 开始等待按键`);
+  state.currentMode = 'talk';
   await new Promise((resolve) => {
-    registerBlank(resolve);
+    window.Talk.registerTalkResolve(resolve);
   });
+  state.currentMode = 'game';
   console.log(`[0x4D waitForKey] 结束等待按键`);
 }
 
