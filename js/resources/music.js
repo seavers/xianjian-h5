@@ -12,12 +12,16 @@ async function loadMkfFile(filename) {
   try {
     const response = await fetch(`pal/${filename}`);
     if (!response.ok) {
+      if (response.status === 404) {
+        console.log(`[Music] 可选音乐归档 pal/${filename} 未加载，将跳过（正常现象）`);
+        return null;
+      }
       throw new Error(`HTTP 状态异常: ${response.status}`);
     }
     const arrayBuffer = await response.arrayBuffer();
     return new ByteArray(new Uint8Array(arrayBuffer));
   } catch (e) {
-    console.warn(`[Music] 可选音乐归档 ${filename} 未加载或不可用:`, e);
+    console.warn(`[Music] 可选音乐归档 ${filename} 未加载或不可用:`, e.message);
     return null;
   }
 }

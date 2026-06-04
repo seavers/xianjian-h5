@@ -22,12 +22,16 @@ async function loadMkfFile(filename) {
   try {
     const response = await fetch(`pal/${filename}`);
     if (!response.ok) {
+      if (response.status === 404) {
+        console.log(`[Sound] 可选音频包 pal/${filename} 未加载，将跳过该类型加载（正常现象）`);
+        return null;
+      }
       throw new Error(`HTTP 状态异常: ${response.status}`);
     }
     const arrayBuffer = await response.arrayBuffer();
     return new ByteArray(new Uint8Array(arrayBuffer));
   } catch (e) {
-    console.warn(`[Sound] 可选资源包 ${filename} 加载失败:`, e);
+    console.warn(`[Sound] 可选资源包 ${filename} 加载失败:`, e.message);
     return null;
   }
 }
