@@ -6,14 +6,15 @@ import { loadMsg, loadWord, loadPic, loadRgm } from '../resources/pal.js';
 export let isTalking = false;
 
 // 模块级对话坐标与状态管理
-let tx = 0;
-let ty = 0;
-let titleX = 0;
-let titleY = 0;
+let tx = 80;
+let ty = 8;
+let titleX = 80;
+let titleY = 8;
 let rgmId = 0;
 let rgm = null;
 let rgmX = 0;
 let rgmY = 0;
+let dialogPosition = 'upper'; // 当前对话位置 ('upper' 或 'lower')
 let who = null;
 let tips = false;
 let message = false;
@@ -90,38 +91,35 @@ function waitKey() {
 
 function resetTalk() {
   isTalking = false;
-  who = null;
   rgm = null;
+  rgmId = 0;
+  dialogPosition = 'upper';
+  who = null;
+  tx = 80;
+  ty = 8;
+  titleX = 80;
+  titleY = 8;
+  clear = true;
+  color = null;
+  tips = false;
+  message = false;
+  line = 0;
+  arrowX = 0;
+  arrowY = 0;
 }
 
 async function showUp(pRgmId) {
   // 如果当前正在对话且有正文，切换位置前必须先让玩家按键确认
   if (isTalking && line > 0) {
     await waitKey();
-    clearDraw();
+    updateTalk();
+    line = 0;
     who = null;
   }
 
   isTalking = true;
-
+  dialogPosition = 'upper';
   rgmId = pRgmId;
-  rgm = rgmId && loadRgm(rgmId);
-
-  // 根据 SDLPAL 原理，有无头像的坐标分配不同
-  if (rgm) {
-    titleX = 80;
-    titleY = 8;
-    tx = 96;
-    ty = 26;
-  } else {
-    titleX = 12;
-    titleY = 8;
-    tx = 44;
-    ty = 26;
-  }
-
-  rgmX = 8;
-  rgmY = 8;
   clear = true;
 }
 
@@ -129,29 +127,14 @@ async function showDown(pRgmId) {
   // 同理，如果切换位置时有残留对话，需等待玩家按键确认
   if (isTalking && line > 0) {
     await waitKey();
-    clearDraw();
+    updateTalk();
+    line = 0;
     who = null;
   }
 
   isTalking = true;
-
+  dialogPosition = 'lower';
   rgmId = pRgmId;
-  rgm = rgmId && loadRgm(pRgmId);
-
-  if (rgm) {
-    titleX = 4;
-    titleY = 108;
-    tx = 20;
-    ty = 126;
-  } else {
-    titleX = 12;
-    titleY = 108;
-    tx = 44;
-    ty = 126;
-  }
-
-  rgmX = 230;
-  rgmY = 100;
   clear = true;
 }
 
@@ -216,6 +199,40 @@ function drawTalk0(msgId) {
     const talkCtx = state.contexts.talk;
 
     if (clear) {
+      // 惰性加载 RGM 头像
+      rgm = rgmId ? loadRgm(rgmId) : null;
+
+      // 根据对话位置 (dialogPosition) 和是否有头像，动态计算所有的排版坐标
+      if (dialogPosition === 'upper') {
+        if (rgm) {
+          titleX = 80;
+          titleY = 8;
+          tx = 96;
+          ty = 26;
+          rgmX = 8;
+          rgmY = 8;
+        } else {
+          titleX = 12;
+          titleY = 8;
+          tx = 44;
+          ty = 26;
+        }
+      } else {
+        if (rgm) {
+          titleX = 4;
+          titleY = 108;
+          tx = 20;
+          ty = 126;
+          rgmX = 230;
+          rgmY = 100;
+        } else {
+          titleX = 12;
+          titleY = 108;
+          tx = 44;
+          ty = 126;
+        }
+      }
+
       if (talkCtx) {
         if (rgm) talkCtx.drawImage(rgm, rgmX, rgmY);
         if (who) showLine(who, titleX, titleY, 0x00FFFF); // 使用青色绘制说话人
@@ -296,7 +313,6 @@ export async function clearTalk() {
   if (isTalking && line > 0) {
     await waitKey();
   }
-  resetTalk();
   clearDraw();
 }
 
