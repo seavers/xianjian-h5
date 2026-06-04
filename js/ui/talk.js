@@ -153,7 +153,11 @@ function showMessage() {
 }
 
 export async function drawTalk(msgId) {
-  isTalking = true;
+  // 如果当前尚未处于对话状态，说明这是一段全新的对话（无论是否执行过 showUp/showDown），必须当场重置上一轮可能残留的状态以作防呆
+  if (!isTalking) {
+    resetTalk();
+    isTalking = true;
+  }
 
   // 步骤 0：同步读取并暂存当前活跃脚本线程引用，杜绝对话打印 await 挂起期间由于 auto NPC 等微任务对 Thread.currentThread 全局变量的并发改写污染
   const t = Thread.currentThread;
@@ -173,18 +177,13 @@ export async function drawTalk(msgId) {
   // 步骤 1：如果满 4 行翻页，等待按键并清空画布，重置状态
   if (line >= 4) {
     await waitKey();
-    clearDraw();
+    updateTalk();
+    line = 0;
+    clear = true;
   }
 
   // 步骤 2：等待异步打印对话文本动作完成
   await drawTalk0(msgId);
-
-  if(!t.isNextTalk()) {
-    await waitKey();
-    clearDraw();
-  } else if(t.isNextTalks()) {
-    await waitKey();
-  }
 }
 
 function drawTalk0(msgId) {
