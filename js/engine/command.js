@@ -7,6 +7,8 @@ import { update, canWalk } from '../ui/draw.js';
 import { fadeIn, fadeOut, fadeScreenToRed } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
 import { loadArchive } from '../esc/archive.js';
+import { playRng } from './rng.js';
+
 
 export function setRolePos(sx, sy, shalf) {
   state.mx = sx;
@@ -1157,24 +1159,18 @@ export async function setRngAnimation(rngId) {
   // 步骤 1：在全局状态机中记录当前准备播放的剧情全屏动画 (RNG) ID
   state.curPlayingRngId = rngId;
 
-  // 步骤 2：输出详细的设定 RNG 动画编号调试日志，为剧情播放预留框架切入
+  // 步骤 2：输出详细的设定 RNG 动画编号调试日志
   console.log(`[0x36 setRngAnimation] 设置当前播放剧情动画 (RNG ID: ${rngId})`);
 }
 
 export async function playRngAnimation(startFrame, endFrame, speed) {
-  // 步骤 1：获取在全局状态机中预先选定的 RNG 动画编号，以及速度和终止帧缺省设定
+  // 步骤 1：获取在全局状态机中预先选定的 RNG 动画编号
   const rngId = state.curPlayingRngId || 0;
-  const end = endFrame > 0 ? endFrame : startFrame + 60; // 默认模拟播放 60 帧
-  const delay = speed > 0 ? speed : 16;
 
-  // 步骤 2：精准估算原版在该动画播放时所消耗的真实物理时间，并输出转场大图调试日志
-  const totalFrames = end - startFrame + 1;
-  const duration = totalFrames * delay;
+  console.log(`[0x37 playRngAnimation] 开始播放剧情大动画 (RNG ID: ${rngId}), 帧范围: [${startFrame}, ${endFrame}], 速度档位: ${speed}`);
 
-  console.log(`[0x37 playRngAnimation] 开始播放剧情大动画 (RNG ID: ${rngId}), 帧范围: [${startFrame}, ${end}], 速度档位: ${delay}, 预估时长: ${duration}ms`);
-
-  // 步骤 3：借助 async/await 协同挂起当前阻塞脚本线程，并在物理等待完毕后回归推进，达成完美的非忙等时序控制
-  await new Promise(resolve => setTimeout(resolve, duration));
+  // 步骤 2：调用 playRng 执行真实渲染播放，阻塞主脚本线程，直到播放完毕
+  await playRng(rngId, startFrame, endFrame, speed);
 }
 
 export function setMoney(add, failScriptId) {

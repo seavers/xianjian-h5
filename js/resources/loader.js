@@ -56,6 +56,7 @@ const files = [
   ['data.mkf'],       // 数据类
   ['abc.mkf'],        
   ['ball.mkf'],       // 物品类
+  ['rng.mkf'],        // 全屏动画
 ];
 
 export const file_caches = {}; // key -> ByteArray
