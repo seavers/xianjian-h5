@@ -73,6 +73,7 @@ function isNameText(text) {
 
 // 封装阻塞式按键/点击等待逻辑
 function waitKey() {
+  state.currentMode = 'talk'; // 确保在等待期间，输入模式必定为 talk，以防止被并发模块意外篡改
   showTalkWait();
   return new Promise((resolve) => {
     registerTalkResolve(resolve);
