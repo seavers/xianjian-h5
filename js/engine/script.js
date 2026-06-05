@@ -7,14 +7,6 @@ import { fadeIn, fadeOut } from '../ui/fade.js';
 import { ESC } from '../esc/esc.js';
 
 export const Script = {
-  NEXT_SCRIPT: -1,      // 当前轮，直接继续下一条指令
-  GOTO_SCRIPT: 4,       // 当前轮，直接跳转至指定指令
-  FINISH_SCRIPT: 0,     // 结束指令，下一轮，没有指令
-  STOP_SCRIPT: 1,       // 停止指令，下一轮，可能有其它指令
-  CHANGE_SCRIPT: 2,     // 下一轮，是指定的指令，若无，就是下一条指令
-  DELAY_SCRIPT: -5,     // 下一轮，依然是同一条指令
-  YIELD_SCRIPT: -6,     // 下一轮，继续下一条指令
-
   activeThread: null,
 
   startScene(scene) {
@@ -364,24 +356,22 @@ export const Script = {
       if (code.func) {
         const ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3);
         
-        // 核心协同挂起控制
-        if (ret === this.NEXT_SCRIPT) {
-          // ...next
-        } else if (ret === this.DELAY_SCRIPT) {
-          return thread.scriptId;
-        } else if (ret === this.YIELD_SCRIPT) {
+        // 核心协同挂起控制：根据返回值处理不同的逻辑分支
+        if (ret === 'yield') {
           thread.scriptId++;
           return thread.scriptId;
-        } else if (ret === this.GOTO_SCRIPT) {
-          continue;
-        } else if (ret === this.STOP_SCRIPT) {
+        } else if (ret === 'delay') {
+          return thread.scriptId;
+        } else if (ret === 'stop') {
+          thread.finish = true;
           thread.scriptId++;
           return thread.scriptId;
-        } else if (ret === this.FINISH_SCRIPT) {
+        } else if (ret === 'finish') {
           thread.finish = true;
           return thread.scriptId;
-        } else if (ret === this.CHANGE_SCRIPT) {
-          return thread.scriptId;
+        } else if (typeof ret === 'number' && ret > 0) {
+          thread.scriptId = ret;
+          continue;
         }
       }
 
@@ -393,7 +383,7 @@ export const Script = {
   },
 
   // 步进执行单条指令，用于 auto NPC 在每次 tick 中仅执行单条命令，避免 While 循环阻塞
-  stepOneInstruction(thread) {
+  async stepOneInstruction(thread) {
     if (thread.finish || thread.pause) return null;
 
     const script = state.scripts[thread.scriptId];
@@ -464,25 +454,23 @@ export const Script = {
     console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
     if (code.func) {
-      const ret = code.func.call(thread.obj, script.param1, script.param2, script.param3);
+      const ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3);
       
-      // 同理，如果 auto NPC 执行指令尚未完成，直接退出且不递增指令指针 IP
-      if (ret === this.NEXT_SCRIPT) {
-        // ...next
-      } else if (ret === this.DELAY_SCRIPT) {
-        return logItem;
-      } else if (ret === this.YIELD_SCRIPT) {
+      // 同理，如果 auto NPC 执行指令尚未完成或需要跳段，根据控制指令返回对应状态并返回 logItem
+      if (ret === 'yield') {
         thread.scriptId++;
         return logItem;
-      } else if (ret === this.GOTO_SCRIPT) {
+      } else if (ret === 'delay') {
         return logItem;
-      } else if (ret === this.STOP_SCRIPT) {
+      } else if (ret === 'stop') {
+        thread.finish = true;
         thread.scriptId++;
         return logItem;
-      } else if (ret === this.FINISH_SCRIPT) {
+      } else if (ret === 'finish') {
         thread.finish = true;
         return logItem;
-      } else if (ret === this.CHANGE_SCRIPT) {
+      } else if (typeof ret === 'number' && ret > 0) {
+        thread.scriptId = ret;
         return logItem;
       }
     }
@@ -507,7 +495,7 @@ export const Script = {
         }
         
         if (o.thread && !o.thread.finish && !o.thread.pause) {
-          const logItem = Script.stepOneInstruction(o.thread);
+          const logItem = await Script.stepOneInstruction(o.thread);
           o.autoScr = o.thread.scriptId;
           
           if (logItem) {

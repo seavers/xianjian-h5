@@ -29,7 +29,7 @@ export async function stepAction(obj, actionFunc) {
   if (isAuto) {
     // auto 脚本：单步执行，返回 delayOrNext 的逻辑判定值
     const res = actionFunc();
-    return res ? Script.DELAY_SCRIPT : Script.YIELD_SCRIPT;
+    return res ? 'delay' : 'yield';
   } else {
     // trigger/scene 脚本：循环阻塞，每次 tick 更新并休眠 150ms，直到移动或延迟到站
     while (true) {
@@ -40,7 +40,6 @@ export async function stepAction(obj, actionFunc) {
       await Script.stepAutoAndUpdate();
       await new Promise(resolve => setTimeout(resolve, 150));
     }
-    return Script.NEXT_SCRIPT;
   }
 }
 
@@ -184,8 +183,7 @@ export function jumpIfNotInZone(targetObjectId, zone, failScriptId) {
 
   if (targetObjectId <= state.startEventId || targetObjectId > state.endEventId) {
     console.log(`[0x83 jumpIfNotInZone] 目标事件物体 ID ${targetObjectId} 不在当前场景内，跳转至脚本: ${failScriptId}`);
-    Script.next(failScriptId);
-    return Script.GOTO_SCRIPT;
+    return failScriptId;
   }
 
   const pEvtObj = state.eventObjects[targetObjectId];
@@ -199,8 +197,7 @@ export function jumpIfNotInZone(targetObjectId, zone, failScriptId) {
 
   if (distance >= limit) {
     console.log(`[0x83 jumpIfNotInZone] 目标事件物体 ID ${targetObjectId} 曼哈顿距离为 ${distance}，超出限制 ${limit} (Zone: ${zone})，跳转至脚本: ${failScriptId}`);
-    Script.next(failScriptId);
-    return Script.GOTO_SCRIPT;
+    return failScriptId;
   }
 
   console.log(`[0x83 jumpIfNotInZone] 目标事件物体 ID ${targetObjectId} 曼哈顿距离为 ${distance}，在限制 ${limit} 内，不跳转`);
@@ -212,8 +209,7 @@ export function placeItemUsedAsObject(targetObjectId, stateVal, failScriptId) {
 
   if (targetObjectId <= state.startEventId || targetObjectId > state.endEventId) {
     console.log(`[0x84 placeItemUsedAsObject] 目标事件物体 ID ${targetObjectId} 不在当前场景内，跳转至脚本: ${failScriptId}`);
-    Script.next(failScriptId);
-    return Script.GOTO_SCRIPT;
+    return failScriptId;
   }
 
   // 1. 计算主角前方的坐标
@@ -231,8 +227,7 @@ export function placeItemUsedAsObject(targetObjectId, stateVal, failScriptId) {
 
   if (canWalk(txTile, tyTile, thalf) !== 0) {
     console.log(`[0x84 placeItemUsedAsObject] 主角前方 (瓦片: ${txTile}, ${tyTile}, half: ${thalf}) 存在障碍物，不能放置，跳转至脚本: ${failScriptId}`);
-    Script.next(failScriptId);
-    return Script.GOTO_SCRIPT;
+    return failScriptId;
   }
 
   // 3. 放置当前物体
@@ -250,8 +245,7 @@ export function placeItemUsedAsObject(targetObjectId, stateVal, failScriptId) {
 export function jumpIfCurrentSceneEquals(sceneId, failScriptId) {
   if (state.sceneId === sceneId) {
     console.log(`[0x95 jumpIfCurrentSceneEquals] 当前场景为 ${state.sceneId}，等于 ${sceneId}，跳转至脚本: ${failScriptId}`);
-    Script.next(failScriptId);
-    return Script.GOTO_SCRIPT;
+    return failScriptId;
   }
   console.log(`[0x95 jumpIfCurrentSceneEquals] 当前场景为 ${state.sceneId}，不等于 ${sceneId}，不跳转`);
 }
@@ -628,8 +622,7 @@ export function faceNpcTrig(objId, dist, targetScriptId) {
     }
   } else {
     // 这里的scriptId - 1 是因为主循环的下一步，是scriptId + 1 然后继续
-    Script.next(targetScriptId);
-    return Script.GOTO_SCRIPT;
+    return targetScriptId;
   }
 }
 
@@ -646,7 +639,7 @@ function loadFrameCount(obj) {
 }
 
 export function replaceObject() {
-  return Script.FINISH_SCRIPT;
+  return 0;
 }
 
 export async function moveViewport(dx, dy, frameCount) {
@@ -659,7 +652,7 @@ export async function moveViewport(dx, dy, frameCount) {
     if (window.onSceneUpdate) {
       window.onSceneUpdate();
     }
-    return Script.NEXT_SCRIPT;
+    return 0;
   }
 
   // 步骤 2：若 frameCount 为 0xFFFF，代表立即定位视口到指定的绝对瓦片坐标处
@@ -670,7 +663,7 @@ export async function moveViewport(dx, dy, frameCount) {
     if (window.onSceneUpdate) {
       window.onSceneUpdate();
     }
-    return Script.NEXT_SCRIPT;
+    return 0;
   }
 
   // 步骤 3：否则进入平移动画模式，每逻辑帧以 speedX 和 speedY 偏移量移动视口，总共持续 frameCount 帧
@@ -797,8 +790,7 @@ export function jumpIfItemAmountLessThan(itemId, amount, failScriptId) {
   const ownedCount = state.ownItems.filter(id => id === itemId).length;
   if (ownedCount < amount) {
     console.log(`[0x58 jumpIfItemAmountLessThan] 背包中物品 ID ${itemId} 的数量为 ${ownedCount}，小于 ${amount}，跳转到脚本: ${failScriptId}`);
-    Script.next(failScriptId);
-    return Script.GOTO_SCRIPT;
+    return failScriptId;
   }
   console.log(`[0x58 jumpIfItemAmountLessThan] 背包中物品 ID ${itemId} 的数量为 ${ownedCount}，不少于 ${amount}，不跳转`);
 }
@@ -1020,21 +1012,20 @@ export function toggleScene(sceneId) {
 
 export function finishCode() {
   Script.finish(this);
-  return Script.FINISH_SCRIPT;
+  return 'finish';
 }
 
 export function stopCode() {
   Script.stop();
-  return Script.STOP_SCRIPT;
+  return 'stop';
 }
 
 export function changeScript() {
-  return Script.STOP_SCRIPT;
+  return 'stop';
 }
 
 export function gotoScript(scriptId) {
-  Script.next(scriptId);
-  return Script.GOTO_SCRIPT;
+  return scriptId;
 }
 
 export async function subScript(scriptId, objId) {
@@ -1051,8 +1042,7 @@ export async function subScript(scriptId, objId) {
 
 export function randomScript(base, scriptId) {
   if (Math.random() * 100 > base) {
-    Script.next(scriptId);
-    return Script.GOTO_SCRIPT;
+    return scriptId;
   }
 }
 
@@ -1066,9 +1056,9 @@ export function jumpIfObjectState(objId, stateVal, targetScriptId) {
   // 步骤 2：输出详细的跳转条件判定调试日志，辅助时序与脚本流程分析
   console.log(`[0x94 jumpIfObjectState] 判定物体 ID: ${obj.id || '当前'}, 状态: ${obj.state} (期望: ${stateVal}), 目标脚本: ${targetScriptId}`);
 
-  // 步骤 3：若物体的状态满足期望的值，使用 Script.next(targetScriptId - 1) 精准跳转至对应脚本分支
+  // 步骤 3：若物体的状态满足期望的值，精准跳转至对应脚本分支
   if (obj.state === stateVal) {
-    Script.next(targetScriptId - 1);
+    return targetScriptId;
   }
 }
 
@@ -1121,7 +1111,7 @@ export async function updateScreenAndWait(time) {
   await updateScreen();
   
   if (time == 0) {
-    return Script.YIELD_SCRIPT;
+    return 'yield';
   }
 
   // 返回>0，跳出场景脚本循环，来重绘
@@ -1222,8 +1212,7 @@ export function setMoney(add, failScriptId) {
   const change = intToShort(add);
   if (change < 0 && state.money < -change) {
     if (failScriptId) {
-      Script.next(failScriptId);
-      return Script.GOTO_SCRIPT;
+      return failScriptId;
     }
   } else {
     state.money += change;
@@ -1273,8 +1262,7 @@ export async function removeItem(itemId, count, failScriptId) {
     // 步骤 5：背包数量不足且提供了失败跳转脚本，则扣除失败，跳转到指定的分支脚本
     console.log(`[0x20 removeItem] 物品数量不足 (拥有: ${ownedCount}, 需扣除: ${amount}), 跳转至分支脚本: ${failScriptId}`);
     
-    Script.next(failScriptId);
-    return Script.GOTO_SCRIPT;
+    return failScriptId;
   }
 }
 
@@ -1299,20 +1287,19 @@ export async function startBattle(battleId, failScriptId, fleeScriptId) {
   if (!victory) {
     if (fleeScriptId) {
       console.log(`[0x07 startBattle] 模拟战斗逃跑，跳转至逃跑分支: ${fleeScriptId}`);
-      Script.next(fleeScriptId);
-      return Script.GOTO_SCRIPT;
+      return fleeScriptId;
     } else if (failScriptId) {
       console.log(`[0x07 startBattle] 模拟战斗战败，跳转至战败分支: ${failScriptId}`);
-      Script.next(failScriptId);
-      return Script.GOTO_SCRIPT;
+      return failScriptId;
     }
   } else {
     console.log(`[0x07 startBattle] 模拟战斗胜利，继续后续主线剧情。`);
   }
 }
 
-export function replaceEntry() {
-  return Script.NEXT_SCRIPT;
+export function replaceEntry(scriptId) {
+  //TODO: 待验证
+  return scriptId;
 }
 
 export async function confirmMenu(failScriptId) {
@@ -1321,8 +1308,7 @@ export async function confirmMenu(failScriptId) {
     result = window.confirm("是否确定？\n点击【确定】选择是，点击【取消】选择否。");
   }
   if (!result) {
-    Script.next(failScriptId);
-    return Script.GOTO_SCRIPT;
+    return failScriptId;
   }
 }
 
@@ -1546,8 +1532,7 @@ export function teleportOut(failScriptId) {
     Script.start(scene.exitScriptId, state.party[0] || state.roles[0], 'trig');
   } else {
     if (failScriptId) {
-      Script.next(failScriptId);
-      return Script.GOTO_SCRIPT;
+      return failScriptId;
     }
   }
   console.log(`[0x38 teleportOut] 执行传送出当前迷宫场景指令, 传送脚本: ${scene?.exitScriptId || '无'}`);
@@ -1601,7 +1586,7 @@ export async function loadLastSavedGame() {
   await update(true);
   
   console.log(`[0x4E loadLastSavedGame] 存档重载完成`);
-  return Script.FINISH_SCRIPT;
+  return 'finish';
 }
 
 export async function fadeToRed() {
