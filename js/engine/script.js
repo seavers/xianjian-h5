@@ -266,10 +266,10 @@ export const Script = {
     if (thread.finish || thread.pause) return thread.scriptId;
 
     let startScriptId = thread.scriptId;
-    let wScriptEntry = thread.scriptId;
-    let fEnd = false;
+    let scriptEntry = thread.scriptId;
+    let endFlag = false;
 
-    while (!thread.pause && !thread.finish && !fEnd) {
+    while (!thread.pause && !thread.finish && !endFlag) {
       // 1. 核心单步调试拦截点
       if (window.STEP_DEBUG && thread.type !== 'auto') {
         window.ACTIVE_DEBUG_THREAD = thread;
@@ -280,9 +280,9 @@ export const Script = {
         break;
       }
 
-      const script = state.scripts[wScriptEntry];
+      const script = state.scripts[scriptEntry];
       if (!script) {
-        console.warn(`Thread #${thread.id} scriptId: ${wScriptEntry} 越界`);
+        console.warn(`Thread #${thread.id} scriptId: ${scriptEntry} 越界`);
         thread.finish = true;
         break;
       }
@@ -296,7 +296,7 @@ export const Script = {
         npcId: thread.obj ? thread.obj.id : '无',
         roleId: thread.obj && typeof thread.obj.mgoId === 'number' ? thread.obj.mgoId : null,
         type: thread.type,
-        scriptId: wScriptEntry,
+        scriptId: scriptEntry,
         code: script.code,
         hexCode: '0x' + Hex.toHex(script.code),
         desc: desc,
@@ -317,41 +317,41 @@ export const Script = {
       }
 
       if (!code) {
-        console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${wScriptEntry}]: execute ${Hex.toHex(script.code)}`);
-        wScriptEntry++; // 未知指令跳过
+        console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${scriptEntry}]: execute ${Hex.toHex(script.code)}`);
+        scriptEntry++; // 未知指令跳过
         continue;
       }
 
       const tab = thread.type.charAt(0).toUpperCase();
-      console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${wScriptEntry}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
+      console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${scriptEntry}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
       if (code.func) {
         const ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3, thread);
         if (typeof ret === 'number' && ret > 0) {
-          wScriptEntry = ret;
+          scriptEntry = ret;
           continue;
         }
       }
 
       if (script.code === 0x08) {
-        startScriptId = wScriptEntry + 1;
+        startScriptId = scriptEntry + 1;
       }
 
-      // 步骤 2：针对 STOP 类型指令设置 fEnd 控制变量终止当前 Tick
+      // 步骤 2：针对 STOP 类型指令设置 endFlag 控制变量终止当前 Tick
       if (script.code === 0x00) {
-        fEnd = true;
+        endFlag = true;
       } else if (script.code === 0x01) {
-        wScriptEntry++;
-        fEnd = true;
+        scriptEntry++;
+        endFlag = true;
       } else if (script.code === 0x02) {
-        fEnd = true;
-        wScriptEntry = thread.scriptId;
+        endFlag = true;
+        scriptEntry = thread.scriptId;
       } else {
-        wScriptEntry++;
+        scriptEntry++;
       }
     }
 
-    thread.scriptId = wScriptEntry;
+    thread.scriptId = scriptEntry;
     return startScriptId;
   },
 
@@ -404,29 +404,29 @@ export const Script = {
     const tab = thread.type.charAt(0).toUpperCase();
     console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
-    let wScriptEntry = thread.scriptId;
+    let scriptEntry = thread.scriptId;
     let jumpOccurred = false;
     if (code.func) {
       const ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3, thread);
       if (typeof ret === 'number' && ret > 0) {
-        wScriptEntry = ret;
+        scriptEntry = ret;
         jumpOccurred = true;
       }
     }
 
     // 步骤 2.8：处理单条指令步进完毕后的指令指针更新，跳段、STOP 系列指令判定
     if (jumpOccurred) {
-      thread.scriptId = wScriptEntry;
+      thread.scriptId = scriptEntry;
     } else if (script.code === 0x00) {
-      thread.scriptId = wScriptEntry;
+      thread.scriptId = scriptEntry;
     } else if (script.code === 0x01) {
-      wScriptEntry++;
-      thread.scriptId = wScriptEntry;
+      scriptEntry++;
+      thread.scriptId = scriptEntry;
     } else if (script.code === 0x02) {
-      thread.scriptId = wScriptEntry;
+      thread.scriptId = scriptEntry;
     } else {
-      wScriptEntry++;
-      thread.scriptId = wScriptEntry;
+      scriptEntry++;
+      thread.scriptId = scriptEntry;
     }
   },
 
