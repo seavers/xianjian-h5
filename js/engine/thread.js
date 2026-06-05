@@ -15,41 +15,6 @@ export class Thread {
     this.timer = null;
   }
 
-  reset() {
-    this.finish = false;
-    this.pause = false;
-
-  }
-
-  start() {
-    this.finish = false;
-  }
-
-  restart() {
-    this.finish = false;
-    this.pause = false;
-
-  }
-
-  stop() {
-    this.finish = true;
-    if (Thread.currentThread === this) {
-      Thread.currentThread = null;
-    }
-
-    if (this.callback) {
-      this.callback();
-    }
-  }
-
-  wait() {
-    this.pause = true;
-  }
-
-  notify() {
-    this.pause = false;
-  }
-
   isNextTalk() {
     // 步骤 1：在 async/await 架构下，指令在 await 完结前 scriptId 尚未自增，因此探测下一条指令需要使用 scriptId + 1
     const script = state.scripts[this.scriptId + 1];
@@ -65,4 +30,3 @@ export class Thread {
   }
 }
 
-Thread.currentThread = null;

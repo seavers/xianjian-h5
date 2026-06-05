@@ -1,9 +1,10 @@
 import { state } from '../engine/state.js';
 import { Lang } from '../utils/lang.js';
-import { Thread } from '../engine/thread.js';
+import { Script } from '../engine/script.js';
 import { loadMsg, loadWord, loadPic, loadRgm } from '../resources/pal.js';
 
 export let isTalking = false;
+
 
 // 模块级对话坐标与状态管理
 let tx = 0;
@@ -172,8 +173,8 @@ function showMessage() {
 export async function drawTalk(msgId) {
   isTalking = true;
 
-  // 步骤 0：同步读取并暂存当前活跃脚本线程引用，杜绝对话打印 await 挂起期间由于 auto NPC 等微任务对 Thread.currentThread 全局变量的并发改写污染
-  const t = Thread.currentThread;
+  // 步骤 0：同步读取并暂存当前活跃脚本线程引用，杜绝对话打印 await 挂起期间由于 auto NPC 等微任务对 Script.activeThread 全局变量的并发改写污染
+  const t = Script.activeThread;
 
   if (message) {
     message = false;

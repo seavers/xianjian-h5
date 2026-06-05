@@ -61,8 +61,6 @@ export const Script = {
       return;
     }
 
-    // 步骤 2：步进场景渐变过渡动画任务已由 draw.js 中的本地定时高帧率循环渲染替代，彻底移除原本的 tick 步进以支持自然阻塞
-
     // 步骤 3：处理游戏硬挂起状态（如渐变动画中或 ESC 打开时，仅重绘画面以保持动画连贯，不步进任何游戏脚本和 auto 漫游）
     if (state.isPaused) {
       await update(true);
@@ -94,42 +92,22 @@ export const Script = {
     const t = Script.activeThread;
     if (t && !t.finish) {
       if (!t.pause) {
-        await this.stepThread(t);
-      }
-    }
-
-    // 步骤 6：步进 auto NPC 漫游线程。判定依据为事件物体的类型 type === 'npc'
-    // 特殊情况，跳过 auto 漫游步进以完全挂起漫游 NPC，杜绝对话期间 NPC 步态和移位
-    if (true) {
-      const autoLogs = [];
-
-      for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
-        const o = state.eventObjects[i];
-        if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc' || o.nouse !== 0) continue;
-
-        if (o.autoScr) {
-          // 如果还没有 thread 或者 thread 已经结束，则惰性创建 thread 状态记录，但不当场运行
-          if (!o.thread) {
-            o.thread = new Thread(o.autoScr, o, 'auto');
-          }
-          
-          if (o.thread && !o.thread.finish && !o.thread.pause) {
-            const logItem = this.stepOneInstruction(o.thread);
-            if (logItem) {
-              autoLogs.push(logItem);
-            }
-          }
+        const nextId = await this.runTriggerScript(t);
+        if (t.type === 'scene') {
+          t.obj.enterScriptId = nextId;
+        } else if (t.type === 'trig') {
+          t.obj.trigScr = nextId;
         }
       }
-
-      // 所有 auto 脚本执行完毕后，统一批量回调脚本执行钩子，大幅减少重绘次数
-      if (autoLogs.length > 0 && window.onScriptExecute) {
-        window.onScriptExecute(autoLogs);
-      }
+    }
+    
+    // 执行一轮后，如果当前阻塞脚本已结束，则自动退回至父阻塞脚本
+    while (Script.activeThread && Script.activeThread.finish) {
+      Script.activeThread = Script.activeThread.parent || null;
     }
 
-    // 步骤 7：画面统一重绘同步
-    await update(true);
+    // 步骤 6：步进 auto NPC 漫游并统一重绘刷新
+    await this.stepAutoAndUpdate();
   },
 
   async handleSceneSwitch() {
@@ -159,7 +137,8 @@ export const Script = {
   setAutoThread(scriptId, obj, type) {
     if (obj.thread) {
       obj.thread.scriptId = scriptId;
-      obj.thread.reset();
+      obj.thread.finish = false;
+      obj.thread.pause = false;
       return ;
     }
 
@@ -175,8 +154,6 @@ export const Script = {
       obj.thread = thread;
     }
 
-    thread.start();
-
     // 刷新 UI
     if (window.onThreadsUpdate) {
       window.onThreadsUpdate();
@@ -184,29 +161,21 @@ export const Script = {
   },
 
   finish(obj) {
-    const thread = Thread.currentThread;
+    const thread = Script.activeThread;
     if (thread) {
-      thread.stop();
-      if (thread === Script.activeThread) {
-        Script.activeThread = thread.parent || null;
-      }
-      if (thread.type === 'trig' && thread.nextScriptId !== undefined && thread.nextScriptId !== null) {
-        thread.obj.trigScr = thread.nextScriptId;
+      thread.finish = true;
+      if (thread.callback) {
+        thread.callback();
       }
     }
-    if(obj && obj.thread == thread) {
+    if (obj && obj.thread === thread) {
       obj.thread = null;
     }
 
     // 停止指令
-    if (obj.type == 'npc') {
+    if (obj && obj.type === 'npc') {
       obj.autoScr = null;
     }
-
-    // 兜底释放：如果没有任何阻塞主线程，且当前依然是对话状态，强制退出 talk 模式并清空画布
-    // if (!Script.activeThread) {
-    //   window.Talk.clearTalk();
-    // }
 
     if (window.onThreadsUpdate) {
       window.onThreadsUpdate();
@@ -214,33 +183,20 @@ export const Script = {
   },
 
   stop(scriptId) {
-    const thread = Thread.currentThread;
+    const thread = Script.activeThread;
     if (!thread) return;
 
     // 如果是stopCode，则指向为下一条指令
-    if(!scriptId) {
+    if (scriptId === undefined) {
       scriptId = thread.scriptId + 1;
     }
+    
+    thread.scriptId = scriptId;
+    thread.finish = true;
 
-    if (thread.type === 'auto') {
-      thread.obj.autoScr = scriptId;
-      thread.obj.thread = null;
-    } else if (thread.type === 'scene') {
-      thread.obj.enterScriptId = scriptId;
-    } else if (thread.type === 'trig') {
-      thread.obj.trigScr = scriptId;
+    if (thread.callback) {
+      thread.callback();
     }
-
-    thread.stop();
-    if (thread === Script.activeThread) {
-      Script.activeThread = thread.parent || null;
-    }
-
-    // 兜底释放：如果没有任何阻塞主线程，且当前依然是对话状态，强制退出 talk 模式并清空画布
-    // if (!Script.activeThread) {
-    //   window.Talk.resetTalk();
-    //   window.Talk.updateTalk();
-    // }
 
     if (window.onThreadsUpdate) {
       window.onThreadsUpdate();
@@ -248,7 +204,7 @@ export const Script = {
   },
 
   next(scriptId) {
-    const thread = Thread.currentThread;
+    const thread = Script.activeThread;
     if (thread) {
       thread.scriptId = scriptId;
     }
@@ -270,10 +226,10 @@ export const Script = {
   },
 
   sub(scriptId, targetObj) {
-    const thread = Thread.currentThread;
+    const thread = Script.activeThread;
     if (!thread) return Promise.resolve();
 
-    thread.wait();
+    thread.pause = true;
     
     // 步骤 1：若提供了自定义目标物体 targetObj 则在新线程中绑定该物体，否则继承父线程的对象自身 thread.obj
     const activeObj = targetObj !== undefined ? targetObj : thread.obj;
@@ -281,14 +237,18 @@ export const Script = {
     return new Promise(async (resolve) => {
       const sub = new Thread(scriptId, activeObj, thread.type, () => {
         Script.activeThread = thread; // 子脚本执行完毕，将 activeThread 自适应恢复为父脚本
-        thread.notify();
+        thread.pause = false;
         resolve();
       });
       sub.parent = thread;
       Script.activeThread = sub; // 将当前活跃的阻塞主线程推进为新启动的子脚本
 
-      sub.start();
-      await this.stepThread(sub);
+      const nextId = await this.runTriggerScript(sub);
+      if (sub.type === 'scene') {
+        sub.obj.enterScriptId = nextId;
+      } else if (sub.type === 'trig') {
+        sub.obj.trigScr = nextId;
+      }
 
       if (window.onThreadsUpdate) {
         window.onThreadsUpdate();
@@ -310,16 +270,16 @@ export const Script = {
   },
 
   // 集中推进非 auto 类型的阻塞脚本主线程，运行 While 指令解析循环
-  async stepThread(thread) {
-    if (thread.finish || thread.pause) return;
+  async runTriggerScript(thread) {
+    if (thread.finish || thread.pause) return thread.scriptId;
 
-    Thread.currentThread = thread;
+    let startScriptId = thread.scriptId;
 
     while (!thread.pause && !thread.finish) {
       // 1. 核心单步调试拦截点
       if (window.STEP_DEBUG && thread.type !== 'auto') {
         window.ACTIVE_DEBUG_THREAD = thread;
-        thread.wait();
+        thread.pause = true;
         if (window.onStepDebugPause) {
           window.onStepDebugPause(thread);
         }
@@ -329,8 +289,38 @@ export const Script = {
       const script = state.scripts[thread.scriptId];
       if (!script) {
         console.warn(`Thread #${thread.id} scriptId: ${thread.scriptId} 越界`);
-        thread.stop();
+        thread.finish = true;
         break;
+      }
+
+      // 特殊处理 0x0000, 0x0001, 0x0002 指令，以符合 C 语言 sdlpal 规范
+      if (script.code === 0x0000) {
+        // 0x0000: 停止运行，返回进入时的脚本ID
+        thread.finish = true;
+        thread.scriptId = startScriptId;
+        break;
+      } else if (script.code === 0x0001) {
+        // 0x0001: 停止运行并指向下一条
+        thread.finish = true;
+        thread.scriptId = thread.scriptId + 1;
+        break;
+      } else if (script.code === 0x0002) {
+        // 0x0002: 停止运行并改写为指定地址（param1）
+        const countKey = 'nScriptIdleFrame';
+        if (!thread.obj[countKey]) {
+          thread.obj[countKey] = 0;
+        }
+        if (!script.param2 || ++thread.obj[countKey] < script.param2) {
+          thread.finish = true;
+          thread.scriptId = script.param1;
+        } else {
+          thread.obj[countKey] = 0;
+          thread.scriptId++;
+        }
+        continue;
+      } else if (script.code === 0x0008) {
+        // 0x0008: 改写进入脚本 ID 为下一条指令
+        startScriptId = thread.scriptId + 1;
       }
 
       const code = scriptCodes[script.code];
@@ -372,49 +362,70 @@ export const Script = {
       console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
       if (code.func) {
-        // 步骤 1：在异步调用前确保 Thread.currentThread 设定为当前活跃执行的线程本身
-        Thread.currentThread = thread;
         const ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3);
-        // 步骤 2：异步 await 回归后，强制恢复 Thread.currentThread 上下文，防止并发转折时被篡改或丢失
-        Thread.currentThread = thread;
         
-        // 核心协同挂起控制：
-        // 如果指令返回 大于 0 的未完成帧计数，表示指令需要跨多 tick 进行状态步进
-        // 我们在此等待 150ms 逻辑帧，不递增指令指针 IP 并退出，以便下一逻辑帧重新执行。
-        if (ret == this.NEXT_SCRIPT) {
+        // 核心协同挂起控制
+        if (ret === this.NEXT_SCRIPT) {
           // ...next
-        } else if (ret == this.DELAY_SCRIPT) {
-          return;
+        } else if (ret === this.DELAY_SCRIPT) {
+          return thread.scriptId;
         } else if (ret === this.YIELD_SCRIPT) {
           thread.scriptId++;
-          return;
+          return thread.scriptId;
         } else if (ret === this.GOTO_SCRIPT) {
           continue;
         } else if (ret === this.STOP_SCRIPT) {
           thread.scriptId++;
-          return;
+          return thread.scriptId;
         } else if (ret === this.FINISH_SCRIPT) {
-          return;
+          thread.finish = true;
+          return thread.scriptId;
         } else if (ret === this.CHANGE_SCRIPT) {
-          return;
+          return thread.scriptId;
         }
       }
 
       // 本条指令执行成功，指向下一条指令
       thread.scriptId++;
     }
+
+    return thread.scriptId;
   },
 
   // 步进执行单条指令，用于 auto NPC 在每次 tick 中仅执行单条命令，避免 While 循环阻塞
   stepOneInstruction(thread) {
     if (thread.finish || thread.pause) return null;
 
-    Thread.currentThread = thread;
-
     const script = state.scripts[thread.scriptId];
     if (!script) {
       console.warn(`Thread #${thread.id} scriptId: ${thread.scriptId} 越界`);
-      thread.stop();
+      thread.finish = true;
+      return null;
+    }
+
+    // 特殊处理 0x0000, 0x0001, 0x0002 指令，以符合 C 语言 sdlpal 规范
+    if (script.code === 0x0000) {
+      // 0x0000: 停止运行，不自增，返回当前 ID
+      thread.finish = true;
+      return null;
+    } else if (script.code === 0x0001) {
+      // 0x0001: 停止运行，自增 1，指向下一条
+      thread.finish = true;
+      thread.scriptId = thread.scriptId + 1;
+      return null;
+    } else if (script.code === 0x0002) {
+      // 0x0002: 停止运行并改写
+      const countKey = 'wScriptIdleFrameCountAuto';
+      if (!thread.obj[countKey]) {
+        thread.obj[countKey] = 0;
+      }
+      if (!script.param2 || ++thread.obj[countKey] < script.param2) {
+        thread.finish = true;
+        thread.scriptId = script.param1;
+      } else {
+        thread.obj[countKey] = 0;
+        thread.scriptId++;
+      }
       return null;
     }
 
@@ -456,27 +467,63 @@ export const Script = {
       const ret = code.func.call(thread.obj, script.param1, script.param2, script.param3);
       
       // 同理，如果 auto NPC 执行指令尚未完成，直接退出且不递增指令指针 IP
-      if (ret == this.NEXT_SCRIPT) {
+      if (ret === this.NEXT_SCRIPT) {
         // ...next
-      } else if (ret == this.DELAY_SCRIPT) {
-        return;
+      } else if (ret === this.DELAY_SCRIPT) {
+        return logItem;
       } else if (ret === this.YIELD_SCRIPT) {
         thread.scriptId++;
-        return;
+        return logItem;
       } else if (ret === this.GOTO_SCRIPT) {
-        // continue;
-        return;
+        return logItem;
       } else if (ret === this.STOP_SCRIPT) {
         thread.scriptId++;
-        return;
+        return logItem;
       } else if (ret === this.FINISH_SCRIPT) {
-        return;
+        thread.finish = true;
+        return logItem;
       } else if (ret === this.CHANGE_SCRIPT) {
-        return;
+        return logItem;
       }
     }
 
     thread.scriptId++;
     return logItem;
+  },
+
+  // 步进所有 auto NPC 并更新屏幕画面
+  async stepAutoAndUpdate() {
+    const autoLogs = [];
+
+    // 步骤 1：遍历所有的 NPC 事件物体并单步执行其 auto 脚本
+    for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
+      const o = state.eventObjects[i];
+      if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc' || o.nouse !== 0) continue;
+
+      if (o.autoScr) {
+        // 如果还没有 thread，则惰性创建 thread 状态记录，但不当场运行
+        if (!o.thread) {
+          o.thread = new Thread(o.autoScr, o, 'auto');
+        }
+        
+        if (o.thread && !o.thread.finish && !o.thread.pause) {
+          const logItem = Script.stepOneInstruction(o.thread);
+          o.autoScr = o.thread.scriptId;
+          
+          if (logItem) {
+            autoLogs.push(logItem);
+          }
+        }
+      }
+    }
+
+    // 步骤 2：批量回调脚本执行钩子，大幅减少重绘次数
+    if (autoLogs.length > 0 && window.onScriptExecute) {
+      window.onScriptExecute(autoLogs);
+    }
+
+    // 步骤 3：重绘整个画面
+    await update(true);
   }
+
 };

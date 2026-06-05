@@ -1,6 +1,5 @@
 import { state } from './state.js';
 import { Script } from './script.js';
-import { Thread } from './thread.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
 import { update, canWalk } from '../ui/draw.js';
@@ -10,6 +9,41 @@ import { loadArchive } from '../esc/archive.js';
 import { playRng } from './rng.js';
 import { playMusic, stopMusic as stopBgMusic } from '../resources/music.js';
 import { playSound } from '../resources/sound.js';
+
+// 获取当前上下文的角色索引，优先匹配 this 或活跃阻塞线程的绑定主体，最后默认为主角 (0)
+function getRoleIndex(obj) {
+  if (obj && obj.type === 'role') {
+    return obj.index;
+  }
+  const activeObj = Script.activeThread?.obj;
+  if (activeObj && activeObj.type === 'role') {
+    return activeObj.index;
+  }
+  return 0;
+}
+
+// 统一包装单步动作指令调度，自动识别并分发 auto 漫游和 trigger/scene 阻塞式执行流
+export async function stepAction(obj, actionFunc) {
+  const isAuto = Script.activeThread?.obj !== obj;
+
+  if (isAuto) {
+    // auto 脚本：单步执行，返回 delayOrNext 的逻辑判定值
+    const res = actionFunc();
+    return res ? Script.DELAY_SCRIPT : Script.YIELD_SCRIPT;
+  } else {
+    // trigger/scene 脚本：循环阻塞，每次 tick 更新并休眠 150ms，直到移动或延迟到站
+    while (true) {
+      const res = actionFunc();
+      if (res === 0) {
+        break;
+      }
+      await Script.stepAutoAndUpdate();
+      await new Promise(resolve => setTimeout(resolve, 150));
+    }
+    return Script.NEXT_SCRIPT;
+  }
+}
+
 
 
 export function setRolePos(sx, sy, shalf) {
@@ -80,11 +114,11 @@ export function refreshRoleCount(role) {
   role.frame = frame;
 }
 
-export function roleWalk(sx, sy, shalf) {
+export async function roleWalk(sx, sy, shalf) {
   state.mx = sx;
   state.my = sy;
   state.mhalf = shalf;
-  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], sx, sy, shalf, 4));
+  return await stepAction(this, () => Npc.animTeam(state.party[0] || state.roles[0], sx, sy, shalf, 4));
 }
 
 export async function clearWithEffect(effectType) {
@@ -506,57 +540,69 @@ export function setNpcMove(objId, dx, dy) {
   Script.sleep(1)
 }
 
-export function npcWalk2(x, y, half) {
-  return delayOrNext(Npc.anim(this, x, y, half, 3));
+export async function npcWalk2(x, y, half) {
+  return await stepAction(this, () => Npc.anim(this, x, y, half, 3));
 }
 
-export function npcWalk3(x, y, half) {
-  return delayOrNext(Npc.anim(this, x, y, half, 2));
+export async function npcWalk3(x, y, half) {
+  return await stepAction(this, () => Npc.anim(this, x, y, half, 2));
 }
 
-export function npcWalk4(x, y, half) {
+export async function npcWalk4(x, y, half) {
   // 步骤 1：调用 Npc.anim 使得当前 NPC 移动到指定的目标瓦片坐标，折算实际移动步长为中速 (2)
-  return delayOrNext(Npc.anim(this, x, y, half, 2));
+  return await stepAction(this, () => Npc.anim(this, x, y, half, 2));
 }
 
-export function teamWalk(x, y, half) {
+export async function teamWalk(x, y, half) {
   // 步骤 1：让队长开始行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
-  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 2));
+  return await stepAction(this, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 2));
 }
 
-export function teamWalk2(x, y, half) {
+export async function teamWalk2(x, y, half) {
   // 步骤 1：让队长开始快速行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
-  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 4));
+  return await stepAction(this, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 4));
 }
 
-export function teamWalk3(x, y, half) {
+export async function teamWalk3(x, y, half) {
   // 步骤 1：让队长开始中速行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
-  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 6));
+  return await stepAction(this, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 6));
 }
 
-export function teamWalk4(x, y, half) {
+export async function teamWalk4(x, y, half) {
   // 步骤 1：让队长开始极速行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
-  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 8));
+  return await stepAction(this, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 8));
 }
 
-export function teamRide(x, y, half) {
-  Npc.anim(this, x, y, half, 2);
-  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 2));
+export async function teamRide(x, y, half) {
+  return await stepAction(this, () => {
+    const res1 = Npc.anim(this, x, y, half, 2);
+    const res2 = Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 2);
+    return res1 || res2;
+  });
 }
 
-export function teamRide2(x, y, half) {
-  Npc.anim(this, x, y, half, 4);
-  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 4));
+export async function teamRide2(x, y, half) {
+  return await stepAction(this, () => {
+    const res1 = Npc.anim(this, x, y, half, 4);
+    const res2 = Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 4);
+    return res1 || res2;
+  });
 }
 
-export function teamRide3(x, y, half) {
-  Npc.anim(this, x, y, half, 6);
-  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 6));
+export async function teamRide3(x, y, half) {
+  return await stepAction(this, () => {
+    const res1 = Npc.anim(this, x, y, half, 6);
+    const res2 = Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 6);
+    return res1 || res2;
+  });
 }
 
-export function teamRide4(x, y, half) {
-  Npc.anim(this, x, y, half, 8);
-  return delayOrNext(Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 8));
+export async function teamRide4(x, y, half) {
+  return await stepAction(this, () => {
+    const res1 = Npc.anim(this, x, y, half, 8);
+    const res2 = Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 8);
+    return res1 || res2;
+  });
 }
 
 export function faceNpcTrig(objId, dist, targetScriptId) {
@@ -600,13 +646,10 @@ function loadFrameCount(obj) {
 }
 
 export function replaceObject() {
-  const thread = Thread.currentThread;
-  if (thread) {
-    thread.stop();
-  }
+  return Script.FINISH_SCRIPT;
 }
 
-export function moveViewport(dx, dy, frameCount) {
+export async function moveViewport(dx, dy, frameCount) {
   // 步骤 1：若首参数和次参数均为 0，代表需要恢复视口对焦中心为主角位置，使其正常对焦
   if (dx === 0 && dy === 0) {
     const leader = state.party[0] || state.roles[0];
@@ -634,7 +677,7 @@ export function moveViewport(dx, dy, frameCount) {
   const speedX = intToShort(dx);
   const speedY = intToShort(dy);
 
-  return delayOrNext(Script.stepProgress(this, frameCount, () => {
+  return await stepAction(this, () => Script.stepProgress(this, frameCount, () => {
     state.mapX += speedX;
     state.mapY += speedY;
 
@@ -728,9 +771,8 @@ export async function removeMagic(magicId, roleId) {
 }
 
 export function setMagicBaseDamageByMp(magicId, multiplier) {
-  const thread = Thread.currentThread;
-  const triggeringRoleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
-  const role = state.roles[triggeringRoleIndex];
+  const roleIndex = getRoleIndex(this);
+  const role = state.roles[roleIndex];
   
   if (role) {
     if (role.mp === undefined) role.mp = 100;
@@ -762,8 +804,7 @@ export function jumpIfItemAmountLessThan(itemId, amount, failScriptId) {
 }
 
 export function halvePlayerHp() {
-  const thread = Thread.currentThread;
-  const roleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
+  const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
   if (role) {
     if (role.hp === undefined) {
@@ -778,8 +819,7 @@ export function halvePlayerHp() {
 }
 
 export function killPlayerImmediately() {
-  const thread = Thread.currentThread;
-  const roleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
+  const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
   if (role) {
     role.hp = 0;
@@ -874,7 +914,7 @@ export async function fadeOutScene(fadeOutSpeed) {
   state.fadeOutSpeed = fadeOutSpeed;
 
   // 步骤 2：如果是在非脚本线程环境（例如控制台直接调用），则立即触发切换
-  if (!Thread.currentThread) {
+  if (!Script.isExec()) {
     toggleScene();
   }
 
@@ -901,7 +941,7 @@ export async function fadeScreen(speed) {
   state.needToFadeIn = s < 0;
 
   // 步骤 2：如果是在非脚本线程环境，只更新渐变标记不进行硬挂起
-  if (!Thread.currentThread) {
+  if (!Script.isExec()) {
     return;
   }
 
@@ -956,7 +996,7 @@ export function toggleScene(sceneId) {
   }
 
   // 步骤 2：如果是在非脚本线程环境（例如控制台或调试面板直接调用），则立即在此执行过渡切换
-  if (!Thread.currentThread) {
+  if (!Script.isExec()) {
     const targetSceneId = state.nextSceneId;
     if (targetSceneId !== undefined && targetSceneId !== null && targetSceneId !== -1 && targetSceneId !== state.sceneId) {
       state.nextSceneId = -1;
@@ -988,23 +1028,8 @@ export function stopCode() {
   return Script.STOP_SCRIPT;
 }
 
-export function changeScript(scriptId, count) {
-  // 步骤 1：根据当前线程类型决定空闲计数器属性名，并在物体上进行初始化
-  const isAuto = Thread.currentThread?.type === 'auto';
-  const countKey = isAuto ? 'wScriptIdleFrameCountAuto' : 'nScriptIdleFrame';
-
-  if (!this[countKey]) {
-    this[countKey] = 0;
-  }
-
-  // 步骤 2：若无需等待或空闲帧计数未达到上限，则终止运行并改写触发入口，否则清零计数器继续向下执行
-  if (!count || ++this[countKey] < count) {
-    Script.stop(scriptId);
-    return Script.STOP_SCRIPT;
-  } else {
-    this[countKey] = 0;
-    return Script.NEXT_SCRIPT;
-  }
+export function changeScript() {
+  return Script.STOP_SCRIPT;
 }
 
 export function gotoScript(scriptId) {
@@ -1081,7 +1106,7 @@ export async function updateScreen() {
   await new Promise(resolve => setTimeout(resolve, 80));
 }
 
-export function delayPeriod(time) {
+export async function delayPeriod(time) {
   // 步骤 1：原版延迟为 time * 80 毫秒，我们在 150 毫秒为主循环周期的 H5 引擎中同步换算为对应的帧数 ticks
   // 并且使用 Math.max(1, ...) 保证至少等待一帧以避免同步挂起失效
   const ticks = Math.max(1, Math.round((time * 80) / 150));
@@ -1089,7 +1114,7 @@ export function delayPeriod(time) {
   // 步骤 2：输出详细的非阻塞延迟调试日志，辅助追踪时序同步
   console.log(`[0x85 delayPeriod] 剧情等待, 原版毫秒: ${time * 80}ms, H5换算帧数: ${ticks} 帧`);
 
-  return delayOrNext(Script.stepProgress(this, ticks));
+  return await stepAction(this, () => Script.stepProgress(this, ticks));
 }
 
 export async function updateScreenAndWait(time) {
@@ -1100,16 +1125,16 @@ export async function updateScreenAndWait(time) {
   }
 
   // 返回>0，跳出场景脚本循环，来重绘
-  return delayOrNext(Script.stepProgress(this, time));
+  return await stepAction(this, () => Script.stepProgress(this, time));
 }
 
-export function waitSecond(time) {
+export async function waitSecond(time) {
   // 原游戏是 80ms * time ，这里一帧150ms
-  return delayOrNext(Script.stepProgress(this, time / 2));
+  return await stepAction(this, () => Script.stepProgress(this, Math.max(1, Math.round(time / 2))));
 }
 
-export function sleepFrame(frameCount, speed) {
-  return delayOrNext(Script.stepProgress(this, frameCount * speed));
+export async function sleepFrame(frameCount, speed) {
+  return await stepAction(this, () => Script.stepProgress(this, frameCount * speed));
 }
 
 export function checkTalk() {
@@ -1286,15 +1311,8 @@ export async function startBattle(battleId, failScriptId, fleeScriptId) {
   }
 }
 
-function delayOrNext(result) {
-  return result ? Script.DELAY_SCRIPT : Script.YIELD_SCRIPT;
-}
-
 export function replaceEntry() {
-  const thread = Thread.currentThread;
-  if (thread) {
-    thread.nextScriptId = thread.scriptId + 1;
-  }
+  return Script.NEXT_SCRIPT;
 }
 
 export async function confirmMenu(failScriptId) {
@@ -1309,9 +1327,7 @@ export async function confirmMenu(failScriptId) {
 }
 
 export function setPlayerExtraAttribute(partId, statId, value) {
-  const thread = Thread.currentThread;
-  const triggeringRoleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
-  const roleIndex = (this && this.type === 'role') ? this.index : triggeringRoleIndex;
+  const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
   if (role) {
     if (!role.extraAttributes) {
@@ -1327,9 +1343,7 @@ export function setPlayerExtraAttribute(partId, statId, value) {
 }
 
 export function equipItem(partId, itemId) {
-  const thread = Thread.currentThread;
-  const triggeringRoleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
-  const roleIndex = (this && this.type === 'role') ? this.index : triggeringRoleIndex;
+  const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
   if (role) {
     if (!role.equipments) {
@@ -1369,9 +1383,7 @@ const STAT_MAP = {
 };
 
 export function increasePlayerAttribute(statId, value, roleId) {
-  const thread = Thread.currentThread;
-  const triggeringRoleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
-  const roleIndex = roleId === 0 ? triggeringRoleIndex : roleId - 1;
+  const roleIndex = roleId === 0 ? getRoleIndex(this) : roleId - 1;
   const role = state.roles[roleIndex];
   if (role) {
     const key = STAT_MAP[statId];
@@ -1392,9 +1404,7 @@ export function increasePlayerAttribute(statId, value, roleId) {
 }
 
 export function setPlayerStat(statId, value, roleId) {
-  const thread = Thread.currentThread;
-  const triggeringRoleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
-  const roleIndex = roleId === 0 ? triggeringRoleIndex : roleId - 1;
+  const roleIndex = roleId === 0 ? getRoleIndex(this) : roleId - 1;
   const role = state.roles[roleIndex];
   if (role) {
     const key = STAT_MAP[statId];
@@ -1600,8 +1610,7 @@ export async function fadeToRed() {
 }
 
 export function setPlayerStatus(statusId, rounds) {
-  const thread = Thread.currentThread;
-  const roleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
+  const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
   if (role) {
     if (!role.status) role.status = {};
@@ -1611,8 +1620,7 @@ export function setPlayerStatus(statusId, rounds) {
 }
 
 export function removePlayerStatus(statusId) {
-  const thread = Thread.currentThread;
-  const roleIndex = (thread && thread.obj && thread.obj.type === 'role') ? thread.obj.index : 0;
+  const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
   if (role && role.status) {
     delete role.status[statusId];
