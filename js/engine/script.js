@@ -82,22 +82,15 @@ export const Script = {
 
     // 步骤 5：步进当前活跃的非 auto 类主线程（进入场景脚本、交互触发脚本等）
     const t = Script.activeThread;
-    if (t && !t.finish) {
-      if (!t.pause) {
-        const nextId = await this.runTriggerScript(t);
-        if (t.type === 'scene') {
-          t.obj.enterScriptId = nextId;
-        } else if (t.type === 'trig') {
-          t.obj.trigScr = nextId;
-        }
+    if (t) {
+      const nextId = await this.runTriggerScript(t);
+      if (t.type === 'scene') {
+        t.obj.enterScriptId = nextId;
+      } else if (t.type === 'trig') {
+        t.obj.trigScr = nextId;
       }
     }
     
-    // 执行一轮后，如果当前阻塞脚本已结束，则自动退回至父阻塞脚本
-    while (Script.activeThread && Script.activeThread.finish) {
-      Script.activeThread = Script.activeThread.parent || null;
-    }
-
     // 步骤 6：步进 auto NPC 漫游并统一重绘刷新
     await this.stepAutoAndUpdate();
   },
@@ -153,43 +146,12 @@ export const Script = {
   },
 
   finish(obj, thread) {
-    const t = thread || Script.activeThread;
-    if (t) {
-      t.finish = true;
-      if (t.callback) {
-        t.callback();
-      }
-    }
-    if (obj && obj.thread === t) {
-      obj.thread = null;
-    }
-
-    // 停止指令
-    if (obj && obj.type === 'npc') {
-      obj.autoScr = null;
-    }
-
     if (window.onThreadsUpdate) {
       window.onThreadsUpdate();
     }
   },
 
   stop(scriptId, thread) {
-    const t = thread || Script.activeThread;
-    if (!t) return;
-
-    // 如果是stopCode，则指向为下一条指令
-    if (scriptId === undefined) {
-      scriptId = t.scriptId + 1;
-    }
-    
-    t.scriptId = scriptId;
-    t.finish = true;
-
-    if (t.callback) {
-      t.callback();
-    }
-
     if (window.onThreadsUpdate) {
       window.onThreadsUpdate();
     }
@@ -263,19 +225,16 @@ export const Script = {
 
   // 集中推进非 auto 类型的阻塞脚本主线程，运行 While 指令解析循环
   async runTriggerScript(thread) {
-    if (thread.finish || thread.pause) return thread.scriptId;
-
     let startScriptId = thread.scriptId;
     let scriptEntry = thread.scriptId;
     let endFlag = false;
 
-    while (!thread.pause && !thread.finish && !endFlag) {
+    while (!endFlag) {
       // 1. 核心单步调试拦截点
       if (window.STEP_DEBUG && thread.type !== 'auto') {
         window.ACTIVE_DEBUG_THREAD = thread;
-        thread.pause = true;
         if (window.onStepDebugPause) {
-          window.onStepDebugPause(thread);
+          await window.onStepDebugPause(thread);
         }
         break;
       }
@@ -330,6 +289,8 @@ export const Script = {
         if (typeof ret === 'number' && ret > 0) {
           scriptEntry = ret;
           continue;
+        } else if (ret === 0) {
+          continue;
         }
       }
 
@@ -340,30 +301,32 @@ export const Script = {
       // 步骤 2：针对 STOP 类型指令设置 endFlag 控制变量终止当前 Tick
       if (script.code === 0x00) {
         endFlag = true;
+        return startScriptId;
       } else if (script.code === 0x01) {
         scriptEntry++;
         endFlag = true;
+        return scriptEntry;
       } else if (script.code === 0x02) {
         endFlag = true;
-        scriptEntry = thread.scriptId;
+        return scriptEntry;
       } else {
         scriptEntry++;
       }
+      
+      thread.scriptId = scriptEntry;
     }
 
-    thread.scriptId = scriptEntry;
-    return startScriptId;
+    return scriptEntry;
   },
 
   // 步进执行单条指令，用于 auto NPC 在每次 tick 中仅执行单条命令，避免 While 循环阻塞
-  async stepOneInstruction(thread) {
-    if (thread.finish || thread.pause) return;
+  async stepOneInstruction(o) {
+    const thread = new Thread(o.autoScr, o, 'auto')
 
     const script = state.scripts[thread.scriptId];
     if (!script) {
       console.warn(`Thread #${thread.id} scriptId: ${thread.scriptId} 越界`);
-      thread.finish = true;
-      return;
+      return thread.scriptId;
     }
 
     const code = scriptCodes[script.code];
@@ -397,36 +360,36 @@ export const Script = {
 
     if (!code) {
       console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${thread.scriptId}]: execute ${Hex.toHex(script.code)}`);
-      thread.scriptId++;
-      return;
+      return thread.scriptId + 1;
     }
 
     const tab = thread.type.charAt(0).toUpperCase();
     console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
     let scriptEntry = thread.scriptId;
-    let jumpOccurred = false;
-    if (code.func) {
-      const ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3, thread);
-      if (typeof ret === 'number' && ret > 0) {
-        scriptEntry = ret;
-        jumpOccurred = true;
-      }
+    if (!code.func) {
+      // 指令还没有支持，跳过 
+      return scriptEntry + 1;
+    }
+
+    const ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3, thread);
+    if (typeof ret === 'number' && ret > 0) {
+      scriptEntry = ret;
+      return ret;
+    } if (ret === 0) {
+      // scriptEntry 与 thread.scriptId 都不动
+      return scriptEntry;
     }
 
     // 步骤 2.8：处理单条指令步进完毕后的指令指针更新，跳段、STOP 系列指令判定
-    if (jumpOccurred) {
-      thread.scriptId = scriptEntry;
-    } else if (script.code === 0x00) {
-      thread.scriptId = scriptEntry;
+    if (script.code === 0x00) {
+      return scriptEntry;
     } else if (script.code === 0x01) {
-      scriptEntry++;
-      thread.scriptId = scriptEntry;
+      return scriptEntry + 1;
     } else if (script.code === 0x02) {
-      thread.scriptId = scriptEntry;
+      return scriptEntry;
     } else {
-      scriptEntry++;
-      thread.scriptId = scriptEntry;
+      return scriptEntry + 1;
     }
   },
 
@@ -438,20 +401,8 @@ export const Script = {
       if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc' || o.nouse !== 0) continue;
 
       if (o.autoScr) {
-        // 如果还没有 thread，则惰性创建 thread 状态记录，但不当场运行
-        if (!o.thread) {
-          o.thread = new Thread(o.autoScr, o, 'auto');
-        }
-        
-        if (o.thread && !o.thread.finish && !o.thread.pause && !o.thread.running) {
-          o.thread.running = true;
-          try {
-            await Script.stepOneInstruction(o.thread);
-          } finally {
-            o.thread.running = false;
-          }
-          o.autoScr = o.thread.scriptId;
-        }
+        const ret = await Script.stepOneInstruction(o.thread);
+        o.autoScr = ret;
       }
     }
 

@@ -25,6 +25,14 @@ function getRoleIndex(obj) {
 // 统一包装单步动作指令调度，自动识别并分发 auto 漫游和 trigger/scene 阻塞式执行流
 // 统一包装单步动作指令调度，在当前指令中 await 循环，直至动作完成，走 stepAutoAndUpdate
 export async function stepAction(obj, actionFunc) {
+  if (obj.type == 'npc') {
+    const res = actionFunc();
+    if (res > 0) {
+      // 返回 0 表示继续当前这一条，返回 null 就是下一条
+      return 0;
+    }
+  }
+
   while (true) {
     const res = actionFunc();
     if (res === 0) {
