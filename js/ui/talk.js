@@ -360,7 +360,7 @@ async function drawMessage(msgId, t) {
   const y = ty;
 
   drawBack(length, x, y);
-  await drawLineSync(texts, x, y, t);
+  await drawLineSync(texts, x, y, t, false); // talkMessage 不需要显示箭头
 }
 
 function drawBack(length, x, y) {
@@ -381,19 +381,24 @@ function drawBack(length, x, y) {
   if (picRight) talkCtx.drawImage(picRight, x + length * 16, y);
 }
 
-async function drawLineSync(texts, x, y, t) {
+async function drawLineSync(texts, x, y, t, showArrow = true) {
   for (let i = 0; i < texts.length; i++) {
     drawWord(texts[i].charCode, x + i * 16, y + 9, texts[i].color);
   }
 
   if (t) {
-    // 统一定位向下箭头，因为是在文字底部对齐 (y+9 是文字顶)
-    arrowX = x + texts.length * 16;
-    arrowY = y + 9;
+    if (showArrow) {
+      // 统一定位向下箭头，因为是在文字底部对齐 (y+9 是文字顶)
+      arrowX = x + texts.length * 16;
+      arrowY = y + 9;
+    } else {
+      arrowX = 0;
+      arrowY = 0;
+    }
     
     await waitKey();
     resetTalk();
-    clearDraw();
+    updateTalk();
   }
 }
 
@@ -406,7 +411,7 @@ async function drawTips(msgId, t) {
   const x = tx - length * 16 / 2;
   const y = ty;
 
-  await drawLineSync(texts, x, y, t);
+  await drawLineSync(texts, x, y, t, false); // talkTips 不需要显示箭头
 }
 
 export const Talk = {
