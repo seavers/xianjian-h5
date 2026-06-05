@@ -152,15 +152,15 @@ export const Script = {
     }
   },
 
-  finish(obj) {
-    const thread = Script.activeThread;
-    if (thread) {
-      thread.finish = true;
-      if (thread.callback) {
-        thread.callback();
+  finish(obj, thread) {
+    const t = thread || Script.activeThread;
+    if (t) {
+      t.finish = true;
+      if (t.callback) {
+        t.callback();
       }
     }
-    if (obj && obj.thread === thread) {
+    if (obj && obj.thread === t) {
       obj.thread = null;
     }
 
@@ -174,20 +174,20 @@ export const Script = {
     }
   },
 
-  stop(scriptId) {
-    const thread = Script.activeThread;
-    if (!thread) return;
+  stop(scriptId, thread) {
+    const t = thread || Script.activeThread;
+    if (!t) return;
 
     // 如果是stopCode，则指向为下一条指令
     if (scriptId === undefined) {
-      scriptId = thread.scriptId + 1;
+      scriptId = t.scriptId + 1;
     }
     
-    thread.scriptId = scriptId;
-    thread.finish = true;
+    t.scriptId = scriptId;
+    t.finish = true;
 
-    if (thread.callback) {
-      thread.callback();
+    if (t.callback) {
+      t.callback();
     }
 
     if (window.onThreadsUpdate) {
@@ -266,8 +266,10 @@ export const Script = {
     if (thread.finish || thread.pause) return thread.scriptId;
 
     let startScriptId = thread.scriptId;
+    let wScriptEntry = thread.scriptId;
+    let fEnd = false;
 
-    while (!thread.pause && !thread.finish) {
+    while (!thread.pause && !thread.finish && !fEnd) {
       // 1. 核心单步调试拦截点
       if (window.STEP_DEBUG && thread.type !== 'auto') {
         window.ACTIVE_DEBUG_THREAD = thread;
@@ -278,41 +280,11 @@ export const Script = {
         break;
       }
 
-      const script = state.scripts[thread.scriptId];
+      const script = state.scripts[wScriptEntry];
       if (!script) {
-        console.warn(`Thread #${thread.id} scriptId: ${thread.scriptId} 越界`);
+        console.warn(`Thread #${thread.id} scriptId: ${wScriptEntry} 越界`);
         thread.finish = true;
         break;
-      }
-
-      // 特殊处理 0x0000, 0x0001, 0x0002 指令，以符合 C 语言 sdlpal 规范
-      if (script.code === 0x0000) {
-        // 0x0000: 停止运行，返回进入时的脚本ID
-        thread.finish = true;
-        thread.scriptId = startScriptId;
-        break;
-      } else if (script.code === 0x0001) {
-        // 0x0001: 停止运行并指向下一条
-        thread.finish = true;
-        thread.scriptId = thread.scriptId + 1;
-        break;
-      } else if (script.code === 0x0002) {
-        // 0x0002: 停止运行并改写为指定地址（param1）
-        const countKey = 'nScriptIdleFrame';
-        if (!thread.obj[countKey]) {
-          thread.obj[countKey] = 0;
-        }
-        if (!script.param2 || ++thread.obj[countKey] < script.param2) {
-          thread.finish = true;
-          thread.scriptId = script.param1;
-        } else {
-          thread.obj[countKey] = 0;
-          thread.scriptId++;
-        }
-        continue;
-      } else if (script.code === 0x0008) {
-        // 0x0008: 改写进入脚本 ID 为下一条指令
-        startScriptId = thread.scriptId + 1;
       }
 
       const code = scriptCodes[script.code];
@@ -324,7 +296,7 @@ export const Script = {
         npcId: thread.obj ? thread.obj.id : '无',
         roleId: thread.obj && typeof thread.obj.mgoId === 'number' ? thread.obj.mgoId : null,
         type: thread.type,
-        scriptId: thread.scriptId,
+        scriptId: wScriptEntry,
         code: script.code,
         hexCode: '0x' + Hex.toHex(script.code),
         desc: desc,
@@ -345,78 +317,53 @@ export const Script = {
       }
 
       if (!code) {
-        console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${thread.scriptId}]: execute ${Hex.toHex(script.code)}`);
-        thread.scriptId++; // 未知指令跳过
+        console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${wScriptEntry}]: execute ${Hex.toHex(script.code)}`);
+        wScriptEntry++; // 未知指令跳过
         continue;
       }
 
       const tab = thread.type.charAt(0).toUpperCase();
-      console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
+      console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${wScriptEntry}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
       if (code.func) {
-        const ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3);
-        
-        // 核心协同挂起控制：根据返回值处理不同的逻辑分支
-        if (ret === 'yield') {
-          thread.scriptId++;
-          return thread.scriptId;
-        } else if (ret === 'delay') {
-          return thread.scriptId;
-        } else if (ret === 'stop') {
-          thread.finish = true;
-          thread.scriptId++;
-          return thread.scriptId;
-        } else if (ret === 'finish') {
-          thread.finish = true;
-          return thread.scriptId;
-        } else if (typeof ret === 'number' && ret > 0) {
-          thread.scriptId = ret;
+        const ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3, thread);
+        if (typeof ret === 'number' && ret > 0) {
+          wScriptEntry = ret;
           continue;
         }
       }
 
-      // 本条指令执行成功，指向下一条指令
-      thread.scriptId++;
+      if (script.code === 0x08) {
+        startScriptId = wScriptEntry + 1;
+      }
+
+      // 步骤 2：针对 STOP 类型指令设置 fEnd 控制变量终止当前 Tick
+      if (script.code === 0x00) {
+        fEnd = true;
+      } else if (script.code === 0x01) {
+        wScriptEntry++;
+        fEnd = true;
+      } else if (script.code === 0x02) {
+        fEnd = true;
+        wScriptEntry = thread.scriptId;
+      } else {
+        wScriptEntry++;
+      }
     }
 
-    return thread.scriptId;
+    thread.scriptId = wScriptEntry;
+    return startScriptId;
   },
 
   // 步进执行单条指令，用于 auto NPC 在每次 tick 中仅执行单条命令，避免 While 循环阻塞
   async stepOneInstruction(thread) {
-    if (thread.finish || thread.pause) return null;
+    if (thread.finish || thread.pause) return;
 
     const script = state.scripts[thread.scriptId];
     if (!script) {
       console.warn(`Thread #${thread.id} scriptId: ${thread.scriptId} 越界`);
       thread.finish = true;
-      return null;
-    }
-
-    // 特殊处理 0x0000, 0x0001, 0x0002 指令，以符合 C 语言 sdlpal 规范
-    if (script.code === 0x0000) {
-      // 0x0000: 停止运行，不自增，返回当前 ID
-      thread.finish = true;
-      return null;
-    } else if (script.code === 0x0001) {
-      // 0x0001: 停止运行，自增 1，指向下一条
-      thread.finish = true;
-      thread.scriptId = thread.scriptId + 1;
-      return null;
-    } else if (script.code === 0x0002) {
-      // 0x0002: 停止运行并改写
-      const countKey = 'wScriptIdleFrameCountAuto';
-      if (!thread.obj[countKey]) {
-        thread.obj[countKey] = 0;
-      }
-      if (!script.param2 || ++thread.obj[countKey] < script.param2) {
-        thread.finish = true;
-        thread.scriptId = script.param1;
-      } else {
-        thread.obj[countKey] = 0;
-        thread.scriptId++;
-      }
-      return null;
+      return;
     }
 
     const code = scriptCodes[script.code];
@@ -444,46 +391,48 @@ export const Script = {
       state.scriptLogs.shift();
     }
 
+    if (window.onScriptExecute) {
+      window.onScriptExecute(logItem);
+    }
+
     if (!code) {
       console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${thread.scriptId}]: execute ${Hex.toHex(script.code)}`);
       thread.scriptId++;
-      return logItem;
+      return;
     }
 
     const tab = thread.type.charAt(0).toUpperCase();
     console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
+    let wScriptEntry = thread.scriptId;
+    let jumpOccurred = false;
     if (code.func) {
-      const ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3);
-      
-      // 同理，如果 auto NPC 执行指令尚未完成或需要跳段，根据控制指令返回对应状态并返回 logItem
-      if (ret === 'yield') {
-        thread.scriptId++;
-        return logItem;
-      } else if (ret === 'delay') {
-        return logItem;
-      } else if (ret === 'stop') {
-        thread.finish = true;
-        thread.scriptId++;
-        return logItem;
-      } else if (ret === 'finish') {
-        thread.finish = true;
-        return logItem;
-      } else if (typeof ret === 'number' && ret > 0) {
-        thread.scriptId = ret;
-        return logItem;
+      const ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3, thread);
+      if (typeof ret === 'number' && ret > 0) {
+        wScriptEntry = ret;
+        jumpOccurred = true;
       }
     }
 
-    thread.scriptId++;
-    return logItem;
+    // 步骤 2.8：处理单条指令步进完毕后的指令指针更新，跳段、STOP 系列指令判定
+    if (jumpOccurred) {
+      thread.scriptId = wScriptEntry;
+    } else if (script.code === 0x00) {
+      thread.scriptId = wScriptEntry;
+    } else if (script.code === 0x01) {
+      wScriptEntry++;
+      thread.scriptId = wScriptEntry;
+    } else if (script.code === 0x02) {
+      thread.scriptId = wScriptEntry;
+    } else {
+      wScriptEntry++;
+      thread.scriptId = wScriptEntry;
+    }
   },
 
   // 步进所有 auto NPC 并更新屏幕画面
   async stepAutoAndUpdate() {
-    const autoLogs = [];
-
-    // 步骤 1：遍历所有的 NPC 事件物体并单步执行其 auto 脚本
+    // 步骤 1：遍历所有的 NPC 事件物体并单步执行其 auto 脚本 (增加 thread.running 标记防止多层 await 递归重入)
     for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
       const o = state.eventObjects[i];
       if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc' || o.nouse !== 0) continue;
@@ -494,20 +443,16 @@ export const Script = {
           o.thread = new Thread(o.autoScr, o, 'auto');
         }
         
-        if (o.thread && !o.thread.finish && !o.thread.pause) {
-          const logItem = await Script.stepOneInstruction(o.thread);
-          o.autoScr = o.thread.scriptId;
-          
-          if (logItem) {
-            autoLogs.push(logItem);
+        if (o.thread && !o.thread.finish && !o.thread.pause && !o.thread.running) {
+          o.thread.running = true;
+          try {
+            await Script.stepOneInstruction(o.thread);
+          } finally {
+            o.thread.running = false;
           }
+          o.autoScr = o.thread.scriptId;
         }
       }
-    }
-
-    // 步骤 2：批量回调脚本执行钩子，大幅减少重绘次数
-    if (autoLogs.length > 0 && window.onScriptExecute) {
-      window.onScriptExecute(autoLogs);
     }
 
     // 步骤 3：重绘整个画面

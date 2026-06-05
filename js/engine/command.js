@@ -23,23 +23,15 @@ function getRoleIndex(obj) {
 }
 
 // 统一包装单步动作指令调度，自动识别并分发 auto 漫游和 trigger/scene 阻塞式执行流
+// 统一包装单步动作指令调度，在当前指令中 await 循环，直至动作完成，走 stepAutoAndUpdate
 export async function stepAction(obj, actionFunc) {
-  const isAuto = Script.activeThread?.obj !== obj;
-
-  if (isAuto) {
-    // auto 脚本：单步执行，返回 delayOrNext 的逻辑判定值
+  while (true) {
     const res = actionFunc();
-    return res ? 'delay' : 'yield';
-  } else {
-    // trigger/scene 脚本：循环阻塞，每次 tick 更新并休眠 150ms，直到移动或延迟到站
-    while (true) {
-      const res = actionFunc();
-      if (res === 0) {
-        break;
-      }
-      await Script.stepAutoAndUpdate();
-      await new Promise(resolve => setTimeout(resolve, 150));
+    if (res === 0) {
+      break;
     }
+    await Script.stepAutoAndUpdate();
+    await new Promise(resolve => setTimeout(resolve, 150));
   }
 }
 
@@ -1010,18 +1002,27 @@ export function toggleScene(sceneId) {
   }
 }
 
-export function finishCode() {
-  Script.finish(this);
-  return 'finish';
+export function finishCode(param1, param2, param3, thread) {
+  Script.finish(this, thread);
 }
 
-export function stopCode() {
-  Script.stop();
-  return 'stop';
+export function stopCode(param1, param2, param3, thread) {
+  Script.stop(undefined, thread);
 }
 
-export function changeScript() {
-  return 'stop';
+export function changeScript(param1, param2, param3, thread) {
+  if (!thread) return;
+  const countKey = thread.type === 'auto' ? 'wScriptIdleFrameCountAuto' : 'nScriptIdleFrame';
+  if (!thread.obj[countKey]) {
+    thread.obj[countKey] = 0;
+  }
+  if (!param2 || ++thread.obj[countKey] < param2) {
+    thread.finish = true;
+    thread.scriptId = param1;
+  } else {
+    thread.obj[countKey] = 0;
+    thread.scriptId++;
+  }
 }
 
 export function gotoScript(scriptId) {
@@ -1111,7 +1112,9 @@ export async function updateScreenAndWait(time) {
   await updateScreen();
   
   if (time == 0) {
-    return 'yield';
+    await Script.stepAutoAndUpdate();
+    await new Promise(resolve => setTimeout(resolve, 150));
+    return;
   }
 
   // 返回>0，跳出场景脚本循环，来重绘
@@ -1563,7 +1566,7 @@ export async function waitForKey() {
   console.log(`[0x4D waitForKey] 结束等待按键`);
 }
 
-export async function loadLastSavedGame() {
+export async function loadLastSavedGame(param1, param2, param3, thread) {
   const slotId = state.currentSaveSlot || 1;
   console.log(`[0x4E loadLastSavedGame] 开始重载上一个存档, 槽位: ${slotId}`);
   
@@ -1580,13 +1583,15 @@ export async function loadLastSavedGame() {
 
   // 3. 清空剧情脚本主线程
   Script.activeThread = null;
+  if (thread) {
+    thread.finish = true;
+  }
   
   // 4. 淡入屏幕并刷新渲染
   await fadeIn();
   await update(true);
   
   console.log(`[0x4E loadLastSavedGame] 存档重载完成`);
-  return 'finish';
 }
 
 export async function fadeToRed() {
