@@ -206,6 +206,9 @@ export function stopAllSounds() {
 // 根据音效 ID 读取音频归档并播放
 export async function playSound(soundId, loop = false) {
   if (soundId <= 0) return;
+  if (localStorage.getItem('sound_enabled') === 'false') {
+    return;
+  }
   await initSound();
   
   let chunk = null;

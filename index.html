@@ -668,6 +668,7 @@
 				<button class="btn-scale" id="btn-scale-2" onclick="changeScreenScale(2)">2X HD</button>
 				<button class="btn-scale active" id="btn-scale-3" onclick="changeScreenScale(3)">3X FHD</button>
 				<button class="btn-scale" id="btn-scale-4" onclick="changeScreenScale(4)">4X Retina</button>
+				<button class="btn-scale" id="btn-sound-toggle" onclick="toggleSound()" style="margin-left: 8px;">🔊 声音: 开启</button>
 			</div>
 		</div>
 
@@ -1263,6 +1264,36 @@
 
 	<!-- ==================== 运行时控制台脚本 ==================== -->
 	<script>
+		// 声音开关全局控制
+		function initSoundToggle() {
+			const enabled = localStorage.getItem('sound_enabled') !== 'false';
+			const btn = document.getElementById('btn-sound-toggle');
+			if (btn) {
+				if (enabled) {
+					btn.innerText = "🔊 声音: 开启";
+					btn.style.color = "var(--glow-yellow)";
+				} else {
+					btn.innerText = "🔇 声音: 关闭";
+					btn.style.color = "rgba(255, 255, 255, 0.4)";
+				}
+			}
+		}
+
+		async function toggleSound() {
+			const enabled = localStorage.getItem('sound_enabled') !== 'false';
+			const nextStatus = !enabled;
+			localStorage.setItem('sound_enabled', nextStatus ? 'true' : 'false');
+			initSoundToggle();
+			
+			if (window.musicModule && typeof window.musicModule.updateVolume === 'function') {
+				window.musicModule.updateVolume();
+			}
+		}
+
+		document.addEventListener('DOMContentLoaded', () => {
+			initSoundToggle();
+		});
+
 		// 全局 NPC 屏幕打标与仅人物NPC筛选状态
 		window.SHOW_NPC_ID_ON_SCREEN = false;
 		window.ONLY_HUMAN_NPC = true;
@@ -2501,6 +2532,7 @@
 
 		import('./js/resources/music.js').then((module) => {
 			musicModule = module;
+			window.musicModule = module;
 		});
 
 		import('./js/resources/sound.js').then((module) => {

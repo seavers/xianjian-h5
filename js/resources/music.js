@@ -2,6 +2,9 @@ import { ByteArray } from '../utils/view.js';
 import { DBOPL } from '../utils/dbopl.js';
 import { RixPlayer } from '../utils/rixplayer.js';
 
+// 判定全局声音是否开启
+const isSoundEnabled = () => localStorage.getItem('sound_enabled') !== 'false';
+
 // 全局背景音乐状态与 Web Audio 节点
 let musMkf = null;
 let currentMusicNum = -1;
@@ -176,11 +179,12 @@ export async function playMusic(musicNum, loop = true, fadeTime = 0) {
   // 创建音量 GainNode 并根据是否淡入设置音量渐变
   gainNode = ctx.createGain();
   const now = ctx.currentTime;
-  if (fadeTime > 0) {
+  const targetVol = isSoundEnabled() ? 0.5 : 0;
+  if (fadeTime > 0 && isSoundEnabled()) {
     gainNode.gain.setValueAtTime(0, now);
-    gainNode.gain.linearRampToValueAtTime(0.5, now + fadeTime);
+    gainNode.gain.linearRampToValueAtTime(targetVol, now + fadeTime);
   } else {
-    gainNode.gain.setValueAtTime(0.5, now);
+    gainNode.gain.setValueAtTime(targetVol, now);
   }
 
   // 链接 Web Audio 节点图
@@ -232,4 +236,12 @@ export function stopMusic(fadeTime = 0) {
 // 获取当前正在播放的背景音乐编号
 export function getCurrentMusicNum() {
   return currentMusicNum;
+}
+
+// 联动更新当前的 GainNode 音量，在页面点击声音开关时被触发
+export function updateVolume() {
+  if (gainNode && audioCtx) {
+    const targetVol = isSoundEnabled() ? 0.5 : 0;
+    gainNode.gain.setValueAtTime(targetVol, audioCtx.currentTime);
+  }
 }
