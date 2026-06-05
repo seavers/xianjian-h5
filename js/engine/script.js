@@ -217,7 +217,10 @@ export const Script = {
     const thread = Thread.currentThread;
     if (!thread) return;
 
-    scriptId = (thread.nextScriptId !== undefined && thread.nextScriptId !== null) ? thread.nextScriptId : (scriptId || thread.scriptId);
+    // 如果是stopCode，则指向为下一条指令
+    if(!scriptId) {
+      scriptId = thread.scriptId + 1;
+    }
 
     if (thread.type === 'auto') {
       thread.obj.autoScr = scriptId;
