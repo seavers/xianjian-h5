@@ -206,6 +206,12 @@ ready(() => {
 
   // 5. 资源就绪及初始化完毕后，正式开启 setInterval 驱动的主循环，150ms 周期执行一次
   setInterval(() => {
+    // 若上一轮主循环仍处于运行状态，则跳过本次周期性调度并记录警告日志
+    if (Script.isLoopRunning) {
+      console.warn('上一轮 mainLoop 未完成');
+      return;
+    }
+
     Script.mainLoop();
   }, 150);
 });
