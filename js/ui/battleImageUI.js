@@ -342,7 +342,7 @@ function renderBattleImageTab(container) {
       <!-- 缩略图集合 -->
       <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
         <div style="font-size: 8.5px; color: rgba(255,255,255,0.3); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">全部帧图像缩略图名册</div>
-        <div style="flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding-right: 2px;" id="battleimage-thumbs-container">
+        <div style="overflow-y: auto; display: flex; gap: 4px; padding-right: 2px;" id="battleimage-thumbs-container">
   `;
 
   for (let fIdx = 0; fIdx < maxFrames; fIdx++) {
