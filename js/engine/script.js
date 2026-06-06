@@ -1,10 +1,8 @@
 import { state } from './state.js';
-import { Thread } from './thread.js';
 import { scriptCodes, performToggleScene } from './command.js';
 import { Hex } from '../utils/hex.js';
 import { update } from '../ui/draw.js';
 import { fadeIn, fadeOut } from '../ui/fade.js';
-import { ESC } from '../esc/esc.js';
 
 export const Script = {
   activeThread: null,
@@ -19,6 +17,11 @@ export const Script = {
 
   startItemScript(obj) {
     Script.start(obj.useScr, obj, 'item');
+  },
+
+  // 启动并注册脚本线程状态
+  start(scriptId, obj, type) {
+    Script.activeThread = {scriptId, obj, type}
   },
 
   isLoopRunning: false,
@@ -123,28 +126,6 @@ export const Script = {
     }
   },
 
-  // 惰性配置 Auto NPC 漫游状态
-  setAutoThread(scriptId, obj, type) {
-    if (obj.thread) {
-      obj.thread.scriptId = scriptId;
-      obj.thread.finish = false;
-      obj.thread.pause = false;
-      return ;
-    }
-
-    obj.thread = new Thread(scriptId, obj, type);
-  },
-
-  // 启动并注册脚本线程状态
-  start(scriptId, obj, type) {
-    const thread = new Thread(scriptId, obj, type);
-    if (type !== 'auto') {
-      Script.activeThread = thread;
-    } else {
-      obj.thread = thread;
-    }
-  },
-
   // 步进执行动画/步态进度。如果动画正在进行则返回剩余步数，全部执行完毕则返回 0
   stepProgress(obj, total, func) {
     const current = (obj.animStep || 0) + 1;
@@ -160,44 +141,9 @@ export const Script = {
     return total - current;
   },
 
-  sub(scriptId, targetObj) {
-    const thread = Script.activeThread;
-    if (!thread) return Promise.resolve();
-
-    thread.pause = true;
-    
-    // 步骤 1：若提供了自定义目标物体 targetObj 则在新线程中绑定该物体，否则继承父线程的对象自身 thread.obj
-    const activeObj = targetObj !== undefined ? targetObj : thread.obj;
-    
-    return new Promise(async (resolve) => {
-      const sub = new Thread(scriptId, activeObj, thread.type, () => {
-        Script.activeThread = thread; // 子脚本执行完毕，将 activeThread 自适应恢复为父脚本
-        thread.pause = false;
-        resolve();
-      });
-      sub.parent = thread;
-      Script.activeThread = sub; // 将当前活跃的阻塞主线程推进为新启动的子脚本
-
-      const nextId = await this.runTriggerScript(sub);
-      if (sub.type === 'scene') {
-        sub.obj.enterScriptId = nextId;
-      } else if (sub.type === 'trig') {
-        sub.obj.trigScr = nextId;
-      }
-
-      if (window.onThreadsUpdate) {
-        window.onThreadsUpdate();
-      }
-    });
-  },
-
   isExec() {
     const t = Script.activeThread;
-    return !!(t && !t.finish);
-  },
-
-  isAuto(thread) {
-    return thread.type === 'auto';
+    return !!t;
   },
 
   sleep(time) {
@@ -215,6 +161,9 @@ export const Script = {
         if (window.onStepDebugPause) {
           await window.onStepDebugPause(obj, scriptEntry);
         }
+      }
+      if(Script.activeThread) {
+        Script.activeThread.scriptId = scriptEntry;
       }
 
       // 2. 读取当前指令
@@ -258,7 +207,7 @@ export const Script = {
         continue;
       }
 
-      const tab = thread.type.charAt(0).toUpperCase();
+      const tab = type.charAt(0).toUpperCase();
       console.log(`[info] [${tab} NPC:${obj?.id || '无'} IP:${scriptEntry}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
       if (!code.func) {
@@ -266,7 +215,7 @@ export const Script = {
         return scriptEntry + 1;
       }
 
-      let ret = await code.func.call(obj, script.param1, script.param2, script.param3, thread);
+      let ret = await code.func.call(obj, script.param1, script.param2, script.param3, { type });
       if (typeof ret === 'object') {
         endFlag = ret.endFlag;
         ret = ret.nextScriptId;
@@ -285,20 +234,21 @@ export const Script = {
         // 留着给特殊情况，这里先走下一步
         scriptEntry = scriptEntry + 1;
       }
-      thread.scriptId = scriptEntry;
     }
 
     return scriptEntry;
   },
 
   // 步进执行单条指令，用于 auto NPC 在每次 tick 中仅执行单条命令，避免 While 循环阻塞
-  async stepOneInstruction(o) {
-    const thread = new Thread(o.autoScr, o, 'auto')
+  async stepOneInstruction(obj) {
+    const startScriptId = obj.autoScr;
+    const scriptId = startScriptId;
+    const type = 'auto';
 
-    const script = state.scripts[thread.scriptId];
+    const script = state.scripts[scriptId];
     if (!script) {
-      console.warn(`Thread #${thread.id} scriptId: ${thread.scriptId} 越界`);
-      return thread.scriptId;
+      console.warn(`自动脚本越界 ${scriptId}`);
+      return scriptId;
     }
 
     const code = scriptCodes[script.code];
@@ -306,11 +256,10 @@ export const Script = {
 
     // 记录到全局状态机中的 scriptLogs，供右侧 Dashboard 实时渲染
     const logItem = {
-      id: thread.id,
       npcId: obj ? obj.id : '无',
       mgoId: obj && typeof obj.mgoId === 'number' ? obj.mgoId : null,
-      type: thread.type,
-      scriptId: thread.scriptId,
+      type: type,
+      scriptId: scriptId,
       code: script.code,
       hexCode: '0x' + Hex.toHex(script.code),
       desc: desc,
@@ -331,20 +280,20 @@ export const Script = {
     }
 
     if (!code) {
-      console.warn(`[warn] [NPC ${obj?.id || '无'} scriptId:${thread.scriptId}]: execute ${Hex.toHex(script.code)}`);
-      return thread.scriptId + 1;
+      console.warn(`[warn] [NPC ${obj?.id || '无'} scriptId:${scriptId}]: execute ${Hex.toHex(script.code)}`);
+      return scriptId + 1;
     }
 
-    const tab = thread.type.charAt(0).toUpperCase();
-    console.log(`[info] [${tab} NPC:${obj?.id || '无'} IP:${thread.scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
+    const tab = type.charAt(0).toUpperCase();
+    console.log(`[info] [${tab} NPC:${obj?.id || '无'} IP:${scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
-    let scriptEntry = thread.scriptId;
+    let scriptEntry = scriptId;
     if (!code.func) {
       // 指令还没有支持，跳过 
       return scriptEntry + 1;
     }
 
-    let ret = await code.func.call(obj, script.param1, script.param2, script.param3, thread);
+    let ret = await code.func.call(obj, script.param1, script.param2, script.param3, { type });
     if (typeof ret === 'object') {
       ret = ret.nextScriptId;
     }
@@ -357,7 +306,7 @@ export const Script = {
     } else if (ret > 0) {
       return ret;
     } else if (ret === 0) {
-      // scriptEntry 与 thread.scriptId 都不动
+      // scriptEntry 与 scriptId 都不动
       return scriptEntry;
     } else {
       // 留着给特殊情况，这里先走下一步

@@ -197,10 +197,10 @@ export async function drawTalk(msgId) {
   // 步骤 2：等待异步打印对话文本动作完成
   await drawTalk0(msgId);
 
-  if(!t.isNextTalk()) {
+  if(!isNextTalk(t)) {
     await waitKey();
     clearDraw();
-  } else if(t.isNextTalks()) {
+  } else if(isNextTalks(t)) {
     await waitKey();
   }
 }
@@ -413,6 +413,20 @@ async function drawTips(msgId, t) {
   const y = ty;
 
   await drawLineSync(texts, x, y, t, false); // talkTips 不需要显示箭头
+}
+
+function isNextTalk(t) {
+  // 步骤 1：在 async/await 架构下，指令在 await 完结前 scriptId 尚未自增，因此探测下一条指令需要使用 scriptId + 1
+  const script = state.scripts[t.scriptId + 1];
+  if (!script) return false;
+  return script.code === 0xFFFF;
+}
+
+function isNextTalks(t) {
+  // 步骤 2：同理，探测下一条指令是否为对话相关的指令，也使用 scriptId + 1
+  const script = state.scripts[t.scriptId + 1];
+  if (!script) return false;
+  return script.code === 0x3C || script.code === 0x3D || script.code === 0x8E;
 }
 
 export const Talk = {

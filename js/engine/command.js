@@ -840,7 +840,6 @@ export function setNpcAutoScr(objId, autoScr) {
   const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
   if (!obj) return;
   obj.autoScr = autoScr;
-  Script.setAutoThread(autoScr, obj, 'auto');
 }
 
 export function setNpcTrigScr(objId, trigScr) {
@@ -983,21 +982,22 @@ export function stopCode() {
   return {endFlag: true, nextScriptId: null};
 }
 
-export function changeScript(scriptId, counter, param3, thread) {
+export function changeScript(scriptId, counter, param3, { type }) {
   if (counter == 0) {
     return scriptId;
   }
 
-  if (!thread) return;
-  const countKey = thread.type === 'auto' ? 'scriptIdleFrameCountAuto' : 'scriptIdleFrame';
-  if (!thread.obj[countKey]) {
-    thread.obj[countKey] = 0;
+  const obj = this;
+
+  const countKey = type === 'auto' ? 'scriptIdleFrameCountAuto' : 'scriptIdleFrame';
+  if (!obj[countKey]) {
+    obj[countKey] = 0;
   }
 
-  if (++thread.obj[countKey] < counter) {
+  if (++obj[countKey] < counter) {
     return {endFlag: true, nextScriptId: scriptId};
   } else {
-    thread.obj[countKey] = 0;
+    obj[countKey] = 0;
 
     // execute next
     return;
@@ -1011,13 +1011,10 @@ export function gotoScript(scriptId) {
 export async function subScript(scriptId, objId) {
   // 步骤 1：分析第二个参数 objId，若为 0 或者是 0xFFFF 则说明子脚本沿用父线程当前主体 this
   // 否则从全局状态机 state.eventObjects 中获取对应的目标事件实体对象
-  let targetObj = undefined;
-  if (objId !== undefined && objId !== null && objId !== 0 && objId !== 0xFFFF) {
-    targetObj = state.eventObjects[objId];
-  }
+  const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
 
   // 步骤 2：直接调用 runTriggerScript
-  await Script.runTriggerScript(scriptId, targetObj, 'sub');
+  await Script.runTriggerScript(scriptId, obj, 'sub');
 }
 
 export function randomScript(base, scriptId) {
@@ -1548,7 +1545,7 @@ export async function waitForKey() {
   console.log(`[0x4D waitForKey] 结束等待按键`);
 }
 
-export async function loadLastSavedGame(param1, param2, param3, thread) {
+export async function loadLastSavedGame() {
   const slotId = state.currentSaveSlot || 1;
   console.log(`[0x4E loadLastSavedGame] 开始重载上一个存档, 槽位: ${slotId}`);
   
@@ -1563,17 +1560,13 @@ export async function loadLastSavedGame(param1, param2, param3, thread) {
     });
   });
 
-  // 3. 清空剧情脚本主线程
-  Script.activeThread = null;
-  if (thread) {
-    thread.finish = true;
-  }
-  
   // 4. 淡入屏幕并刷新渲染
   await fadeIn();
   await update(true);
   
   console.log(`[0x4E loadLastSavedGame] 存档重载完成`);
+
+  return {endFlag: true}
 }
 
 export async function fadeToRed() {
@@ -1618,6 +1611,9 @@ async function stepAction(obj, actionFunc) {
       // 返回 0 表示继续当前这一条，返回 null 就是下一条
       return 0;
     }
+
+    // 执行下一条
+    return;
   }
 
   while (true) {
