@@ -1322,8 +1322,11 @@ export async function startBattle(battleId, failScriptId, fleeScriptId) {
 }
 
 export function replaceEntry(scriptId) {
-  //TODO: 待验证
-  return scriptId;
+  if(this.type == 'scene') {
+    this.enterScriptId = scriptId;
+  } else if(this.type == 'trig') {
+    this.trigScr = scriptId;
+  }
 }
 
 export async function confirmMenu(failScriptId) {
