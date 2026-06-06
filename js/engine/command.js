@@ -48,10 +48,6 @@ export function calcMap() {
     leader.x = state.mapX;
     leader.y = state.mapY;
   }
-
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 function refreshRoleFrame(role) {
@@ -141,10 +137,6 @@ export function setRoleGroup(r1, r2, r3) {
   
   state.party = newParty;
   console.log(`[0x75 setRoleGroup] 更新队伍成员列表，当前队伍角色 Index:`, state.party.map(r => r.index));
-  
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function setObjectLayer(param1, layer) {
@@ -153,9 +145,6 @@ export function setObjectLayer(param1, layer) {
     obj.layer = intToShort(layer);
   }
   console.log(`[0x7E setObjectLayer] 设置事件物体图层, 实体: ${obj?.id || '自身'}, 图层值: ${obj?.layer}`);
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function jumpIfNotInZone(targetObjectId, zone, failScriptId) {
@@ -217,10 +206,6 @@ export function placeItemUsedAsObject(targetObjectId, stateVal, failScriptId) {
   pCurrent.state = stateVal;
 
   console.log(`[0x84 placeItemUsedAsObject] 成功放置事件物体，实体 ID: ${pCurrent.id}, 新位置像素: (${tx}, ${ty}), 状态: ${stateVal}`);
-  
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function jumpIfCurrentSceneEquals(sceneId, failScriptId) {
@@ -254,10 +239,6 @@ export function setFollower(r1, r2) {
   }
 
   console.log(`[0x98 setFollower] 更新队伍跟随者，当前队伍全员 Index:`, state.party.map(r => r.index));
-
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function changeSceneMap(sceneId, targetMapId) {
@@ -272,10 +253,6 @@ export function changeSceneMap(sceneId, targetMapId) {
       state.scenes[sceneId].mapId = targetMapId;
     }
     console.log(`[0x99 changeSceneMap] 修改指定场景（ID: ${sceneId}）的地图为: ${targetMapId}`);
-  }
-  
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
   }
 }
 
@@ -316,10 +293,6 @@ export function setPartySamePosition() {
   }
 
   console.log(`[0xA1 setPartySamePosition] 队伍所有成员坐标已重置到跟主角重合 (像素: ${leader.x}, ${leader.y - 1})，轨迹已重合`);
-
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function skipAutoScript() {
@@ -356,10 +329,6 @@ export function walkHeroByOffset(dx, dy, layer) {
 
   if (leader) {
     refreshWalkFrame(leader);
-  }
-
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
   }
 }
 
@@ -457,10 +426,6 @@ function walkOneStep(dir) {
   }
 
   refreshWalkFrame(obj);
-
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function setEastDir(objId) {
@@ -632,10 +597,6 @@ export async function moveViewport(dx, dy, frameCount) {
     const leader = state.party[0] || state.roles[0];
     state.mapX = leader ? leader.x : 0;
     state.mapY = leader ? leader.y : 0;
-    
-    if (window.onSceneUpdate) {
-      window.onSceneUpdate();
-    }
     return;
   }
 
@@ -643,10 +604,6 @@ export async function moveViewport(dx, dy, frameCount) {
   if (frameCount === 0xFFFF) {
     state.mapX = dx * 32;
     state.mapY = dy * 16;
-    
-    if (window.onSceneUpdate) {
-      window.onSceneUpdate();
-    }
     return;
   }
 
@@ -657,10 +614,6 @@ export async function moveViewport(dx, dy, frameCount) {
   return await stepAction(this, () => Script.stepProgress(this, frameCount, () => {
     state.mapX += speedX;
     state.mapY += speedY;
-
-    if (window.onSceneUpdate) {
-      window.onSceneUpdate();
-    }
   }));
 }
 
@@ -674,10 +627,6 @@ export function toggleDayNight(param1) {
 
   console.log(`[0x80 toggleDayNight] 切换昼夜调色板, 当前状态: ${status}, 切换模式: ${mode}`);
   update(true);
-
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export async function useDayPalette() {
@@ -687,10 +636,6 @@ export async function useDayPalette() {
   // 步骤 2：输出详细的白天调色板生效调试日志，供滤镜渲染使用
   console.log('[0x53 useDayPalette] 强制开启白天调色板模式');
   update(true);
-
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export async function useNightPalette() {
@@ -700,10 +645,6 @@ export async function useNightPalette() {
   // 步骤 2：输出详细的黑夜调色板生效调试日志，供以后转场特效滤镜渲染使用
   console.log('[0x54 useNightPalette] 强制开启黑夜调色板模式');
   update(true);
-
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export async function addMagic(magicId, roleId) {
@@ -723,10 +664,6 @@ export async function addMagic(magicId, roleId) {
 
   // 步骤 3：输出详细的习得仙术调试日志，以利于后续战斗或法术菜单对接
   console.log(`[0x55 addMagic] 角色 (Index: ${roleIndex}) 成功习得新仙术 (仙术 ID: ${magicId})`);
-
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export async function removeMagic(magicId, roleId) {
@@ -741,10 +678,6 @@ export async function removeMagic(magicId, roleId) {
   }
 
   console.log(`[0x56 removeMagic] 角色 (Index: ${roleIndex}) 成功遗忘/移除仙术 (仙术 ID: ${magicId})`);
-
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function setMagicBaseDamageByMp(magicId, multiplier) {
@@ -763,10 +696,6 @@ export function setMagicBaseDamageByMp(magicId, multiplier) {
     role.mp = 0;
     
     console.log(`[0x57 setMagicBaseDamageByMp] 仙术 ID: ${magicId}, 当前 MP: ${baseDamage / factor}, 乘数: ${factor}, 计算基础伤害: ${baseDamage}, 随后扣除角色 MP 至 0`);
-  }
-  
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
   }
 }
 
@@ -789,9 +718,6 @@ export function halvePlayerHp() {
     role.hp = Math.floor(role.hp / 2);
     console.log(`[0x5A halvePlayerHp] 角色 (Index: ${roleIndex}) HP 减半, 减半后 HP: ${role.hp}`);
   }
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function killPlayerImmediately() {
@@ -800,9 +726,6 @@ export function killPlayerImmediately() {
   if (role) {
     role.hp = 0;
     console.log(`[0x5F killPlayerImmediately] 角色 (Index: ${roleIndex}) 立即死亡 (HP 设为 0)`);
-  }
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
   }
 }
 
@@ -844,10 +767,6 @@ export async function changeHpMp(toAll, value) {
   // 步骤 4：输出详细的 HP 与 MP 属性改变调试日志
   const scope = toAll ? '全队伙伴' : '主角个人';
   console.log(`[0x1D changeHpMp] 剧情改变角色属性 (${scope}), HP/MP 变动量: ${changeValue}`);
-
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function setSceneEnterScr(sceneId, enterScriptId) {
@@ -951,11 +870,6 @@ export function performToggleScene(targetSceneId) {
 
   // 同步启动场景脚本
   Script.startScene(scene);
-  
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
-
   state.nextSceneId = -1;
 }
 
@@ -1175,10 +1089,6 @@ export function showFbp(fbpId, effect) {
 
   // 步骤 2：输出详细的展示 FBP 图片调试日志，以供后续结局大图渲染时对接
   console.log(`[0x76 showFbp] 展示全屏剧情背景图 (FBP ID: ${fbpId}, 渐变效果: ${effect})`);
-
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function setBattlefield(battlefieldId) {
@@ -1222,16 +1132,10 @@ export function setMoney(add, failScriptId) {
     state.money += change;
     if (state.money < 0) state.money = 0;
   }
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function obtain(ballId) {
   state.ownItems.push(ballId);
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export async function removeItem(itemId, count, failScriptId) {
@@ -1258,10 +1162,6 @@ export async function removeItem(itemId, count, failScriptId) {
 
     // 步骤 4：由于目前 H5 暂不支持复杂的穿戴装备属性和装备扣除，暂不执行装备栏扣除，直接输出扣除成功的调试日志
     console.log(`[0x20 removeItem] 成功扣除物品 (ID: ${itemId}), 扣除数量: ${removed}/${amount}`);
-    
-    if (window.onSceneUpdate) {
-      window.onSceneUpdate();
-    }
   } else {
     // 步骤 5：背包数量不足且提供了失败跳转脚本，则扣除失败，跳转到指定的分支脚本
     console.log(`[0x20 removeItem] 物品数量不足 (拥有: ${ownedCount}, 需扣除: ${amount}), 跳转至分支脚本: ${failScriptId}`);
@@ -1356,9 +1256,6 @@ export function equipItem(partId, itemId) {
     }
   }
   console.log(`[0x18 equipItem] 角色 Index: ${roleIndex}, 装备位置: ${partId - 0x0B}, 装备物品 ID: ${itemId}`);
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 const STAT_MAP = {
@@ -1391,9 +1288,6 @@ export function increasePlayerAttribute(statId, value, roleId) {
       console.log(`[0x19 increasePlayerAttribute] 角色 Index: ${roleIndex}, 属性: ${key}, 变动量: ${intToShort(value)}, 新值: ${role[key]}`);
     }
   }
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function setPlayerStat(statId, value, roleId) {
@@ -1406,9 +1300,6 @@ export function setPlayerStat(statId, value, roleId) {
       if (role[key] < 0) role[key] = 0;
       console.log(`[0x1A setPlayerStat] 角色 Index: ${roleIndex}, 属性: ${key}, 设定值: ${role[key]}`);
     }
-  }
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
   }
 }
 
@@ -1426,9 +1317,6 @@ export function changeHp(toAll, value) {
     }
   }
   console.log(`[0x1B changeHp] 范围: ${toAll ? '全队' : '主角'}, HP 变动量: ${changeValue}`);
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function changeMp(toAll, value) {
@@ -1445,9 +1333,6 @@ export function changeMp(toAll, value) {
     }
   }
   console.log(`[0x1C changeMp] 范围: ${toAll ? '全队' : '主角'}, MP 变动量: ${changeValue}`);
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function revivePlayer(toAll, hpPercent) {
@@ -1465,9 +1350,6 @@ export function revivePlayer(toAll, hpPercent) {
     }
   }
   console.log(`[0x22 revivePlayer] 范围: ${toAll ? '全队' : '主角'}, 恢复HP百分比: ${hpPercent * 10}%, 复活成功: ${success}`);
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function removeEquipment(roleId, partId) {
@@ -1492,9 +1374,6 @@ export function removeEquipment(roleId, partId) {
     }
   }
   console.log(`[0x23 removeEquipment] 角色 Index: ${roleIndex}, 卸除装备部位: ${partId === 0 ? '全部' : partId}`);
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function buyMenu(storeId) {
@@ -1514,9 +1393,6 @@ export function curePoisonByKind(toAll, poisonId) {
     }
   }
   console.log(`[0x2B curePoisonByKind] 解毒范围: ${toAll ? '全队' : '主角'}, 毒素ID: ${poisonId}`);
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function curePoisonByLevel(toAll, maxLevel) {
@@ -1528,9 +1404,6 @@ export function curePoisonByLevel(toAll, maxLevel) {
     }
   }
   console.log(`[0x2C curePoisonByLevel] 解毒范围: ${toAll ? '全队' : '主角'}, 最大毒素级别: ${maxLevel}`);
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 export function teleportOut(failScriptId) {
@@ -1616,9 +1489,6 @@ export function removePlayerStatus(statusId) {
     delete role.status[statusId];
   }
   console.log(`[0x2F removePlayerStatus] 角色 Index: ${roleIndex}, 移除状态ID: ${statusId}`);
-  if (window.onSceneUpdate) {
-    window.onSceneUpdate();
-  }
 }
 
 // 获取当前上下文的角色索引，优先匹配 this 或活跃阻塞线程的绑定主体，最后默认为主角 (0)

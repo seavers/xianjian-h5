@@ -92,6 +92,10 @@ export const Script = {
     
     // 步骤 6：步进 auto NPC 漫游并统一重绘刷新
     await this.stepAutoAndUpdate();
+
+    if(window.onSceneUpdate) {
+      window.onSceneUpdate();
+    }
   },
 
   async handleSceneSwitch() {
@@ -220,10 +224,14 @@ export const Script = {
         scriptEntry = ret;
       } else if (ret === 0) {
         // 还是执行当前脚本，但可能是退出指令
-        continue;
+        // continue;
       } else {
         // 留着给特殊情况，这里先走下一步
         scriptEntry = scriptEntry + 1;
+      }
+
+      if(window.onSceneUpdate) {
+        window.onSceneUpdate();
       }
     }
 
