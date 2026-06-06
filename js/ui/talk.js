@@ -309,6 +309,8 @@ export function clearTalk() {
 
   talkUp = null;
   talkDown = null;
+
+  isTalking = false;
 }
 
 

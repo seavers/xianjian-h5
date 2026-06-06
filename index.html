@@ -2215,6 +2215,8 @@
 				if (window.scriptMainLogs.length > currentLimit) {
 					window.scriptMainLogs.shift();
 				}
+
+				renderScriptLogs({ force: true, stickToBottom: true });
 			} else {
 				const npcId = log.npcId;
 				if (!window.scriptNpcLogs[npcId]) {
