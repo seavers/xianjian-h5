@@ -13,7 +13,7 @@ import { sleep } from './utils/timer.js';
 
 // 获取 URL 参数是否为 debug 模式
 const DEBUG = location.search && location.search.indexOf('debug') !== -1;
-export let TICK_TIME = 80;  // 80ms 一次tick
+export let TICK_TIME = 150;  // 游戏主循环的 Tick 延时时间，默认 6 fps 对应 150ms
 export let lastMainLoopTime = -1;
 
 function initEventObject() {
@@ -244,5 +244,6 @@ function commonEnter() {
 }
 
 export function setTickTime(newTickTime) {
+  // 步骤 1：同步更新全局的 TICK_TIME 变量值，使得后续的 setTimeout 延时及主循环延时全部生效
   TICK_TIME = newTickTime;
 }

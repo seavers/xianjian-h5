@@ -1037,8 +1037,9 @@ export async function updateScreenAndWait(time, p2, p3, { type }) {
 }
 
 export async function waitSecond(time) {
-  // 原游戏是 80ms * time ，这里一帧「TICK_TIME」ms
-  return await stepAction(this, () => Script.stepProgress(this, Math.max(1, Math.round(time / 2))));
+  // 步骤 1：原游戏是 80ms * time 延迟，我们在 TICK_TIME 毫秒为主循环周期的 H5 引擎中同步换算为对应的帧数 ticks
+  const ticks = Math.max(1, Math.round((time * 80) / TICK_TIME));
+  return await stepAction(this, () => Script.stepProgress(this, ticks));
 }
 
 export async function sleepFrame(frameCount, speed) {
