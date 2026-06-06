@@ -1507,7 +1507,7 @@
 			import('./js/app.js').then(app => {
 				const d = new Date();
 				const timeStr = d.toTimeString().split(' ')[0];
-				document.getElementById('val-last-sync').innerText = timeStr + ' ' + app.lastMainLoopTime + 'ms';
+				document.getElementById('val-last-sync').innerText = timeStr + ' | ' + app.lastMainLoopTime + 'ms' + ' | ' + lastRefreshDashboardTime + 'ms';
 			})
 
 			// 渲染事件模式汇总徽章，消灭空白
@@ -2170,7 +2170,7 @@
 				}
 			}
 
-			renderScriptLogs({ force: true, stickToBottom: true });
+			// renderScriptLogs({ force: true, stickToBottom: true });
 		}
 
 
@@ -3780,11 +3780,22 @@
 		document.addEventListener('DOMContentLoaded', () => {
 			loadCoords();
 			syncScriptLogFilterView(true);
+
+			setInterval(scheduleRefreshDashboard, 200);
 		});
+
+		let lastRefreshDashboardTime = null;
+		function scheduleRefreshDashboard() {
+			const start = Date.now();
+			refreshDashboard();
+			renderScriptLogs();
+			const end = Date.now();
+			lastRefreshDashboardTime = end - start;
+		}
 
 		// ==================== 注册全局运行时钩子与数据联动 ====================
 		window.onSceneUpdate = () => {
-			refreshDashboard();
+			// refreshDashboard();
 		};
 		window.onThreadsUpdate = () => {
 			// refreshDashboard();
@@ -3826,7 +3837,7 @@
 			} else {
 				appendScriptLog(logItemOrArray);
 			}
-			refreshDashboard();
+			// refreshDashboard();
 		};
 
 		// 调试变速齿轮控制
