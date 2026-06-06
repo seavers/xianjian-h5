@@ -21,6 +21,9 @@ export function setRoleTile(roleId, tileId, bool) {
   if (state.roles[roleId]) {
     state.roles[roleId].tileId = tileId;
   }
+
+  // 这里得刷新站位，不是walkFrame，参看送酒脚本4848
+  refreshRoleFrame(state.roles[roleId]);
 }
 
 export function setRoleIndex(dir, frame, roleId) {
@@ -29,7 +32,7 @@ export function setRoleIndex(dir, frame, roleId) {
     state.roles[roleId].frame = frame;
   }
 
-  // 这里得刷新站位，不是walkFrame，参看送酒脚本4893
+  // 这里得刷新站位，不是walkFrame，参看送酒脚本4893，这里的if dir还得有，参考4895
   if (dir) {
     refreshRoleFrame(state.roles[roleId]);
   }
