@@ -6,20 +6,14 @@ export let isTalking = false;
 
 
 // 模块级对话坐标与状态管理
-let tx = 0;
-let ty = 0;
-let titleX = 0;
-let titleY = 0;
-let rgmId = 0;
-let rgm = null;
-let rgmX = 0;
-let rgmY = 0;
-let who = null;
+let talkUp = null;    // tx
+let talkDown = null;
+
 let tips = false;
 let message = false;
+let tx = 0;
+let ty = 0;
 let color = null;
-let clear = true;
-let line = 0; // 当前写入的正文行数 (0-indexed)
 
 let talkPosition = 'up';
 
@@ -29,13 +23,6 @@ let arrowY = 0;
 let lastArrowTickTime = 0;
 let currentArrowIcon = 67;
 
-function fillText(word, x, y) {
-  const ctx = state.contexts.talk;
-  if (!ctx) return;
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '16px sans-serif';
-  ctx.fillText(word, x, y);
-}
 
 let talkPromiseResolve = null;
 
@@ -43,122 +30,68 @@ export function registerTalkResolve(resolve) {
   talkPromiseResolve = resolve;
 }
 
-export function onInput(input) {
-  if (input === 'blank') {
-    if (talkPromiseResolve) {
-      const resolve = talkPromiseResolve;
-      talkPromiseResolve = null;
-      resolve();
-    }
-  }
-}
-
-// 检测文本是否为说话人名，支持全角、半角和 Win95 专用比号的二进制字节检测
-function isNameText(text) {
-  if (!text || text.length === 0) return false;
-  const len = text.length;
-  const lastByte = text.getByte(len - 1);
-
-  // 1. 半角英文冒号 ':' (0x3A = 58)
-  if (lastByte === 58) {
-    return true;
-  }
-
-  // 2. 繁体中文 Big5 全角冒号 '：' (0xA1 = 161, 0x47 = 71)
-  if (len >= 2) {
-    const prevByte = text.getByte(len - 2);
-    if (prevByte === 161 && lastByte === 71) {
-      return true;
-    }
-    // 3. 简体中文 GBK 全角冒号 '：' (0xA3 = 163, 0xBA = 186)
-    if (prevByte === 163 && lastByte === 186) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-// 封装阻塞式按键/点击等待逻辑
-function waitKey() {
-  showTalkWait();
-  return new Promise((resolve) => {
-    registerTalkResolve(() => {
-      clearTalkWait();
-      resolve();
-    });
-  });
-}
-
-function resetTalk() {
-  isTalking = false;
-  who = null;
-  rgm = null;
-  rgmId = null;
-}
 
 async function showUp(pRgmId) {
   // 如果当前正在对话且有正文，切换位置前必须先让玩家按键确认
-  if (isTalking && line > 0) {
+  if (talkUp) {
     await waitKey();
-    clearDraw();
-    who = null;
+    clearTalk();
+    talkUp = null;
   }
 
   isTalking = true;
   talkPosition = 'up';
-  rgmId = pRgmId;
-  rgm = rgmId && loadRgm(rgmId);
+
+  talkUp = pRgmId ? {
+    titleX: 80, 
+    titleY: 8,
+    tx: 96,
+    ty: 26
+  } : {
+    titleX: 12, 
+    titleY: 8,
+    tx: 44,
+    ty: 26
+  };
+
+  talkUp.line = 0;
+
+  talkUp.rgmId = pRgmId;
+  talkUp.rgm = pRgmId && loadRgm(pRgmId);
+
+  talkUp.rgmX = 8;
+  talkUp.rgmY = 8;
 }
 
 async function showDown(pRgmId) {
   // 同理，如果切换位置时有残留对话，需等待玩家按键确认
-  if (isTalking && line > 0) {
+  if (talkDown) {
     await waitKey();
-    clearDraw();
-    who = null;
+    clearTalk();
+    talkDown = null;
   }
 
   isTalking = true;
   talkPosition = 'down';
-  rgmId = pRgmId;
-}
 
-async function refreshTalkPosition() {
-  if (talkPosition == 'up') {
-    // 根据 SDLPAL 原理，有无头像的坐标分配不同
-    if (rgm) {
-      titleX = 80;
-      titleY = 8;
-      tx = 96;
-      ty = 26;
-    } else {
-      titleX = 12;
-      titleY = 8;
-      tx = 44;
-      ty = 26;
-    }
-  
-    rgmX = 8;
-    rgmY = 8;
-    clear = true;
-  } else {
-    if (rgm) {
-      titleX = 4;
-      titleY = 108;
-      tx = 20;
-      ty = 126;
-    } else {
-      titleX = 12;
-      titleY = 108;
-      tx = 44;
-      ty = 126;
-    }
+  talkDown = pRgmId ? {
+    titleX: 4, 
+    titleY: 108,
+    tx: 20,
+    ty: 126
+  } : {
+    titleX: 12, 
+    titleY: 108,
+    tx: 44,
+    ty: 126
+  };
+  talkDown.line = 0;
 
-    rgmX = 230;
-    rgmY = 100;
-    clear = true;
-  }
+  talkDown.rgmId = pRgmId;
+  talkDown.rgm = pRgmId && loadRgm(pRgmId);
+
+  talkDown.rgmX = 230;
+  talkDown.rgmY = 100;
 }
 
 function showTips() {
@@ -187,50 +120,59 @@ export async function drawTalk(msgId) {
     await drawTips(msgId);
     return;
   }
-  
-  // 步骤 1：如果满 4 行翻页，等待按键并清空画布，重置状态
-  if (line >= 4) {
-    await waitKey();
-    clearDraw();
-  }
 
   // 步骤 2：等待异步打印对话文本动作完成
-  await drawTalk0(msgId);
+  const text = loadMsg(msgId);
+  if(talkPosition == null || talkPosition == 'up') {
+    await drawTalk0(text, talkUp);
+  } else {
+    await drawTalk0(text, talkDown);
+  }
 
   // 判断后面是不是对话，判断是否暂停等确认
   const t = Script.activeThread;
-  if(!isNextTalk(t)) {
+  if(isNextTalks(t)) {
     await waitKey();
-    clearDraw();
-  } else if(isNextTalks(t)) {
+  } else if (isNextScrollTalks(t)) {
+    // await waitKey();
+  } else if(!isNextTalk(t)) {
     await waitKey();
+    clearTalk();
   }
 }
 
-async function drawTalk0(msgId) {
-  const text = loadMsg(msgId);
+async function drawTalk0(text, param) {
+  // 表示没有执行 showUp 或 showDown 指令，而直接进入 0xFFFF 对话指令，这个时候，就直接调用showUp
+  if (param == null) {
+    showUp();
+    param = talkUp;
+  }
+
+  // 步骤 1：如果满 4 行翻页，等待按键并清空画布，重置状态
+  if (param.line >= 4) {
+    await waitKey();
+    scrollPage();
+  }
+
   if (isNameText(text)) {
-    who = text;
+    param.who = text;
     return;
   }
 
-  // 根据rgm计算位置
-  refreshTalkPosition();
-
   const talkCtx = state.contexts.talk;
   if (talkCtx) {
-    if (rgm) talkCtx.drawImage(rgm, rgmX, rgmY);
-    if (who) showLine(who, titleX, titleY, 0x00FFFF); // 使用青色绘制说话人
+    if (param.rgm) talkCtx.drawImage(param.rgm, param.rgmX, param.rgmY);
+    if (param.who) drawWho(param.who, param.titleX, param.titleY, 0x00FFFF); // 使用青色绘制说话人
   }
 
   // 动态决定 Y 坐标：有说话人时根据 ty 排，无说话人时整体上移到 titleY 排以填补空间
-  const x = tx;
-  const y = who ? (ty + line * 18) : (titleY + line * 18);
+  const x = param.tx;
+  const y = param.who ? (param.ty + param.line * 18) : (param.titleY + param.line * 18);
 
   // 打印一行字
   await drawLine(text, x, y)
 
-  line++;
+  param.line++;
 
   // 记录最后一个字后面的相对坐标 (X: 最后一个字右侧, Y: 所在行 Y 坐标)
   const texts = calcText(text);
@@ -285,7 +227,7 @@ function calcText(text) {
   return r;
 }
 
-function showLine(text, x, y, customColor) {
+function drawWho(text, x, y, customColor) {
   const texts = calcText(text);
   for (let i = 0; i < texts.length; i++) {
     const wordColor = customColor !== undefined ? customColor : texts[i].color;
@@ -293,21 +235,6 @@ function showLine(text, x, y, customColor) {
   }
 }
 
-export async function clearTalk() {
-  if (isTalking && line > 0) {
-    await waitKey();
-  }
-  clearDraw();
-}
-
-export function clearDraw() {
-  const talkCtx = state.contexts.talk;
-  if (talkCtx) {
-    talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
-  }
-  line = 0;
-  clear = true;
-}
 
 export function tickArrow() {
   const now = Date.now();
@@ -328,15 +255,6 @@ export function tickArrow() {
   }
 }
 
-export function clearTalkWait() {
-  const talkCtx = state.contexts.talk;
-  if (talkCtx && arrowX && arrowY) {
-    talkCtx.clearRect(arrowX, arrowY + 9, 9, 6);
-  }
-  arrowX = 0;
-  arrowY = 0;
-}
-
 export function showTalkWait() {
   currentArrowIcon = 67;
   lastArrowTickTime = Date.now();
@@ -351,6 +269,99 @@ export function showTalkWait() {
   }
 }
 
+export function clearTalkWait() {
+  const talkCtx = state.contexts.talk;
+  if (talkCtx && arrowX && arrowY) {
+    talkCtx.clearRect(arrowX, arrowY + 9, 9, 6);
+  }
+  arrowX = 0;
+  arrowY = 0;
+}
+
+
+// 当展示3行对话后，第4行需要确认后，再翻页
+export function scrollPage() {
+  const talkCtx = state.contexts.talk;
+  if (talkCtx) {
+    talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
+  }
+  
+  if(talkUp) {
+    talkUp.line = 0;
+  }
+  if(talkDown) {
+    talkDown.line = 0;
+  }
+}
+
+// 有些剧情不希望满4行才翻页，希望强制翻页，比如脚本号：8018
+async function forceScrollPage() {
+  await waitKey();
+  scrollPage();
+}
+
+
+// 清除所有对话，是完成一轮对话后的动作
+export function clearTalk() {
+  const talkCtx = state.contexts.talk;
+  if (talkCtx) {
+    talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
+  }
+
+  talkUp = null;
+  talkDown = null;
+}
+
+
+
+export function onInput(input) {
+  if (input === 'blank') {
+    if (talkPromiseResolve) {
+      const resolve = talkPromiseResolve;
+      talkPromiseResolve = null;
+      resolve();
+    }
+  }
+}
+
+// 检测文本是否为说话人名，支持全角、半角和 Win95 专用比号的二进制字节检测
+function isNameText(text) {
+  if (!text || text.length === 0) return false;
+  const len = text.length;
+  const lastByte = text.getByte(len - 1);
+
+  // 1. 半角英文冒号 ':' (0x3A = 58)
+  if (lastByte === 58) {
+    return true;
+  }
+
+  // 2. 繁体中文 Big5 全角冒号 '：' (0xA1 = 161, 0x47 = 71)
+  if (len >= 2) {
+    const prevByte = text.getByte(len - 2);
+    if (prevByte === 161 && lastByte === 71) {
+      return true;
+    }
+    // 3. 简体中文 GBK 全角冒号 '：' (0xA3 = 163, 0xBA = 186)
+    if (prevByte === 163 && lastByte === 186) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// 封装阻塞式按键/点击等待逻辑
+function waitKey() {
+  showTalkWait();
+  return new Promise((resolve) => {
+    registerTalkResolve(() => {
+      clearTalkWait();
+      resolve();
+    });
+  });
+}
+
+
 async function drawMessage(msgId) {
   isTalking = true;
   const text = loadMsg(msgId);
@@ -362,6 +373,17 @@ async function drawMessage(msgId) {
 
   drawBack(length, x, y);
   await drawLineSync(texts, x + 8, y + 10, false); // talkMessage 不需要显示箭头
+}
+
+async function drawTips(msgId) {
+  isTalking = true;
+  const text = loadMsg(msgId);
+  const texts = calcText(text);
+
+  const x = tx;
+  const y = ty;
+
+  await drawLineSync(texts, x, y, false); // talkTips 不需要显示箭头
 }
 
 function drawBack(length, x, y) {
@@ -396,19 +418,12 @@ async function drawLineSync(texts, x, y, showArrow = true) {
   }
   
   await waitKey();
-  resetTalk();
-  clearDraw();
+  resetMessageOrTips();
+  clearTalk();
 }
 
-async function drawTips(msgId) {
-  isTalking = true;
-  const text = loadMsg(msgId);
-  const texts = calcText(text);
-
-  const x = tx;
-  const y = ty;
-
-  await drawLineSync(texts, x, y, false); // talkTips 不需要显示箭头
+function resetMessageOrTips() {
+  isTalking = false;
 }
 
 function isNextTalk(t) {
@@ -422,8 +437,16 @@ function isNextTalks(t) {
   // 步骤 2：同理，探测下一条指令是否为对话相关的指令，也使用 scriptId + 1
   const script = state.scripts[t.scriptId + 1];
   if (!script) return false;
-  return script.code === 0x3C || script.code === 0x3D || script.code === 0x8E;
+  return script.code === 0x3C || script.code === 0x3D;
 }
+
+function isNextScrollTalks(t) {
+  // 步骤 2：同理，探测下一条指令是否为对话相关的指令，也使用 scriptId + 1
+  const script = state.scripts[t.scriptId + 1];
+  if (!script) return false;
+  return script.code === 0x8E;
+}
+
 
 export const Talk = {
   talkUp: showUp,
@@ -431,7 +454,7 @@ export const Talk = {
   talkTips: showTips,
   talkMessage: showMessage,
   drawTalk,
-  clearTalk,
+  clearTalk: forceScrollPage,
   tickArrow,
   onInput,
   get isTalking() {
