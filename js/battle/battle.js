@@ -672,3 +672,50 @@ function endBattle(victory) {
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+// 步骤 10：对外暴露当前实时战斗的全部运行状态与数值
+export function getBattleState() {
+  if (!isBattleRunning) {
+    return { isBattleRunning: false };
+  }
+
+  return {
+    isBattleRunning: true,
+    battleId: battleId,
+    battlefieldId: state.battlefieldId,
+    turn: turn,
+    phase: phase,
+    activePlayerIndex: activePlayerIndex,
+    players: players.map(p => ({
+      index: p.index,
+      name: p.name,
+      hp: p.hp,
+      maxHp: p.maxHp,
+      mp: p.mp,
+      maxMp: p.maxMp,
+      defense: p.defense,
+      dexterity: p.dexterity,
+      attackStrength: p.attackStrength,
+      x: p.x,
+      y: p.y,
+      currentFrame: p.currentFrame,
+      action: p.action,
+      spriteData: p.spriteData
+    })),
+    enemies: enemies.map(e => ({
+      id: e.id,
+      objId: e.objId,
+      name: e.name,
+      hp: e.hp,
+      maxHp: e.maxHp,
+      defense: e.defense,
+      dexterity: e.dexterity,
+      attackStrength: e.attackStrength,
+      x: e.x,
+      y: e.y,
+      currentFrame: e.currentFrame,
+      maxIdleFrames: e.maxIdleFrames,
+      spriteData: e.spriteData
+    }))
+  };
+}

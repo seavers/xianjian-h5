@@ -633,6 +633,65 @@
 			height: calc(var(--raw-height, 40px) * var(--image-explorer-scale, 2)) !important;
 			image-rendering: pixelated;
 		}
+
+		/* ⚔️ 实时战斗监测系统卡片样式 */
+		.battle-actor-card {
+			background: rgba(0, 0, 0, 0.3);
+			border: 1px solid rgba(255, 255, 255, 0.03);
+			border-radius: 2px;
+			padding: 4px 6px;
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+			transition: all 0.2s ease;
+		}
+		.battle-actor-card.active-turn {
+			border-color: #ffd700 !important;
+			background: rgba(255, 215, 0, 0.04) !important;
+			box-shadow: 0 0 6px rgba(255, 215, 0, 0.1);
+		}
+		.battle-actor-card.dead-actor {
+			opacity: 0.4;
+			filter: grayscale(1);
+		}
+		.battle-bar-outer {
+			width: 100%;
+			height: 3px;
+			background: rgba(255, 255, 255, 0.05);
+			border-radius: 1px;
+			overflow: hidden;
+		}
+		.battle-bar-inner {
+			height: 100%;
+			border-radius: 1px;
+			transition: width 0.3s ease;
+		}
+		.battle-hp-bar {
+			background: linear-gradient(90deg, #ff3b6f, #ff7b9f);
+			box-shadow: 0 0 4px rgba(255, 59, 111, 0.5);
+		}
+		.battle-mp-bar {
+			background: linear-gradient(90deg, #00d2ff, #00f2fe);
+			box-shadow: 0 0 4px rgba(0, 210, 255, 0.5);
+		}
+		.battle-actor-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			font-size: 9px;
+			font-weight: bold;
+		}
+		.battle-actor-name-lbl {
+			color: #fff;
+			text-shadow: 0 0 4px rgba(255, 255, 255, 0.1);
+		}
+		.battle-actor-action-lbl {
+			font-size: 7.5px;
+			color: var(--glow-yellow);
+			background: rgba(255, 208, 0, 0.1);
+			padding: 0px 3px;
+			border-radius: 1.5px;
+		}
 	</style>
 </head>
 <body>
@@ -694,6 +753,7 @@
 
 		<div id="panel-container">
 			
+			<div id="map-narrative-panels" style="display: flex; flex-direction: column;">
 			<!-- 横栏一：🗺️ 场景地图数据 ＆ 事件触发统计分布 -->
 			<div class="panel-row">
 				<div class="panel-col right-border" style="grid-column: span 2;">
@@ -827,6 +887,52 @@
 					</div>
 					<div class="npc-fleet-grid" id="container-npcs">
 						<!-- 袖珍网格矩阵 -->
+					</div>
+				</div>
+			</div>
+			</div> <!-- 结束 map-narrative-panels -->
+
+			<!-- ⚔️ 游戏战斗实时数据面板 (Battle Realtime Profile Console) -->
+			<div id="battle-panels" style="display: none; flex-direction: column; gap: 8px;">
+				<!-- 战斗头信息行 -->
+				<div class="panel-row" style="display: block;">
+					<div class="panel-col" style="grid-column: span 2; border: 1px solid rgba(255, 59, 111, 0.15); background: rgba(255, 59, 111, 0.02); border-radius: 2px; padding: 6px 8px;">
+						<div class="section-header" style="color: #ff3b6f; font-weight: bold; border-bottom: 1px dotted rgba(255, 59, 111, 0.15); padding-bottom: 4px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+							<span style="display: flex; align-items: center; gap: 4px;">
+								<span style="width: 5px; height: 5px; background: #ff3b6f; border-radius: 50%; box-shadow: 0 0 6px #ff3b6f;"></span>
+								⚔️ 实时战斗监测系统 (Battle Runtime Profile)
+							</span>
+							<span id="battle-phase-badge" style="background: rgba(255, 59, 111, 0.15); color: #ff3b6f; padding: 1px 4px; border-radius: 2px; font-size: 8px;">等待录入</span>
+						</div>
+						<div class="scene-dense-grid" style="grid-template-columns: repeat(4, 1fr); gap: 4px;">
+							<div class="scene-item" style="border-color: rgba(255, 59, 111, 0.08);"><span class="scene-label" style="color: rgba(255, 59, 111, 0.4);">战斗 ID (Battle)</span><span class="scene-val" id="battle-val-id" style="color: #ff3b6f;">-</span></div>
+							<div class="scene-item" style="border-color: rgba(255, 59, 111, 0.08);"><span class="scene-label" style="color: rgba(255, 59, 111, 0.4);">背景战场 ID (Fbp)</span><span class="scene-val" id="battle-val-bg" style="color: #ff3b6f;">-</span></div>
+							<div class="scene-item" style="border-color: rgba(255, 59, 111, 0.08);"><span class="scene-label" style="color: rgba(255, 59, 111, 0.4);">当前回合 (Turn)</span><span class="scene-val" id="battle-val-turn" style="color: var(--glow-yellow);">-</span></div>
+							<div class="scene-item" style="border-color: rgba(255, 59, 111, 0.08);"><span class="scene-label" style="color: rgba(255, 59, 111, 0.4);">活跃战力密度</span><span class="scene-val" id="battle-val-density" style="color: var(--glow-green);">-</span></div>
+						</div>
+					</div>
+				</div>
+
+				<!-- 双方阵容对峙区域 (CSS Grid 左右分流) -->
+				<div class="panel-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+					<!-- 左列：我方角色阵营 -->
+					<div class="panel-col" style="border-right: 1px solid var(--border-glass); padding-right: 4px; display: flex; flex-direction: column; gap: 6px;">
+						<div class="section-header" style="color: var(--glow-blue); font-size: 9px; font-weight: bold; border-bottom: 1px dotted rgba(0, 225, 255, 0.1); padding-bottom: 3px; margin-bottom: 2px;">
+							🔵 我方参战阵容 (Party Members)
+						</div>
+						<div id="battle-players-container" style="display: flex; flex-direction: column; gap: 6px;">
+							<!-- 动态塞入我方卡片 -->
+						</div>
+					</div>
+
+					<!-- 右列：敌方野怪阵营 -->
+					<div class="panel-col" style="display: flex; flex-direction: column; gap: 6px;">
+						<div class="section-header" style="color: #ff3b6f; font-size: 9px; font-weight: bold; border-bottom: 1px dotted rgba(255, 59, 111, 0.1); padding-bottom: 3px; margin-bottom: 2px;">
+							🔴 敌方魔物阵容 (Enemy Monsters)
+						</div>
+						<div id="battle-enemies-container" style="display: flex; flex-direction: column; gap: 6px;">
+							<!-- 动态塞入敌方卡片 -->
+						</div>
 					</div>
 				</div>
 			</div>
@@ -1518,10 +1624,167 @@
 			return baseItem;
 		}
 
+		// 统一的战斗精灵动作帧绘制方法
+		function drawBattleSprite(canvasEl, spriteData, frameIndex) {
+			if (!canvasEl || !spriteData) return;
+			const ctx = canvasEl.getContext('2d');
+			ctx.imageSmoothingEnabled = false;
+			ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+			try {
+				import('./js/battle/battleData.js').then(({ loadSpriteFrame }) => {
+					const frameImg = loadSpriteFrame(spriteData, frameIndex);
+					if (frameImg) {
+						const scale = Math.min(canvasEl.width / frameImg.width, canvasEl.height / frameImg.height);
+						const cleanScale = Math.max(1, Math.floor(scale));
+						
+						const dx = (canvasEl.width - frameImg.width * cleanScale) / 2;
+						const dy = (canvasEl.height - frameImg.height * cleanScale) / 2;
+						ctx.drawImage(frameImg, dx, dy, frameImg.width * cleanScale, frameImg.height * cleanScale);
+					}
+				});
+			} catch (e) {
+				// 忽略帧越界等导致的绘制错误
+			}
+		}
+
+		// 实时渲染并绘制战斗面板的全部逻辑
+		function updateBattleDashboard() {
+			const bState = window.Battle.getBattleState();
+			if (!bState || !bState.isBattleRunning) return;
+
+			// 1. 同步顶部全局战斗参数
+			document.getElementById('battle-val-id').innerText = bState.battleId;
+			document.getElementById('battle-val-bg').innerText = bState.battlefieldId !== undefined ? bState.battlefieldId : '-';
+			document.getElementById('battle-val-turn').innerText = bState.turn;
+			document.getElementById('battle-val-density').innerText = (bState.players.length + bState.enemies.length) + ' 战力';
+
+			const phaseNames = {
+				'select': '指令选择 (SELECT)',
+				'action': '结算行动 (ACTION)',
+				'end': '战斗结束 (END)'
+			};
+			document.getElementById('battle-phase-badge').innerText = phaseNames[bState.phase] || bState.phase;
+
+			// 2. 渲染我方角色列表
+			const playersContainer = document.getElementById('battle-players-container');
+			playersContainer.innerHTML = '';
+
+			bState.players.forEach((p, idx) => {
+				const card = document.createElement('div');
+				card.className = 'battle-actor-card';
+				if (p.hp <= 0) card.className += ' dead-actor';
+				if (bState.phase === 'select' && bState.activePlayerIndex === idx) {
+					card.className += ' active-turn';
+				}
+
+				let actionText = '待命 (STANDBY)';
+				if (p.action) {
+					if (p.action.type === 'attack') {
+						actionText = `🗡️ 物理攻击 -> 怪 #${p.action.target + 1}`;
+					} else {
+						actionText = `🔮 施法/合击`;
+					}
+				}
+
+				const hpPct = Math.min(100, Math.max(0, (p.hp / p.maxHp) * 100));
+				const mpPct = Math.min(100, Math.max(0, (p.mp / p.maxMp) * 100));
+
+				card.innerHTML = `
+					<div class="battle-actor-header">
+						<span class="battle-actor-name-lbl" style="color: var(--glow-blue);">${p.name}</span>
+						<span class="battle-actor-action-lbl">${actionText}</span>
+					</div>
+					<div style="display: flex; align-items: center; justify-content: space-between; font-size: 8px; color: rgba(255,255,255,0.4);">
+						<span>HP: ${p.hp}/${p.maxHp}</span>
+					</div>
+					<div class="battle-bar-outer">
+						<div class="battle-bar-inner battle-hp-bar" style="width: ${hpPct}%;"></div>
+					</div>
+					<div style="display: flex; align-items: center; justify-content: space-between; font-size: 8px; color: rgba(255,255,255,0.4);">
+						<span>MP: ${p.mp}/${p.maxMp}</span>
+					</div>
+					<div class="battle-bar-outer">
+						<div class="battle-bar-inner battle-mp-bar" style="width: ${mpPct}%;"></div>
+					</div>
+					<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 2px;">
+						<div class="hero-attr-chip" style="padding: 1px 3px;"><span class="hero-attr-lbl">攻</span><span class="hero-attr-val" style="font-size: 8px; color: var(--glow-green);">${p.attackStrength}</span></div>
+						<div class="hero-attr-chip" style="padding: 1px 3px;"><span class="hero-attr-lbl">防</span><span class="hero-attr-val" style="font-size: 8px; color: var(--glow-blue);">${p.defense}</span></div>
+						<div class="hero-attr-chip" style="padding: 1px 3px;"><span class="hero-attr-lbl">速</span><span class="hero-attr-val" style="font-size: 8px; color: var(--glow-yellow);">${p.dexterity}</span></div>
+					</div>
+					<div style="display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.02); height: 50px; border-radius: 1px; margin-top: 2px;">
+						<canvas id="battle-player-sprite-${idx}" width="48" height="48" style="image-rendering: pixelated; width: 48px; height: 48px;"></canvas>
+					</div>
+				`;
+
+				playersContainer.appendChild(card);
+
+				setTimeout(() => {
+					const canvas = document.getElementById(`battle-player-sprite-${idx}`);
+					if (canvas && p.spriteData) {
+						drawBattleSprite(canvas, p.spriteData, p.currentFrame);
+					}
+				}, 10);
+			});
+
+			// 3. 渲染敌方怪物列表
+			const enemiesContainer = document.getElementById('battle-enemies-container');
+			enemiesContainer.innerHTML = '';
+
+			bState.enemies.forEach((e, idx) => {
+				const card = document.createElement('div');
+				card.className = 'battle-actor-card';
+				if (e.hp <= 0) card.className += ' dead-actor';
+
+				const hpPct = Math.min(100, Math.max(0, (e.hp / e.maxHp) * 100));
+
+				card.innerHTML = `
+					<div class="battle-actor-header">
+						<span class="battle-actor-name-lbl" style="color: #ff3b6f;">怪 #${e.id} : ${e.name}</span>
+						<span class="battle-actor-action-lbl" style="background: rgba(255, 59, 111, 0.1); color: #ff3b6f; font-size: 7px;">(${e.x}, ${e.y})</span>
+					</div>
+					<div style="display: flex; align-items: center; justify-content: space-between; font-size: 8px; color: rgba(255,255,255,0.4);">
+						<span>HP: ${e.hp}/${e.maxHp}</span>
+					</div>
+					<div class="battle-bar-outer">
+						<div class="battle-bar-inner battle-hp-bar" style="width: ${hpPct}%;"></div>
+					</div>
+					<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 2px;">
+						<div class="hero-attr-chip" style="padding: 1px 3px;"><span class="hero-attr-lbl">攻</span><span class="hero-attr-val" style="font-size: 8px; color: var(--glow-green);">${e.attackStrength}</span></div>
+						<div class="hero-attr-chip" style="padding: 1px 3px;"><span class="hero-attr-lbl">防</span><span class="hero-attr-val" style="font-size: 8px; color: var(--glow-blue);">${e.defense}</span></div>
+						<div class="hero-attr-chip" style="padding: 1px 3px;"><span class="hero-attr-lbl">速</span><span class="hero-attr-val" style="font-size: 8px; color: var(--glow-yellow);">${e.dexterity}</span></div>
+					</div>
+					<div style="display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.02); height: 50px; border-radius: 1px; margin-top: 2px;">
+						<canvas id="battle-enemy-sprite-${idx}" width="48" height="48" style="image-rendering: pixelated; width: 48px; height: 48px;"></canvas>
+					</div>
+				`;
+
+				enemiesContainer.appendChild(card);
+
+				setTimeout(() => {
+					const canvas = document.getElementById(`battle-enemy-sprite-${idx}`);
+					if (canvas && e.spriteData) {
+						drawBattleSprite(canvas, e.spriteData, e.currentFrame);
+					}
+				}, 10);
+			});
+		}
+
 		// 3. 实时刷新控制台界面所有数据
 		function refreshDashboard() {
 			const state = window.state;
 			if (!state) return;
+
+			// 实时检测模式：如果当前正发生战斗，自动切换展示实时战斗监测面板
+			if (state.currentMode === 'battle' && window.Battle && typeof window.Battle.getBattleState === 'function') {
+				document.getElementById('map-narrative-panels').style.display = 'none';
+				document.getElementById('battle-panels').style.display = 'flex';
+				updateBattleDashboard();
+				return;
+			} else {
+				document.getElementById('map-narrative-panels').style.display = 'flex';
+				document.getElementById('battle-panels').style.display = 'none';
+			}
 
 			// 3.1 同步大地图与高级场景数据
 			document.getElementById('val-scene-id').innerText = state.sceneId;
