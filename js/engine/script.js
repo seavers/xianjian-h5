@@ -296,7 +296,7 @@ export const Script = {
       return scriptEntry + 1;
     }
 
-    let ret = await code.func.call(obj, script.param1, script.param2, script.param3, { type });
+    let ret = await code.func.call(obj, script.param1, script.param2, script.param3, { type: 'auto' });
     if (typeof ret === 'object') {
       ret = ret.nextScriptId;
     }

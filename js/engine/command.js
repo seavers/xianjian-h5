@@ -90,11 +90,11 @@ export function refreshWalkFrame(role) {
   refreshRoleFrame(role);
 }
 
-export async function roleWalk(sx, sy, shalf, { type }) {
+export async function roleWalk(sx, sy, shalf, context) {
   state.mx = sx;
   state.my = sy;
   state.mhalf = shalf;
-  return await stepAction({ type }, () => Npc.animTeam(state.party[0] || state.roles[0], sx, sy, shalf, 4));
+  return await stepAction(context, () => Npc.animTeam(state.party[0] || state.roles[0], sx, sy, shalf, 4));
 }
 
 export async function clearWithEffect(effectType) {
@@ -483,65 +483,65 @@ export function setNpcMove(objId, dx, dy) {
   Script.sleep(1)
 }
 
-export async function npcWalk2(x, y, half) {
-  return await stepAction(this, () => Npc.anim(this, x, y, half, 3));
+export async function npcWalk2(x, y, half, context) {
+  return await stepAction(context, () => Npc.anim(this, x, y, half, 3));
 }
 
-export async function npcWalk3(x, y, half) {
-  return await stepAction(this, () => Npc.anim(this, x, y, half, 2));
+export async function npcWalk3(x, y, half, context) {
+  return await stepAction(context, () => Npc.anim(this, x, y, half, 2));
 }
 
-export async function npcWalk4(x, y, half) {
+export async function npcWalk4(x, y, half, context) {
   // 步骤 1：调用 Npc.anim 使得当前 NPC 移动到指定的目标瓦片坐标，折算实际移动步长为中速 (2)
-  return await stepAction(this, () => Npc.anim(this, x, y, half, 2));
+  return await stepAction(context, () => Npc.anim(this, x, y, half, 2));
 }
 
-export async function teamWalk(x, y, half) {
+export async function teamWalk(x, y, half, context) {
   // 步骤 1：让队长开始行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
-  return await stepAction(this, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 2));
+  return await stepAction(context, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 2));
 }
 
-export async function teamWalk2(x, y, half) {
+export async function teamWalk2(x, y, half, context) {
   // 步骤 1：让队长开始快速行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
-  return await stepAction(this, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 4));
+  return await stepAction(context, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 4));
 }
 
-export async function teamWalk3(x, y, half) {
+export async function teamWalk3(x, y, half, context) {
   // 步骤 1：让队长开始中速行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
-  return await stepAction(this, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 6));
+  return await stepAction(context, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 6));
 }
 
-export async function teamWalk4(x, y, half) {
+export async function teamWalk4(x, y, half, context) {
   // 步骤 1：让队长开始极速行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
-  return await stepAction(this, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 8));
+  return await stepAction(context, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 8));
 }
 
-export async function teamRide(x, y, half) {
-  return await stepAction(this, () => {
+export async function teamRide(x, y, half, context) {
+  return await stepAction(context, () => {
     const res1 = Npc.anim(this, x, y, half, 2);
     const res2 = Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 2);
     return res1 || res2;
   });
 }
 
-export async function teamRide2(x, y, half) {
-  return await stepAction(this, () => {
+export async function teamRide2(x, y, half, context) {
+  return await stepAction(context, () => {
     const res1 = Npc.anim(this, x, y, half, 4);
     const res2 = Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 4);
     return res1 || res2;
   });
 }
 
-export async function teamRide3(x, y, half) {
-  return await stepAction(this, () => {
+export async function teamRide3(x, y, half, context) {
+  return await stepAction(context, () => {
     const res1 = Npc.anim(this, x, y, half, 6);
     const res2 = Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 6);
     return res1 || res2;
   });
 }
 
-export async function teamRide4(x, y, half) {
-  return await stepAction(this, () => {
+export async function teamRide4(x, y, half, context) {
+  return await stepAction(context, () => {
     const res1 = Npc.anim(this, x, y, half, 8);
     const res2 = Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 8);
     return res1 || res2;
@@ -591,7 +591,7 @@ export function replaceObject() {
   // 步骤 1：替换并终结脚本实体，不返回任何值以正常推进指令流
 }
 
-export async function moveViewport(dx, dy, frameCount) {
+export async function moveViewport(dx, dy, frameCount, context) {
   // 步骤 1：若首参数和次参数均为 0，代表需要恢复视口对焦中心为主角位置，使其正常对焦
   if (dx === 0 && dy === 0) {
     const leader = state.party[0] || state.roles[0];
@@ -611,7 +611,7 @@ export async function moveViewport(dx, dy, frameCount) {
   const speedX = intToShort(dx);
   const speedY = intToShort(dy);
 
-  return await stepAction(this, () => Script.stepProgress(this, frameCount, () => {
+  return await stepAction(context, () => Script.stepProgress(this, frameCount, () => {
     state.mapX += speedX;
     state.mapY += speedY;
   }));
@@ -1001,7 +1001,7 @@ export async function updateScreen() {
   await new Promise(resolve => setTimeout(resolve, TICK_TIME));
 }
 
-export async function delayPeriod(time) {
+export async function delayPeriod(time, p2, p3, context) {
   // 步骤 1：原版延迟为 time * 80 毫秒，我们在 「TICK_TIME」 毫秒为主循环周期的 H5 引擎中同步换算为对应的帧数 ticks
   // 并且使用 Math.max(1, ...) 保证至少等待一帧以避免同步挂起失效
   const ticks = Math.max(1, Math.round((time * 80) / TICK_TIME));
@@ -1009,11 +1009,11 @@ export async function delayPeriod(time) {
   // 步骤 2：输出详细的非阻塞延迟调试日志，辅助追踪时序同步
   console.log(`[0x85 delayPeriod] 剧情等待, 原版毫秒: ${time * 80}ms, H5换算帧数: ${ticks} 帧`);
 
-  return await stepAction(this, () => Script.stepProgress(this, ticks));
+  return await stepAction(context, () => Script.stepProgress(this, ticks));
 }
 
-export async function updateScreenAndWait(time, p2, p3, { type }) {
-  if (type == 'auto') {
+export async function updateScreenAndWait(time, p2, p3, context) {
+  if (context.type == 'auto') {
     const res = Script.stepProgress(this, time);
     if (res > 0) {
       // 返回 0 表示继续当前这一条，返回 null 就是下一条
@@ -1036,14 +1036,14 @@ export async function updateScreenAndWait(time, p2, p3, { type }) {
   return await timesAction(time, this, () => {});
 }
 
-export async function waitSecond(time) {
+export async function waitSecond(time, p2, p3, context) {
   // 步骤 1：原游戏是 80ms * time 延迟，我们在 TICK_TIME 毫秒为主循环周期的 H5 引擎中同步换算为对应的帧数 ticks
   const ticks = Math.max(1, Math.round((time * 80) / TICK_TIME));
-  return await stepAction(this, () => Script.stepProgress(this, ticks));
+  return await stepAction(context, () => Script.stepProgress(this, ticks));
 }
 
-export async function sleepFrame(frameCount, speed) {
-  return await stepAction(this, () => Script.stepProgress(this, frameCount * speed));
+export async function sleepFrame(frameCount, speed, p3, context) {
+  return await stepAction(context, () => Script.stepProgress(this, frameCount * speed));
 }
 
 export function checkTalk() {
@@ -1500,8 +1500,8 @@ function getRoleIndex(obj) {
 
 // 统一包装单步动作指令调度，自动识别并分发 auto 漫游和 trigger/scene 阻塞式执行流
 // 统一包装单步动作指令调度，在当前指令中 await 循环，直至动作完成，走 stepAutoAndUpdate
-async function stepAction(obj, actionFunc) {
-  if (obj.type == 'npc') {
+async function stepAction(context, actionFunc) {
+  if (context.type == 'auto') {
     const res = actionFunc();
     if (res > 0) {
       // 返回 0 表示继续当前这一条，返回 null 就是下一条
