@@ -1605,14 +1605,8 @@ export function removePlayerStatus(statusId) {
 
 // 获取当前上下文的角色索引，优先匹配 this 或活跃阻塞线程的绑定主体，最后默认为主角 (0)
 function getRoleIndex(obj) {
-  if (obj && obj.type === 'role') {
-    return obj.index;
-  }
-  const activeObj = Script.activeThread?.obj;
-  if (activeObj && activeObj.type === 'role') {
-    return activeObj.index;
-  }
-  return 0;
+  // 先这么写，后面再改
+  return obj.index;
 }
 
 // 统一包装单步动作指令调度，自动识别并分发 auto 漫游和 trigger/scene 阻塞式执行流
