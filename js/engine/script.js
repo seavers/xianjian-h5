@@ -4,7 +4,11 @@ import { Hex } from '../utils/hex.js';
 import { update } from '../ui/draw.js';
 import { fadeIn, fadeOut } from '../ui/fade.js';
 
+export const RESET_SCRIPT = -1;   //返回最初的入口，下次触发从上次入口重新执行
+export const CIRCLE_SCRIPT = -2;  //返回当前的入口，下次循环从当前入口再次执行
+
 export const Script = {
+
   activeThread: null,
 
   startScene(scene) {
@@ -218,11 +222,11 @@ export const Script = {
 
       if (ret == null) {
         scriptEntry = scriptEntry + 1;
-      } else if (ret === -1) {
+      } else if (ret === RESET_SCRIPT) {
         scriptEntry = startScriptId;
-      } else if (ret > 0) {
+      } else if (ret >= 0) {    // 有可能会返回0，比如脚本号9437
         scriptEntry = ret;
-      } else if (ret === 0) {
+      } else if (ret === CIRCLE_SCRIPT) {
         // 还是执行当前脚本，但可能是退出指令
         // continue;
       } else {
@@ -299,12 +303,12 @@ export const Script = {
     
     if (ret == null) {
       return scriptEntry + 1;
-    } else if (ret == -1) {
+    } else if (ret == RESET_SCRIPT) {
       obj.autoScr = null;
       return null;
-    } else if (ret > 0) {
+    } else if (ret >= 0) {
       return ret;
-    } else if (ret === 0) {
+    } else if (ret === CIRCLE_SCRIPT) {
       // scriptEntry 与 scriptId 都不动
       return scriptEntry;
     } else {

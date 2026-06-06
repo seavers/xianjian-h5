@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { Script } from './script.js';
+import { CIRCLE_SCRIPT, RESET_SCRIPT, Script } from './script.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
 import { update, canWalk } from '../ui/draw.js';
@@ -903,7 +903,7 @@ export function toggleScene(sceneId) {
 }
 
 export function finishCode() {
-  return {endFlag: true, nextScriptId: -1};
+  return {endFlag: true, nextScriptId: RESET_SCRIPT};
 }
 
 export function stopCode() {
@@ -1017,7 +1017,7 @@ export async function updateScreenAndWait(time, p2, p3, { type }) {
     const res = Script.stepProgress(this, time);
     if (res > 0) {
       // 返回 0 表示继续当前这一条，返回 null 就是下一条
-      return 0;
+      return CIRCLE_SCRIPT;
     }
 
     // 执行下一条
@@ -1505,7 +1505,7 @@ async function stepAction(obj, actionFunc) {
     const res = actionFunc();
     if (res > 0) {
       // 返回 0 表示继续当前这一条，返回 null 就是下一条
-      return 0;
+      return CIRCLE_SCRIPT;
     }
 
     // 执行下一条
