@@ -163,15 +163,15 @@ async function refreshTalkPosition() {
 
 function showTips() {
   tips = true;
-  tx = 55;
-  ty = 25;
+  tx = 80;
+  ty = 40;
   color = null;
 }
 
 function showMessage() {
   message = true;
   tx = 160;
-  ty = 50;
+  ty = 40;
   color = null;
 }
 
@@ -357,11 +357,11 @@ async function drawMessage(msgId) {
   const texts = calcText(text);
   const length = texts.length;
 
-  const x = tx - length * 16 / 2;
+  const x = tx - length * 8;
   const y = ty;
 
   drawBack(length, x, y);
-  await drawLineSync(texts, x, y, false); // talkMessage 不需要显示箭头
+  await drawLineSync(texts, x + 8, y + 10, false); // talkMessage 不需要显示箭头
 }
 
 function drawBack(length, x, y) {
@@ -369,28 +369,27 @@ function drawBack(length, x, y) {
   if (!talkCtx) return;
 
   const picLeft = loadPic(45);
-  if (picLeft) talkCtx.drawImage(picLeft, x - 8, y);
+  if (picLeft) talkCtx.drawImage(picLeft, x, y);
 
   const picMiddle = loadPic(46);
   if (picMiddle) {
     for (let i = 0; i < length; i++) {
-      talkCtx.drawImage(picMiddle, x + i * 16, y);
+      talkCtx.drawImage(picMiddle, x + 8 + i * 16, y);
     }
   }
 
   const picRight = loadPic(47);
-  if (picRight) talkCtx.drawImage(picRight, x + length * 16, y);
+  if (picRight) talkCtx.drawImage(picRight, x + 8 + length * 16, y);
 }
 
 async function drawLineSync(texts, x, y, showArrow = true) {
   for (let i = 0; i < texts.length; i++) {
-    drawWord(texts[i].charCode, x + i * 16, y + 9, texts[i].color);
+    drawWord(texts[i].charCode, x + i * 16, y, texts[i].color);
   }
 
   if (showArrow) {
-    // 统一定位向下箭头，因为是在文字底部对齐 (y+9 是文字顶)
     arrowX = x + texts.length * 16;
-    arrowY = y + 9;
+    arrowY = y;
   } else {
     arrowX = 0;
     arrowY = 0;
@@ -405,9 +404,8 @@ async function drawTips(msgId) {
   isTalking = true;
   const text = loadMsg(msgId);
   const texts = calcText(text);
-  const length = texts.length;
 
-  const x = tx - length * 16 / 2;
+  const x = tx;
   const y = ty;
 
   await drawLineSync(texts, x, y, false); // talkTips 不需要显示箭头
