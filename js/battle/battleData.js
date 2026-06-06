@@ -69,6 +69,8 @@ export function loadEnemies() {
 
   cachedEnemies = list;
   console.log(`成功加载并解析 ${list.length} 个敌人配置数据`);
+
+  state.enemies = list;
   return list;
 }
 
@@ -123,6 +125,8 @@ export function loadEnemyPos() {
 
   cachedEnemyPos = enemyPos;
   console.log('成功解析敌人战场坐标位置表');
+
+  state.enemyPos = enemyPos;
   return enemyPos;
 }
 
