@@ -849,12 +849,7 @@ export function setNpcTrigScr(objId, trigScr) {
 }
 
 export function setNpcFrame(frame) {
-  loadFrameCount(this);
-  if (this.type == 'npc') {
-    this.frame = (this.frame + 1) % this.frameCount;
-  } else {
-    this.frame = frame;
-  }
+  this.frame = frame;
   this.dir = 0;        // 强制指向南方(0)
 }
 
