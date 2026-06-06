@@ -1504,9 +1504,11 @@
 			document.getElementById('val-event-density').innerText = (npcCount / (rangeSize || 1)).toFixed(2);
 			
 			// 刷新系统最新同步时间快照
-			const d = new Date();
-			const timeStr = d.toTimeString().split(' ')[0];
-			document.getElementById('val-last-sync').innerText = timeStr;
+			import('./js/app.js').then(app => {
+				const d = new Date();
+				const timeStr = d.toTimeString().split(' ')[0];
+				document.getElementById('val-last-sync').innerText = timeStr + ' ' + app.lastMainLoopTime + 'ms';
+			})
 
 			// 渲染事件模式汇总徽章，消灭空白
 			const modesContainer = document.getElementById('container-modes');

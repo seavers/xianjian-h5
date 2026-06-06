@@ -284,7 +284,7 @@ export const Script = {
     }
 
     const tab = type.charAt(0).toUpperCase();
-    console.log(`[info] [${tab} NPC:${obj?.id || '无'} IP:${scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
+    // console.log(`[info] [${tab} NPC:${obj?.id || '无'} IP:${scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
     let scriptEntry = scriptId;
     if (!code.func) {

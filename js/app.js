@@ -14,6 +14,7 @@ import { sleep } from './utils/timer.js';
 // 获取 URL 参数是否为 debug 模式
 const DEBUG = location.search && location.search.indexOf('debug') !== -1;
 export let TICK_TIME = 80;  // 80ms 一次tick
+export let lastMainLoopTime = -1;
 
 function initEventObject() {
   const sssId = 0;
@@ -222,12 +223,13 @@ async function executeMainLoop() {
       const start = Date.now();
       await Script.mainLoop();
       const end = Date.now();
-      console.log('执行一次主循环，' + (end - start) + 'ms');
+      lastMainLoopTime = end - start;
+      // console.log('执行一次主循环，' + lastMainLoopTime + 'ms');
 
       if (end - start > TICK_TIME) {
         await sleep(1);
       } else {
-        await sleep(TICK_TIME - (end - start));
+        await sleep(TICK_TIME - lastMainLoopTime);
       }
     }
   } catch (e) {
