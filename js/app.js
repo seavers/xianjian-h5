@@ -13,7 +13,7 @@ import { sleep } from './utils/timer.js';
 
 // 获取 URL 参数是否为 debug 模式
 const DEBUG = location.search && location.search.indexOf('debug') !== -1;
-export let TICK_TIME = 150;  // 游戏主循环的 Tick 延时时间，默认 6 fps 对应 150ms
+export let TICK_TIME = 80;  // 游戏主循环的 Tick 延时时间，默认 6 fps 对应 150ms
 export let lastMainLoopTime = -1;
 
 function initEventObject() {
