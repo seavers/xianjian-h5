@@ -684,6 +684,7 @@
 			</div>
 			<div style="display:flex; align-items:center; gap:8px;">
 				<button class="btn-dbg" onclick="openBattleDataModal()" style="color: #ff3b6f; border-color: rgba(255, 59, 111, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s; margin-right: 2px;">⚔️ 战斗资料</button>
+				<button class="btn-dbg" onclick="openBattleImageModal()" style="color: #00fffa; border-color: rgba(0, 255, 250, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s; margin-right: 2px;">🖼️ 战斗图片资料</button>
 				<button class="btn-dbg" onclick="openGameDataModal()" style="color: var(--glow-yellow); border-color: rgba(255, 215, 0, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s;">📚 游戏资料</button>
 				<button class="btn-dbg" onclick="openImageExplorer()" style="color: var(--glow-green); border-color: rgba(0, 255, 157, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s;">🖼️ 图片资源</button>
 				<div style="font-size: 8.5px; color:rgba(255,255,255,0.2);">VER: 4.0-DECRYPT-STREAM</div>
@@ -1251,6 +1252,33 @@
 
 			<!-- 主内容展示区 -->
 			<div id="battledata-main-container" style="flex: 1; display: flex; overflow: hidden; background: #030305;">
+				<!-- 动态载入各个 TAB 的页面 DOM -->
+			</div>
+		</div>
+	</div>
+
+	<!-- ==================== 🖼️ 仙剑奇侠传战斗图片资料监视与调试弹窗 ==================== -->
+	<div id="battle-image-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
+		<div style="background: rgba(10,13,20,0.96); border: 1px solid #00fffa; border-radius: 4px; box-shadow: 0 0 25px rgba(0, 255, 250, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
+			<!-- 弹窗头部 -->
+			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
+				<div style="display: flex; align-items: center; gap: 6px;">
+					<div style="width: 5px; height: 5px; background: #00fffa; border-radius: 50%; box-shadow: 0 0 6px #00fffa;"></div>
+					<span style="font-size: 11px; font-weight: bold; color: #00fffa; letter-spacing: 0.5px; text-transform: uppercase;">🖼️ PAL BATTLE IMAGES & FX SYSTEM (战斗实时图片与特效预览系统)</span>
+				</div>
+				<button onclick="closeBattleImageModal()" style="background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer; transition: color 0.15s; outline:none;" onmouseenter="this.style.color='#00fffa'" onmouseleave="this.style.color='rgba(255,255,255,0.4)'">✕</button>
+			</div>
+			
+			<!-- 资料大类 Tabs 切换栏 -->
+			<div style="background: rgba(0,0,0,0.4); padding: 6px 12px; border-bottom: 1px solid var(--border-glass); display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+				<button class="btn-dbg battleimage-tab-btn active" id="battleimage-tab-abc" onclick="switchBattleImageTab('abc')" style="color:#00fffa; border-color:#00fffa; padding: 2px 10px; font-size: 8.5px; cursor: pointer;">👹 敌人精灵图Abc.mkf</button>
+				<button class="btn-dbg battleimage-tab-btn" id="battleimage-tab-f" onclick="switchBattleImageTab('f')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">⚔️ 玩家战斗精灵图 f.mkf</button>
+				<button class="btn-dbg battleimage-tab-btn" id="battleimage-tab-fire" onclick="switchBattleImageTab('fire')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">🔥 魔法特效 fire.mkf</button>
+				<button class="btn-dbg battleimage-tab-btn" id="battleimage-tab-data10" onclick="switchBattleImageTab('data10')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">💥 战斗效果图 data.mkf #10</button>
+			</div>
+
+			<!-- 主内容展示区 -->
+			<div id="battleimage-main-container" style="flex: 1; display: flex; overflow: hidden; background: #030305;">
 				<!-- 动态载入各个 TAB 的页面 DOM -->
 			</div>
 		</div>
@@ -4050,6 +4078,17 @@
 			window.switchBattleDataSpriteFile = module.switchBattleDataSpriteFile;
 			window.onBattleDataSpritePackSelect = module.onBattleDataSpritePackSelect;
 			window.toggleBattleDataSpritePlay = module.toggleBattleDataSpritePlay;
+		});
+
+		// 🖼️ 动态载入战斗图片与特效资料面板的全部逻辑
+		import('./js/ui/battleImageUI.js').then((module) => {
+			window.openBattleImageModal = module.openBattleImageModal;
+			window.closeBattleImageModal = module.closeBattleImageModal;
+			window.switchBattleImageTab = module.switchBattleImageTab;
+			window.onBattleImagePackSelect = module.onBattleImagePackSelect;
+			window.toggleBattleImagePlay = module.toggleBattleImagePlay;
+			window.selectBattleImageFrameDirectly = module.selectBattleImageFrameDirectly;
+			window.changeBattleImagePlaySpeed = module.changeBattleImagePlaySpeed;
 		});
 
 		// ==================== 🗺️ 场景大地图瞬移定位器逻辑 ====================
