@@ -1,6 +1,7 @@
 // ==================== ⚔️ 仙剑实时战斗资料与调试画廊核心逻辑 ====================
 
 import { loadMkf, load } from '../resources/loader.js';
+import { deyj } from '../utils/deyj.js';
 import { state } from '../engine/state.js';
 import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame } from '../battle/battleData.js';
 
@@ -48,6 +49,17 @@ function getMkfBlockCount(filename) {
   }
 }
 
+// 步骤 1.5：获取指定精灵包解密解压后的总帧数
+function getFrameCount(file, packId) {
+  try {
+    const spriteData = deyj(loadMkf(file, packId));
+    if (!spriteData) return 0;
+    return spriteData.getShort(0);
+  } catch (e) {
+    return 0;
+  }
+}
+
 // 步骤 2：在指定 Canvas 上精准渲染某帧战斗精灵图片
 function drawSpriteFrameToCanvas(canvasEl, file, packId, frameId) {
   if (!canvasEl) return;
@@ -55,7 +67,7 @@ function drawSpriteFrameToCanvas(canvasEl, file, packId, frameId) {
   ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
   try {
-    const spriteData = loadMkf(file, packId);
+    const spriteData = deyj(loadMkf(file, packId));
     if (!spriteData) return;
 
     const frameCanvas = loadSpriteFrame(spriteData, frameId);
@@ -615,7 +627,7 @@ export function toggleBattleDataSpritePlay() {
     stopSpritePlayTimer();
     if (btn) btn.innerText = '▶️ 自动播放';
   } else {
-    const spriteData = loadMkf(selectedSpriteFile, selectedSpritePackId);
+    const spriteData = deyj(loadMkf(selectedSpriteFile, selectedSpritePackId));
     if (!spriteData) return;
     const maxFrames = spriteData.getShort(0);
     if (maxFrames <= 0) return;
@@ -667,7 +679,7 @@ export function selectSpriteFrameDirectly(frameId) {
 
   const lbl = document.getElementById('battledata-sprite-frame-desc');
   if (lbl) {
-    const spriteData = loadMkf(selectedSpriteFile, selectedSpritePackId);
+    const spriteData = deyj(loadMkf(selectedSpriteFile, selectedSpritePackId));
     const maxFrames = spriteData ? spriteData.getShort(0) : 0;
     lbl.innerText = `当前帧: ${selectedSpriteFrameId} / ${maxFrames - 1}`;
   }
@@ -675,7 +687,7 @@ export function selectSpriteFrameDirectly(frameId) {
 
 function renderSpriteTab(container) {
   const totalPacks = getMkfBlockCount(selectedSpriteFile);
-  const spriteData = loadMkf(selectedSpriteFile, selectedSpritePackId);
+  const spriteData = deyj(loadMkf(selectedSpriteFile, selectedSpritePackId));
   const maxFrames = spriteData ? spriteData.getShort(0) : 0;
 
   // 1. 左侧包索引列表
@@ -843,7 +855,7 @@ export function viewEnemySpriteFramesInTeamTab(enemyConfigId) {
 
   container.style.display = 'block';
 
-  const spriteData = loadMkf('abc.mkf', enemyConfigId);
+  const spriteData = deyj(loadMkf('abc.mkf', enemyConfigId));
   const maxFrames = spriteData ? spriteData.getShort(0) : 0;
 
   let html = `

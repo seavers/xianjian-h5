@@ -2,6 +2,7 @@ import { state } from '../engine/state.js';
 import { loadFbp, loadPic } from '../resources/pal.js';
 import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame } from './battleData.js';
 import { loadMkf } from '../resources/loader.js';
+import { deyj } from '../utils/deyj.js';
 
 // 站位坐标配置 (1人, 2人, 3人)
 const PLAYER_POS_PRESETS = [
@@ -75,8 +76,8 @@ export async function start(id, failId, fleeId) {
     const enemyConfigId = state.items[objId]?.roleId || 0;
     const cfg = allEnemyConfigs[enemyConfigId] || {};
     
-    // 从 abc.mkf 加载敌人战斗图片数据包
-    const spriteData = loadMkf('abc.mkf', enemyConfigId);
+    // 从 abc.mkf 加载敌人战斗图片数据包并进行 deyj 解压
+    const spriteData = deyj(loadMkf('abc.mkf', enemyConfigId));
 
     const pos = enemyPosTable[i]?.[wMaxEnemyIndex] || { x: 50, y: 100 };
     const yPos = pos.y + (cfg.wYPosOffset || 0);
@@ -110,8 +111,8 @@ export async function start(id, failId, fleeId) {
     const roleStats = state.roles[role.index] || {};
     const pos = posPreset[i] || [200, 150];
 
-    // 从 f.mkf 加载玩家角色战斗动画数据包
-    const spriteData = loadMkf('f.mkf', roleStats.spriteNumInBattle || 1);
+    // 从 f.mkf 加载玩家角色战斗动画数据包并进行 deyj 解压
+    const spriteData = deyj(loadMkf('f.mkf', roleStats.spriteNumInBattle || 1));
 
     players.push({
       index: role.index,
@@ -137,7 +138,7 @@ export async function start(id, failId, fleeId) {
     activePlayerIndex = 0;
   }
 
-  console.log(`战斗开启: 敌方队伍 ID ${battleId}, 成员 ${enemies.length} 个; 我方成员 ${players.length} 个`);
+  console.log(`战斗开启: 敌方队伍 ID ${battleId}, 成员 ${enemies.length} 个 ${JSON.stringify(teamObjIds)}; 我方成员 ${players.length} 个 ${JSON.stringify(state.party.map(p=>({index:p.index,mgoId:p.tileId})))}`);
 
   // 开启画面的定时绘制渲染与逻辑更新时钟
   startBattleClock();
