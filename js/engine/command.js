@@ -1080,13 +1080,13 @@ export async function updateScreen() {
   update(true);
 
   // 步骤 2：增加 80ms 的非阻塞式延迟，以满足剧情或转场时图像更新的视觉停留感要求
-  await new Promise(resolve => setTimeout(resolve, 80));
+  await new Promise(resolve => setTimeout(resolve, 150));
 }
 
 export async function delayPeriod(time) {
   // 步骤 1：原版延迟为 time * 80 毫秒，我们在 150 毫秒为主循环周期的 H5 引擎中同步换算为对应的帧数 ticks
   // 并且使用 Math.max(1, ...) 保证至少等待一帧以避免同步挂起失效
-  const ticks = Math.max(1, Math.round((time * 80) / 150));
+  const ticks = Math.max(1, Math.round((time * 150) / 150));
 
   // 步骤 2：输出详细的非阻塞延迟调试日志，辅助追踪时序同步
   console.log(`[0x85 delayPeriod] 剧情等待, 原版毫秒: ${time * 80}ms, H5换算帧数: ${ticks} 帧`);
@@ -1105,14 +1105,14 @@ export async function updateScreenAndWait(time, p2, p3, { type }) {
     // 执行下一条
     return;
   }
-
-  await updateScreen();
   
   if (time == 0) {
     await Script.stepAutoAndUpdate();
     await new Promise(resolve => setTimeout(resolve, 150));
     return;
   }
+  
+  await updateScreen();
 
   // 返回>0，跳出场景脚本循环，来重绘
   return await timesAction(time, this, () => {});
