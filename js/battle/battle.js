@@ -113,11 +113,11 @@ export async function start(id, failId, fleeId) {
 
     // 从 f.mkf 加载玩家角色战斗动画数据包并进行 deyj 解压
     let spriteNum = roleStats.spriteNumInBattle;
-    if (!spriteNum) {
+    if (spriteNum === undefined) {
       // 步骤 1.5：提供我方角色战斗精灵图包 ID 兜底映射
-      // 0-李逍遥->1, 1-赵灵儿->2, 2-林月如->3, 3-阿奴->5, 4-巫后->4, 5-盖罗娇->6
-      const defaultSprites = [1, 2, 3, 5, 4, 6];
-      spriteNum = defaultSprites[role.index] || 1;
+      // 0-李逍遥->0, 1-赵灵儿->1, 2-林月如->2, 3-阿奴->4, 4-巫后->3, 5-盖罗娇->8
+      const defaultSprites = [0, 1, 2, 4, 3, 8];
+      spriteNum = defaultSprites[role.index] !== undefined ? defaultSprites[role.index] : 0;
     }
     const spriteData = deyj(loadMkf('f.mkf', spriteNum));
 

@@ -53,11 +53,11 @@ export const state = {
 
   // 主角与所有可用角色列表（角色 0-4）
   roles: [
-    { type: 'role', x: 0, y: 0, layer: 0, tileId: 2, frame: 0, index: 0, count: 0 },
-    { type: 'role', x: 0, y: 0, layer: 0, tileId: 3, frame: 0, index: 1, count: 0 },
-    { type: 'role', x: 0, y: 0, layer: 0, tileId: 7, frame: 0, index: 2, count: 0 },
-    { type: 'role', x: 0, y: 0, layer: 0, tileId: 5, frame: 0, index: 3, count: 0 },
-    { type: 'role', x: 0, y: 0, layer: 0, tileId: 0, frame: 0, index: 4, count: 0 }
+    { type: 'role', x: 0, y: 0, layer: 0, tileId: 2, frame: 0, index: 0, count: 0, spriteNumInBattle: 0 },
+    { type: 'role', x: 0, y: 0, layer: 0, tileId: 3, frame: 0, index: 1, count: 0, spriteNumInBattle: 1 },
+    { type: 'role', x: 0, y: 0, layer: 0, tileId: 7, frame: 0, index: 2, count: 0, spriteNumInBattle: 2 },
+    { type: 'role', x: 0, y: 0, layer: 0, tileId: 5, frame: 0, index: 3, count: 0, spriteNumInBattle: 4 },
+    { type: 'role', x: 0, y: 0, layer: 0, tileId: 0, frame: 0, index: 4, count: 0, spriteNumInBattle: 3 }
   ],
 
   // 当前处于队伍中的角色列表

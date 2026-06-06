@@ -128,7 +128,7 @@ export function setRoleGroup(r1, r2, r3) {
           frame: 0,
           index: roleIndex,
           count: 0,
-          spriteNumInBattle: [1, 2, 3, 5][roleIndex] || 1
+          spriteNumInBattle: [0, 1, 2, 4][roleIndex] !== undefined ? [0, 1, 2, 4][roleIndex] : 0
         };
         state.roles[roleIndex] = newRole;
         newParty.push(newRole);
