@@ -6,6 +6,11 @@ import { createRleImage } from '../resources/pal.js';
 let cachedEnemies = null;
 let cachedEnemyPos = null;
 
+// 步骤 0：将 16 位无符号整数转换为有符号的 16 位 short 整数，以防止数值溢出
+function toShort(val) {
+  return val > 32767 ? val - 65536 : val;
+}
+
 // 步骤 1：解析敌人表（data.mkf #1）
 // 每个 ENEMY 记录在 DOS 版本中为 70 字节
 export function loadEnemies() {
@@ -31,12 +36,12 @@ export function loadEnemies() {
       wAttackFrames: enemyData.getShort(offset + 4),
       wIdleAnimSpeed: enemyData.getShort(offset + 6),
       wActWaitFrames: enemyData.getShort(offset + 8),
-      wYPosOffset: enemyData.getShort(offset + 10),
-      wAttackSound: enemyData.getShort(offset + 12),
-      wActionSound: enemyData.getShort(offset + 14),
-      wMagicSound: enemyData.getShort(offset + 16),
-      wDeathSound: enemyData.getShort(offset + 18),
-      wCallSound: enemyData.getShort(offset + 20),
+      wYPosOffset: toShort(enemyData.getShort(offset + 10)),
+      wAttackSound: toShort(enemyData.getShort(offset + 12)),
+      wActionSound: toShort(enemyData.getShort(offset + 14)),
+      wMagicSound: toShort(enemyData.getShort(offset + 16)),
+      wDeathSound: toShort(enemyData.getShort(offset + 18)),
+      wCallSound: toShort(enemyData.getShort(offset + 20)),
       wHealth: enemyData.getShort(offset + 22),
       wExp: enemyData.getShort(offset + 24),
       wCash: enemyData.getShort(offset + 26),
@@ -47,20 +52,20 @@ export function loadEnemies() {
       wAttackEquivItemRate: enemyData.getShort(offset + 36),
       wStealItem: enemyData.getShort(offset + 38),
       nStealItem: enemyData.getShort(offset + 40),
-      wAttackStrength: enemyData.getShort(offset + 42),
-      wMagicStrength: enemyData.getShort(offset + 44),
-      wDefense: enemyData.getShort(offset + 46),
-      wDexterity: enemyData.getShort(offset + 48),
+      wAttackStrength: toShort(enemyData.getShort(offset + 42)),
+      wMagicStrength: toShort(enemyData.getShort(offset + 44)),
+      wDefense: toShort(enemyData.getShort(offset + 46)),
+      wDexterity: toShort(enemyData.getShort(offset + 48)),
       wFleeRate: enemyData.getShort(offset + 50),
       wPoisonResistance: enemyData.getShort(offset + 52),
       wElemResistance: [
-        enemyData.getShort(offset + 54),
-        enemyData.getShort(offset + 56),
-        enemyData.getShort(offset + 58),
-        enemyData.getShort(offset + 60),
-        enemyData.getShort(offset + 62)
+        toShort(enemyData.getShort(offset + 54)),
+        toShort(enemyData.getShort(offset + 56)),
+        toShort(enemyData.getShort(offset + 58)),
+        toShort(enemyData.getShort(offset + 60)),
+        toShort(enemyData.getShort(offset + 62))
       ],
-      wPhysicalResistance: enemyData.getShort(offset + 64),
+      wPhysicalResistance: toShort(enemyData.getShort(offset + 64)),
       wDualMove: enemyData.getShort(offset + 66),
       wCollectValue: enemyData.getShort(offset + 68)
     };
@@ -117,8 +122,8 @@ export function loadEnemyPos() {
     for (let j = 0; j < 5; j++) {
       const offset = (i * 5 + j) * 4;
       enemyPos[i][j] = {
-        x: posData.getShort(offset + 0),
-        y: posData.getShort(offset + 2)
+        x: toShort(posData.getShort(offset + 0)),
+        y: toShort(posData.getShort(offset + 2))
       };
     }
   }
