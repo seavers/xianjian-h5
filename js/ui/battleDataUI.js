@@ -31,6 +31,10 @@ let spritePlaySpeedMs = 150; // 默认每帧播放延时 150ms
 let enemyIdleTimer = null;
 let enemyIdleFrame = 0;
 
+// 队伍 Tab 下选中的怪物帧动画循环时钟
+let teamEnemyPlayTimer = null;
+let teamEnemyPlayFrame = 0;
+
 // 步骤 1：获取任意 MKF 文件的子块总包数
 function getMkfBlockCount(filename) {
   try {
@@ -83,12 +87,14 @@ export function closeBattleDataModal() {
   }
   stopEnemyIdleAnimation();
   stopSpritePlayTimer();
+  stopTeamEnemyPlayLoop();
 }
 
 export function switchBattleDataTab(tabName) {
   activeBattleTab = tabName;
   stopEnemyIdleAnimation();
   stopSpritePlayTimer();
+  stopTeamEnemyPlayLoop();
 
   // 选项卡切换状态高亮
   document.querySelectorAll('.battledata-tab-btn').forEach(btn => {
@@ -439,8 +445,9 @@ function renderTeamTab(container) {
               <div style="font-size: 8px; color: rgba(255,255,255,0.3);">敌人配置 ID</div>
               <div style="font-size: 10px; font-weight: bold; color: #ff3b6f;">敌人 #${enemyConfigId}</div>
             </div>
-            <div style="display:flex; justify-content: flex-end;">
-              <button onclick="switchBattleDataTab('enemy'); onBattleDataEnemySelect(${enemyConfigId});" class="btn-dbg" style="padding: 2px 8px; font-size: 8px; color: var(--glow-green); border-color: rgba(0,255,157,0.2);">属性剖析 ➔</button>
+            <div style="display:flex; justify-content: flex-end; gap: 4px;">
+              <button onclick="switchBattleDataTab('enemy'); onBattleDataEnemySelect(${enemyConfigId});" class="btn-dbg" style="padding: 2px 6px; font-size: 8px; color: var(--glow-green); border-color: rgba(0,255,157,0.2);">属性剖析 ➔</button>
+              <button onclick="window.viewEnemySpriteFramesInTeamTab(${enemyConfigId});" class="btn-dbg" style="padding: 2px 6px; font-size: 8px; color: #ff3b6f; border-color: rgba(255,59,111,0.25);">战斗图片 ➔</button>
             </div>
           </div>
         </div>
@@ -450,6 +457,9 @@ function renderTeamTab(container) {
 
   rightHtml += `
       </div>
+      
+      <!-- 展开的怪物战斗全帧动作画廊预览 -->
+      <div id="team-enemy-frames-container" style="margin-top: 12px; border-top: 1px dotted rgba(255, 255, 255, 0.08); padding-top: 10px; display: none;"></div>
     </div>
   `;
 
@@ -785,3 +795,114 @@ export function changeBattleDataSpritePlaySpeed(ms) {
 // 导出全局快捷辅助以便 index.html 直连
 window.changeBattleDataSpritePlaySpeed = changeBattleDataSpritePlaySpeed;
 window.selectSpriteFrameDirectly = selectSpriteFrameDirectly;
+
+// ==================== 👥 TAB 2.5: 队伍中敌方战斗帧动作画廊控制逻辑 ====================
+
+function stopTeamEnemyPlayLoop() {
+  if (teamEnemyPlayTimer) {
+    clearInterval(teamEnemyPlayTimer);
+    teamEnemyPlayTimer = null;
+  }
+}
+
+function startTeamEnemyPlayLoop(enemyConfigId, maxFrames) {
+  stopTeamEnemyPlayLoop();
+  teamEnemyPlayFrame = 0;
+
+  const canvas = document.getElementById('team-enemy-play-canvas');
+  const lbl = document.getElementById('team-enemy-play-lbl');
+  if (!canvas || maxFrames <= 0) return;
+
+  // 默认绘制首帧
+  drawSpriteFrameToCanvas(canvas, 'abc.mkf', enemyConfigId, 0);
+  highlightTeamEnemyThumb(0);
+
+  teamEnemyPlayTimer = setInterval(() => {
+    teamEnemyPlayFrame = (teamEnemyPlayFrame + 1) % maxFrames;
+    drawSpriteFrameToCanvas(canvas, 'abc.mkf', enemyConfigId, teamEnemyPlayFrame);
+    highlightTeamEnemyThumb(teamEnemyPlayFrame);
+    if (lbl) {
+      lbl.innerText = `当前播放: 第 ${teamEnemyPlayFrame} 帧`;
+    }
+  }, 180);
+}
+
+function highlightTeamEnemyThumb(frameId) {
+  document.querySelectorAll('.team-enemy-thumb-item').forEach(item => {
+    item.style.borderColor = 'rgba(255,255,255,0.04)';
+  });
+  const activeThumb = document.getElementById(`team-enemy-thumb-item-${frameId}`);
+  if (activeThumb) {
+    activeThumb.style.borderColor = '#ff3b6f';
+  }
+}
+
+export function viewEnemySpriteFramesInTeamTab(enemyConfigId) {
+  const container = document.getElementById('team-enemy-frames-container');
+  if (!container) return;
+
+  container.style.display = 'block';
+
+  const spriteData = loadMkf('abc.mkf', enemyConfigId);
+  const maxFrames = spriteData ? spriteData.getShort(0) : 0;
+
+  let html = `
+    <div style="font-size: 10px; font-weight: bold; color: #ff3b6f; margin-bottom: 6px; display:flex; justify-content:space-between; align-items:center;">
+      <span>👾 敌人配置 #${enemyConfigId} 战斗精灵动作全帧画廊 (共 ${maxFrames} 帧)</span>
+      <button onclick="document.getElementById('team-enemy-frames-container').style.display='none'; window.stopTeamEnemyPlayLoop();" class="btn-dbg" style="padding: 1px 6px; font-size: 8px; color: rgba(255,255,255,0.4);">隐藏画廊 ✕</button>
+    </div>
+    <div style="display: flex; gap: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.03); padding: 8px; border-radius: 4px;">
+      <!-- 左侧：动态循环播放 Canvas -->
+      <div style="width: 100px; height: 100px; background: rgba(5,5,8,0.7); border: 1px solid rgba(255,255,255,0.06); border-radius: 2px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+        <canvas id="team-enemy-play-canvas" width="80" height="80" style="image-rendering: pixelated; width: 80px; height: 80px;"></canvas>
+        <span id="team-enemy-play-lbl" style="font-size: 7.5px; color:rgba(255,255,255,0.3); margin-top:2px;">第 0 帧</span>
+      </div>
+      <!-- 右侧：全帧平铺缩略图，滚动横轴 -->
+      <div style="flex: 1; overflow-x: auto; display: flex; gap: 6px; padding-bottom: 4px;" id="team-enemy-thumbs-scroll">
+  `;
+
+  for (let fIdx = 0; fIdx < maxFrames; fIdx++) {
+    html += `
+      <div onclick="window.selectTeamEnemyPlayFrame(${enemyConfigId}, ${fIdx})" class="team-enemy-thumb-item" id="team-enemy-thumb-item-${fIdx}" style="flex-shrink:0; border: 1px solid rgba(255,255,255,0.04); background: rgba(0,0,0,0.4); border-radius: 2px; padding: 4px; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; width: 56px; transition: all 0.1s;">
+        <canvas id="team-enemy-thumb-canvas-${fIdx}" width="40" height="40" style="image-rendering: pixelated; width: 40px; height: 40px; background: rgba(0,0,0,0.5);"></canvas>
+        <span style="font-size: 7.5px; color: rgba(255,255,255,0.35);">第 ${fIdx} 帧</span>
+      </div>
+    `;
+  }
+
+  html += `
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  // 渲染所有缩略图
+  for (let fIdx = 0; fIdx < maxFrames; fIdx++) {
+    const thumbCanvas = document.getElementById(`team-enemy-thumb-canvas-${fIdx}`);
+    if (thumbCanvas) {
+      drawSpriteFrameToCanvas(thumbCanvas, 'abc.mkf', enemyConfigId, fIdx);
+    }
+  }
+
+  // 开启小播放循环
+  startTeamEnemyPlayLoop(enemyConfigId, maxFrames);
+}
+
+export function selectTeamEnemyPlayFrame(enemyConfigId, frameId) {
+  stopTeamEnemyPlayLoop();
+
+  const canvas = document.getElementById('team-enemy-play-canvas');
+  const lbl = document.getElementById('team-enemy-play-lbl');
+  if (canvas) {
+    drawSpriteFrameToCanvas(canvas, 'abc.mkf', enemyConfigId, frameId);
+  }
+  highlightTeamEnemyThumb(frameId);
+  if (lbl) {
+    lbl.innerText = `第 ${frameId} 帧 (已暂停)`;
+  }
+}
+
+window.viewEnemySpriteFramesInTeamTab = viewEnemySpriteFramesInTeamTab;
+window.selectTeamEnemyPlayFrame = selectTeamEnemyPlayFrame;
+window.stopTeamEnemyPlayLoop = stopTeamEnemyPlayLoop;
