@@ -311,6 +311,35 @@ export function saveArchive(slotId, callback) {
     }
   }
 
+  // 步骤 3.8：写入角色状态与装备等战斗属性 PlayerRoles (offset 508)
+  for (let i = 0; i < 6; i++) {
+    const role = state.roles[i];
+    if (role) {
+      view.setUint16(508 + 72 + i * 2, role.level || 0, true);
+      view.setUint16(508 + 84 + i * 2, role.maxHp || 0, true);
+      view.setUint16(508 + 96 + i * 2, role.maxMp || 0, true);
+      view.setUint16(508 + 108 + i * 2, role.hp || 0, true);
+      view.setUint16(508 + 120 + i * 2, role.mp || 0, true);
+
+      for (let part = 0; part < 6; part++) {
+        const eqId = role.equipments ? role.equipments[part] : 0;
+        view.setUint16(508 + 132 + part * 12 + i * 2, eqId || 0, true);
+      }
+
+      view.setUint16(508 + 204 + i * 2, role.attackStrength || 0, true);
+      view.setUint16(508 + 216 + i * 2, role.magicStrength || 0, true);
+      view.setUint16(508 + 228 + i * 2, role.defense || 0, true);
+      view.setUint16(508 + 240 + i * 2, role.dexterity || 0, true);
+      view.setUint16(508 + 252 + i * 2, role.fleeRate || 0, true);
+      view.setUint16(508 + 264 + i * 2, role.poisonResistance || 0, true);
+
+      for (let m = 0; m < 32; m++) {
+        const magicId = (role.magics && role.magics[m]) || 0;
+        view.setUint16(508 + 384 + m * 12 + i * 2, magicId, true);
+      }
+    }
+  }
+
   // 步骤 4：重构背包道具 rgInventory (offset 1728)
   const itemCounts = {};
   for (const itemId of state.ownItems) {
@@ -488,7 +517,113 @@ function parseSaveData(byteArray) {
   
   view.skipByte(30); // rgTrail (5 * 6B)
   view.skipByte(384); // Exp (ALLEXPERIENCE: 384B)
-  view.skipByte(900); // PlayerRoles (900B)
+
+  // 读取并填充主角/队员战斗属性 (PlayerRoles: 900B)
+  const prView = view.nextView();
+  view.skipByte(900);
+
+  const rgwAvatar = prView.nextShortArray(6);
+  const rgwSpriteNumInBattle = prView.nextShortArray(6);
+  const rgwSpriteNum = prView.nextShortArray(6);
+  const rgwName = prView.nextShortArray(6);
+  const rgwAttackAll = prView.nextShortArray(6);
+  prView.skipByte(12); // rgwUnknown1 (6 * 2B = 12B)
+  const rgwLevel = prView.nextShortArray(6);
+  const rgwMaxHP = prView.nextShortArray(6);
+  const rgwMaxMP = prView.nextShortArray(6);
+  const rgwHP = prView.nextShortArray(6);
+  const rgwMP = prView.nextShortArray(6);
+
+  const rgwEquipment = [];
+  for (let part = 0; part < 6; part++) {
+    rgwEquipment[part] = prView.nextShortArray(6);
+  }
+
+  const rgwAttackStrength = prView.nextShortArray(6);
+  const rgwMagicStrength = prView.nextShortArray(6);
+  const rgwDefense = prView.nextShortArray(6);
+  const rgwDexterity = prView.nextShortArray(6);
+  const rgwFleeRate = prView.nextShortArray(6);
+  const rgwPoisonResistance = prView.nextShortArray(6);
+
+  const rgwElementalResistance = [];
+  for (let elem = 0; elem < 5; elem++) {
+    rgwElementalResistance[elem] = prView.nextShortArray(6);
+  }
+
+  prView.skipByte(36); // rgwUnknown2, 3, 4 (3 * 12B = 36B)
+  const rgwCoveredBy = prView.nextShortArray(6);
+
+  const rgwMagic = [];
+  for (let m = 0; m < 32; m++) {
+    rgwMagic[m] = prView.nextShortArray(6);
+  }
+
+  const rgwWalkFrames = prView.nextShortArray(6);
+  const rgwCooperativeMagic = prView.nextShortArray(6);
+  prView.skipByte(24); // rgwUnknown5, 6 (2 * 12B = 24B)
+  const rgwDeathSound = prView.nextShortArray(6);
+  const rgwAttackSound = prView.nextShortArray(6);
+  const rgwWeaponSound = prView.nextShortArray(6);
+  const rgwCriticalSound = prView.nextShortArray(6);
+  const rgwMagicSound = prView.nextShortArray(6);
+  const rgwCoverSound = prView.nextShortArray(6);
+  const rgwDyingSound = prView.nextShortArray(6);
+
+  for (let i = 0; i < 6; i++) {
+    let role = state.roles[i];
+    if (!role) {
+      role = { type: 'role', index: i, count: 0 };
+      state.roles[i] = role;
+    }
+    role.avatar = rgwAvatar[i];
+    role.spriteNumInBattle = rgwSpriteNumInBattle[i];
+    role.spriteNum = rgwSpriteNum[i];
+    role.nameId = rgwName[i];
+    role.attackAll = rgwAttackAll[i];
+    role.level = rgwLevel[i];
+    role.maxHp = rgwMaxHP[i];
+    role.maxMp = rgwMaxMP[i];
+    role.hp = rgwHP[i];
+    role.mp = rgwMP[i];
+
+    role.equipments = {};
+    for (let part = 0; part < 6; part++) {
+      role.equipments[part] = rgwEquipment[part][i];
+    }
+
+    role.attackStrength = rgwAttackStrength[i];
+    role.magicStrength = rgwMagicStrength[i];
+    role.defense = rgwDefense[i];
+    role.dexterity = rgwDexterity[i];
+    role.fleeRate = rgwFleeRate[i];
+    role.poisonResistance = rgwPoisonResistance[i];
+
+    role.elementalResistance = [];
+    for (let elem = 0; elem < 5; elem++) {
+      role.elementalResistance[elem] = rgwElementalResistance[elem][i];
+    }
+
+    role.coveredBy = rgwCoveredBy[i];
+
+    role.magics = [];
+    for (let m = 0; m < 32; m++) {
+      const magicId = rgwMagic[m][i];
+      if (magicId !== 0) {
+        role.magics.push(magicId);
+      }
+    }
+
+    role.cooperativeMagic = rgwCooperativeMagic[i];
+    role.deathSound = rgwDeathSound[i];
+    role.attackSound = rgwAttackSound[i];
+    role.weaponSound = rgwWeaponSound[i];
+    role.criticalSound = rgwCriticalSound[i];
+    role.magicSound = rgwMagicSound[i];
+    role.coverSound = rgwCoverSound[i];
+    role.dyingSound = rgwDyingSound[i];
+  }
+
   view.skipByte(320); // rgPoisonStatus (320B)
 
   // 3. 读取背包道具 rgInventory (256 * 6B)

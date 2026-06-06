@@ -47,6 +47,14 @@ if (typeof document !== 'undefined') {
 
     const mode = state.currentMode;
 
+    if (mode === 'battle') {
+      ev.preventDefault();
+      if (window.Battle && window.Battle.onInput) {
+        window.Battle.onInput(input);
+      }
+      return;
+    }
+
     // 步骤 1：启动或菜单模式，交由 ESC 模块处理
     if (mode === 'startup' || mode === 'esc') {
       ev.preventDefault();
@@ -163,7 +171,11 @@ if (typeof document !== 'undefined') {
     if (!input) return;
 
     // 步骤 3：分发触屏输入
-    if (mode === 'startup' || mode === 'esc') {
+    if (mode === 'battle') {
+      if (window.Battle && window.Battle.onInput) {
+        window.Battle.onInput(input);
+      }
+    } else if (mode === 'startup' || mode === 'esc') {
       ESC.onInput(input);
     } else if (mode === 'game') {
       handleGameInput(input, ev);

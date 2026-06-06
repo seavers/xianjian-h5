@@ -1180,25 +1180,33 @@ export function inflictDamage(allEnemies, damage) {
 
 export async function startBattle(battleId, failScriptId, fleeScriptId) {
   // 步骤 1：输出战斗启动的详细调试日志，表明当前的战斗 ID 以及对应的跳转分支
-  console.log(`[0x07 startBattle] 开始战斗 (Battle ID: ${battleId}, 战败跳转: ${failScriptId}, 逃跑跳转: ${fleeScriptId})`);
+  console.log(`[0x07 startBattle] 开始战斗 (Battle ID: ${battleId}, 战败跳转: ${failScriptId}, flee: ${fleeScriptId})`);
 
-  // 步骤 2：使用弹窗提示让用户选择战斗结果，以便支持游戏内的必败剧情或逃跑剧情分支
-  let victory = true;
-  if (typeof window !== 'undefined' && window.confirm) {
-    victory = window.confirm(`[触发战斗 ID: ${battleId}]\n点击【确定】模拟战斗胜利，点击【取消】模拟战斗逃跑/战败。`);
+  let victory = false;
+
+  // 步骤 2：判断是否已引入真实的战斗系统，若有则调用并异步挂起，直到战斗正常结束并返回胜负结果
+  if (window.Battle && typeof window.Battle.start === 'function') {
+    victory = await window.Battle.start(battleId, failScriptId, fleeScriptId);
+  } else {
+    // 降级使用弹窗模拟，以防开发期模块未载入
+    if (typeof window !== 'undefined' && window.confirm) {
+      victory = window.confirm(`[触发战斗 ID: ${battleId}]\n点击【确定】模拟战斗胜利，点击【取消】模拟战斗逃跑/战败。`);
+    } else {
+      victory = true;
+    }
   }
 
   // 步骤 3：根据选择的结果，若模拟失败/逃跑且对应分支存在，则精准跳转到对应的剧情脚本分支
   if (!victory) {
     if (fleeScriptId) {
-      console.log(`[0x07 startBattle] 模拟战斗逃跑，跳转至逃跑分支: ${fleeScriptId}`);
+      console.log(`[0x07 startBattle] 战斗逃跑，跳转至逃跑分支: ${fleeScriptId}`);
       return fleeScriptId;
     } else if (failScriptId) {
-      console.log(`[0x07 startBattle] 模拟战斗战败，跳转至战败分支: ${failScriptId}`);
+      console.log(`[0x07 startBattle] 战斗战败，跳转至战败分支: ${failScriptId}`);
       return failScriptId;
     }
   } else {
-    console.log(`[0x07 startBattle] 模拟战斗胜利，继续后续主线剧情。`);
+    console.log(`[0x07 startBattle] 战斗胜利，继续后续主线剧情。`);
   }
 }
 

@@ -57,6 +57,8 @@ const files = [
   ['abc.mkf'],        
   ['ball.mkf'],       // 物品类
   ['rng.mkf'],        // 全屏动画
+  ['f.mkf'],          // 战斗角色动画
+  ['fire.mkf'],       // 技能法术动画
 ];
 
 export const file_caches = {}; // key -> ByteArray

@@ -9,6 +9,7 @@ import { Script } from './engine/script.js';
 import { updateCount, update as updateGameScreen } from './ui/draw.js';
 import { loadArchive } from './esc/archive.js';
 import './ui/input.js';
+import * as Battle from './battle/battle.js';
 import { sleep } from './utils/timer.js';
 
 // 获取 URL 参数是否为 debug 模式
@@ -169,6 +170,7 @@ ready(() => {
   window.state = state;
   window.toggleScene = toggleScene;
   window.setRolePos = setRolePos;
+  window.Battle = Battle;
 
   if (!DEBUG) {
     state.currentMode = 'startup';
