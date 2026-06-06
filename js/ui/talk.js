@@ -13,7 +13,6 @@ let tips = false;
 let message = false;
 let tx = 0;
 let ty = 0;
-let color = null;
 
 let talkPosition = 'up';
 
@@ -98,14 +97,12 @@ function showTips() {
   tips = true;
   tx = 80;
   ty = 40;
-  color = null;
 }
 
 function showMessage() {
   message = true;
   tx = 160;
   ty = 40;
-  color = null;
 }
 
 export async function drawTalk(msgId) {
@@ -207,6 +204,8 @@ async function drawLine(text, x, y) {
 }
 
 function calcText(text) {
+  let color = null;
+
   const r = [];
   for (let i = 0; i < text.length; i++) {
     const b = text.getByte(i);
