@@ -1,5 +1,4 @@
 import { state } from '../engine/state.js';
-import { Lang } from '../utils/lang.js';
 import { Script } from '../engine/script.js';
 import { loadMsg, loadWord, loadPic, loadRgm } from '../resources/pal.js';
 
@@ -399,7 +398,7 @@ async function drawLineSync(texts, x, y, t, showArrow = true) {
     
     await waitKey();
     resetTalk();
-    updateTalk();
+    clearDraw();
   }
 }
 

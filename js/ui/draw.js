@@ -437,14 +437,6 @@ export function update(refreshBack, callback) {
   if (callback) callback();
 }
 
-export function updateTalk() {
-  const talkCtx = state.contexts.talk;
-  if (talkCtx) {
-    talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
-  }
-  updateCount[2]++;
-}
-
 // 0能走, 1不能走
 export function canWalk(x, y, half) {
   const data = loadMap(state.mapId);

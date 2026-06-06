@@ -205,16 +205,24 @@ ready(() => {
     }, 2000);
   }
 
-  // 5. 资源就绪及初始化完毕后，正式开启 setInterval 驱动的主循环，150ms 周期执行一次
-  setTimeout(async () => {
+  // 5. 资源就绪及初始化完毕后，正式开启主循环
+  setTimeout(executeMainLoop, 1);
+});
+
+// setInterval 驱动的主循环，150ms 周期执行一次
+async function executeMainLoop() {
+  try {
     let loopIndex = 0;
     while(true) {
       // console.log(++loopIndex, '执行主循环')
       await Script.mainLoop();
       await sleep(150);
     }
-  }, 1);
-});
+  } catch (e) {
+    alert('游戏异常: ' + e.message);
+    throw e;
+  }
+}
 
 function commonEnter() {
   setRoleTile(0, 0x2, 0);     // 李逍遥动作形象
