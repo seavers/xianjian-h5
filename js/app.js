@@ -169,8 +169,11 @@ ready(() => {
   window.setRolePos = setRolePos;
 
   if (!DEBUG) {
+    state.currentMode = 'startup';
     ESC.onStartup();
   } else {
+    state.currentMode = 'game';
+
     // 步骤 1：挂起主循环，防止读档完成前主逻辑提前步进
     state.isPaused = true;
 
