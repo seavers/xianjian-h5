@@ -1010,26 +1010,32 @@ export function toggleScene(sceneId) {
   }
 }
 
-export function finishCode(param1, param2, param3, thread) {
-  Script.finish(this, thread);
+export function finishCode() {
+  return {endFlag: true, nextScriptId: -1};
 }
 
-export function stopCode(param1, param2, param3, thread) {
-  Script.stop(undefined, thread);
+export function stopCode() {
+  return {endFlag: true, nextScriptId: null};
 }
 
-export function changeScript(param1, param2, param3, thread) {
+export function changeScript(scriptId, counter, param3, thread) {
+  if (counter == 0) {
+    return scriptId;
+  }
+
   if (!thread) return;
-  const countKey = thread.type === 'auto' ? 'wScriptIdleFrameCountAuto' : 'nScriptIdleFrame';
+  const countKey = thread.type === 'auto' ? 'scriptIdleFrameCountAuto' : 'scriptIdleFrame';
   if (!thread.obj[countKey]) {
     thread.obj[countKey] = 0;
   }
-  if (!param2 || ++thread.obj[countKey] < param2) {
-    thread.finish = true;
-    thread.scriptId = param1;
+
+  if (++thread.obj[countKey] < counter) {
+    return {endFlag: true, nextScriptId: scriptId};
   } else {
     thread.obj[countKey] = 0;
-    thread.scriptId++;
+
+    // execute next
+    return;
   }
 }
 

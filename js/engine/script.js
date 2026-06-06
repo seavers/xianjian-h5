@@ -143,30 +143,15 @@ export const Script = {
     } else {
       obj.thread = thread;
     }
-
-    // 刷新 UI
-    if (window.onThreadsUpdate) {
-      window.onThreadsUpdate();
-    }
   },
 
   finish(obj, thread) {
-    if (window.onThreadsUpdate) {
-      window.onThreadsUpdate();
-    }
   },
 
   stop(scriptId, thread) {
-    if (window.onThreadsUpdate) {
-      window.onThreadsUpdate();
-    }
   },
 
   next(scriptId) {
-    const thread = Script.activeThread;
-    if (thread) {
-      thread.scriptId = scriptId;
-    }
   },
 
   // 步进执行动画/步态进度。如果动画正在进行则返回剩余步数，全部执行完毕则返回 0
@@ -289,35 +274,30 @@ export const Script = {
       const tab = thread.type.charAt(0).toUpperCase();
       console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${scriptEntry}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
-      if (code.func) {
-        const ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3, thread);
-        if (typeof ret === 'number' && ret > 0) {
-          scriptEntry = ret;
-          continue;
-        } else if (ret === 0) {
-          continue;
-        }
+      if (!code.func) {
+        // 指令还没有支持，跳过 
+        return scriptEntry + 1;
       }
 
-      if (script.code === 0x08) {
-        startScriptId = scriptEntry + 1;
+      let ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3, thread);
+      if (typeof ret === 'object') {
+        endFlag = ret.endFlag;
+        ret = ret.nextScriptId;
       }
 
-      // 步骤 2：针对 STOP 类型指令设置 endFlag 控制变量终止当前 Tick
-      if (script.code === 0x00) {
-        endFlag = true;
-        return startScriptId;
-      } else if (script.code === 0x01) {
-        scriptEntry++;
-        endFlag = true;
-        return scriptEntry;
-      } else if (script.code === 0x02) {
-        endFlag = true;
-        return scriptEntry;
+      if (ret == null) {
+        scriptEntry = scriptEntry + 1;
+      } else if (ret === -1) {
+        scriptEntry = startScriptId;
+      } else if (ret > 0) {
+        scriptEntry = ret;
+      } else if (ret === 0) {
+        // 还是执行当前脚本，但可能是退出指令
+        continue;
       } else {
-        scriptEntry++;
+        // 留着给特殊情况，这里先走下一步
+        scriptEntry = scriptEntry + 1;
       }
-      
       thread.scriptId = scriptEntry;
     }
 
@@ -377,25 +357,24 @@ export const Script = {
       return scriptEntry + 1;
     }
 
-    const ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3, thread);
-    if (typeof ret === 'number' && ret > 0) {
-      scriptEntry = ret;
-      return ret;
-    } if (ret === 0) {
-      // scriptEntry 与 thread.scriptId 都不动
-      return scriptEntry;
+    let ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3, thread);
+    if (typeof ret === 'object') {
+      ret = ret.nextScriptId;
     }
-
-    // 步骤 2.8：处理单条指令步进完毕后的指令指针更新，跳段、STOP 系列指令判定
-    if (script.code === 0x00) {
+    
+    if (ret == null) {
+      return scriptEntry + 1;
+    } else if (ret == -1) {
       o.autoScr = null;
       return null;
-    } else if (script.code === 0x01) {
-      return scriptEntry + 1;
-    } else if (script.code === 0x02) {
+    } else if (ret > 0) {
+      return ret;
+    } else if (ret === 0) {
+      // scriptEntry 与 thread.scriptId 都不动
       return scriptEntry;
     } else {
-      return scriptEntry + 1;
+      // 留着给特殊情况，这里先走下一步
+      scriptEntry = scriptEntry + 1;
     }
   },
 
