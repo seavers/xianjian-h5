@@ -1,6 +1,6 @@
 import { loadBall } from '../../../resources/pal.js';
 import { state } from '../../../engine/state.js';
-import { getDetailedItemInfo } from '../catalog.js';
+import { getDetailedItemInfo } from '../../../data/gameData/items.js';
 import { drawPixelated, getItemNameHtml } from '../helpers.js';
 import { gameDataStore } from '../store.js';
 

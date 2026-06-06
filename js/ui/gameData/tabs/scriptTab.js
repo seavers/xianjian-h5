@@ -1,6 +1,7 @@
 import { state } from '../../../engine/state.js';
 import { scriptCodes } from '../../../engine/command.js';
-import { getCommandName, getInstructionChineseDetail, makeScriptHyperlinks } from '../helpers.js';
+import { getCommandName, getInstructionChineseDetail } from '../../../data/gameData/scripts.js';
+import { makeScriptHyperlinks } from '../helpers.js';
 import { gameDataStore } from '../store.js';
 
 export function renderScriptTab(container) {

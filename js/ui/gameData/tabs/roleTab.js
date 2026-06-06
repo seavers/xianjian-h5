@@ -1,6 +1,6 @@
 import { loadMgo, loadMgoCount, loadRgm } from '../../../resources/pal.js';
 import { state } from '../../../engine/state.js';
-import { ROLES_DB } from '../catalog.js';
+import { ROLES_DB } from '../../../data/gameData/roles.js';
 import { drawPixelated } from '../helpers.js';
 import { gameDataStore } from '../store.js';
 
