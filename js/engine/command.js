@@ -467,7 +467,9 @@ export function setNpcDir(dir) {
     this.frame = dir;
   } else {
     this.dir = dir;
-    //refreshRoleCount(this);
+
+    // 这里得刷新，不然场景1的9号脚本有问题
+    refreshRoleCount(this);
   }
 }
 
