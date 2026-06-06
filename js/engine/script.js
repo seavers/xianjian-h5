@@ -55,12 +55,11 @@ export const Script = {
     }
 
     // 步骤 4：检测是否有延迟触发的 trigger 交互脚本需要激活
-    if (state.nextTriggerScriptId !== undefined && state.nextTriggerScriptId !== null && state.nextTriggerScriptId !== -1) {
-      const scriptId = state.nextTriggerScriptId;
+    if (state.nextTriggerScriptObject != null) {
       const obj = state.nextTriggerScriptObject;
+      const scriptId = obj.trigScr;
       
       // 重置延迟触发器状态
-      state.nextTriggerScriptId = -1;
       state.nextTriggerScriptObject = null;
       
       Script.start(scriptId, obj, 'trig');
