@@ -10,41 +10,6 @@ import { playRng } from './rng.js';
 import { playMusic, stopMusic as stopBgMusic } from '../resources/music.js';
 import { playSound } from '../resources/sound.js';
 
-// 获取当前上下文的角色索引，优先匹配 this 或活跃阻塞线程的绑定主体，最后默认为主角 (0)
-function getRoleIndex(obj) {
-  if (obj && obj.type === 'role') {
-    return obj.index;
-  }
-  const activeObj = Script.activeThread?.obj;
-  if (activeObj && activeObj.type === 'role') {
-    return activeObj.index;
-  }
-  return 0;
-}
-
-// 统一包装单步动作指令调度，自动识别并分发 auto 漫游和 trigger/scene 阻塞式执行流
-// 统一包装单步动作指令调度，在当前指令中 await 循环，直至动作完成，走 stepAutoAndUpdate
-export async function stepAction(obj, actionFunc) {
-  if (obj.type == 'npc') {
-    const res = actionFunc();
-    if (res > 0) {
-      // 返回 0 表示继续当前这一条，返回 null 就是下一条
-      return 0;
-    }
-  }
-
-  while (true) {
-    const res = actionFunc();
-    if (res === 0) {
-      break;
-    }
-    await Script.stepAutoAndUpdate();
-    await new Promise(resolve => setTimeout(resolve, 150));
-  }
-}
-
-
-
 export function setRolePos(sx, sy, shalf) {
   state.mx = sx;
   state.my = sy;
@@ -1051,15 +1016,8 @@ export async function subScript(scriptId, objId) {
     targetObj = state.eventObjects[objId];
   }
 
-  // 步骤 2：直接调用 runTriggerScript，通过 try...finally 实现完全线性的异步调用栈
-  const parentThread = Script.activeThread;
-  const subThread = new Thread(scriptId, targetObj || parentThread?.obj, parentThread?.type || 'trig');
-  Script.activeThread = subThread;
-  try {
-    await Script.runTriggerScript(subThread);
-  } finally {
-    Script.activeThread = parentThread;
-  }
+  // 步骤 2：直接调用 runTriggerScript
+  await Script.runTriggerScript(scriptId, targetObj, 'sub');
 }
 
 export function randomScript(base, scriptId) {
@@ -1644,6 +1602,41 @@ export function removePlayerStatus(statusId) {
     window.onSceneUpdate();
   }
 }
+
+// 获取当前上下文的角色索引，优先匹配 this 或活跃阻塞线程的绑定主体，最后默认为主角 (0)
+function getRoleIndex(obj) {
+  if (obj && obj.type === 'role') {
+    return obj.index;
+  }
+  const activeObj = Script.activeThread?.obj;
+  if (activeObj && activeObj.type === 'role') {
+    return activeObj.index;
+  }
+  return 0;
+}
+
+// 统一包装单步动作指令调度，自动识别并分发 auto 漫游和 trigger/scene 阻塞式执行流
+// 统一包装单步动作指令调度，在当前指令中 await 循环，直至动作完成，走 stepAutoAndUpdate
+async function stepAction(obj, actionFunc) {
+  if (obj.type == 'npc') {
+    const res = actionFunc();
+    if (res > 0) {
+      // 返回 0 表示继续当前这一条，返回 null 就是下一条
+      return 0;
+    }
+  }
+
+  while (true) {
+    const res = actionFunc();
+    if (res === 0) {
+      break;
+    }
+    await Script.stepAutoAndUpdate();
+    await new Promise(resolve => setTimeout(resolve, 150));
+  }
+}
+
+
 
 // 脚本指令集注册表
 export const scriptCodes = [];

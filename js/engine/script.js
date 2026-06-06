@@ -83,7 +83,7 @@ export const Script = {
     // 步骤 5：步进当前活跃的非 auto 类主线程（进入场景脚本、交互触发脚本等）
     const t = Script.activeThread;
     if (t) {
-      const nextId = await this.runTriggerScript(t);
+      const nextId = await this.runTriggerScript(t.scriptId, t.obj, t.type);
       if (t.type === 'scene') {
         t.obj.enterScriptId = nextId;
       } else if (t.type === 'trig') {
@@ -143,15 +143,6 @@ export const Script = {
     } else {
       obj.thread = thread;
     }
-  },
-
-  finish(obj, thread) {
-  },
-
-  stop(scriptId, thread) {
-  },
-
-  next(scriptId) {
   },
 
   // 步进执行动画/步态进度。如果动画正在进行则返回剩余步数，全部执行完毕则返回 0
@@ -214,25 +205,22 @@ export const Script = {
   },
 
   // 集中推进非 auto 类型的阻塞脚本主线程，运行 While 指令解析循环
-  async runTriggerScript(thread) {
-    let startScriptId = thread.scriptId;
-    let scriptEntry = thread.scriptId;
+  async runTriggerScript(startScriptId, obj, type) {
+    let scriptEntry = startScriptId;
+    
     let endFlag = false;
-
     while (!endFlag) {
       // 1. 核心单步调试拦截点
-      if (window.STEP_DEBUG && thread.type !== 'auto') {
-        window.ACTIVE_DEBUG_THREAD = thread;
+      if (window.STEP_DEBUG) {
         if (window.onStepDebugPause) {
-          await window.onStepDebugPause(thread);
+          await window.onStepDebugPause(obj, scriptEntry);
         }
-        break;
       }
 
+      // 2. 读取当前指令
       const script = state.scripts[scriptEntry];
       if (!script) {
-        console.warn(`Thread #${thread.id} scriptId: ${scriptEntry} 越界`);
-        thread.finish = true;
+        console.warn(`脚本越界 ${scriptEntry}`);
         break;
       }
 
@@ -241,10 +229,9 @@ export const Script = {
 
       // 记录到全局状态机中的 scriptLogs，供右侧 Dashboard 实时渲染
       const logItem = {
-        id: thread.id,
-        npcId: thread.obj ? thread.obj.id : '无',
-        roleId: thread.obj && typeof thread.obj.mgoId === 'number' ? thread.obj.mgoId : null,
-        type: thread.type,
+        npcId: obj ? obj.id : '无',
+        roleId: obj && typeof obj.mgoId === 'number' ? obj.mgoId : null,
+        type: type,
         scriptId: scriptEntry,
         code: script.code,
         hexCode: '0x' + Hex.toHex(script.code),
@@ -266,20 +253,20 @@ export const Script = {
       }
 
       if (!code) {
-        console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${scriptEntry}]: execute ${Hex.toHex(script.code)}`);
+        console.warn(`[warn] [NPC ${obj?.id || '无'} scriptId:${scriptEntry}]: execute ${Hex.toHex(script.code)}`);
         scriptEntry++; // 未知指令跳过
         continue;
       }
 
       const tab = thread.type.charAt(0).toUpperCase();
-      console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${scriptEntry}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
+      console.log(`[info] [${tab} NPC:${obj?.id || '无'} IP:${scriptEntry}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
       if (!code.func) {
         // 指令还没有支持，跳过 
         return scriptEntry + 1;
       }
 
-      let ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3, thread);
+      let ret = await code.func.call(obj, script.param1, script.param2, script.param3, thread);
       if (typeof ret === 'object') {
         endFlag = ret.endFlag;
         ret = ret.nextScriptId;
@@ -320,8 +307,8 @@ export const Script = {
     // 记录到全局状态机中的 scriptLogs，供右侧 Dashboard 实时渲染
     const logItem = {
       id: thread.id,
-      npcId: thread.obj ? thread.obj.id : '无',
-      mgoId: thread.obj && typeof thread.obj.mgoId === 'number' ? thread.obj.mgoId : null,
+      npcId: obj ? obj.id : '无',
+      mgoId: obj && typeof obj.mgoId === 'number' ? obj.mgoId : null,
       type: thread.type,
       scriptId: thread.scriptId,
       code: script.code,
@@ -344,12 +331,12 @@ export const Script = {
     }
 
     if (!code) {
-      console.warn(`[warn] [NPC ${thread.obj?.id || '无'} scriptId:${thread.scriptId}]: execute ${Hex.toHex(script.code)}`);
+      console.warn(`[warn] [NPC ${obj?.id || '无'} scriptId:${thread.scriptId}]: execute ${Hex.toHex(script.code)}`);
       return thread.scriptId + 1;
     }
 
     const tab = thread.type.charAt(0).toUpperCase();
-    console.log(`[info] [${tab} NPC:${thread.obj?.id || '无'} IP:${thread.scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
+    console.log(`[info] [${tab} NPC:${obj?.id || '无'} IP:${thread.scriptId}]: execute 0x${Hex.toHex(script.code)} - ${desc}`);
 
     let scriptEntry = thread.scriptId;
     if (!code.func) {
@@ -357,7 +344,7 @@ export const Script = {
       return scriptEntry + 1;
     }
 
-    let ret = await code.func.call(thread.obj, script.param1, script.param2, script.param3, thread);
+    let ret = await code.func.call(obj, script.param1, script.param2, script.param3, thread);
     if (typeof ret === 'object') {
       ret = ret.nextScriptId;
     }
