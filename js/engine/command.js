@@ -639,7 +639,7 @@ function loadFrameCount(obj) {
 }
 
 export function replaceObject() {
-  return 0;
+  // 步骤 1：替换并终结脚本实体，不返回任何值以正常推进指令流
 }
 
 export async function moveViewport(dx, dy, frameCount) {
@@ -652,7 +652,7 @@ export async function moveViewport(dx, dy, frameCount) {
     if (window.onSceneUpdate) {
       window.onSceneUpdate();
     }
-    return 0;
+    return;
   }
 
   // 步骤 2：若 frameCount 为 0xFFFF，代表立即定位视口到指定的绝对瓦片坐标处
@@ -663,7 +663,7 @@ export async function moveViewport(dx, dy, frameCount) {
     if (window.onSceneUpdate) {
       window.onSceneUpdate();
     }
-    return 0;
+    return;
   }
 
   // 步骤 3：否则进入平移动画模式，每逻辑帧以 speedX 和 speedY 偏移量移动视口，总共持续 frameCount 帧
@@ -1045,8 +1045,15 @@ export async function subScript(scriptId, objId) {
     targetObj = state.eventObjects[objId];
   }
 
-  // 步骤 2：启动子程序，并传入确定的目标实体对象以满足对象重定向的需求，使用 await 进行阻塞等待
-  await Script.sub(scriptId, targetObj);
+  // 步骤 2：直接调用 runTriggerScript，通过 try...finally 实现完全线性的异步调用栈
+  const parentThread = Script.activeThread;
+  const subThread = new Thread(scriptId, targetObj || parentThread?.obj, parentThread?.type || 'trig');
+  Script.activeThread = subThread;
+  try {
+    await Script.runTriggerScript(subThread);
+  } finally {
+    Script.activeThread = parentThread;
+  }
 }
 
 export function randomScript(base, scriptId) {

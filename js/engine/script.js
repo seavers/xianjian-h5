@@ -89,6 +89,11 @@ export const Script = {
       } else if (t.type === 'trig') {
         t.obj.trigScr = nextId;
       }
+
+      // 如果当前主线程执行完毕（未被 subScript 子脚本切换或退栈），将其置空以安全出栈
+      if (Script.activeThread === t) {
+        Script.activeThread = null;
+      }
     }
     
     // 步骤 6：步进 auto NPC 漫游并统一重绘刷新
@@ -383,7 +388,8 @@ export const Script = {
 
     // 步骤 2.8：处理单条指令步进完毕后的指令指针更新，跳段、STOP 系列指令判定
     if (script.code === 0x00) {
-      return scriptEntry;
+      o.autoScr = null;
+      return null;
     } else if (script.code === 0x01) {
       return scriptEntry + 1;
     } else if (script.code === 0x02) {
@@ -395,13 +401,13 @@ export const Script = {
 
   // 步进所有 auto NPC 并更新屏幕画面
   async stepAutoAndUpdate() {
-    // 步骤 1：遍历所有的 NPC 事件物体并单步执行其 auto 脚本 (增加 thread.running 标记防止多层 await 递归重入)
+    // 步骤 1：遍历所有的 NPC 事件物体并单步执行其 auto 脚本 (传参由 o.thread 修正为 o)
     for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
       const o = state.eventObjects[i];
       if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc' || o.nouse !== 0) continue;
 
       if (o.autoScr) {
-        const ret = await Script.stepOneInstruction(o.thread);
+        const ret = await Script.stepOneInstruction(o);
         o.autoScr = ret;
       }
     }
