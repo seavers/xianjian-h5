@@ -4197,6 +4197,41 @@
 					}
 				});
 
+				// 双击瞬间移动主角并关闭大地图
+				mapCanvas.addEventListener('dblclick', (event) => {
+					// 步骤 1：获取点击位置并换算为大地图的像素坐标与瓦片网格坐标
+					const rect = mapCanvas.getBoundingClientRect();
+					const clickX = (event.clientX - rect.left) / mapZoomLevel;
+					const clickY = (event.clientY - rect.top) / mapZoomLevel;
+
+					const mapX = clickX - 32;
+					const mapY = clickY - 32;
+
+					let mx = Math.floor(mapX / 32);
+					let my = Math.floor(mapY / 16);
+					let mhalf = Math.round((mapX - mx * 32) / 16);
+
+					if (mhalf < 0) mhalf = 0;
+					if (mhalf > 1) mhalf = 1;
+					if (mx < 0) mx = 0;
+					if (mx > 127) mx = 127;
+					if (my < 0) my = 0;
+					if (my > 127) my = 127;
+
+					// 步骤 2：执行瞬移定位并重绘画面，随后关闭大地图模态窗口
+					if (window.setRolePos) {
+						window.setRolePos(mx, my, mhalf);
+						Promise.all([
+							import('./js/ui/talk.js'),
+							import('./js/ui/draw.js')
+						]).then(([{ Talk }, { update }]) => {
+							Talk.talkTips(`瞬间移动！已将主角位置修改为 (${mx}, ${my})` + (mhalf ? ' (半网格)' : ''));
+							update(true);
+						});
+						closeMapModal();
+					}
+				});
+
 				// 鼠标移动显示光标对应的瓦片位置
 				mapCanvas.addEventListener('mousemove', (event) => {
 					const rect = mapCanvas.getBoundingClientRect();
