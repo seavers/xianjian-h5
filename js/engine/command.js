@@ -27,12 +27,12 @@ export function setRoleIndex(dir, frame, roleId) {
   if (state.roles[roleId]) {
     state.roles[roleId].dir = dir;
     state.roles[roleId].frame = frame;
-    state.roles[roleId].count = -1;
   }
 
-  // if (dir) {
-  //   refreshWalkFrame(state.roles[roleId]);
-  // }
+  // 这里得刷新站位，不是walkFrame，参看送酒脚本4893
+  if (dir) {
+    refreshRoleFrame(state.roles[roleId]);
+  }
 }
 
 export function calcMap() {
@@ -90,11 +90,11 @@ export function refreshWalkFrame(role) {
   refreshRoleFrame(role);
 }
 
-export async function roleWalk(sx, sy, shalf) {
+export async function roleWalk(sx, sy, shalf, { type }) {
   state.mx = sx;
   state.my = sy;
   state.mhalf = shalf;
-  return await stepAction(this, () => Npc.animTeam(state.party[0] || state.roles[0], sx, sy, shalf, 4));
+  return await stepAction({ type }, () => Npc.animTeam(state.party[0] || state.roles[0], sx, sy, shalf, 4));
 }
 
 export async function clearWithEffect(effectType) {
