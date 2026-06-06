@@ -24,17 +24,9 @@ export const Script = {
     Script.activeThread = {scriptId, obj, type}
   },
 
-  isLoopRunning: false,
-
-  // 1. 150ms 周期性调用的游戏主循环入口，通过 isLoopRunning 并发锁，防止 await 期间新周期重入
+  // 1. 150ms 周期性调用的游戏主循环入口
   async mainLoop() {
-    if (this.isLoopRunning) return;
-    this.isLoopRunning = true;
-    try {
-      await Script.tick();
-    } finally {
-      this.isLoopRunning = false;
-    }
+    await Script.tick();
   },
 
   // 4. 规范化的逻辑帧嘀嗒（负责原本单次游戏循环中的全部逻辑更新与统一渲染）
@@ -301,7 +293,7 @@ export const Script = {
     if (ret == null) {
       return scriptEntry + 1;
     } else if (ret == -1) {
-      o.autoScr = null;
+      obj.autoScr = null;
       return null;
     } else if (ret > 0) {
       return ret;

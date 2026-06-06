@@ -9,6 +9,7 @@ import { Script } from './engine/script.js';
 import { updateCount, update as updateGameScreen } from './ui/draw.js';
 import { loadArchive } from './esc/archive.js';
 import './ui/input.js';
+import { sleep } from './utils/timer.js';
 
 // 获取 URL 参数是否为 debug 模式
 const DEBUG = location.search && location.search.indexOf('debug') !== -1;
@@ -205,15 +206,14 @@ ready(() => {
   }
 
   // 5. 资源就绪及初始化完毕后，正式开启 setInterval 驱动的主循环，150ms 周期执行一次
-  setInterval(() => {
-    // 若上一轮主循环仍处于运行状态，则跳过本次周期性调度并记录警告日志
-    if (Script.isLoopRunning) {
-      console.warn('上一轮 mainLoop 未完成');
-      return;
+  setTimeout(async () => {
+    let loopIndex = 0;
+    while(true) {
+      // console.log(++loopIndex, '执行主循环')
+      await Script.mainLoop();
+      await sleep(150);
     }
-
-    Script.mainLoop();
-  }, 150);
+  }, 1);
 });
 
 function commonEnter() {
