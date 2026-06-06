@@ -69,6 +69,9 @@ export const state = {
   // 金钱
   money: 0,
 
+  // 当前战斗背景 ID
+  battlefieldId: 0,
+
   // 当前读写的存档槽位
   currentSaveSlot: 1,
 

@@ -127,7 +127,8 @@ export function setRoleGroup(r1, r2, r3) {
           tileId: [2, 3, 7, 5][roleIndex] || 0,
           frame: 0,
           index: roleIndex,
-          count: 0
+          count: 0,
+          spriteNumInBattle: [1, 2, 3, 5][roleIndex] || 1
         };
         state.roles[roleIndex] = newRole;
         newParty.push(newRole);

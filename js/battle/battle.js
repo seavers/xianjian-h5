@@ -112,7 +112,14 @@ export async function start(id, failId, fleeId) {
     const pos = posPreset[i] || [200, 150];
 
     // 从 f.mkf 加载玩家角色战斗动画数据包并进行 deyj 解压
-    const spriteData = deyj(loadMkf('f.mkf', roleStats.spriteNumInBattle || 1));
+    let spriteNum = roleStats.spriteNumInBattle;
+    if (!spriteNum) {
+      // 步骤 1.5：提供我方角色战斗精灵图包 ID 兜底映射
+      // 0-李逍遥->1, 1-赵灵儿->2, 2-林月如->3, 3-阿奴->5, 4-巫后->4, 5-盖罗娇->6
+      const defaultSprites = [1, 2, 3, 5, 4, 6];
+      spriteNum = defaultSprites[role.index] || 1;
+    }
+    const spriteData = deyj(loadMkf('f.mkf', spriteNum));
 
     players.push({
       index: role.index,
@@ -138,7 +145,9 @@ export async function start(id, failId, fleeId) {
     activePlayerIndex = 0;
   }
 
-  console.log(`战斗开启: 敌方队伍 ID ${battleId}, 成员 ${enemies.length} 个 ${JSON.stringify(teamObjIds)}; 我方成员 ${players.length} 个 ${JSON.stringify(state.party.map(p=>({index:p.index,mgoId:p.tileId})))}`);
+  const enemyObjs = teamObjIds?.map(id=>({battleId,enemyId:id,abcId:state.items?.[id]?.roleId}));
+  const roles = state.party.map(p=>({index:p.index,mgoId:p.tileId}));
+  console.log(`战斗开启: 敌方队伍 ID ${battleId}, 成员 ${enemies.length} 个 ${JSON.stringify(enemyObjs)}; 我方成员 ${players.length} 个 ${JSON.stringify(roles)}`);
 
   // 开启画面的定时绘制渲染与逻辑更新时钟
   startBattleClock();
