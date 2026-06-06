@@ -21,6 +21,8 @@ let color = null;
 let clear = true;
 let line = 0; // 当前写入的正文行数 (0-indexed)
 
+let talkPosition = 'up';
+
 // 向下闪烁箭头动画坐标与时间状态管理
 let arrowX = 0;
 let arrowY = 0;
@@ -92,6 +94,7 @@ function resetTalk() {
   isTalking = false;
   who = null;
   rgm = null;
+  rgmId = null;
 }
 
 async function showUp(pRgmId) {
@@ -103,26 +106,9 @@ async function showUp(pRgmId) {
   }
 
   isTalking = true;
-
+  talkPosition = 'up';
   rgmId = pRgmId;
   rgm = rgmId && loadRgm(rgmId);
-
-  // 根据 SDLPAL 原理，有无头像的坐标分配不同
-  if (rgm) {
-    titleX = 80;
-    titleY = 8;
-    tx = 96;
-    ty = 26;
-  } else {
-    titleX = 12;
-    titleY = 8;
-    tx = 44;
-    ty = 26;
-  }
-
-  rgmX = 8;
-  rgmY = 8;
-  clear = true;
 }
 
 async function showDown(pRgmId) {
@@ -134,25 +120,45 @@ async function showDown(pRgmId) {
   }
 
   isTalking = true;
-
+  talkPosition = 'down';
   rgmId = pRgmId;
-  rgm = rgmId && loadRgm(pRgmId);
+}
 
-  if (rgm) {
-    titleX = 4;
-    titleY = 108;
-    tx = 20;
-    ty = 126;
+async function refreshTalkPosition() {
+  if (talkPosition == 'up') {
+    // 根据 SDLPAL 原理，有无头像的坐标分配不同
+    if (rgm) {
+      titleX = 80;
+      titleY = 8;
+      tx = 96;
+      ty = 26;
+    } else {
+      titleX = 12;
+      titleY = 8;
+      tx = 44;
+      ty = 26;
+    }
+  
+    rgmX = 8;
+    rgmY = 8;
+    clear = true;
   } else {
-    titleX = 12;
-    titleY = 108;
-    tx = 44;
-    ty = 126;
-  }
+    if (rgm) {
+      titleX = 4;
+      titleY = 108;
+      tx = 20;
+      ty = 126;
+    } else {
+      titleX = 12;
+      titleY = 108;
+      tx = 44;
+      ty = 126;
+    }
 
-  rgmX = 230;
-  rgmY = 100;
-  clear = true;
+    rgmX = 230;
+    rgmY = 100;
+    clear = true;
+  }
 }
 
 function showTips() {
@@ -172,21 +178,16 @@ function showMessage() {
 export async function drawTalk(msgId) {
   isTalking = true;
 
-  // 步骤 0：同步读取并暂存当前活跃脚本线程引用，杜绝对话打印 await 挂起期间由于 auto NPC 等微任务对 Script.activeThread 全局变量的并发改写污染
-  const t = Script.activeThread;
-
   if (message) {
     message = false;
-    await drawMessage(msgId, t);
+    await drawMessage(msgId);
     return;
   } else if (tips) {
     tips = false;
-    await drawTips(msgId, t);
+    await drawTips(msgId);
     return;
   }
   
-  if (!t) return;
-
   // 步骤 1：如果满 4 行翻页，等待按键并清空画布，重置状态
   if (line >= 4) {
     await waitKey();
@@ -196,6 +197,8 @@ export async function drawTalk(msgId) {
   // 步骤 2：等待异步打印对话文本动作完成
   await drawTalk0(msgId);
 
+  // 判断后面是不是对话，判断是否暂停等确认
+  const t = Script.activeThread;
   if(!isNextTalk(t)) {
     await waitKey();
     clearDraw();
@@ -204,39 +207,35 @@ export async function drawTalk(msgId) {
   }
 }
 
-function drawTalk0(msgId) {
-  return new Promise((resolve) => {
-    const text = loadMsg(msgId);
-    if (isNameText(text)) {
-      who = text;
-      resolve();
-      return;
-    }
+async function drawTalk0(msgId) {
+  const text = loadMsg(msgId);
+  if (isNameText(text)) {
+    who = text;
+    return;
+  }
 
-    const talkCtx = state.contexts.talk;
+  // 根据rgm计算位置
+  refreshTalkPosition();
 
-    if (clear) {
-      if (talkCtx) {
-        if (rgm) talkCtx.drawImage(rgm, rgmX, rgmY);
-        if (who) showLine(who, titleX, titleY, 0x00FFFF); // 使用青色绘制说话人
-      }
-      clear = false;
-      line = 0;
-    }
+  const talkCtx = state.contexts.talk;
+  if (talkCtx) {
+    if (rgm) talkCtx.drawImage(rgm, rgmX, rgmY);
+    if (who) showLine(who, titleX, titleY, 0x00FFFF); // 使用青色绘制说话人
+  }
 
-    // 动态决定 Y 坐标：有说话人时根据 ty 排，无说话人时整体上移到 titleY 排以填补空间
-    const x = tx;
-    const y = who ? (ty + line * 18) : (titleY + line * 18);
+  // 动态决定 Y 坐标：有说话人时根据 ty 排，无说话人时整体上移到 titleY 排以填补空间
+  const x = tx;
+  const y = who ? (ty + line * 18) : (titleY + line * 18);
 
-    drawLine(text, x, y, () => {
-      line++;
-      // 记录最后一个字后面的相对坐标 (X: 最后一个字右侧, Y: 所在行 Y 坐标)
-      const texts = calcText(text);
-      arrowX = x + texts.length * 16;
-      arrowY = y;
-      resolve();
-    });
-  });
+  // 打印一行字
+  await drawLine(text, x, y)
+
+  line++;
+
+  // 记录最后一个字后面的相对坐标 (X: 最后一个字右侧, Y: 所在行 Y 坐标)
+  const texts = calcText(text);
+  arrowX = x + texts.length * 16;
+  arrowY = y;
 }
 
 function drawWord(charCode, x, y, color) {
@@ -248,19 +247,21 @@ function drawWord(charCode, x, y, color) {
   }
 }
 
-function drawLine(text, x, y, callback) {
-  const texts = calcText(text);
-  let i = 0;
-  const timer = setInterval(() => {
-    if (i >= texts.length) {
-      clearInterval(timer);
-      if (callback) callback();
-      return;
-    }
-    const charCode = texts[i].charCode;
-    drawWord(charCode, x + i * 16, y, texts[i].color);
-    i++;
-  }, 15);
+async function drawLine(text, x, y) {
+  return new Promise(function(resolve) {
+    const texts = calcText(text);
+    let i = 0;
+    const timer = setInterval(() => {
+      if (i >= texts.length) {
+        clearInterval(timer);
+        resolve('');
+        return;
+      }
+      const charCode = texts[i].charCode;
+      drawWord(charCode, x + i * 16, y, texts[i].color);
+      i++;
+    }, 15);
+  })
 }
 
 function calcText(text) {
@@ -350,7 +351,7 @@ export function showTalkWait() {
   }
 }
 
-async function drawMessage(msgId, t) {
+async function drawMessage(msgId) {
   isTalking = true;
   const text = loadMsg(msgId);
   const texts = calcText(text);
@@ -360,7 +361,7 @@ async function drawMessage(msgId, t) {
   const y = ty;
 
   drawBack(length, x, y);
-  await drawLineSync(texts, x, y, t, false); // talkMessage 不需要显示箭头
+  await drawLineSync(texts, x, y, false); // talkMessage 不需要显示箭头
 }
 
 function drawBack(length, x, y) {
@@ -381,28 +382,26 @@ function drawBack(length, x, y) {
   if (picRight) talkCtx.drawImage(picRight, x + length * 16, y);
 }
 
-async function drawLineSync(texts, x, y, t, showArrow = true) {
+async function drawLineSync(texts, x, y, showArrow = true) {
   for (let i = 0; i < texts.length; i++) {
     drawWord(texts[i].charCode, x + i * 16, y + 9, texts[i].color);
   }
 
-  if (t) {
-    if (showArrow) {
-      // 统一定位向下箭头，因为是在文字底部对齐 (y+9 是文字顶)
-      arrowX = x + texts.length * 16;
-      arrowY = y + 9;
-    } else {
-      arrowX = 0;
-      arrowY = 0;
-    }
-    
-    await waitKey();
-    resetTalk();
-    clearDraw();
+  if (showArrow) {
+    // 统一定位向下箭头，因为是在文字底部对齐 (y+9 是文字顶)
+    arrowX = x + texts.length * 16;
+    arrowY = y + 9;
+  } else {
+    arrowX = 0;
+    arrowY = 0;
   }
+  
+  await waitKey();
+  resetTalk();
+  clearDraw();
 }
 
-async function drawTips(msgId, t) {
+async function drawTips(msgId) {
   isTalking = true;
   const text = loadMsg(msgId);
   const texts = calcText(text);
@@ -411,7 +410,7 @@ async function drawTips(msgId, t) {
   const x = tx - length * 16 / 2;
   const y = ty;
 
-  await drawLineSync(texts, x, y, t, false); // talkTips 不需要显示箭头
+  await drawLineSync(texts, x, y, false); // talkTips 不需要显示箭头
 }
 
 function isNextTalk(t) {
