@@ -13,6 +13,7 @@ import { sleep } from './utils/timer.js';
 
 // 获取 URL 参数是否为 debug 模式
 const DEBUG = location.search && location.search.indexOf('debug') !== -1;
+export let TICK_TIME = 80;  // 80ms 一次tick
 
 function initEventObject() {
   const sssId = 0;
@@ -212,14 +213,22 @@ ready(() => {
   setTimeout(executeMainLoop, 1);
 });
 
-// setInterval 驱动的主循环，150ms 周期执行一次
+// setInterval 驱动的主循环，[TICK_TIME」ms 周期执行一次
 async function executeMainLoop() {
   try {
     let loopIndex = 0;
     while(true) {
       // console.log(++loopIndex, '执行主循环')
+      const start = Date.now();
       await Script.mainLoop();
-      await sleep(150);
+      const end = Date.now();
+      console.log('执行一次主循环，' + (end - start) + 'ms');
+
+      if (end - start > TICK_TIME) {
+        await sleep(1);
+      } else {
+        await sleep(TICK_TIME - (end - start));
+      }
     }
   } catch (e) {
     alert('游戏异常: ' + e.message);
@@ -230,4 +239,8 @@ async function executeMainLoop() {
 function commonEnter() {
   setRoleTile(0, 0x2, 0);     // 李逍遥动作形象
   setRoleGroup(1);           // 队伍配置
+}
+
+export function setTickTime(newTickTime) {
+  TICK_TIME = newTickTime;
 }

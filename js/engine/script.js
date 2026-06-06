@@ -24,7 +24,7 @@ export const Script = {
     Script.activeThread = {scriptId, obj, type}
   },
 
-  // 1. 150ms 周期性调用的游戏主循环入口
+  // 1. 「TICK_TIME」ms 周期性调用的游戏主循环入口
   async mainLoop() {
     await Script.tick();
   },

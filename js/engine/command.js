@@ -9,6 +9,7 @@ import { loadArchive } from '../esc/archive.js';
 import { playRng } from './rng.js';
 import { playMusic, stopMusic as stopBgMusic } from '../resources/music.js';
 import { playSound } from '../resources/sound.js';
+import { TICK_TIME } from '../app.js';
 
 export function setRolePos(sx, sy, shalf) {
   state.mx = sx;
@@ -1083,13 +1084,13 @@ export async function updateScreen() {
   update(true);
 
   // 步骤 2：增加 80ms 的非阻塞式延迟，以满足剧情或转场时图像更新的视觉停留感要求
-  await new Promise(resolve => setTimeout(resolve, 150));
+  await new Promise(resolve => setTimeout(resolve, TICK_TIME));
 }
 
 export async function delayPeriod(time) {
-  // 步骤 1：原版延迟为 time * 80 毫秒，我们在 150 毫秒为主循环周期的 H5 引擎中同步换算为对应的帧数 ticks
+  // 步骤 1：原版延迟为 time * 80 毫秒，我们在 「TICK_TIME」 毫秒为主循环周期的 H5 引擎中同步换算为对应的帧数 ticks
   // 并且使用 Math.max(1, ...) 保证至少等待一帧以避免同步挂起失效
-  const ticks = Math.max(1, Math.round((time * 150) / 150));
+  const ticks = Math.max(1, Math.round((time * 80) / TICK_TIME));
 
   // 步骤 2：输出详细的非阻塞延迟调试日志，辅助追踪时序同步
   console.log(`[0x85 delayPeriod] 剧情等待, 原版毫秒: ${time * 80}ms, H5换算帧数: ${ticks} 帧`);
@@ -1111,7 +1112,7 @@ export async function updateScreenAndWait(time, p2, p3, { type }) {
   
   if (time == 0) {
     await Script.stepAutoAndUpdate();
-    await new Promise(resolve => setTimeout(resolve, 150));
+    await new Promise(resolve => setTimeout(resolve, TICK_TIME));
     return;
   }
   
@@ -1122,7 +1123,7 @@ export async function updateScreenAndWait(time, p2, p3, { type }) {
 }
 
 export async function waitSecond(time) {
-  // 原游戏是 80ms * time ，这里一帧150ms
+  // 原游戏是 80ms * time ，这里一帧「TICK_TIME」ms
   return await stepAction(this, () => Script.stepProgress(this, Math.max(1, Math.round(time / 2))));
 }
 
@@ -1646,7 +1647,7 @@ async function stepAction(obj, actionFunc) {
       break;
     }
     await Script.stepAutoAndUpdate();
-    await new Promise(resolve => setTimeout(resolve, 150));
+    await new Promise(resolve => setTimeout(resolve, TICK_TIME));
   }
 }
 
@@ -1659,7 +1660,7 @@ async function timesAction(times, obj, actionFunc) {
     }
 
     await Script.stepAutoAndUpdate();
-    await new Promise(resolve => setTimeout(resolve, 150));
+    await new Promise(resolve => setTimeout(resolve, TICK_TIME));
   }
 }
 
