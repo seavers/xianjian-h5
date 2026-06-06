@@ -1,5 +1,5 @@
 import { Script } from './script.js';
-import { refreshRoleCount, setRolePos } from './command.js';
+import { refreshWalkFrame } from './command.js';
 import { state } from './state.js';
 
 export function calcNpcDir(o, x, y) {
@@ -14,7 +14,7 @@ export function calcNpcDir(o, x, y) {
   } else {
     // 某些NPC原地出现时可能会没有方向偏移，不作处理
   }
-  refreshRoleCount(o);
+  refreshWalkFrame(o);
 }
 
 export const Npc = {

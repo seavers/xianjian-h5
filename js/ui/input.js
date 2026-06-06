@@ -1,6 +1,6 @@
 import { state } from '../engine/state.js';
 import { Script } from '../engine/script.js';
-import { refreshRoleCount, setRolePos, startEventTrig } from '../engine/command.js';
+import { refreshWalkFrame, setRolePos, startEventTrig } from '../engine/command.js';
 import { canWalk, update } from './draw.js';
 import { ESC } from '../esc/esc.js';
 
@@ -249,7 +249,7 @@ export function onDown() {
 
 function onXY(x, y, half, dir) {
   if (state.party[0]) {
-    refreshRoleCount(state.party[0]);
+    refreshWalkFrame(state.party[0]);
   }
 
   // 0能走, 1不能走

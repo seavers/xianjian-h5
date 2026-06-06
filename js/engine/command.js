@@ -31,7 +31,7 @@ export function setRoleIndex(dir, frame, roleId) {
   }
 
   // if (dir) {
-  //   refreshRoleCount(state.roles[roleId]);
+  //   refreshWalkFrame(state.roles[roleId]);
   // }
 }
 
@@ -50,32 +50,44 @@ export function calcMap() {
   }
 }
 
-export function refreshRoleCount(role) {
-  role.mgoCount = loadMgoCount(role.mgoId);
-  if (role.mgoCount <= 3) {
-    return ;
-  }
-
-  role.count = role.count === undefined ? -1 : role.count; // 默认为 -1
-  const count = role.count++;
-  let frame = count === -1 ? 0 : (count % 2 + 1);
+function refreshRoleFrame(role) {
+  const frameWalkCount = role.type === 'role' ? 3 : role.frameWalkCount;
+  let frame = role.frame % frameWalkCount;
   
   switch (role.dir) {
     case 0: // down
-      frame += 0;
+      frame += 0 * frameWalkCount;
       break;
     case 1: // left
-      frame += 3;
+      frame += 1 * frameWalkCount;
       break;
     case 2: // up
-      frame += 6;
+      frame += 2 * frameWalkCount;
       break;
     case 3: // right
-      frame += 9;
+      frame += 3 * frameWalkCount;
       break;
   }
 
   role.frame = frame;
+}
+
+export function refreshWalkFrame(role) {
+  const frameWalkCount = role.type === 'role' ? 3 : role.frameWalkCount;
+
+  role.count = role.count ?? -1; // 默认为 -1
+  role.count++;
+  
+  if (frameWalkCount == 1) {
+    role.frame = 0;
+  } else if (frameWalkCount == 2) {
+    role.frame = role.count % 2;
+  } else if (frameWalkCount == 3) {
+    role.frame = [0, 1, 0, 2][role.count % 4];
+  } else if (frameWalkCount > 3) {
+    role.frame = role.count % frameWalkCount;
+  }
+  refreshRoleFrame(role);
 }
 
 export async function roleWalk(sx, sy, shalf) {
@@ -339,7 +351,7 @@ export function walkHeroByOffset(dx, dy, layer) {
   }
 
   if (leader) {
-    refreshRoleCount(leader);
+    refreshWalkFrame(leader);
   }
 
   if (window.onSceneUpdate) {
@@ -357,7 +369,7 @@ export function setNpcTile(objId, dir, frame) {
 
   // 这里得刷新，不然场景1的8067脚本有问题
   if (dir) {
-    refreshRoleCount(obj);
+    refreshWalkFrame(obj);
   }
 }
 
@@ -416,7 +428,8 @@ export function npcWalk(objId, dx, dy) {
   obj.x = x;
   obj.y = y;
 
-  Script.sleep(1);
+  // 这里要刷新，不然李大娘下楼梯就迈开步
+  refreshWalkFrame(obj);
 }
 
 function walkOneStep(dir) {
@@ -439,7 +452,7 @@ function walkOneStep(dir) {
     state.mhalf = Math.round((state.mapX - state.mx * 32) / 16);
   }
 
-  refreshRoleCount(obj);
+  refreshWalkFrame(obj);
 
   if (window.onSceneUpdate) {
     window.onSceneUpdate();
@@ -469,7 +482,7 @@ export function setNpcDir(dir) {
     this.dir = dir;
 
     // 这里得刷新，不然场景1的9号脚本有问题
-    refreshRoleCount(this);
+    refreshRoleFrame(this);
   }
 }
 
