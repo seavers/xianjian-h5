@@ -2,41 +2,40 @@ import { state } from '../../../engine/state.js';
 import { scriptCodes } from '../../../engine/command.js';
 import { getCommandName, getInstructionChineseDetail } from '../../../data/gameData/scripts.js';
 import { makeScriptHyperlinks } from '../helpers.js';
+import { renderDetailPanel, renderListItem, renderSidebar } from '../renderers.js';
 import { gameDataStore } from '../store.js';
 
 export function renderScriptTab(container) {
   const totalScripts = state.scripts.length;
   const listItems = buildScriptListItems();
 
-  let leftHtml = `
-    <div style="width: 250px; border-right: 1px solid var(--border-glass); background: rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden;">
-      <div style="padding: 10px; background: rgba(0,0,0,0.5); border-bottom: 1px solid var(--border-glass); display: flex; flex-direction: column; gap: 6px;">
-        <span style="font-size: 9.5px; font-weight: bold; color: var(--glow-yellow);">📜 脚本指令检索 (共 ${totalScripts} 条)</span>
-        <div style="display:flex; gap:4px;">
-          <input type="number" id="input-gamedata-script-id" value="${gameDataStore.selectedScriptId}" min="0" max="${totalScripts - 1}" style="background: #0c0a08; border: 1px solid rgba(255,215,0,0.2); color: #fff; font-size: 8.5px; padding: 2px 4px; outline: none; border-radius: 2px; flex: 1; text-align: center;">
-          <button onclick="searchGameDataScript()" class="btn-dbg" style="color: var(--glow-yellow); border-color: rgba(255,215,0,0.2); padding: 2px 6px; font-size: 8.5px; cursor: pointer; font-weight: bold;">一键反解</button>
-        </div>
-      </div>
-      <div style="flex: 1; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
-  `;
+  const rangeItems = [];
 
   for (let i = 0; i < totalScripts; i += 20) {
-    const isCurrentRange = gameDataStore.selectedScriptId >= i && gameDataStore.selectedScriptId < i + 20;
-    leftHtml += `
-      <div data-script-item="${i}" onclick="jumpToGameDataScript(${i})" style="padding: 6px 8px; background: ${isCurrentRange ? 'rgba(255, 215, 0, 0.06)' : 'rgba(255,255,255,0.012)'}; border: 1px solid ${isCurrentRange ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.02)'}; border-radius: 2px; cursor: pointer; font-size: 8px; color: ${isCurrentRange ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.4)'}; display:flex; justify-content:space-between; transition: all 0.1s;">
-        <span>段落 #${i} ➔ #${Math.min(totalScripts - 1, i + 19)}</span>
-        <span>${isCurrentRange ? '●' : ''}</span>
-      </div>
-    `;
+    rangeItems.push(renderListItem({
+      dataAttr: 'data-script-item',
+      dataValue: i,
+      onclick: `jumpToGameDataScript(${i})`,
+      selected: gameDataStore.selectedScriptId >= i && gameDataStore.selectedScriptId < i + 20,
+      title: `段落 #${i} ➔ #${Math.min(totalScripts - 1, i + 19)}`,
+      meta: gameDataStore.selectedScriptId >= i && gameDataStore.selectedScriptId < i + 20 ? '●' : ''
+    }));
   }
 
-  leftHtml += `
+  const leftHtml = renderSidebar({
+    width: 250,
+    title: `📜 脚本指令检索 (共 ${totalScripts} 条)`,
+    toolbarHtml: `
+      <div style="display:flex; gap:4px;">
+        <input type="number" id="input-gamedata-script-id" value="${gameDataStore.selectedScriptId}" min="0" max="${totalScripts - 1}" style="background: #0c0a08; border: 1px solid rgba(255,215,0,0.2); color: #fff; font-size: 8.5px; padding: 2px 4px; outline: none; border-radius: 2px; flex: 1; text-align: center;">
+        <button onclick="searchGameDataScript()" class="btn-dbg" style="color: var(--glow-yellow); border-color: rgba(255,215,0,0.2); padding: 2px 6px; font-size: 8.5px; cursor: pointer; font-weight: bold;">一键反解</button>
       </div>
-    </div>
-  `;
+    `,
+    bodyHtml: rangeItems.join('')
+  });
 
   let rightHtml = `
-    <div data-script-right style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 15px;">
+    ${renderDetailPanel('data-script-right', `
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,215,0,0.15); padding-bottom: 8px; margin-bottom: 12px;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <h2 style="margin: 0; font-size: 12px; color: var(--glow-yellow); font-weight: bold;">📜 连续指令解析流 (从 ID #${gameDataStore.selectedScriptId} 顺序向下解码)</h2>
@@ -64,7 +63,7 @@ export function renderScriptTab(container) {
 
   rightHtml += `
       </div>
-    </div>
+    `)}
   `;
 
   container.innerHTML = leftHtml + rightHtml;
@@ -98,9 +97,7 @@ function updateScriptSelection() {
   const container = document.getElementById('gamedata-main-container');
 
   container.querySelectorAll('[data-script-item]').forEach(el => {
-    el.style.background = 'rgba(255,255,255,0.012)';
-    el.style.borderColor = 'rgba(255,255,255,0.02)';
-    el.style.color = 'rgba(255,255,255,0.4)';
+    el.classList.remove('is-selected');
     const dot = el.querySelectorAll('span')[1];
     if (dot) {
       dot.innerText = '';
@@ -109,9 +106,7 @@ function updateScriptSelection() {
 
   const activeEl = container.querySelector(`[data-script-item="${Math.floor(gameDataStore.selectedScriptId / 20) * 20}"]`);
   if (activeEl) {
-    activeEl.style.background = 'rgba(255, 215, 0, 0.06)';
-    activeEl.style.borderColor = 'var(--glow-yellow)';
-    activeEl.style.color = 'var(--glow-yellow)';
+    activeEl.classList.add('is-selected');
     const dot = activeEl.querySelectorAll('span')[1];
     if (dot) {
       dot.innerText = '●';

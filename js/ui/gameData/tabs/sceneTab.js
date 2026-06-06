@@ -1,6 +1,7 @@
 import { loadGop, loadMgo } from '../../../resources/pal.js';
 import { state } from '../../../engine/state.js';
 import { drawPixelated, getRoleName } from '../helpers.js';
+import { renderDetailPanel, renderListItem, renderSidebar } from '../renderers.js';
 import { gameDataStore } from '../store.js';
 
 export function renderSceneTab(container) {
@@ -12,30 +13,23 @@ export function renderSceneTab(container) {
     }
   }
 
-  let leftHtml = `
-    <div style="width: 250px; border-right: 1px solid var(--border-glass); background: rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden;">
-      <div style="padding: 10px; background: rgba(0,0,0,0.5); border-bottom: 1px solid var(--border-glass); font-size: 9.5px; font-weight: bold; color: var(--glow-yellow);">🗺️ 游戏场景 Scenes 目录</div>
-      <div style="flex: 1; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
-  `;
+  const listItems = [];
 
   scenes.forEach(scene => {
-    const isSelected = gameDataStore.selectedSceneId === scene.sceneId;
-    leftHtml += `
-      <div data-scene-item="${scene.sceneId}" onclick="onGameDataSceneSelect(${scene.sceneId})" style="padding: 8px 12px; background: ${isSelected ? 'rgba(255, 215, 0, 0.08)' : 'rgba(255,255,255,0.015)'}; border: 1px solid ${isSelected ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.03)'}; border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.12s;">
-        <span style="font-size: 9px; font-weight: bold; color: ${isSelected ? 'var(--glow-yellow)' : '#fff'};">Scene #${scene.sceneId}</span>
-        <span style="font-size: 8px; color: rgba(255,255,255,0.3);">Map 0x${scene.mapId.toString(16).toUpperCase()}</span>
-      </div>
-    `;
+    listItems.push(renderListItem({
+      dataAttr: 'data-scene-item',
+      dataValue: scene.sceneId,
+      onclick: `onGameDataSceneSelect(${scene.sceneId})`,
+      selected: gameDataStore.selectedSceneId === scene.sceneId,
+      title: `Scene #${scene.sceneId}`,
+      meta: `Map 0x${scene.mapId.toString(16).toUpperCase()}`
+    }));
   });
 
-  leftHtml += `
-      </div>
-    </div>
-  `;
-
   const scene = state.scenes[gameDataStore.selectedSceneId] || scenes[0];
+  const leftHtml = renderSidebar({ width: 250, title: '🗺️ 游戏场景 Scenes 目录', bodyHtml: listItems.join('') });
   const rightHtml = scene
-    ? `<div data-scene-right style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 15px;">${buildSceneRightHtml(scene)}</div>`
+    ? renderDetailPanel('data-scene-right', buildSceneRightHtml(scene))
     : `
       <div data-scene-right style="flex: 1; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.2); font-size: 10px;">
         请在左侧选择一个场景进行全景剖析
@@ -67,22 +61,12 @@ function updateSceneSelection() {
   const container = document.getElementById('gamedata-main-container');
 
   container.querySelectorAll('[data-scene-item]').forEach(el => {
-    el.style.background = 'rgba(255,255,255,0.015)';
-    el.style.borderColor = 'rgba(255,255,255,0.03)';
-    const spans = el.querySelectorAll('span');
-    if (spans[0]) {
-      spans[0].style.color = '#fff';
-    }
+    el.classList.remove('is-selected');
   });
 
   const activeEl = container.querySelector(`[data-scene-item="${gameDataStore.selectedSceneId}"]`);
   if (activeEl) {
-    activeEl.style.background = 'rgba(255, 215, 0, 0.08)';
-    activeEl.style.borderColor = 'var(--glow-yellow)';
-    const spans = activeEl.querySelectorAll('span');
-    if (spans[0]) {
-      spans[0].style.color = 'var(--glow-yellow)';
-    }
+    activeEl.classList.add('is-selected');
   }
 
   const rightPanel = container.querySelector('[data-scene-right]');

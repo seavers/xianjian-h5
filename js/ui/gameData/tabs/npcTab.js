@@ -1,6 +1,7 @@
 import { loadMgo } from '../../../resources/pal.js';
 import { state } from '../../../engine/state.js';
 import { drawPixelated, getRoleName } from '../helpers.js';
+import { renderDetailPanel, renderListItem, renderSidebar } from '../renderers.js';
 import { gameDataStore } from '../store.js';
 
 export function renderNpcTab(container) {
@@ -18,44 +19,34 @@ export function renderNpcTab(container) {
     return searchStr.indexOf(gameDataStore.npcFilterKeyword.toLowerCase()) !== -1;
   });
 
-  let leftHtml = `
-    <div style="width: 280px; border-right: 1px solid var(--border-glass); background: rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden;">
-      <div style="padding: 10px; background: rgba(0,0,0,0.5); border-bottom: 1px solid var(--border-glass); display: flex; flex-direction: column; gap: 6px;">
-        <span style="font-size: 9.5px; font-weight: bold; color: var(--glow-yellow);">👾 全局 NPC 列表 (共 ${npcs.length} 个)</span>
-        <input type="text" id="input-gamedata-npc-filter" oninput="searchGameDataNpc(this.value)" value="${gameDataStore.npcFilterKeyword}" placeholder="输入 ID 或角色名搜索..." style="background: #0c0a08; border: 1px solid rgba(255,215,0,0.2); color: #fff; font-size: 8px; padding: 3px 6px; outline: none; border-radius: 2px;">
-      </div>
-      <div style="flex: 1; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
-  `;
+  const listItems = [];
 
   if (filteredNpcs.length === 0) {
-    leftHtml += `<div style="text-align: center; color: rgba(255,255,255,0.2); font-size: 8.5px; padding-top: 20px;">未找到匹配的 NPC</div>`;
+    listItems.push(`<div style="text-align: center; color: rgba(255,255,255,0.2); font-size: 8.5px; padding-top: 20px;">未找到匹配的 NPC</div>`);
   } else {
     filteredNpcs.forEach(npc => {
-      const isSelected = gameDataStore.selectedNpcId === npc.id;
-      const roleName = getRoleName(npc.mgoId);
-      leftHtml += `
-        <div data-npc-item="${npc.id}" onclick="onGameDataNpcSelect(${npc.id})" style="padding: 6px 10px; background: ${isSelected ? 'rgba(255, 215, 0, 0.08)' : 'rgba(255,255,255,0.012)'}; border: 1px solid ${isSelected ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.02)'}; border-radius: 2px; cursor: pointer; display: flex; flex-direction: column; transition: all 0.12s;">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size: 9px; font-weight: bold; color: ${isSelected ? 'var(--glow-yellow)' : '#fff'};">🤖 NPC #${npc.id}</span>
-            <span style="font-size: 7.5px; color: rgba(255,255,255,0.3);">Dir: ${npc.dir}</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
-            <span style="font-size: 8px; color: var(--glow-green);">${roleName}</span>
-            <span style="font-size: 8px; color: rgba(255,255,255,0.35);">(${npc.x}, ${npc.y})</span>
-          </div>
-        </div>
-      `;
+      listItems.push(renderListItem({
+        dataAttr: 'data-npc-item',
+        dataValue: npc.id,
+        onclick: `onGameDataNpcSelect(${npc.id})`,
+        selected: gameDataStore.selectedNpcId === npc.id,
+        title: `🤖 NPC #${npc.id}`,
+        meta: `Dir: ${npc.dir}`,
+        subtitle: getRoleName(npc.mgoId),
+        tail: `(${npc.x}, ${npc.y})`
+      }));
     });
   }
 
-  leftHtml += `
-      </div>
-    </div>
-  `;
-
   const npc = state.eventObjects[gameDataStore.selectedNpcId] || filteredNpcs[0];
+  const leftHtml = renderSidebar({
+    width: 280,
+    title: `👾 全局 NPC 列表 (共 ${npcs.length} 个)`,
+    toolbarHtml: `<input type="text" id="input-gamedata-npc-filter" oninput="searchGameDataNpc(this.value)" value="${gameDataStore.npcFilterKeyword}" placeholder="输入 ID 或角色名搜索..." style="background: #0c0a08; border: 1px solid rgba(255,215,0,0.2); color: #fff; font-size: 8px; padding: 3px 6px; outline: none; border-radius: 2px;">`,
+    bodyHtml: listItems.join('')
+  });
   const rightHtml = npc
-    ? `<div data-npc-right style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 15px;">${buildNpcRightHtml(npc)}</div>`
+    ? renderDetailPanel('data-npc-right', buildNpcRightHtml(npc))
     : `
       <div data-npc-right style="flex: 1; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.2); font-size: 10px;">
         请在左侧选择一个 NPC 进行深度分析
@@ -114,26 +105,12 @@ function updateNpcSelection() {
   const container = document.getElementById('gamedata-main-container');
 
   container.querySelectorAll('[data-npc-item]').forEach(el => {
-    el.style.background = 'rgba(255,255,255,0.012)';
-    el.style.borderColor = 'rgba(255,255,255,0.02)';
-    const spans = el.querySelectorAll('div > span:first-child');
-    spans.forEach(span => {
-      if (span.innerText.startsWith('🤖')) {
-        span.style.color = '#fff';
-      }
-    });
+    el.classList.remove('is-selected');
   });
 
   const activeEl = container.querySelector(`[data-npc-item="${gameDataStore.selectedNpcId}"]`);
   if (activeEl) {
-    activeEl.style.background = 'rgba(255, 215, 0, 0.08)';
-    activeEl.style.borderColor = 'var(--glow-yellow)';
-    const spans = activeEl.querySelectorAll('div > span:first-child');
-    spans.forEach(span => {
-      if (span.innerText.startsWith('🤖')) {
-        span.style.color = 'var(--glow-yellow)';
-      }
-    });
+    activeEl.classList.add('is-selected');
   }
 
   const rightPanel = container.querySelector('[data-npc-right]');
