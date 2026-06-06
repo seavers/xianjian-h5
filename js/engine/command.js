@@ -1079,7 +1079,18 @@ export async function delayPeriod(time) {
   return await stepAction(this, () => Script.stepProgress(this, ticks));
 }
 
-export async function updateScreenAndWait(time) {
+export async function updateScreenAndWait(time, p2, p3, { type }) {
+  if (type == 'auto') {
+    const res = Script.stepProgress(this, time);
+    if (res > 0) {
+      // 返回 0 表示继续当前这一条，返回 null 就是下一条
+      return 0;
+    }
+
+    // 执行下一条
+    return;
+  }
+
   await updateScreen();
   
   if (time == 0) {
@@ -1089,7 +1100,7 @@ export async function updateScreenAndWait(time) {
   }
 
   // 返回>0，跳出场景脚本循环，来重绘
-  return await stepAction(this, () => Script.stepProgress(this, time));
+  return await timesAction(time, this, () => {});
 }
 
 export async function waitSecond(time) {
@@ -1616,6 +1627,19 @@ async function stepAction(obj, actionFunc) {
     if (res === 0) {
       break;
     }
+    await Script.stepAutoAndUpdate();
+    await new Promise(resolve => setTimeout(resolve, 150));
+  }
+}
+
+// 执行N次
+async function timesAction(times, obj, actionFunc) {
+  for(let i = 0; i < times; i++) {
+    const res = actionFunc(i, obj);
+    if (res === 0) {
+      break;
+    }
+
     await Script.stepAutoAndUpdate();
     await new Promise(resolve => setTimeout(resolve, 150));
   }
