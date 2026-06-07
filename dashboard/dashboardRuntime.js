@@ -17,6 +17,7 @@ const big5Decoder = new TextDecoder('big5');
 
 function getRoleName(role) {
   if (!role) return '';
+  if (role.roleName) return role.roleName;
 
   // 1. 判断角色是否有名字ID，并且全局词汇表已加载
   if (role.nameId !== undefined && state.words && state.words[role.nameId]) {
@@ -29,7 +30,8 @@ function getRoleName(role) {
       
       // 3. 将解码出的繁体角色姓名转化为简体（如支持）后返回
       const simplifiedFn = window.toSimplifiedFn;
-      return simplifiedFn ? simplifiedFn(decodedStr) : decodedStr;
+      role.roleName =  simplifiedFn ? simplifiedFn(decodedStr) : decodedStr;
+      return role.roleName;
     } catch (e) {
       console.error('解码姓名失败:', e);
     }
