@@ -1,6 +1,6 @@
 // ==================== 🖼️ 通用图片精灵资源浏览器 React 核心逻辑 ====================
 
-import { React, ReactDOM, html } from './gameData/react-helper.js';
+import { React, ReactDOM, html } from './gameData/ui-helper.js';
 
 const { useState, useEffect, useRef, useMemo } = React;
 

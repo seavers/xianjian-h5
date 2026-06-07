@@ -4,7 +4,7 @@ import { loadMkf, load } from '../resources/loader.js';
 import { deyj } from '../utils/deyj.js';
 import { loadSpriteFrame } from '../battle/battleData.js';
 import { loadMkf2 } from '../resources/pal.js';
-import { React, ReactDOM, html, drawPixelatedToCanvas } from './gameData/react-helper.js';
+import { React, ReactDOM, html, drawPixelatedToCanvas } from './gameData/ui-helper.js';
 
 const { useState, useEffect, useRef, useMemo } = React;
 

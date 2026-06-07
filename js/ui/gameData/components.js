@@ -1,4 +1,4 @@
-import { React, html, drawPixelatedToCanvas } from './react-helper.js';
+import { React, html, drawPixelatedToCanvas } from './ui-helper.js';
 import { state } from '../../engine/state.js';
 import { ROLES_DB } from '../../data/gameData/roles.js';
 import { loadRgm, loadMgoCount, loadMgo, loadGop, loadBall } from '../../resources/pal.js';

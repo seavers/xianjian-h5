@@ -1,6 +1,6 @@
 // ==================== 🗺️ 场景大地图瞬移定位器 React 核心逻辑 ====================
 
-import { React, ReactDOM, html } from './gameData/react-helper.js';
+import { React, ReactDOM, html } from './gameData/ui-helper.js';
 
 const { useState, useEffect, useRef } = React;
 

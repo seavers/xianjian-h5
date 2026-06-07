@@ -1,6 +1,6 @@
 // ==================== 💻 仙剑实时控制台开发者侧边栏 React 核心逻辑 ====================
 
-import { React, ReactDOM, html, drawPixelatedToCanvas } from './gameData/react-helper.js';
+import { React, ReactDOM, html, drawPixelatedToCanvas } from './gameData/ui-helper.js';
 import { state } from '../engine/state.js';
 
 const { useState, useEffect, useRef, useMemo } = React;

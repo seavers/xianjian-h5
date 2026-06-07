@@ -1,5 +1,5 @@
-import { ReactDOM, html } from './react-helper.js';
-import { GameDataApp } from './react-components.js';
+import { ReactDOM, html } from './ui-helper.js';
+import { GameDataApp } from './components.js';
 
 let reactRoot = null;
 
