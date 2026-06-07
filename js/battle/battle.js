@@ -3,6 +3,7 @@ import { loadFbp, loadPic } from '../resources/pal.js';
 import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame } from './battleData.js';
 import { loadMkf } from '../resources/loader.js';
 import { deyj } from '../utils/deyj.js';
+import { playMusic, stopMusic } from '../resources/music.js';
 
 // 站位坐标配置 (1人, 2人, 3人)
 const PLAYER_POS_PRESETS = [
@@ -159,6 +160,13 @@ export async function start(id, failId, fleeId) {
 
   // 开启画面的定时绘制渲染与逻辑更新时钟
   startBattleClock();
+
+  // 播放战斗背景音乐（由 0x45 setFightMusic 预先写入 state.wNumBattleMusic）
+  const battleMusicNum = state.wNumBattleMusic || 0;
+  if (battleMusicNum > 0) {
+    console.log(`[Battle] 开始播放战斗背景音乐 ID: ${battleMusicNum}`);
+    playMusic(battleMusicNum, true, 0);
+  }
 
   return new Promise((resolve) => {
     resolvePromise = resolve;
@@ -703,6 +711,15 @@ function endBattle(victory) {
     // 清空背景层和谈话层以露出大地图
     state.contexts.back.clearRect(0, 0, 320, 200);
     state.contexts.talk.clearRect(0, 0, 320, 200);
+
+    // 恢复场景背景音乐（由 0x43 setMusic 写入 state.wNumMusic）
+    const sceneMusicNum = state.wNumMusic || 0;
+    if (sceneMusicNum > 0) {
+      console.log(`[Battle] 战斗结束，恢复场景背景音乐 ID: ${sceneMusicNum}`);
+      playMusic(sceneMusicNum, true, 0);
+    } else {
+      stopMusic(1);
+    }
 
     if (resolvePromise) {
       const p = resolvePromise;
