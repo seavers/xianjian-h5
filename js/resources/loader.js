@@ -67,7 +67,8 @@ export const file_caches = {}; // key -> ByteArray
 export function load(url) {
   const file = file_caches[url];
   if (!file) {
-    console.warn('[loader] 资源暂未加载，等待下载就绪: ' + url);
+    console.error('资源未加载: ' + url);
+    alert('未加载资源: ' + url);
     return;
   }
   return file;
@@ -132,7 +133,6 @@ function loadUrl(url, callback, id) {
 // 解包仙剑的 mkf 打包格式，返回其对应索引的 ByteArray 子视图
 export function loadMkf(file, index) {
   const data = load(file);
-  if (!data) return;
   const start = data.getInt(index * 4);
   const end = data.getInt(index * 4 + 4);
   

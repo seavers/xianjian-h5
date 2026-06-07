@@ -20,12 +20,11 @@ function createImage(image, width, height) {
 
 export function mkf2Count(file, index) {
   const data = loadMkf(file, index);
-  return data ? data.getShort(0) : 0;
+  return data.getShort(0);
 }
 
 // mkf 格式内的子打包
 export function loadMkf2(data, index) {
-  if (!data) return;
   const start = data.getShort(index * 2) * 2; // 地址要乘以 2 的
   const end = data.getShort(index * 2 + 2) * 2;
   if (start >= end && end !== 0) {
@@ -43,7 +42,6 @@ export function loadSss(sssId) {
 export function loadMap(mapId) {
   return fromCache('map_' + mapId, () => {
     const data = loadMkf('map.mkf', mapId);
-    if (!data) return;
     const dd = deyj(data);
     return dd;
   });
@@ -52,7 +50,6 @@ export function loadMap(mapId) {
 export function loadPal(palId) {
   return fromCache('pal_' + palId + '_' + state.fNightPalette, () => {
     const data = loadMkf('pat.mkf', palId);
-    if (!data) return new Array(256).fill(0xff000000);
 
     var base = 0;
     if (state.fNightPalette) {
@@ -75,9 +72,7 @@ export function loadGop(mapId, gopId) {
   const key = 'gop_' + mapId + '_' + gopId + '_' + state.paletteId + '_' + state.fNightPalette;
   return fromCache(key, () => {
     const gops = loadMkf('gop.mkf', mapId);
-    if (!gops) return;
     const gop = loadMkf2(gops, gopId);
-    if (!gop) return;
     const img = createRleImage(gop);
     return img;
   });
@@ -87,27 +82,22 @@ export function loadMgo(roleId, frame) {
   const key = 'mgo_' + roleId + '_' + frame + '_' + state.paletteId + '_' + state.fNightPalette;
   return fromCache(key, () => {
     const mgos = loadMkf('mgo.mkf', roleId);
-    if (!mgos) return;
     const dmgos = deyj(mgos);
-    if (!dmgos) return;
     const mgo = loadMkf2(dmgos, frame);
-    if (!mgo) return;
     return createRleImage(mgo);
   });
 }
 
 export function loadMgoCount(roleId) {
   const mgos = loadMkf('mgo.mkf', roleId);
-  if (!mgos) return 0;
   const dmgos = deyj(mgos);
-  return dmgos ? dmgos.getShort(0) - 1 : 0; // 从 1 开始
+  return dmgos.getShort(0) - 1; // 从 1 开始
 }
 
 export function loadRgm(rgmId) {
   const key = 'rgm_' + rgmId + '_' + state.paletteId + '_' + state.fNightPalette;
   return fromCache(key, () => {
     const rgm = loadMkf('rgm.mkf', rgmId);
-    if (!rgm) return;
     const img = createRleImage(rgm, true);
     return img;
   });
@@ -117,9 +107,7 @@ export function loadFbp(fbpId) {
   const key = 'fbp_' + fbpId + '_' + state.paletteId + '_' + state.fNightPalette;
   return fromCache(key, () => {
     const fbp = loadMkf('fbp.mkf', fbpId);
-    if (!fbp) return;
     const dfbp = deyj(fbp);
-    if (!dfbp) return;
     const img = createPalImage(dfbp, 320, 200); 
     return img;
   });
@@ -180,12 +168,11 @@ export function createPalImage(data, width, height) {
 // 载入剧情对话文本
 export function loadMsg(msgId) {
   const talk = loadMkf('sss.mkf', 3);
-  if (!talk) return;
   const start = talk.getInt(msgId * 4);
   const end = talk.getInt(msgId * 4 + 4);
 
   const msg = load('m.msg');
-  return msg ? msg.slice(start, end) : undefined;
+  return msg.slice(start, end);
 }
 
 export function loadText(text, index) {
@@ -200,7 +187,6 @@ export function loadWord(charCode, color) {
 
 function _charCode2FonId(code) {
   const file = load('wor16.asc');
-  if (!file) return;
   for (let i = 0; i < file.length / 2; i++) {
     if (file.getShort(i * 2 + 0) === code) {
       return i;
@@ -219,7 +205,6 @@ export function loadFon(fonId, color) {
   const key = 'word_' + index;
   return fromCache(key, () => {
     const fon = load('jianti.fon');
-    if (!fon) return;
     const base = bbb + index * 30;
 
     const data = fon.slice(base, base + 30); // 点阵数据, 16*15/8=30字节
@@ -245,7 +230,6 @@ export function loadFon(fonId, color) {
 export function loadFon2(fonId, color) {
   const index = fonId;
   const fon = load('jianti.fon');
-  if (!fon) return;
   const base = bbb + index * 30;
 
   const data = fon.slice(base, base + 30);
@@ -269,21 +253,18 @@ export function loadFon2(fonId, color) {
 
 export function loadPic(picId) {
   const pics = loadMkf('data.mkf', 9);
-  if (!pics) return;
   const pic = loadMkf2(pics, picId - 1);
   return createRleImage(pic);
 }
 
 export function loadAbc(abcId) {
   const abc = loadMkf('abc.mkf', abcId);
-  if (!abc) return;
   const dabc = deyj(abc);
   return createRleImage(dabc);
 }
 
 export function loadBall(ballId) {
   const ball = loadMkf('ball.mkf', ballId);
-  if (!ball) return;
   return createRleImage(ball, true);
 }
 

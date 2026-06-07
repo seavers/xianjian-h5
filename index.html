@@ -1188,7 +1188,8 @@
 
 
 
-		import('./dashboard/imageExplorer.js').then(({ initImageExplorer }) => {
+		window.initAllUiPanels = () => {
+			import('./dashboard/imageExplorer.js').then(({ initImageExplorer }) => {
 			initImageExplorer({ drawDecodedSprite, getDetailedItemInfo });
 		});
 
@@ -1295,6 +1296,7 @@
 		import('./dashboard/mapModal.js').then(({ initMapModal }) => {
 			initMapModal();
 		});
+	};
 	</script>
 
 </body>

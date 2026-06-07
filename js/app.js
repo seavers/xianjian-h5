@@ -166,6 +166,11 @@ ready(() => {
   initItem();
   initDat();
 
+  // 核心资源载入完毕后，开始初始化所有 React 开发者调试面板
+  if (window.initAllUiPanels) {
+    window.initAllUiPanels();
+  }
+
   // 挂载调试接口至 window 供右侧监视器一键操控
   window.state = state;
   window.toggleScene = toggleScene;
