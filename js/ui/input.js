@@ -102,9 +102,7 @@ function handleGameInput(input, ev) {
 
   // 步骤 3：脚本正在运行阻塞中，只允许空格或回车（blank）操作
   if (Script.isExec()) {
-    if (input !== 'blank') {
-      return;
-    }
+    return;
   }
 
   // 步骤 4：常规移动和按键交互分发

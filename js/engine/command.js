@@ -373,6 +373,7 @@ export function startEventTrig(obj) {
   // 步骤 1：仅设置下一次需要触发的 trigger 脚本信息，在下一 tick 的中央主循环中安全执行
   // 这里只设置触发对象，因为 trigScr 可能在这里之后被修改，参考酒剑仙讨酒脚本39661
   state.nextTriggerScriptObject = obj;
+  console.log('开启Npc触发脚本', obj.id, obj.type, obj.mgoId, obj.trigSrc, obj);
 }
 
 export function setTrigMode(objId, trigMode) {
