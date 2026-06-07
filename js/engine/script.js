@@ -108,7 +108,6 @@ export const Script = {
 
     // 重置挂起的切换标志，避免重复执行
     state.nextSceneId = -1;
-    state.needToFadeIn = false;
 
     // 步骤 1：将游戏状态置为过渡暂停挂起状态
     state.isPaused = true;

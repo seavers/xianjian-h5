@@ -17,6 +17,7 @@ export const state = {
   
   sceneId: -1,
   nextSceneId: -1,
+  currentFbpId: -1,     // 当前全屏剧情背景图 ID（-1 表示无）
   needToFadeIn: false,  // 标识是否fadeIn、fadeOut 场景
   fadeAlpha: 0,         // 场景渐变过渡的黑色遮罩透明度（0表示完全透明，1表示完全黑色）
   fadeColor: '0, 0, 0', // 场景渐变过渡遮罩的 RGB 颜色（默认为黑色 '0, 0, 0'，支持红色 '255, 0, 0' 等）

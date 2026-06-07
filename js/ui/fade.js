@@ -3,59 +3,54 @@ import { renderScreen } from './draw.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// 步骤 1：使用纯 async/await 重构高帧率渐变过渡动画执行器，用 for 循环和 sleep 代替 setInterval，代码更加扁平优雅
+// 步骤 1：全屏渐变过渡动画执行器，仅负责设定渐变透明度 fadeAlpha 并刷新屏幕，摒弃所有冗余 Hack
 export async function startFadeTransition(type, color = '0, 0, 0') {
   state.fadeColor = color;
   const duration = 12;
 
-  // 步骤 1.1：根据渐变类型设定初始帧的半透明遮罩透明度
+  // 步骤 1.1：根据渐变类型设定初始帧的黑色遮罩透明度并渲染
   if (type === 'fadeOut') {
     state.fadeAlpha = 0;
   } else {
-    // 淡入前，首先在 main 层强制重绘一次清澈的新场景第一帧（临时隐藏遮罩以免 main 被画黑）
-    const savedAlpha = state.fadeAlpha;
-    state.fadeAlpha = 0;
-    renderScreen(true);
-    state.fadeAlpha = savedAlpha;
-
     state.fadeAlpha = 1;
-    renderScreen('fadeIn'); // 淡入时优先在 talk 层绘制一帧全黑遮盖，防止穿帮白屏闪烁
   }
+  renderScreen(type);
 
-  // 步骤 1.2：步进转场定时渲染逻辑（每 30ms 渲染一帧以提供 60fps 般丝滑视觉体验）
+  // 步骤 1.2：在过渡期间步进淡入淡出画面
   for (let frame = 1; frame <= duration; frame++) {
     await sleep(30);
-    
+
     if (type === 'fadeOut') {
       state.fadeAlpha = frame / duration;
-      renderScreen('fadeOut');
     } else {
       state.fadeAlpha = 1 - frame / duration;
-      renderScreen('fadeIn');
     }
+    renderScreen(type);
   }
 
-  // 步骤 1.3：转场终点半透明黑色遮罩绝对定位与重绘同步
+  // 步骤 1.3：强制设置过渡终态的遮罩透明度并刷新最后一帧
   if (type === 'fadeOut') {
     state.fadeAlpha = 1;
-    renderScreen('fadeOut');
   } else {
     state.fadeAlpha = 0;
-    renderScreen('fadeIn'); // 清空 talk 层的黑色遮罩，露出底下的 main 层
   }
+  renderScreen(type);
 }
 
-// 步骤 2：使用极简的 async/await 定义全屏淡出
+// 步骤 2：全屏淡出。淡出完毕后，进入物理黑屏等待状态（needToFadeIn = true）
 export async function fadeOut() {
   await startFadeTransition('fadeOut');
+  state.needToFadeIn = true;
 }
 
-// 步骤 3：使用极简的 async/await 定义全屏淡入
+// 步骤 3：全屏淡入。淡入开始前，解除物理黑屏状态（needToFadeIn = false），以使 fadeAlpha 渐变生效
 export async function fadeIn() {
+  state.needToFadeIn = false;
   await startFadeTransition('fadeIn');
 }
 
 // 步骤 4：定义全屏淡出至红色 (Game Over 效果)
 export async function fadeScreenToRed() {
   await startFadeTransition('fadeOut', '255, 0, 0');
+  state.needToFadeIn = true;
 }

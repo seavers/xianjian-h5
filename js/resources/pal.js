@@ -104,6 +104,18 @@ export function loadRgm(rgmId) {
 }
 
 export function loadFbp(fbpId) {
+  // 步骤 1：针对无效的大图 ID（65535 或 -1）进行防御，直接返回 320x200 纯黑 Canvas
+  if (fbpId === 65535 || fbpId === -1) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 320;
+    canvas.height = 200;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, 320, 200);
+    return canvas;
+  }
+
+  // 步骤 2：对合法的剧情大图从缓存或 fbp.mkf 资源包加载并解码
   const key = 'fbp_' + fbpId + '_' + state.paletteId + '_' + state.fNightPalette;
   return fromCache(key, () => {
     const fbp = loadMkf('fbp.mkf', fbpId);

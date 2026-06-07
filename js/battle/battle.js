@@ -59,10 +59,7 @@ export async function start(id, failId, fleeId) {
   fleeScriptId = fleeId;
 
   // 步骤 1.1：判断前序场景是否已被 0x50 淡出。若是，则无需再次淡出；若否，则先播放淡出动画
-  const needFade = state.needToFadeIn;
-  state.needToFadeIn = false;
-
-  if (needFade) {
+  if (state.needToFadeIn) {
     // 画面已被 0x50 淡出至黑色，只需标记后续加载完后淡入即可
   } else {
     await fadeOut();

@@ -849,6 +849,9 @@ export async function fadeScreen(speed) {
 }
 
 export function performToggleScene(targetSceneId) {
+  // 步骤 1：重置剧情大图 ID 为无，恢复常规大地图场景
+  state.currentFbpId = -1;
+
   const scene = state.scenes[targetSceneId];
   if (!scene) {
     console.warn('[performToggleScene] 未能匹配到目标场景配置: ' + targetSceneId);
@@ -1084,11 +1087,10 @@ export function stopMusic(fadeTime) {
 }
 
 export function showFbp(fbpId, effect) {
-  // 步骤 1：在全局状态机中记录当前的 FBP 全屏背景图 ID
+  // 步骤 1：在全局状态机中记录当前的 FBP 全屏背景图 ID，并直接触发屏幕重绘
   state.currentFbpId = fbpId;
-
-  // 步骤 2：输出详细的展示 FBP 图片调试日志，以供后续结局大图渲染时对接
   console.log(`[0x76 showFbp] 展示全屏剧情背景图 (FBP ID: ${fbpId}, 渐变效果: ${effect})`);
+  update(true);
 }
 
 export function setBattlefield(battlefieldId) {

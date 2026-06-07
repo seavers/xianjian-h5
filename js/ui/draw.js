@@ -1,5 +1,5 @@
 import { state } from '../engine/state.js';
-import { loadMap, loadGop, loadMgo, loadFon, u9s, u3s } from '../resources/pal.js';
+import { loadMap, loadGop, loadMgo, loadFon, u9s, u3s, loadFbp } from '../resources/pal.js';
 
 export const updateCount = [0, 0, 0];
 let tiles = [];
@@ -398,24 +398,40 @@ export function renderScreen(refreshType) {
   const mainCtx = state.contexts.main;
   if (!mainCtx) return;
 
-  if (refreshType === 'fadeIn' || refreshType == 'fadeOut') {
-    updateFadeInOut();
+  // 步骤 1：同步更新最顶层 startup 遮罩层的绘制状态
+  updateFadeInOut();
+
+  // 步骤 2：如果是淡入淡出帧更新，直接在此返回，避免触动底下常规画面
+  if (refreshType === 'fadeIn' || refreshType === 'fadeOut') {
     updateCount[1]++;
     return ;
   }
 
-  // 如果是战斗模式，常规重绘交由战斗系统的 draw() 完成
+  // 步骤 3：如果是战斗模式，常规重绘交由战斗系统的 draw() 完成
   if (state.currentMode === 'battle' && window.Battle && typeof window.Battle.draw === 'function') {
     window.Battle.draw();
     updateCount[1]++;
     return;
   }
 
+  // 步骤 4：根据大地图刷新标记，载入并局部更新大地图背景瓦片
   if (refreshType) {
     updateCount[0]++;
     drawMapBack();
   }
 
+  // 步骤 5：如果当前有 FBP 背景图需要展示，直接在主屏幕绘制 FBP 图像，并跳过后续地图与实体绘制
+  if (state.currentFbpId !== undefined && state.currentFbpId !== -1) {
+    mainCtx.clearRect(0, 0, mainCtx.canvas.width, mainCtx.canvas.height);
+    const fbpImg = loadFbp(state.currentFbpId);
+    if (fbpImg) {
+      mainCtx.drawImage(fbpImg, 0, 0);
+    }
+    updateCount[1]++;
+    return;
+  }
+
+  // 步骤 6：收集并绘制大地图的前景瓦片与所有事件实体、主角及跟随者
   tiles = [];
   drawEventObject();
   drawRole();
@@ -434,28 +450,25 @@ export function renderScreen(refreshType) {
     drawNpcIdsOnScreen();
   }
 
-  // 步骤 4：绘制全屏渐变半透明遮罩，用于场景淡入淡出过渡（支持黑色、红色等）
-  // 正常画面渲染时，如果有遮罩直接画在 main 屏幕上，保证不擦除 talk 层的文字
-  if (state.fadeAlpha > 0) {
-    const color = state.fadeColor || '0, 0, 0';
-    mainCtx.fillStyle = `rgba(${color}, ${state.fadeAlpha})`;
-    mainCtx.fillRect(0, 0, mainCtx.canvas.width, mainCtx.canvas.height);
-  }
-
   updateCount[1]++;
 }
 
 function updateFadeInOut() {
-  const talkCtx = state.contexts.talk;
-  if (!talkCtx) return;
+  const startupCtx = state.contexts.startup;
+  if (!startupCtx) return;
 
-  // 必须先清空 talk 层，防止半透明黑色帧叠加
-  talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
+  // 必须先清空 startup 层，防止半透明遮罩帧叠加
+  startupCtx.clearRect(0, 0, startupCtx.canvas.width, startupCtx.canvas.height);
 
-  if (state.fadeAlpha > 0) {
+  // 步骤 1：只要处于黑屏等待状态，顶层强制填满纯黑色
+  if (state.needToFadeIn) {
+    startupCtx.fillStyle = '#000000';
+    startupCtx.fillRect(0, 0, startupCtx.canvas.width, startupCtx.canvas.height);
+  } else if (state.fadeAlpha > 0) {
+    // 步骤 2：若处于渐变期间，根据当前透明度绘制半透明遮罩
     const color = state.fadeColor || '0, 0, 0';
-    talkCtx.fillStyle = `rgba(${color}, ${state.fadeAlpha})`;
-    talkCtx.fillRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
+    startupCtx.fillStyle = `rgba(${color}, ${state.fadeAlpha})`;
+    startupCtx.fillRect(0, 0, startupCtx.canvas.width, startupCtx.canvas.height);
   }
 }
 
