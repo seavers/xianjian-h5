@@ -12,15 +12,18 @@ export async function startFadeTransition(type, color = '0, 0, 0') {
   if (type === 'fadeOut') {
     state.fadeAlpha = 0;
   } else {
-    // 步骤 1.2：淡入前，优先在 talk 层绘制一帧全黑遮盖，确保屏幕此时已被完全涂黑，杜绝亮屏闪烁穿帮
+    // 步骤 1.2：优先在 talk 层绘制一帧全黑遮盖，确保屏幕此时已被完全涂黑，杜绝亮屏闪烁穿帮
     state.fadeAlpha = 1;
     renderScreen('fadeIn');
 
-    // 步骤 1.3：在大层 talkCtx 被完全遮蔽后，在 main 层强制重绘清澈的新场景第一帧
-    const savedAlpha = state.fadeAlpha;
-    state.fadeAlpha = 0;
-    renderScreen(true);
-    state.fadeAlpha = savedAlpha;
+    // 步骤 1.3：仅在非战斗探索模式下，才需要在底图上临时去除遮罩并重绘新场景清晰第一帧
+    // 对于战斗模式，战斗系统 start() 阶段已经重绘了清晰首帧并已重新蒙黑，在此必须彻底跳过，防止战斗系统 draw() 内部擦除 talkCtx 遮罩产生瞬间亮屏闪烁
+    if (state.currentMode !== 'battle') {
+      const savedAlpha = state.fadeAlpha;
+      state.fadeAlpha = 0;
+      renderScreen(true);
+      state.fadeAlpha = savedAlpha;
+    }
   }
 
   // 步骤 1.4：步进转场定时渲染逻辑（每 30ms 渲染一帧以提供 60fps 般丝滑视觉体验）
