@@ -1291,7 +1291,15 @@ function ImageExplorerApp() {
                 <option value="53">Role 53 (集市商贩)</option>
               </select>
               <span style=${{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>或输入动作包 ID:</span>
-              <input type="number" id="input-image-role-id" value=${mgoRoleId} min="0" max="636" onInput=${(e) => setMgoRoleId(e.target.value)} onKeyDown=${(e) => e.key === 'Enter' && window.searchImageRole()} style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', fontSize: '8.5px', padding: '2px 4px', width: '50px', outline: 'none', textAlign: 'center' }} />
+              <input type="number" id="input-image-role-id" value=${mgoRoleId} min="0" max="636" onInput=${(e) => {
+                const val = e.target.value;
+                setMgoRoleId(val);
+                const roleId = parseInt(val, 10);
+                if (!isNaN(roleId) && roleId >= 0 && roleId <= 636) {
+                  setSubId(roleId);
+                  setCurrentPage(0);
+                }
+              }} onKeyDown=${(e) => e.key === 'Enter' && window.searchImageRole()} style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', fontSize: '8.5px', padding: '2px 4px', width: '50px', outline: 'none', textAlign: 'center' }} />
               <button class="btn-dbg" onClick=${window.searchImageRole} style=${{ color: 'var(--glow-green)', borderColor: 'rgba(0,255,157,0.2)', padding: '2px 6px', fontSize: '8.5px', cursor: 'pointer' }}>载入动作</button>
             </div>
           `}
@@ -1309,7 +1317,15 @@ function ImageExplorerApp() {
                 <option value="24">Map 24 (十里坡)</option>
               </select>
               <span style=${{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>或输入大地图 ID (0-225):</span>
-              <input type="number" id="input-image-map-id" value=${gopMapId} min="0" max="225" onInput=${(e) => setGopMapId(e.target.value)} onKeyDown=${(e) => e.key === 'Enter' && window.searchImageMap()} style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', fontSize: '8.5px', padding: '2px 4px', width: '50px', outline: 'none', textAlign: 'center' }} />
+              <input type="number" id="input-image-map-id" value=${gopMapId} min="0" max="225" onInput=${(e) => {
+                const val = e.target.value;
+                setGopMapId(val);
+                const mapId = parseInt(val, 10);
+                if (!isNaN(mapId) && mapId >= 0 && mapId <= 225) {
+                  setSubId(mapId);
+                  setCurrentPage(0);
+                }
+              }} onKeyDown=${(e) => e.key === 'Enter' && window.searchImageMap()} style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', fontSize: '8.5px', padding: '2px 4px', width: '50px', outline: 'none', textAlign: 'center' }} />
               <button class="btn-dbg" onClick=${window.searchImageMap} style=${{ color: 'var(--glow-green)', borderColor: 'rgba(0,255,157,0.2)', padding: '2px 6px', fontSize: '8.5px', cursor: 'pointer' }}>载入图元</button>
             </div>
           `}
