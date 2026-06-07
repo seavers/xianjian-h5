@@ -2,6 +2,8 @@
 
 import { React, ReactDOM, html, drawPixelatedToCanvas } from './gameData/ui-helper.js';
 import { state } from '../js/engine/state.js';
+import { loadSpriteFrame } from '../js/battle/battleData.js';
+import { getWordImg } from './gameData/helpers.js';
 
 const { useState, useEffect, useRef, useMemo } = React;
 
@@ -9,32 +11,35 @@ const { useState, useEffect, useRef, useMemo } = React;
 const BATTLE_COLOR = '#a78bfa';
 const BATTLE_COLOR_RGB = '167, 139, 250';
 
-// 像素化精灵绘制辅助函数
+// 像素化精灵绘制辅助函数，改为同步流程防止瞬间清屏产生的空白闪烁
 function drawBattleSprite(canvasEl, spriteData, frameIndex) {
   if (!canvasEl || !spriteData) {
     return;
   }
-  const ctx = canvasEl.getContext('2d');
-  ctx.imageSmoothingEnabled = false;
-  ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
-  import('../js/battle/battleData.js').then(({ loadSpriteFrame }) => {
+  try {
+    // 1. 同步加载精灵帧
     const frameImg = loadSpriteFrame(spriteData, frameIndex);
     if (!frameImg) {
       return;
     }
+
+    // 2. 加载成功后同步清空画布并立即重绘，杜绝异步导致的瞬时空白闪烁
+    const ctx = canvasEl.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
     const scale = Math.min(canvasEl.width / frameImg.width, canvasEl.height / frameImg.height);
     const cleanScale = Math.max(1, Math.floor(scale));
     const dx = (canvasEl.width - frameImg.width * cleanScale) / 2;
     const dy = (canvasEl.height - frameImg.height * cleanScale) / 2;
     ctx.drawImage(frameImg, dx, dy, frameImg.width * cleanScale, frameImg.height * cleanScale);
-  }).catch(() => {
+  } catch (e) {
     // 忽略越界帧错误
-  });
+  }
 }
 
-// 异步加载原版仙剑点阵汉字并在画布上平铺渲染的组件
+// 静态加载原版仙剑点阵汉字并在画布上平铺渲染的同步组件，防止闪烁
 function WordImage({ wordId, fallback = '无' }) {
   const canvasRef = useRef(null);
   const [imgWidth, setImgWidth] = useState(48);
@@ -42,26 +47,32 @@ function WordImage({ wordId, fallback = '无' }) {
 
   useEffect(() => {
     if (!canvasRef.current || !wordId) return;
-    const ctx = canvasRef.current.getContext('2d');
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    
-    import('./gameData/helpers.js').then(({ getWordImg }) => {
+
+    try {
+      // 1. 同步解析获取点阵图像
       const img = getWordImg(wordId);
       if (img) {
         setImgWidth(img.width);
         setImgHeight(img.height);
+        
+        // 2. 同步重设尺寸并清空绘制，防止闪烁
         canvasRef.current.width = img.width;
         canvasRef.current.height = img.height;
-        const newCtx = canvasRef.current.getContext('2d');
-        newCtx.imageSmoothingEnabled = false;
-        newCtx.drawImage(img, 0, 0);
+        const ctx = canvasRef.current.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        ctx.clearRect(0, 0, img.width, img.height);
+        ctx.drawImage(img, 0, 0);
+      } else {
+        const ctx = canvasRef.current.getContext('2d');
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       }
-    }).catch(() => {});
+    } catch (e) {}
   }, [wordId]);
 
   if (!wordId) {
     return html`<span style=${{ color: 'rgba(255,255,255,0.2)', fontSize: '7.5px' }}>${fallback}</span>`;
   }
+  
   return html`<canvas ref=${canvasRef} width=${imgWidth} height=${imgHeight} style=${{ imageRendering: 'pixelated', verticalAlign: 'middle', height: '13px', width: 'auto' }}></canvas>`;
 }
 
