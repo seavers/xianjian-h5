@@ -11,6 +11,25 @@ const { useState, useEffect, useRef, useMemo } = React;
 const BATTLE_COLOR = '#a78bfa';
 const BATTLE_COLOR_RGB = '167, 139, 250';
 
+const DEFAULT_ROLE_NAMES = ['李逍遥', '赵灵儿', '林月如', '巫后', '阿奴', '盖罗娇'];
+const DEFAULT_ROLE_TILE_IDS = [2, 3, 7, 5, 4, 8];
+const big5Decoder = new TextDecoder('big5');
+
+function getRoleName(role) {
+  if (!role) return '';
+  if (role.nameId !== undefined && state.words && state.words[role.nameId]) {
+    try {
+      const bytes = state.words[role.nameId];
+      const decodedStr = big5Decoder.decode(new Uint8Array(bytes)).trim();
+      const simplifiedFn = window.toSimplifiedFn;
+      return simplifiedFn ? simplifiedFn(decodedStr) : decodedStr;
+    } catch (e) {
+      console.error('解码姓名失败:', e);
+    }
+  }
+  return DEFAULT_ROLE_NAMES[role.index] || `角色 #${role.index}`;
+}
+
 // 像素化精灵绘制辅助函数，改为同步流程防止瞬间清屏产生的空白闪烁
 function drawBattleSprite(canvasEl, spriteData, frameIndex) {
   if (!canvasEl || !spriteData) {
@@ -92,6 +111,11 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
 
   // --- 事件触发统计状态 ---
   const [trigModes, setTrigModes] = useState([]);
+
+  // --- 主角及团队6人选择状态 ---
+  const [selectedRoleIndex, setSelectedRoleIndex] = useState(0);
+  const selectedRoleIndexRef = useRef(0);
+  selectedRoleIndexRef.current = selectedRoleIndex;
 
   // --- 逍遥属性状态 ---
   const [heroLv, setHeroLv] = useState('1');
@@ -401,45 +425,56 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
       });
       setTrigModes(modesList);
 
-      // 4. 同步逍遥属性及装备
-      const isCheated = state.money > 2000;
-      setHeroLv(isCheated ? '99' : '1');
-      setHeroHp(isCheated ? '999' : '100');
-      setHeroMaxHp(isCheated ? '999' : '100');
-      setHeroMp(isCheated ? '999' : '80');
-      setHeroMaxMp(isCheated ? '999' : '80');
-      setHeroAtk(isCheated ? '640' : '45');
-      setHeroDef(isCheated ? '480' : '30');
-      setHeroSpd(isCheated ? '320' : '22');
-      setHeroLck(isCheated ? '220' : '15');
-      setHeroMag(isCheated ? '350' : '28');
-      setHeroPoi(isCheated ? '100%' : '5%');
-      setHeroRes({
-        fire: isCheated ? '85%' : '10%',
-        thunder: isCheated ? '85%' : '10%',
-        water: isCheated ? '85%' : '10%',
-        wind: isCheated ? '85%' : '10%',
-        earth: isCheated ? '85%' : '10%'
-      });
-
-      const role = state.party[0] || state.roles[0];
+      // 4. 同步选中主角属性及装备
+      const currentRoleIdx = selectedRoleIndexRef.current;
+      const role = state.roles[currentRoleIdx] || state.roles[0];
       if (role) {
-        setHeroTileId(role.tileId || 0);
-        setHeroFrame(role.frame || 0);
+        setHeroLv(role.level !== undefined ? role.level.toString() : '1');
+        setHeroHp(role.hp !== undefined ? role.hp.toString() : '100');
+        setHeroMaxHp(role.maxHp !== undefined ? role.maxHp.toString() : '100');
+        setHeroMp(role.mp !== undefined ? role.mp.toString() : '80');
+        setHeroMaxMp(role.maxMp !== undefined ? role.maxMp.toString() : '80');
+        setHeroAtk(role.attackStrength !== undefined ? role.attackStrength.toString() : '45');
+        setHeroDef(role.defense !== undefined ? role.defense.toString() : '30');
+        setHeroSpd(role.dexterity !== undefined ? role.dexterity.toString() : '22');
+        setHeroLck(role.fleeRate !== undefined ? role.fleeRate.toString() : '15');
+        setHeroMag(role.magicStrength !== undefined ? role.magicStrength.toString() : '28');
+        setHeroPoi(role.poisonResistance !== undefined ? `${role.poisonResistance}%` : '5%');
+        
+        const res = role.elementalResistance || [10, 10, 10, 10, 10];
+        setHeroRes({
+          wind: `${res[0]}%`,
+          thunder: `${res[1]}%`,
+          fire: `${res[2]}%`,
+          water: `${res[3]}%`,
+          earth: `${res[4]}%`
+        });
+
+        const partyMember = state.party.find(p => p.index === role.index);
+        const liveRole = partyMember || role;
+
+        setHeroTileId(liveRole.tileId || DEFAULT_ROLE_TILE_IDS[role.index] || 0);
+        setHeroFrame(liveRole.frame || 0);
         
         let dirText = '下 (0)';
-        if (role.dir === 1) dirText = '左 (1)';
-        else if (role.dir === 2) dirText = '上 (2)';
-        else if (role.dir === 3) dirText = '右 (3)';
+        if (liveRole.dir === 1) dirText = '左 (1)';
+        else if (liveRole.dir === 2) dirText = '上 (2)';
+        else if (liveRole.dir === 3) dirText = '右 (3)';
         setHeroDirText(dirText);
-        setHeroLayer(role.layer || '0');
+        setHeroLayer(liveRole.layer !== undefined ? liveRole.layer.toString() : '0');
+
+        const wpId = role.equipments ? role.equipments[0] : 0;
+        const arId = role.equipments ? role.equipments[2] : 0;
+        const wpName = wpId ? (getDetailedItemInfo(wpId)?.name || `武器 #${wpId}`) : '无';
+        const arName = arId ? (getDetailedItemInfo(arId)?.name || `防具 #${arId}`) : '无';
+        setHeroWp(wpName);
+        setHeroAr(arName);
+
+        setHeroExp(role.level ? (role.level * 100).toString() : '100');
+        setHeroNext(role.level ? (role.level * 150).toString() : '150');
       }
 
       setHeroGoldText(`${state.money || 0} 文`);
-      setHeroExp(isCheated ? '99999' : '45');
-      setHeroNext(isCheated ? '0' : '120');
-      setHeroWp(isCheated ? '无极宝剑 (+120)' : '生锈铁剑 (+5)');
-      setHeroAr(isCheated ? '天蚕宝甲 (+85)' : '粗布麻衣 (+3)');
 
       // 5. 同步包裹行囊列表
       const ownItemsList = state.ownItems || [];
@@ -511,9 +546,10 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
 
   // 挂载轮询定时器
   useEffect(() => {
+    syncStateData();
     const interval = setInterval(syncStateData, 200);
     return () => clearInterval(interval);
-  }, [npcs.length, onlyHumanNpc, onlyVisibleNpc, onlyHasTrigNpc]);
+  }, [npcs.length, onlyHumanNpc, onlyVisibleNpc, onlyHasTrigNpc, selectedRoleIndex]);
 
   // 主角 2D 走步预览重绘
   useEffect(() => {
@@ -967,11 +1003,70 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
           <!-- 横栏二：主角 24 项多维矩阵 -->
           <div class="panel-row" style=${{ display: 'block' }}>
             <div class="panel-col" style=${{ border: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.01)', borderRadius: '2px', padding: '6px 8px' }}>
-              <div class="section-header" style=${{ fontSize: '9px', fontWeight: 'bold', marginBottom: '5px' }}>👥 逍遥 24 项多维属性大矩阵 (Hero Attributes)</div>
+              <div class="section-header" style=${{ fontSize: '9px', fontWeight: 'bold', marginBottom: '5px' }}>👥 主角团实时状态矩阵 (Hero Attributes)</div>
+              
+              <!-- 6人选择卡片 Tabs -->
+              <div class="hero-tabs" style=${{ display: 'flex', gap: '4px', marginBottom: '6px', overflowX: 'auto' }}>
+                ${Array.from({ length: 6 }).map((_, i) => {
+                  const role = state.roles[i] || { index: i };
+                  const name = getRoleName(role);
+                  const isInParty = state.party.some(p => p.index === i);
+                  const isSelected = selectedRoleIndex === i;
+                  
+                  return html`
+                    <div 
+                      key=${i}
+                      onClick=${() => setSelectedRoleIndex(i)}
+                      style=${{
+                        flex: 1,
+                        minWidth: '50px',
+                        padding: '3px 4px',
+                        borderRadius: '2px',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        fontSize: '8px',
+                        fontWeight: 'bold',
+                        border: isSelected ? '1px solid var(--glow-yellow)' : '1px solid rgba(255,255,255,0.04)',
+                        background: isSelected ? 'rgba(255,208,0,0.1)' : (isInParty ? 'rgba(0,255,157,0.03)' : 'rgba(0,0,0,0.2)'),
+                        color: isSelected ? 'var(--glow-yellow)' : (isInParty ? '#00ff9d' : 'rgba(255,255,255,0.4)'),
+                        position: 'relative',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '2px'
+                      }}
+                    >
+                      <span>${name}</span>
+                      ${isInParty ? html`
+                        <span style=${{
+                          fontSize: '6.5px',
+                          padding: '0.5px 2px',
+                          borderRadius: '1px',
+                          background: 'rgba(0,255,157,0.15)',
+                          color: '#00ff9d',
+                          zoom: 0.9
+                        }}>在队伍</span>
+                      ` : html`
+                        <span style=${{
+                          fontSize: '6.5px',
+                          padding: '0.5px 2px',
+                          borderRadius: '1px',
+                          background: 'rgba(255,255,255,0.03)',
+                          color: 'rgba(255,255,255,0.2)',
+                          zoom: 0.9
+                        }}>未入队</span>
+                      `}
+                    </div>
+                  `;
+                })}
+              </div>
+
               <div class="hero-block-container" style=${{ display: 'flex', gap: '8px' }}>
                 <div class="hero-avatar-card" style=${{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'center', justifyContent: 'center', width: '76px', height: '110px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '2px', padding: '4px 2px' }}>
-                  <canvas ref=${heroCanvasRef} width="48" height="54" style=${{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '2px', imageRendering: 'pixelated', width: '48px', height: '54px' }}></canvas>
-                  <span class="hero-name" style=${{ fontSize: '9.5px', fontWeight: 'bold', color: '#fff' }}>李逍遥</span>
+                  <canvas id="canvas-hero-sprite" ref=${heroCanvasRef} width="48" height="54" style=${{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '2px', imageRendering: 'pixelated', width: '48px', height: '54px' }}></canvas>
+                  <span class="hero-name" style=${{ fontSize: '9.5px', fontWeight: 'bold', color: '#fff' }}>${getRoleName(state.roles[selectedRoleIndex] || { index: selectedRoleIndex })}</span>
                   <span style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.3)', marginTop: '-1px' }}>F: ${heroFrame}</span>
                   <button class="btn-dbg" onClick=${openFrameGalleryToImageExplorer} style=${{ padding: '1px 4px', fontSize: '7.5px', color: 'var(--glow-yellow)', cursor: 'pointer' }}>🔍 帧画廊</button>
                 </div>
