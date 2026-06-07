@@ -647,7 +647,6 @@ export async function useNightPalette() {
 
   // 步骤 2：输出详细的黑夜调色板生效调试日志，供以后转场特效滤镜渲染使用
   console.log('[0x54 useNightPalette] 强制开启黑夜调色板模式');
-  update(true);
 }
 
 export async function addMagic(magicId, roleId) {
@@ -1199,7 +1198,7 @@ export async function startBattle(battleId, failScriptId, fleeScriptId) {
 export function replaceEntry(scriptId) {
   if(this.type == 'scene') {
     this.enterScriptId = scriptId;
-  } else if(this.type == 'trig') {
+  } else if(this.type == 'npc') {
     this.trigScr = scriptId;
   }
 }
