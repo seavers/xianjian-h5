@@ -1191,13 +1191,20 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
       <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', borderTop: '1px dotted rgba(255,255,255,0.03)', paddingTop: '5px' }}>
         <div style=${{ display: 'flex', gap: '4px', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style=${{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>💾 存档控制:</span>
-          <input 
-            type="number" 
-            min="1" 
-            value=${saveSlotId} 
-            onInput=${(e) => setSaveSlotId(parseInt(e.target.value, 10))} 
-            style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#ffff00', fontSize: '8.5px', padding: '2px 4px', width: '40px', outline: 'none', textAlign: 'center', borderRadius: '2px' }}
-          />
+          <!-- 槽位号：自定义 −/+ 按钮，避免 React 受控下 spin 不响应 -->
+          <div style=${{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+            <button
+              class="btn-dbg"
+              onClick=${() => setSaveSlotId(v => Math.max(1, v - 1))}
+              style=${{ padding: '1px 5px', fontSize: '10px', lineHeight: 1, color: '#ffff00', borderColor: 'rgba(255,255,0,0.2)', background: 'rgba(255,255,0,0.04)', minWidth: '18px' }}
+            >−</button>
+            <span style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.1)', color: '#ffff00', fontSize: '9px', padding: '1px 6px', minWidth: '32px', textAlign: 'center', borderRadius: '2px', display: 'inline-block', fontWeight: 'bold', letterSpacing: '0.5px' }}>${saveSlotId}</span>
+            <button
+              class="btn-dbg"
+              onClick=${() => setSaveSlotId(v => v + 1)}
+              style=${{ padding: '1px 5px', fontSize: '10px', lineHeight: 1, color: '#ffff00', borderColor: 'rgba(255,255,0,0.2)', background: 'rgba(255,255,0,0.04)', minWidth: '18px' }}
+            >+</button>
+          </div>
           <button class="btn-dbg" onClick=${() => window.debugLoadGame?.(saveSlotId)} style=${{ color: '#93c5fd', borderColor: 'rgba(147,197,253,0.25)', background: 'rgba(147,197,253,0.05)', padding: '2px 5px', fontSize: '8.5px' }}>读取</button>
           <button class="btn-dbg" onClick=${() => window.debugSaveGame?.(saveSlotId)} style=${{ color: 'var(--glow-green)', borderColor: 'rgba(0,255,157,0.25)', background: 'rgba(0,255,157,0.05)', padding: '2px 5px', fontSize: '8.5px' }}>保存</button>
         </div>
