@@ -91,6 +91,8 @@ export async function playMusic(musicNum, loop = true, fadeTime = 0) {
   currentMusicNum = musicNum;
   currentLoop = loop;
 
+  console.log(`[Music] playMusic 开始播放音乐 ID: ${musicNum}, 循环: ${loop}, 渐入: ${fadeTime} 秒`);
+
   await initMusic();
   if (!musMkf) {
     console.warn('[Music] mus.mkf 背景音乐库未载入，无法合成播放音乐 ID:', musicNum);
@@ -161,9 +163,11 @@ export async function playMusic(musicNum, loop = true, fadeTime = 0) {
           const active = rixPlayer.update();
           if (!active) {
             if (currentLoop) {
+              console.log(`[Music] 音乐 ID ${currentMusicNum} 到达乐谱末尾，触发循环重播`);
               // 循环播放模式：重新加载 RIX 缓存重头开始
               rixPlayer.load(rixData);
             } else {
+              console.log(`[Music] 音乐 ID ${currentMusicNum} 到达乐谱末尾，单次播放模式，开始静音停止`);
               // 单次播放模式：填充剩余静音并终止
               left.fill(0, offset);
               right.fill(0, offset);
@@ -199,6 +203,8 @@ export function stopMusic(fadeTime = 0) {
   const ctx = audioCtx;
   const currentGainNode = gainNode;
   const currentScriptNode = scriptNode;
+
+  console.log(`[Music] stopMusic 被调用，淡出时间: ${fadeTime} 秒，当前音乐 ID: ${currentMusicNum}`);
 
   // 提前断开引用的全局控制，允许下一首音乐无冲突快速播放
   gainNode = null;

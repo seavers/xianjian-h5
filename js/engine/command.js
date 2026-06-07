@@ -1466,6 +1466,13 @@ export async function loadLastSavedGame() {
     });
   });
 
+  // 3. 恢复背景音乐（由 0x43 setMusic 写入 state.wNumMusic）
+  const musicNum = state.wNumMusic || 0;
+  if (musicNum > 0) {
+    console.log(`[0x4E loadLastSavedGame] 读档成功，恢复背景音乐 ID: ${musicNum}`);
+    playMusic(musicNum, true, 1.0);
+  }
+
   // 4. 淡入屏幕并刷新渲染
   await fadeIn();
   await update(true);
