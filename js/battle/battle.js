@@ -236,7 +236,21 @@ function draw() {
     if (frameImg) {
       const dx = actor.x - frameImg.width / 2;
       const dy = actor.y - frameImg.height;
+
+      // 选中敌人目标时高亮闪烁（对应 sdlpal PAL_RLEBlitWithColorShift(sprite, ..., colorShift=7)）
+      if (phase === 'select' && menuState === 'target' && item.type === 'enemy') {
+        const isTarget = enemies.indexOf(actor) === targetEnemyIndex;
+        if (isTarget && Math.floor(Date.now() / 250) % 2 === 1) {
+          mainCtx.filter = 'brightness(2.5) saturate(0.2)';
+        } else {
+          mainCtx.filter = 'none';
+        }
+      } else {
+        mainCtx.filter = 'none';
+      }
+
       mainCtx.drawImage(frameImg, dx, dy);
+      mainCtx.filter = 'none';
       actor.width = frameImg.width;
       actor.height = frameImg.height;
     }
@@ -269,31 +283,21 @@ function draw() {
     // 恢复默认滤镜，防止影响后续绘制
     talkCtx.filter = 'none';
 
-    // 绘制指示当前正在选择的队员箭咀（使用 data.mkf #9 第70号图片）
+    // 绘制指示当前正在选择的队员箭头
+    // 参考 sdlpal: x = pos.x - 8, y = pos.y - 74（pos 是角色脚底中心，74 是固定头顶偏移）
     const activePlayer = players[activePlayerIndex];
     if (activePlayer && activePlayer.hp > 0) {
-      const arrowImg = loadPic(70);
-      const bobOffset = Math.floor(Date.now() / 250) % 2 * 3;
+      // 交替显示红色(68号)和普通(69号)箭头，对应 sdlpal s_iFrame & 1 的帧交替
+      const arrowPicId = Math.floor(Date.now() / 250) % 2 === 0 ? 69 : 70;
+      const arrowImg = loadPic(arrowPicId);
       if (arrowImg) {
-        const ax = activePlayer.x - arrowImg.width / 2;
-        const ay = activePlayer.y - (activePlayer.height || 40) - arrowImg.height - 2 - bobOffset;
+        // sdlpal: x = playerPos.x - 8, y = playerPos.y - 74
+        const ax = activePlayer.x - 8;
+        const ay = activePlayer.y - 74;
         talkCtx.drawImage(arrowImg, ax, ay);
       }
     }
-
-    // 目标敌人选择提示（使用 data.mkf #9 第69号图片）
-    if (menuState === 'target') {
-      const targetEnemy = enemies[targetEnemyIndex];
-      if (targetEnemy && targetEnemy.hp > 0) {
-        const arrowImg = loadPic(69);
-        const bobOffset = Math.floor(Date.now() / 250) % 2 * 3;
-        if (arrowImg) {
-          const ex = targetEnemy.x - arrowImg.width / 2;
-          const ey = targetEnemy.y - (targetEnemy.height || 40) - arrowImg.height - 2 - bobOffset;
-          talkCtx.drawImage(arrowImg, ex, ey);
-        }
-      }
-    }
+    // 敌人目标选中使用高亮闪烁（已在角色绘制阶段处理），此处不再重复绘制箭头
   }
 
   // 5. 绘制右侧状态栏面板 (头像与 HP/MP)
