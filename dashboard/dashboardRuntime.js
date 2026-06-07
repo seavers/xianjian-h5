@@ -30,6 +30,37 @@ function drawBattleSprite(canvasEl, spriteData, frameIndex) {
   });
 }
 
+// 异步加载原版仙剑点阵汉字并在画布上平铺渲染的组件
+function WordImage({ wordId, fallback = '无' }) {
+  const canvasRef = useRef(null);
+  const [imgWidth, setImgWidth] = useState(48);
+  const [imgHeight, setImgHeight] = useState(16);
+
+  useEffect(() => {
+    if (!canvasRef.current || !wordId) return;
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    
+    import('./gameData/helpers.js').then(({ getWordImg }) => {
+      const img = getWordImg(wordId);
+      if (img) {
+        setImgWidth(img.width);
+        setImgHeight(img.height);
+        canvasRef.current.width = img.width;
+        canvasRef.current.height = img.height;
+        const newCtx = canvasRef.current.getContext('2d');
+        newCtx.imageSmoothingEnabled = false;
+        newCtx.drawImage(img, 0, 0);
+      }
+    }).catch(() => {});
+  }, [wordId]);
+
+  if (!wordId) {
+    return html`<span style=${{ color: 'rgba(255,255,255,0.2)', fontSize: '7.5px' }}>${fallback}</span>`;
+  }
+  return html`<canvas ref=${canvasRef} width=${imgWidth} height=${imgHeight} style=${{ imageRendering: 'pixelated', verticalAlign: 'middle', height: '13px', width: 'auto' }}></canvas>`;
+}
+
 function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) {
   // --- 弹窗显隐与大状态 ---
   const [isBattleRunning, setIsBattleRunning] = useState(false);
@@ -725,58 +756,88 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
 
                   return html`
                     <div key=${index} class=${`battle-actor-card ${isDead ? 'dead-actor' : ''} ${isActive ? 'active-turn' : ''}`} style=${{
-                      background: isDead ? 'rgba(255,59,111,0.02)' : 'rgba(0,225,255,0.02)',
-                      border: isDead ? '1px solid rgba(255,59,111,0.1)' : '1px solid rgba(0,225,255,0.1)',
+                      background: isDead ? 'rgba(255,59,111,0.02)' : 'rgba(0,225,255,0.015)',
+                      border: isDead ? '1px solid rgba(255,59,111,0.1)' : '1px solid rgba(0,225,255,0.08)',
                       borderRadius: '4px',
                       padding: '8px',
                       position: 'relative',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '4px',
+                      gap: '5px',
                       boxShadow: isActive ? '0 0 10px rgba(0,225,255,0.15)' : 'none'
                     }}>
-                      <div class="battle-actor-header" style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8.5px', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '3px' }}>
-                        <span class="battle-actor-name-lbl" style=${{ color: 'var(--glow-blue)', fontWeight: 'bold', fontSize: '10px' }}>${player.name}</span>
-                        <span class="battle-actor-action-lbl" style=${{ color: 'var(--glow-yellow)', fontSize: '8px', background: 'rgba(255,208,0,0.08)', padding: '1px 4px', borderRadius: '2px' }}>
-                          ${player.action ? (player.action.type === 'attack' ? `🗡️ 攻击 ➔ #${player.action.target + 1}` : '🔮 施法') : '待命'}
-                        </span>
-                      </div>
-                      
-                      <!-- 动作包元数据标签 -->
-                      <div style=${{ display: 'flex', gap: '6px', fontSize: '7.5px', color: 'rgba(255,255,255,0.3)' }}>
-                        <span style=${{ background: 'rgba(255,255,255,0.04)', padding: '1px 3px', borderRadius: '1px' }}>大地图 MGO: #${player.mgoId}</span>
-                        <span style=${{ background: 'rgba(0,225,255,0.06)', color: 'var(--glow-blue)', padding: '1px 3px', borderRadius: '1px' }}>战斗 f.mkf: #${player.spriteNum}</span>
-                      </div>
-
-                      <div style=${{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: '2px' }}>
-                        <div>
-                          <div style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.35)', display: 'flex', justifyContent: 'space-between' }}>
-                            <span>HP</span>
-                            <span>${player.hp}/${player.maxHp}</span>
+                      <!-- 上半部分：左边放正方形 Canvas 精灵预览，右边放角色状态与基础信息 -->
+                      <div style=${{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <!-- 左置 Canvas 战斗精灵图 (正方形区块) -->
+                        <div style=${{ flexShrink: 0, width: '54px', height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '3px', boxShadow: 'inset 0 0 6px rgba(0,0,0,0.6)' }}>
+                          <canvas id=${`battle-player-sprite-${index}`} width="48" height="48" style=${{ imageRendering: 'pixelated', width: '48px', height: '48px' }}></canvas>
+                        </div>
+                        
+                        <!-- 右置基本状态栏 -->
+                        <div style=${{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 }}>
+                          <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style=${{ color: 'var(--glow-blue)', fontWeight: 'bold', fontSize: '10.5px' }}>${player.name}</span>
+                            <span style=${{ color: 'var(--glow-yellow)', fontSize: '7.5px', background: 'rgba(255,208,0,0.08)', padding: '1px 3px', borderRadius: '2px', fontWeight: 'bold' }}>
+                              ${player.action ? (player.action.type === 'attack' ? `🗡️ 攻 ➔ #${player.action.target + 1}` : '🔮 施法') : '待命'}
+                            </span>
                           </div>
-                          <div class="battle-bar-outer" style=${{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '1px', overflow: 'hidden', margin: '2px 0' }}>
-                            <div class="battle-bar-inner battle-hp-bar" style=${{ width: `${hpPct}%`, height: '100%', background: 'linear-gradient(90deg, #ff3b6f, #ff6b8b)' }}></div>
+                          <div style=${{ display: 'flex', flexWrap: 'wrap', gap: '4px', fontSize: '7.5px', color: 'rgba(255,255,255,0.3)' }}>
+                            <span style=${{ background: 'rgba(255,255,255,0.03)', padding: '0.5px 2px', borderRadius: '1px' }}>大地图: #${player.mgoId}</span>
+                            <span style=${{ background: 'rgba(0,225,255,0.05)', color: 'var(--glow-blue)', padding: '0.5px 2px', borderRadius: '1px' }}>f.mkf: #${player.spriteNum}</span>
+                          </div>
+                          
+                          <!-- HP & MP 进度条（并排紧凑） -->
+                          <div style=${{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: '2px' }}>
+                            <div>
+                              <div style=${{ fontSize: '7px', color: 'rgba(255,255,255,0.35)', display: 'flex', justifyContent: 'space-between', lineHeight: '1' }}>
+                                <span>HP</span>
+                                <span>${player.hp}/${player.maxHp}</span>
+                              </div>
+                              <div class="battle-bar-outer" style=${{ height: '2px', background: 'rgba(255,255,255,0.03)', borderRadius: '1px', overflow: 'hidden', margin: '1px 0 0 0' }}>
+                                <div class="battle-bar-inner battle-hp-bar" style=${{ width: `${hpPct}%`, height: '100%', background: 'linear-gradient(90deg, #ff3b6f, #ff6b8b)' }}></div>
+                              </div>
+                            </div>
+                            <div>
+                              <div style=${{ fontSize: '7px', color: 'rgba(255,255,255,0.35)', display: 'flex', justifyContent: 'space-between', lineHeight: '1' }}>
+                                <span>MP</span>
+                                <span>${player.mp}/${player.maxMp}</span>
+                              </div>
+                              <div class="battle-bar-outer" style=${{ height: '2px', background: 'rgba(255,255,255,0.03)', borderRadius: '1px', overflow: 'hidden', margin: '1px 0 0 0' }}>
+                                <div class="battle-bar-inner battle-mp-bar" style=${{ width: `${mpPct}%`, height: '100%', background: 'linear-gradient(90deg, #00fffa, #00bfff)' }}></div>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        <div>
-                          <div style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.35)', display: 'flex', justifyContent: 'space-between' }}>
-                            <span>MP</span>
-                            <span>${player.mp}/${player.maxMp}</span>
-                          </div>
-                          <div class="battle-bar-outer" style=${{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '1px', overflow: 'hidden', margin: '2px 0' }}>
-                            <div class="battle-bar-inner battle-mp-bar" style=${{ width: `${mpPct}%`, height: '100%', background: 'linear-gradient(90deg, #00fffa, #00bfff)' }}></div>
-                          </div>
+                      </div>
+
+                      <!-- 中段属性面板：6 维属性网格（攻、防、速、灵、吉、毒） -->
+                      <div style=${{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '2px' }}>
+                        <div style=${{ padding: '2px 1px', fontSize: '7.5px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.02)', borderRadius: '2px', textAlign: 'center' }}><span style=${{ color: 'rgba(255,255,255,0.2)' }}>攻</span><div style=${{ color: 'var(--glow-green)', fontWeight: 'bold' }}>${player.attackStrength}</div></div>
+                        <div style=${{ padding: '2px 1px', fontSize: '7.5px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.02)', borderRadius: '2px', textAlign: 'center' }}><span style=${{ color: 'rgba(255,255,255,0.2)' }}>防</span><div style=${{ color: 'var(--glow-blue)', fontWeight: 'bold' }}>${player.defense}</div></div>
+                        <div style=${{ padding: '2px 1px', fontSize: '7.5px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.02)', borderRadius: '2px', textAlign: 'center' }}><span style=${{ color: 'rgba(255,255,255,0.2)' }}>速</span><div style=${{ color: 'var(--glow-yellow)', fontWeight: 'bold' }}>${player.dexterity}</div></div>
+                        <div style=${{ padding: '2px 1px', fontSize: '7.5px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.02)', borderRadius: '2px', textAlign: 'center' }}><span style=${{ color: 'rgba(255,255,255,0.2)' }}>灵</span><div style=${{ color: '#b366ff', fontWeight: 'bold' }}>${player.magicStrength || 0}</div></div>
+                        <div style=${{ padding: '2px 1px', fontSize: '7.5px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.02)', borderRadius: '2px', textAlign: 'center' }}><span style=${{ color: 'rgba(255,255,255,0.2)' }}>吉</span><div style=${{ color: '#ffff00', fontWeight: 'bold' }}>${player.fleeRate || 0}</div></div>
+                        <div style=${{ padding: '2px 1px', fontSize: '7.5px', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.02)', borderRadius: '2px', textAlign: 'center' }}><span style=${{ color: 'rgba(255,255,255,0.2)' }}>毒</span><div style=${{ color: '#00ffaa', fontWeight: 'bold' }}>${player.poisonResistance || 0}%</div></div>
+                      </div>
+
+                      <!-- 底部装备栏与法术栏 -->
+                      <div style=${{ borderTop: '1px dashed rgba(255,255,255,0.03)', paddingTop: '4px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <!-- 核心武器/护盾显示 -->
+                        <div style=${{ display: 'flex', justifyContent: 'space-between', fontSize: '7.5px' }}>
+                          <span style=${{ color: 'rgba(255,255,255,0.25)' }}>⚔️武器: <span style=${{ color: '#ff6688', marginLeft: '2px' }}><${WordImage} wordId=${player.equipments[0]} fallback="无" /></span></span>
+                          <span style=${{ color: 'rgba(255,255,255,0.25)' }}>🛡️防具: <span style=${{ color: '#66ccff', marginLeft: '2px' }}><${WordImage} wordId=${player.equipments[3]} fallback="无" /></span></span>
                         </div>
-                      </div>
-
-                      <div style=${{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '3px', margin: '2px 0' }}>
-                        <div class="hero-attr-chip" style=${{ padding: '2px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '2px', textAlign: 'center' }}><span class="hero-attr-lbl" style=${{ color: 'rgba(255,255,255,0.25)' }}>攻 </span><span class="hero-attr-val" style=${{ color: 'var(--glow-green)', fontWeight: 'bold' }}>${player.attackStrength}</span></div>
-                        <div class="hero-attr-chip" style=${{ padding: '2px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '2px', textAlign: 'center' }}><span class="hero-attr-lbl" style=${{ color: 'rgba(255,255,255,0.25)' }}>防 </span><span class="hero-attr-val" style=${{ color: 'var(--glow-blue)', fontWeight: 'bold' }}>${player.defense}</span></div>
-                        <div class="hero-attr-chip" style=${{ padding: '2px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '2px', textAlign: 'center' }}><span class="hero-attr-lbl" style=${{ color: 'rgba(255,255,255,0.25)' }}>速 </span><span class="hero-attr-val" style=${{ color: 'var(--glow-yellow)', fontWeight: 'bold' }}>${player.dexterity}</span></div>
-                      </div>
-
-                      <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.04)', height: '60px', borderRadius: '3px', marginTop: '2px', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.6)' }}>
-                        <canvas id=${`battle-player-sprite-${index}`} width="48" height="48" style=${{ imageRendering: 'pixelated', width: '48px', height: '48px' }}></canvas>
+                        
+                        <!-- 法术名册折叠标签 (仅展示前 5 个以便排版紧凑) -->
+                        <div style=${{ display: 'flex', flexWrap: 'wrap', gap: '2px', alignItems: 'center' }}>
+                          <span style=${{ color: 'rgba(255,255,255,0.25)', fontSize: '7.5px', marginRight: '2px' }}>🔮法术:</span>
+                          ${player.magics.length === 0 ? html`<span style=${{ color: 'rgba(255,255,255,0.15)', fontSize: '7.5px' }}>无</span>` : player.magics.slice(0, 5).map(spellId => html`
+                            <span key=${spellId} style=${{ display: 'inline-flex', alignItems: 'center', background: 'rgba(179,102,255,0.05)', border: '1px solid rgba(179,102,255,0.15)', borderRadius: '1.5px', padding: '0.5px 3px', color: '#dfb3ff', fontSize: '7px' }}>
+                              ✨<${WordImage} wordId=${spellId} />
+                            </span>
+                          `)}
+                          ${player.magics.length > 5 ? html`<span style=${{ color: 'rgba(255,255,255,0.25)', fontSize: '7px' }}>+${player.magics.length - 5}</span>` : ''}
+                        </div>
                       </div>
                     </div>
                   `;

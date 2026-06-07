@@ -132,6 +132,11 @@ export async function start(id, failId, fleeId) {
       defense: roleStats.defense || 10,
       dexterity: roleStats.dexterity || 10,
       attackStrength: roleStats.attackStrength || 10,
+      magicStrength: roleStats.magicStrength || 10, // 保存灵力属性
+      fleeRate: roleStats.fleeRate || 10, // 保存吉运/幸运属性
+      poisonResistance: roleStats.poisonResistance || 10, // 保存避毒属性
+      equipments: roleStats.equipments || {}, // 保存当前装备 ID 映射表
+      magics: roleStats.magics || [], // 保存当前习得法术 ID 列表
       x: pos[0],
       y: pos[1],
       spriteData: spriteData,
@@ -207,33 +212,33 @@ function draw() {
   mainCtx.clearRect(0, 0, 320, 200);
   talkCtx.clearRect(0, 0, 320, 200);
 
-  // 2. 绘制活着的敌人精灵
+  // 2. 收集并合并所有活着的战斗成员（包括我方与敌方），按照屏幕纵深 Y 坐标升序排序
+  // 随后采用 2.5D 画家算法依次绘制，确保前排大体型角色能正确遮挡后排人物而不会遮盖异常
+  const renderQueue = [];
+
   enemies.forEach(e => {
-    if (e.hp <= 0) {
-      return;
-    }
-    const frameImg = loadSpriteFrame(e.spriteData, e.currentFrame);
-    if (frameImg) {
-      const dx = e.x - frameImg.width / 2;
-      const dy = e.y - frameImg.height;
-      mainCtx.drawImage(frameImg, dx, dy);
-      e.width = frameImg.width;
-      e.height = frameImg.height;
+    if (e.hp > 0) {
+      renderQueue.push({ type: 'enemy', actor: e });
     }
   });
 
-  // 3. 绘制我方角色精灵
   players.forEach(p => {
-    if (p.hp <= 0) {
-      return;
+    if (p.hp > 0) {
+      renderQueue.push({ type: 'player', actor: p });
     }
-    const frameImg = loadSpriteFrame(p.spriteData, p.currentFrame);
+  });
+
+  renderQueue.sort((a, b) => a.actor.y - b.actor.y);
+
+  renderQueue.forEach(item => {
+    const actor = item.actor;
+    const frameImg = loadSpriteFrame(actor.spriteData, actor.currentFrame);
     if (frameImg) {
-      const dx = p.x - frameImg.width / 2;
-      const dy = p.y - frameImg.height;
+      const dx = actor.x - frameImg.width / 2;
+      const dy = actor.y - frameImg.height;
       mainCtx.drawImage(frameImg, dx, dy);
-      p.width = frameImg.width;
-      p.height = frameImg.height;
+      actor.width = frameImg.width;
+      actor.height = frameImg.height;
     }
   });
 
@@ -699,6 +704,11 @@ export function getBattleState() {
       defense: p.defense,
       dexterity: p.dexterity,
       attackStrength: p.attackStrength,
+      magicStrength: p.magicStrength,
+      fleeRate: p.fleeRate,
+      poisonResistance: p.poisonResistance,
+      equipments: p.equipments,
+      magics: p.magics,
       x: p.x,
       y: p.y,
       currentFrame: p.currentFrame,
