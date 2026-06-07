@@ -8,6 +8,10 @@ import { React, ReactDOM, html, drawPixelatedToCanvas } from './gameData/ui-help
 
 const { useState, useEffect, useRef, useMemo } = React;
 
+// 统一战斗资料的主色调为温和高雅的紫罗兰色
+const BATTLE_COLOR = '#a78bfa';
+const BATTLE_COLOR_RGB = '167, 139, 250';
+
 // 步骤 1：获取任意 MKF 文件的子块总包数
 function getMkfBlockCount(filename) {
   try {
@@ -90,7 +94,7 @@ function EnemyTabComponent({ selectedEnemyId, setSelectedEnemyId }) {
 
   return html`
     <div style=${{ width: '200px', borderRight: '1px solid var(--border-glass)', background: 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style=${{ padding: '10px', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid var(--border-glass)', fontSize: '9.5px', fontWeight: 'bold', color: '#ff3b6f', letterSpacing: '0.5px' }}>👹 敌人数据包索引</div>
+      <div style=${{ padding: '10px', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid var(--border-glass)', fontSize: '9.5px', fontWeight: 'bold', color: BATTLE_COLOR, letterSpacing: '0.5px' }}>👹 敌人数据包索引</div>
       <div style=${{ flex: 1, overflowY: 'auto', padding: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
         ${enemies.map((e, idx) => {
           const isSelected = selectedEnemyId === idx;
@@ -100,8 +104,8 @@ function EnemyTabComponent({ selectedEnemyId, setSelectedEnemyId }) {
               onClick=${() => setSelectedEnemyId(idx)} 
               style=${{
                 padding: '6px 10px',
-                background: isSelected ? 'rgba(255, 59, 111, 0.08)' : 'rgba(255,255,255,0.015)',
-                border: `1px solid ${isSelected ? '#ff3b6f' : 'rgba(255,255,255,0.03)'}`,
+                background: isSelected ? `rgba(${BATTLE_COLOR_RGB}, 0.08)` : 'rgba(255,255,255,0.015)',
+                border: `1px solid ${isSelected ? BATTLE_COLOR : 'rgba(255,255,255,0.03)'}`,
                 borderRadius: '2px',
                 cursor: 'pointer',
                 display: 'flex',
@@ -110,7 +114,7 @@ function EnemyTabComponent({ selectedEnemyId, setSelectedEnemyId }) {
                 transition: 'all 0.1s'
               }}
             >
-              <span style=${{ fontSize: '9px', fontWeight: 'bold', color: isSelected ? '#ff3b6f' : '#fff' }}>敌人 #${idx}</span>
+              <span style=${{ fontSize: '9px', fontWeight: 'bold', color: isSelected ? BATTLE_COLOR : '#fff' }}>敌人 #${idx}</span>
               <span style=${{ fontSize: '8px', color: e.wHealth > 300 ? 'var(--glow-red)' : 'rgba(255,255,255,0.3)' }}>HP ${e.wHealth}</span>
             </div>
           `;
@@ -126,7 +130,7 @@ function EnemyTabComponent({ selectedEnemyId, setSelectedEnemyId }) {
         </div>
         <div style=${{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
-            <div style=${{ fontSize: '13px', fontWeight: 'bold', color: '#ff3b6f', marginBottom: '2px' }}>敌方角色配置 #${selectedEnemyId}</div>
+            <div style=${{ fontSize: '13px', fontWeight: 'bold', color: BATTLE_COLOR, marginBottom: '2px' }}>敌方角色配置 #${selectedEnemyId}</div>
             <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>data.mkf Block 1 • Offset: 0x${(selectedEnemyId * 70).toString(16).toUpperCase()}</div>
           </div>
           <div style=${{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
@@ -222,7 +226,7 @@ function EnemyTabComponent({ selectedEnemyId, setSelectedEnemyId }) {
 
           <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
             <span style=${{ color: 'rgba(255,255,255,0.3)' }}>可偷取道具 ID</span>
-            <span style=${{ color: '#ff3b6f' }}>${cur.wStealItem || '无'}</span>
+            <span style=${{ color: BATTLE_COLOR }}>${cur.wStealItem || '无'}</span>
           </div>
           <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
             <span style=${{ color: 'rgba(255,255,255,0.3)' }}>可偷取件数</span>
@@ -328,11 +332,11 @@ function TeamTabComponent({ selectedTeamId, setSelectedTeamId, switchTab, select
           </div>
           <div>
             <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>敌人配置 ID</div>
-            <div style=${{ fontSize: '10px', fontWeight: 'bold', color: '#ff3b6f' }}>敌人 #${enemyConfigId}</div>
+            <div style=${{ fontSize: '10px', fontWeight: 'bold', color: BATTLE_COLOR }}>敌人 #${enemyConfigId}</div>
           </div>
           <div style=${{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
             <button onClick=${() => { switchTab('enemy'); selectEnemy(enemyConfigId); }} class="btn-dbg" style=${{ padding: '2px 6px', fontSize: '8px', color: 'var(--glow-green)', borderColor: 'rgba(0,255,157,0.2)' }}>属性剖析 ➔</button>
-            <button onClick=${() => { setActiveGalleryEnemyId(enemyConfigId); setGalleryFrame(0); setGalleryPlaying(true); }} class="btn-dbg" style=${{ padding: '2px 6px', fontSize: '8px', color: '#ff3b6f', borderColor: 'rgba(255,59,111,0.25)' }}>战斗图片 ➔</button>
+            <button onClick=${() => { setActiveGalleryEnemyId(enemyConfigId); setGalleryFrame(0); setGalleryPlaying(true); }} class="btn-dbg" style=${{ padding: '2px 6px', fontSize: '8px', color: BATTLE_COLOR, borderColor: `rgba(${BATTLE_COLOR_RGB}, 0.25)` }}>战斗图片 ➔</button>
           </div>
         </div>
       </div>
@@ -377,7 +381,7 @@ function TeamTabComponent({ selectedTeamId, setSelectedTeamId, switchTab, select
           class="team-enemy-thumb-item" 
           style=${{
             flexShrink: 0,
-            border: `1px solid ${isSelected ? '#ff3b6f' : 'rgba(255,255,255,0.04)'}`,
+            border: `1px solid ${isSelected ? BATTLE_COLOR : 'rgba(255,255,255,0.04)'}`,
             background: 'rgba(0,0,0,0.4)',
             borderRadius: '2px',
             padding: '4px',
@@ -397,7 +401,7 @@ function TeamTabComponent({ selectedTeamId, setSelectedTeamId, switchTab, select
     }
 
     return html`
-      <div style=${{ fontXml: '1', fontSize: '10px', fontWeight: 'bold', color: '#ff3b6f', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style=${{ fontXml: '1', fontSize: '10px', fontWeight: 'bold', color: BATTLE_COLOR, marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>👾 敌人配置 #${enemyConfigId} 战斗精灵动作全帧画廊 (共 ${maxFrames} 帧)</span>
         <button onClick=${() => setActiveGalleryEnemyId(null)} class="btn-dbg" style=${{ padding: '1px 6px', fontSize: '8px', color: 'rgba(255,255,255,0.4)' }}>隐藏画廊 ✕</button>
       </div>
@@ -415,7 +419,7 @@ function TeamTabComponent({ selectedTeamId, setSelectedTeamId, switchTab, select
 
   return html`
     <div style=${{ width: '200px', borderRight: '1px solid var(--border-glass)', background: 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style=${{ padding: '10px', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid var(--border-glass)', fontSize: '9.5px', fontWeight: 'bold', color: '#ff3b6f', letterSpacing: '0.5px' }}>👥 敌方队伍名册</div>
+      <div style=${{ padding: '10px', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid var(--border-glass)', fontSize: '9.5px', fontWeight: 'bold', color: BATTLE_COLOR, letterSpacing: '0.5px' }}>👥 敌方队伍名册</div>
       <div style=${{ flex: 1, overflowY: 'auto', padding: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
         ${Array.from({ length: totalTeams }).map((_, idx) => {
           const isSelected = selectedTeamId === idx;
@@ -434,8 +438,8 @@ function TeamTabComponent({ selectedTeamId, setSelectedTeamId, switchTab, select
               onClick=${() => { setSelectedTeamId(idx); setActiveGalleryEnemyId(null); }} 
               style=${{
                 padding: '6px 10px',
-                background: isSelected ? 'rgba(255, 59, 111, 0.08)' : 'rgba(255,255,255,0.015)',
-                border: `1px solid ${isSelected ? '#ff3b6f' : 'rgba(255,255,255,0.03)'}`,
+                background: isSelected ? `rgba(${BATTLE_COLOR_RGB}, 0.08)` : 'rgba(255,255,255,0.015)',
+                border: `1px solid ${isSelected ? BATTLE_COLOR : 'rgba(255,255,255,0.03)'}`,
                 borderRadius: '2px',
                 cursor: 'pointer',
                 display: 'flex',
@@ -444,7 +448,7 @@ function TeamTabComponent({ selectedTeamId, setSelectedTeamId, switchTab, select
                 transition: 'all 0.1s'
               }}
             >
-              <span style=${{ fontSize: '9px', fontWeight: 'bold', color: isSelected ? '#ff3b6f' : '#fff' }}>队伍 #${idx}</span>
+              <span style=${{ fontSize: '9px', fontWeight: 'bold', color: isSelected ? BATTLE_COLOR : '#fff' }}>队伍 #${idx}</span>
               <span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>${memberCount} 个成员</span>
             </div>
           `;
@@ -454,7 +458,7 @@ function TeamTabComponent({ selectedTeamId, setSelectedTeamId, switchTab, select
 
     <div style=${{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '15px' }}>
       <div style=${{ marginBottom: '12px' }}>
-        <div style=${{ fontSize: '13px', fontWeight: 'bold', color: '#ff3b6f' }}>敌方战斗队伍 #${selectedTeamId}</div>
+        <div style=${{ fontSize: '13px', fontWeight: 'bold', color: BATTLE_COLOR }}>敌方战斗队伍 #${selectedTeamId}</div>
         <div style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>data.mkf Block 2 • Offset: 0x${(selectedTeamId * 10).toString(16).toUpperCase()}</div>
       </div>
       
@@ -480,7 +484,7 @@ function PosTabComponent({ selectedPosCountIndex, setSelectedPosCountIndex }) {
 
   return html`
     <div style=${{ width: '200px', borderRight: '1px solid var(--border-glass)', background: 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style=${{ padding: '10px', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid var(--border-glass)', fontSize: '9.5px', fontWeight: 'bold', color: '#ff3b6f', letterSpacing: '0.5px' }}>📍 队伍怪物排布数</div>
+      <div style=${{ padding: '10px', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid var(--border-glass)', fontSize: '9.5px', fontWeight: 'bold', color: BATTLE_COLOR, letterSpacing: '0.5px' }}>📍 队伍怪物排布数</div>
       <div style=${{ flex: 1, overflowY: 'auto', padding: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
         ${Array.from({ length: 5 }).map((_, idx) => {
           const isSelected = selectedPosCountIndex === idx;
@@ -490,8 +494,8 @@ function PosTabComponent({ selectedPosCountIndex, setSelectedPosCountIndex }) {
               onClick=${() => setSelectedPosCountIndex(idx)} 
               style=${{
                 padding: '8px 12px',
-                background: isSelected ? 'rgba(255, 59, 111, 0.08)' : 'rgba(255,255,255,0.015)',
-                border: `1px solid ${isSelected ? '#ff3b6f' : 'rgba(255,255,255,0.03)'}`,
+                background: isSelected ? `rgba(${BATTLE_COLOR_RGB}, 0.08)` : 'rgba(255,255,255,0.015)',
+                border: `1px solid ${isSelected ? BATTLE_COLOR : 'rgba(255,255,255,0.03)'}`,
                 borderRadius: '2px',
                 cursor: 'pointer',
                 display: 'flex',
@@ -500,7 +504,7 @@ function PosTabComponent({ selectedPosCountIndex, setSelectedPosCountIndex }) {
                 transition: 'all 0.1s'
               }}
             >
-              <span style=${{ fontSize: '9px', fontWeight: 'bold', color: isSelected ? '#ff3b6f' : '#fff' }}>战场上有 ${idx + 1} 个怪</span>
+              <span style=${{ fontSize: '9px', fontWeight: 'bold', color: isSelected ? BATTLE_COLOR : '#fff' }}>战场上有 ${idx + 1} 个怪</span>
               <span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>${idx + 1} 人排布</span>
             </div>
           `;
@@ -510,12 +514,12 @@ function PosTabComponent({ selectedPosCountIndex, setSelectedPosCountIndex }) {
 
     <div style=${{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '15px' }}>
       <div style=${{ marginBottom: '10px' }}>
-        <div style=${{ fontSize: '13px', fontWeight: 'bold', color: '#ff3b6f' }}>战场站位位置高级投影 (Battlefield Coordinates)</div>
+        <div style=${{ fontSize: '13px', fontWeight: 'bold', color: BATTLE_COLOR }}>战场站位位置高级投影 (Battlefield Coordinates)</div>
         <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>data.mkf Block 13 • 包含 5x5 个绝对战场空间预设坐标点</div>
       </div>
       
       <div style=${{ position: 'relative', width: '100%', height: '160px', background: 'rgba(5,5,8,0.9)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden', marginBottom: '12px' }}>
-        <div style=${{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255, 59, 111, 0.08) 1.5px, transparent 1.5px), radial-gradient(rgba(255,255,255,0.01) 1px, transparent 1px)', backgroundSize: '20px 20px, 10px 10px', backgroundPosition: '0 0, 5px 5px' }}></div>
+        <div style=${{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(${BATTLE_COLOR_RGB}, 0.08) 1.5px, transparent 1.5px), radial-gradient(rgba(255,255,255,0.01) 1px, transparent 1px)', backgroundSize: '20px 20px, 10px 10px', backgroundPosition: '0 0, 5px 5px' }}></div>
         <div style=${{ position: 'absolute', right: '20px', bottom: '20px', border: '1px dashed rgba(0, 255, 170, 0.15)', background: 'rgba(0, 255, 170, 0.02)', padding: '4px 8px', fontSize: '7.5px', color: 'rgba(0, 255, 170, 0.4)', borderRadius: '2px', pointerEvents: 'none' }}>我方站位参考区 (PLAYERS)</div>
 
         ${activePreset.map((pos, ptIdx) => {
@@ -524,8 +528,8 @@ function PosTabComponent({ selectedPosCountIndex, setSelectedPosCountIndex }) {
 
           return html`
             <div key=${ptIdx} style=${{ position: 'absolute', left: `calc(${pctX}% - 14px)`, top: `calc(${pctY}% - 14px)`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-              <div style=${{ width: '20px', height: '20px', borderRadius: '50%', border: '2px solid #ff3b6f', background: 'rgba(255, 59, 111, 0.2)', boxShadow: '0 0 10px rgba(255, 59, 111, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 'bold', color: '#fff' }}>${ptIdx + 1}</div>
-              <span style=${{ fontSize: '7.5px', color: '#ff3b6f', fontWeight: 500, marginTop: '1px', background: 'rgba(0,0,0,0.6)', padding: '0.5px 2px', borderRadius: '1px' }}>(${pos.x}, ${pos.y})</span>
+              <div style=${{ width: '20px', height: '20px', borderRadius: '50%', border: '2px solid ${BATTLE_COLOR}', background: `rgba(${BATTLE_COLOR_RGB}, 0.2)`, boxShadow: '0 0 10px rgba(${BATTLE_COLOR_RGB}, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 'bold', color: '#fff' }}>${ptIdx + 1}</div>
+              <span style=${{ fontSize: '7.5px', color: BATTLE_COLOR, fontWeight: 500, marginTop: '1px', background: 'rgba(0,0,0,0.6)', padding: '0.5px 2px', borderRadius: '1px' }}>(${pos.x}, ${pos.y})</span>
             </div>
           `;
         })}
@@ -537,8 +541,8 @@ function PosTabComponent({ selectedPosCountIndex, setSelectedPosCountIndex }) {
           ${activePreset.map((pos, ptIdx) => html`
             <div key=${ptIdx} style=${{ background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.03)', padding: '5px', borderRadius: '2px', textAlign: 'center' }}>
               <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.25)', marginBottom: '2px' }}>位置 #${ptIdx + 1}</div>
-              <div style=${{ fontSize: '9px', fontWeight: 'bold', color: '#fff', fontFamily: "'JetBrains Mono', monospace" }}>X: <span style=${{ color: '#ff3b6f' }}>${pos.x}</span></div>
-              <div style=${{ fontSize: '9px', fontWeight: 'bold', color: '#fff', fontFamily: "'JetBrains Mono', monospace" }}>Y: <span style=${{ color: '#ff3b6f' }}>${pos.y}</span></div>
+              <div style=${{ fontSize: '9px', fontWeight: 'bold', color: '#fff', fontFamily: "'JetBrains Mono', monospace" }}>X: <span style=${{ color: BATTLE_COLOR }}>${pos.x}</span></div>
+              <div style=${{ fontSize: '9px', fontWeight: 'bold', color: '#fff', fontFamily: "'JetBrains Mono', monospace" }}>Y: <span style=${{ color: BATTLE_COLOR }}>${pos.y}</span></div>
             </div>
           `)}
         </div>
@@ -605,7 +609,7 @@ function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selecte
         onClick=${() => { setIsPlayingSprite(false); setSelectedSpriteFrameId(fIdx); }} 
         class="battledata-thumb-item" 
         style=${{
-          border: `1px solid ${isSelected ? '#ff3b6f' : 'rgba(255,255,255,0.04)'}`,
+          border: `1px solid ${isSelected ? BATTLE_COLOR : 'rgba(255,255,255,0.04)'}`,
           background: 'rgba(0,0,0,0.3)',
           borderRadius: '2px',
           padding: '4px',
@@ -625,7 +629,7 @@ function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selecte
 
   return html`
     <div style=${{ width: '200px', borderRight: '1px solid var(--border-glass)', background: 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      <div style=${{ padding: '10px', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid var(--border-glass)', fontSize: '9.5px', fontWeight: 'bold', color: '#ff3b6f', letterSpacing: '0.5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style=${{ padding: '10px', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid var(--border-glass)', fontSize: '9.5px', fontWeight: 'bold', color: BATTLE_COLOR, letterSpacing: '0.5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>🖼️ RLE 图像数据包</span>
         <span style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.25)', fontWeight: 'normal' }}>共 ${totalPacks} 包</span>
       </div>
@@ -638,8 +642,8 @@ function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selecte
               onClick=${() => { setSelectedSpritePackId(idx); setIsPlayingSprite(false); }} 
               style=${{
                 padding: '6px 10px',
-                background: isSelected ? 'rgba(255, 59, 111, 0.08)' : 'rgba(255,255,255,0.015)',
-                border: `1px solid ${isSelected ? '#ff3b6f' : 'rgba(255,255,255,0.03)'}`,
+                background: isSelected ? `rgba(${BATTLE_COLOR_RGB}, 0.08)` : 'rgba(255,255,255,0.015)',
+                border: `1px solid ${isSelected ? BATTLE_COLOR : 'rgba(255,255,255,0.03)'}`,
                 borderRadius: '2px',
                 cursor: 'pointer',
                 display: 'flex',
@@ -648,7 +652,7 @@ function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selecte
                 transition: 'all 0.1s'
               }}
             >
-              <span style=${{ fontSize: '9px', fontWeight: 'bold', color: isSelected ? '#ff3b6f' : '#fff' }}>贴图包 #${idx}</span>
+              <span style=${{ fontSize: '9px', fontWeight: 'bold', color: isSelected ? BATTLE_COLOR : '#fff' }}>贴图包 #${idx}</span>
               <span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.25)' }}>帧数: ${getFrameCount(selectedSpriteFile, idx)}</span>
             </div>
           `;
@@ -659,8 +663,8 @@ function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selecte
     <div style=${{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '15px' }}>
       <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
         <div style=${{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-          <button class=${`btn-dbg ${selectedSpriteFile === 'abc.mkf' ? 'active' : ''}`} onClick=${() => { setSelectedSpriteFile('abc.mkf'); setSelectedSpritePackId(0); setIsPlayingSprite(false); }} style=${selectedSpriteFile === 'abc.mkf' ? { color: '#ff3b6f', borderColor: '#ff3b6f', background: 'rgba(255,59,111,0.05)' } : {}}>👹 敌方贴图包 (abc.mkf)</button>
-          <button class=${`btn-dbg ${selectedSpriteFile === 'f.mkf' ? 'active' : ''}`} onClick=${() => { setSelectedSpriteFile('f.mkf'); setSelectedSpritePackId(0); setIsPlayingSprite(false); }} style=${selectedSpriteFile === 'f.mkf' ? { color: '#ff3b6f', borderColor: '#ff3b6f', background: 'rgba(255,59,111,0.05)' } : {}}>⚔️ 玩家贴图包 (f.mkf)</button>
+          <button class=${`btn-dbg ${selectedSpriteFile === 'abc.mkf' ? 'active' : ''}`} onClick=${() => { setSelectedSpriteFile('abc.mkf'); setSelectedSpritePackId(0); setIsPlayingSprite(false); }} style=${selectedSpriteFile === 'abc.mkf' ? { color: BATTLE_COLOR, borderColor: BATTLE_COLOR, background: `rgba(${BATTLE_COLOR_RGB}, 0.05)` } : {}}>👹 敌方贴图包 (abc.mkf)</button>
+          <button class=${`btn-dbg ${selectedSpriteFile === 'f.mkf' ? 'active' : ''}`} onClick=${() => { setSelectedSpriteFile('f.mkf'); setSelectedSpritePackId(0); setIsPlayingSprite(false); }} style=${selectedSpriteFile === 'f.mkf' ? { color: BATTLE_COLOR, borderColor: BATTLE_COLOR, background: `rgba(${BATTLE_COLOR_RGB}, 0.05)` } : {}}>⚔️ 玩家贴图包 (f.mkf)</button>
         </div>
         <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase' }}>RLE Sprite Gallery Viewer • Pack #${selectedSpritePackId}</div>
       </div>
@@ -671,7 +675,7 @@ function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selecte
         </div>
         <div style=${{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '128px' }}>
           <div>
-            <div style=${{ fontSize: '13px', fontWeight: 'bold', color: '#ff3b6f', marginBottom: '2px' }}>当前包：${selectedSpriteFile} • 包 #${selectedSpritePackId}</div>
+            <div style=${{ fontSize: '13px', fontWeight: 'bold', color: BATTLE_COLOR, marginBottom: '2px' }}>当前包：${selectedSpriteFile} • 包 #${selectedSpritePackId}</div>
             <div style=${{ fontSize: '9px', color: '#fff', marginBottom: '4px' }}>当前帧: ${selectedSpriteFrameId} / ${maxFrames - 1}</div>
             <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', lineHeight: '1.3' }}>贴图帧包含攻击、施法、待机等丰富帧切，使用播放控制器可以查看其连贯动作。</div>
           </div>
@@ -680,7 +684,7 @@ function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selecte
             <button class="btn-dbg" onClick=${() => setIsPlayingSprite(!isPlayingSprite)} style=${{ color: 'var(--glow-green)', borderColor: 'rgba(0,255,157,0.2)', padding: '3px 10px', fontSize: '9px', cursor: 'pointer' }}>${isPlayingSprite ? '⏸️ 停止播放' : '▶️ 自动播放'}</button>
             <div style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <span>速度(延时):</span>
-              <input type="range" min="50" max="400" step="20" value=${spritePlaySpeedMs} onInput=${(e) => setSpritePlaySpeedMs(parseInt(e.target.value, 10))} style=${{ width: '80px', accentColor: '#ff3b6f', cursor: 'pointer' }}></input>
+              <input type="range" min="50" max="400" step="20" value=${spritePlaySpeedMs} onInput=${(e) => setSpritePlaySpeedMs(parseInt(e.target.value, 10))} style=${{ width: '80px', accentColor: BATTLE_COLOR, cursor: 'pointer' }}></input>
               <span style=${{ color: '#ffd000', fontWeight: 'bold' }}>${spritePlaySpeedMs}ms</span>
             </div>
           </div>
@@ -768,12 +772,12 @@ export function BattleDataApp() {
 
   return html`
     <div id="battle-data-modal" style=${{ display: 'flex', position: 'fixed', zIndex: 99999, left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(5,5,8,0.75)', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-      <div style=${{ background: 'rgba(10,13,20,0.96)', border: '1px solid #ff3b6f', borderRadius: '4px', boxShadow: '0 0 25px rgba(255, 59, 111, 0.15)', width: 'calc(100% - 40px)', height: 'calc(100% - 40px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'JetBrains Mono', sans-serif" }}>
+      <div style=${{ background: 'rgba(10,13,20,0.96)', border: `1px solid ${BATTLE_COLOR}`, borderRadius: '4px', boxShadow: `0 0 25px rgba(${BATTLE_COLOR_RGB}, 0.15)`, width: 'calc(100% - 40px)', height: 'calc(100% - 40px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'JetBrains Mono', sans-serif" }}>
         <!-- 弹窗头部 -->
         <div class="tool-modal-header" style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(0,0,0,0.6)', borderBottom: '1px solid var(--border-glass)' }}>
           <div class="tool-modal-title-row" style=${{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div class="tool-modal-dot" style=${{ width: '5px', height: '5px', background: '#ff3b6f', borderRadius: '50%', boxShadow: '0 0 6px #ff3b6f' }}></div>
-            <span class="tool-modal-heading" style=${{ fontSize: '11px', fontWeight: 'bold', color: '#ff3b6f', letterSpacing: '0.5px', textTransform: 'uppercase' }}>⚔️ PAL BATTLE DATA & PROFILES SYSTEM (战斗实时资料与画廊预览系统)</span>
+            <div class="tool-modal-dot" style=${{ width: '5px', height: '5px', background: BATTLE_COLOR, borderRadius: '50%', boxShadow: `0 0 6px ${BATTLE_COLOR}` }}></div>
+            <span class="tool-modal-heading" style=${{ fontSize: '11px', fontWeight: 'bold', color: BATTLE_COLOR, letterSpacing: '0.5px', textTransform: 'uppercase' }}>⚔️ PAL BATTLE DATA & PROFILES SYSTEM (战斗实时资料与画廊预览系统)</span>
           </div>
           <button onClick=${() => setIsOpen(false)} class="tool-modal-close" style=${{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '14px', cursor: 'pointer', outline: 'none' }}>✕</button>
         </div>
@@ -788,9 +792,9 @@ export function BattleDataApp() {
                 class=${`btn-dbg battledata-tab-btn ${isActive ? 'active' : ''}`}
                 onClick=${() => { setActiveTab(tab.id); }}
                 style=${{
-                  color: isActive ? '#ff3b6f' : 'rgba(255,255,255,0.6)',
-                  borderColor: isActive ? '#ff3b6f' : 'rgba(255,255,255,0.06)',
-                  background: isActive ? 'rgba(255,59,111,0.05)' : 'transparent',
+                  color: isActive ? BATTLE_COLOR : 'rgba(255,255,255,0.6)',
+                  borderColor: isActive ? BATTLE_COLOR : 'rgba(255,255,255,0.06)',
+                  background: isActive ? `rgba(${BATTLE_COLOR_RGB}, 0.05)` : 'transparent',
                   padding: '2px 10px',
                   fontSize: '8.5px',
                   cursor: 'pointer'

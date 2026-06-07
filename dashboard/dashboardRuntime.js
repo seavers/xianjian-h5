@@ -5,6 +5,10 @@ import { state } from '../js/engine/state.js';
 
 const { useState, useEffect, useRef, useMemo } = React;
 
+// 统一战斗区域的主色调为温和高雅的紫罗兰色
+const BATTLE_COLOR = '#a78bfa';
+const BATTLE_COLOR_RGB = '167, 139, 250';
+
 // 像素化精灵绘制辅助函数
 function drawBattleSprite(canvasEl, spriteData, frameIndex) {
   if (!canvasEl || !spriteData) {
@@ -724,19 +728,19 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
       ${isBattleRunning ? html`
         <div id="battle-panels" style=${{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px' }}>
           <div class="panel-row" style=${{ display: 'block' }}>
-            <div class="panel-col" style=${{ border: '1px solid rgba(255, 59, 111, 0.15)', background: 'rgba(255, 59, 111, 0.02)', borderRadius: '2px', padding: '6px 8px' }}>
-              <div class="section-header" style=${{ color: '#ff3b6f', fontWeight: 'bold', borderBottom: '1px dotted rgba(255, 59, 111, 0.15)', paddingBottom: '4px', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div class="panel-col" style=${{ border: `1px solid rgba(${BATTLE_COLOR_RGB}, 0.15)`, background: `rgba(${BATTLE_COLOR_RGB}, 0.02)`, borderRadius: '2px', padding: '6px 8px' }}>
+              <div class="section-header" style=${{ color: BATTLE_COLOR, fontWeight: 'bold', borderBottom: `1px dotted rgba(${BATTLE_COLOR_RGB}, 0.15)`, paddingBottom: '4px', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style=${{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span style=${{ width: '5px', height: '5px', background: '#ff3b6f', borderRadius: '50%', boxShadow: '0 0 6px #ff3b6f' }}></span>
+                  <span style=${{ width: '5px', height: '5px', background: BATTLE_COLOR, borderRadius: '50%', boxShadow: `0 0 6px ${BATTLE_COLOR}` }}></span>
                   ⚔️ 实时战斗监测系统 (Battle Runtime Profile)
                 </span>
-                <span id="battle-phase-badge" style=${{ background: 'rgba(255, 59, 111, 0.15)', color: '#ff3b6f', padding: '1px 4px', borderRadius: '2px', fontSize: '8px' }}>${battlePhase}</span>
+                <span id="battle-phase-badge" style=${{ background: `rgba(${BATTLE_COLOR_RGB}, 0.15)`, color: BATTLE_COLOR, padding: '1px 4px', borderRadius: '2px', fontSize: '8px' }}>${battlePhase}</span>
               </div>
               <div class="scene-dense-grid" style=${{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
-                <div class="scene-item" style=${{ borderColor: 'rgba(255, 59, 111, 0.08)' }}><span class="scene-label" style=${{ color: 'rgba(255, 59, 111, 0.4)' }}>战斗 ID</span><span class="scene-val" style=${{ color: '#ff3b6f' }}>${battleId}</span></div>
-                <div class="scene-item" style=${{ borderColor: 'rgba(255, 59, 111, 0.08)' }}><span class="scene-label" style=${{ color: 'rgba(255, 59, 111, 0.4)' }}>背景战场 ID</span><span class="scene-val" style=${{ color: '#ff3b6f' }}>${battlefieldId}</span></div>
-                <div class="scene-item" style=${{ borderColor: 'rgba(255, 59, 111, 0.08)' }}><span class="scene-label" style=${{ color: 'rgba(255, 59, 111, 0.4)' }}>当前回合</span><span class="scene-val" style=${{ color: 'var(--glow-yellow)' }}>${battleTurn}</span></div>
-                <div class="scene-item" style=${{ borderColor: 'rgba(255, 59, 111, 0.08)' }}><span class="scene-label" style=${{ color: 'rgba(255, 59, 111, 0.4)' }}>活跃战力密度</span><span class="scene-val" style=${{ color: 'var(--glow-green)' }}>${battleDensity}</span></div>
+                <div class="scene-item" style=${{ borderColor: `rgba(${BATTLE_COLOR_RGB}, 0.08)` }}><span class="scene-label" style=${{ color: `rgba(${BATTLE_COLOR_RGB}, 0.4)` }}>战斗 ID</span><span class="scene-val" style=${{ color: BATTLE_COLOR }}>${battleId}</span></div>
+                <div class="scene-item" style=${{ borderColor: `rgba(${BATTLE_COLOR_RGB}, 0.08)` }}><span class="scene-label" style=${{ color: `rgba(${BATTLE_COLOR_RGB}, 0.4)` }}>背景战场 ID</span><span class="scene-val" style=${{ color: BATTLE_COLOR }}>${battlefieldId}</span></div>
+                <div class="scene-item" style=${{ borderColor: `rgba(${BATTLE_COLOR_RGB}, 0.08)` }}><span class="scene-label" style=${{ color: `rgba(${BATTLE_COLOR_RGB}, 0.4)` }}>当前回合</span><span class="scene-val" style=${{ color: 'var(--glow-yellow)' }}>${battleTurn}</span></div>
+                <div class="scene-item" style=${{ borderColor: `rgba(${BATTLE_COLOR_RGB}, 0.08)` }}><span class="scene-label" style=${{ color: `rgba(${BATTLE_COLOR_RGB}, 0.4)` }}>活跃战力密度</span><span class="scene-val" style=${{ color: 'var(--glow-green)' }}>${battleDensity}</span></div>
               </div>
             </div>
           </div>
@@ -749,8 +753,6 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
               </div>
               <div id="battle-players-container" style=${{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 ${battlePlayers.map((player, index) => {
-                  const hpPct = Math.min(100, Math.max(0, (player.hp / player.maxHp) * 100));
-                  const mpPct = Math.min(100, Math.max(0, (player.mp / player.maxMp) * 100));
                   const isDead = player.hp <= 0;
                   const isActive = battlePhase === 'select' && index === 0;
 
@@ -786,24 +788,18 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                             <span style=${{ background: 'rgba(0,225,255,0.05)', color: 'var(--glow-blue)', padding: '0.5px 2px', borderRadius: '1px' }}>f.mkf: #${player.spriteNum}</span>
                           </div>
                           
-                          <!-- HP & MP 进度条（并排紧凑） -->
+                          <!-- HP & MP 数据文本展示 -->
                           <div style=${{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: '2px' }}>
                             <div>
-                              <div style=${{ fontSize: '7px', color: 'rgba(255,255,255,0.35)', display: 'flex', justifyContent: 'space-between', lineHeight: '1' }}>
+                              <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.35)', display: 'flex', justifyContent: 'space-between', lineHeight: '1.2' }}>
                                 <span>HP</span>
-                                <span>${player.hp}/${player.maxHp}</span>
-                              </div>
-                              <div class="battle-bar-outer" style=${{ height: '2px', background: 'rgba(255,255,255,0.03)', borderRadius: '1px', overflow: 'hidden', margin: '1px 0 0 0' }}>
-                                <div class="battle-bar-inner battle-hp-bar" style=${{ width: `${hpPct}%`, height: '100%', background: 'linear-gradient(90deg, #ff3b6f, #ff6b8b)' }}></div>
+                                <span style=${{ color: '#ff6b8b', fontWeight: 'bold' }}>${player.hp}/${player.maxHp}</span>
                               </div>
                             </div>
                             <div>
-                              <div style=${{ fontSize: '7px', color: 'rgba(255,255,255,0.35)', display: 'flex', justifyContent: 'space-between', lineHeight: '1' }}>
+                              <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.35)', display: 'flex', justifyContent: 'space-between', lineHeight: '1.2' }}>
                                 <span>MP</span>
-                                <span>${player.mp}/${player.maxMp}</span>
-                              </div>
-                              <div class="battle-bar-outer" style=${{ height: '2px', background: 'rgba(255,255,255,0.03)', borderRadius: '1px', overflow: 'hidden', margin: '1px 0 0 0' }}>
-                                <div class="battle-bar-inner battle-mp-bar" style=${{ width: `${mpPct}%`, height: '100%', background: 'linear-gradient(90deg, #00fffa, #00bfff)' }}></div>
+                                <span style=${{ color: '#00d2ff', fontWeight: 'bold' }}>${player.mp}/${player.maxMp}</span>
                               </div>
                             </div>
                           </div>
@@ -847,18 +843,17 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
 
             <!-- 敌方魔物阵营 -->
             <div class="panel-col" style=${{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div class="section-header" style=${{ color: '#ff3b6f', fontSize: '9.5px', fontWeight: 'bold', borderBottom: '1px dotted rgba(255, 59, 111, 0.15)', paddingBottom: '4px', marginBottom: '4px' }}>
+              <div class="section-header" style=${{ color: BATTLE_COLOR, fontSize: '9.5px', fontWeight: 'bold', borderBottom: `1px dotted rgba(${BATTLE_COLOR_RGB}, 0.15)`, paddingBottom: '4px', marginBottom: '4px' }}>
                 🔴 敌方魔物阵容 (Enemy Monsters)
               </div>
               <div id="battle-enemies-container" style=${{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 ${battleEnemies.map((enemy, index) => {
-                  const hpPct = Math.min(100, Math.max(0, (enemy.hp / enemy.maxHp) * 100));
                   const isDead = enemy.hp <= 0;
 
                   return html`
                     <div key=${index} class=${`battle-actor-card ${isDead ? 'dead-actor' : ''}`} style=${{
-                      background: isDead ? 'rgba(255,59,111,0.02)' : 'rgba(255,59,111,0.03)',
-                      border: isDead ? '1px solid rgba(255,59,111,0.1)' : '1px solid rgba(255,59,111,0.15)',
+                      background: isDead ? 'rgba(255,59,111,0.02)' : `rgba(${BATTLE_COLOR_RGB}, 0.03)`,
+                      border: isDead ? '1px solid rgba(255,59,111,0.1)' : `1px solid rgba(${BATTLE_COLOR_RGB}, 0.15)`,
                       borderRadius: '4px',
                       padding: '8px',
                       position: 'relative',
@@ -867,23 +862,21 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                       gap: '4px'
                     }}>
                       <div class="battle-actor-header" style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8.5px', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '3px' }}>
-                        <span class="battle-actor-name-lbl" style=${{ color: '#ff3b6f', fontWeight: 'bold', fontSize: '10px' }}>${enemy.name}</span>
-                        <span class="battle-actor-action-lbl" style=${{ background: 'rgba(255,59,111,0.08)', color: '#ff3b6f', padding: '1px 4px', borderRadius: '2px', fontSize: '7.5px' }}>(${enemy.x}, ${enemy.y})</span>
+                        <span class="battle-actor-name-lbl" style=${{ color: BATTLE_COLOR, fontWeight: 'bold', fontSize: '10px' }}>${enemy.name}</span>
+                        <span class="battle-actor-action-lbl" style=${{ background: `rgba(${BATTLE_COLOR_RGB}, 0.08)`, color: BATTLE_COLOR, padding: '1px 4px', borderRadius: '2px', fontSize: '7.5px' }}>(${enemy.x}, ${enemy.y})</span>
                       </div>
                       
                       <!-- 动作包元数据标签 -->
                       <div style=${{ display: 'flex', gap: '6px', fontSize: '7.5px', color: 'rgba(255,255,255,0.3)' }}>
                         <span style=${{ background: 'rgba(255,255,255,0.04)', padding: '1px 3px', borderRadius: '1px' }}>物体 ID: #${enemy.objId}</span>
-                        <span style=${{ background: 'rgba(255,59,111,0.06)', color: '#ff3b6f', padding: '1px 3px', borderRadius: '1px' }}>战斗 abc.mkf: #${enemy.id}</span>
+                        <span style=${{ background: `rgba(${BATTLE_COLOR_RGB}, 0.06)`, color: BATTLE_COLOR, padding: '1px 3px', borderRadius: '1px' }}>战斗 abc.mkf: #${enemy.id}</span>
                       </div>
 
+                      <!-- HP 文本展示 -->
                       <div style=${{ marginTop: '2px' }}>
-                        <div style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.35)', display: 'flex', justifyContent: 'space-between' }}>
+                        <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.35)', display: 'flex', justifyContent: 'space-between', lineHeight: '1.2' }}>
                           <span>HP</span>
-                          <span>${enemy.hp}/${enemy.maxHp}</span>
-                        </div>
-                        <div class="battle-bar-outer" style=${{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '1px', overflow: 'hidden', margin: '2px 0' }}>
-                          <div class="battle-bar-inner battle-hp-bar" style=${{ width: `${hpPct}%`, height: '100%', background: 'linear-gradient(90deg, #ff3b6f, #ff6b8b)' }}></div>
+                          <span style=${{ color: '#ff6b8b', fontWeight: 'bold' }}>${enemy.hp}/${enemy.maxHp}</span>
                         </div>
                       </div>
 
