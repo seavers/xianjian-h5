@@ -860,35 +860,44 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                       position: 'relative',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '4px'
+                      gap: '5px'
                     }}>
-                      <div class="battle-actor-header" style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8.5px', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '3px' }}>
-                        <span class="battle-actor-name-lbl" style=${{ color: BATTLE_COLOR, fontWeight: 'bold', fontSize: '10px' }}>${enemy.name}</span>
-                        <span class="battle-actor-action-lbl" style=${{ background: `rgba(${BATTLE_COLOR_RGB}, 0.08)`, color: BATTLE_COLOR, padding: '1px 4px', borderRadius: '2px', fontSize: '7.5px' }}>(${enemy.x}, ${enemy.y})</span>
-                      </div>
-                      
-                      <!-- 动作包元数据标签 -->
-                      <div style=${{ display: 'flex', gap: '6px', fontSize: '7.5px', color: 'rgba(255,255,255,0.3)' }}>
-                        <span style=${{ background: 'rgba(255,255,255,0.04)', padding: '1px 3px', borderRadius: '1px' }}>物体 ID: #${enemy.objId}</span>
-                        <span style=${{ background: `rgba(${BATTLE_COLOR_RGB}, 0.06)`, color: BATTLE_COLOR, padding: '1px 3px', borderRadius: '1px' }}>战斗 abc.mkf: #${enemy.id}</span>
-                      </div>
+                      <!-- 上半部分：左边放正方形 Canvas 精灵预览，右边放敌人状态与基础信息 -->
+                      <div style=${{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <!-- 左置 Canvas 战斗精灵图 (正方形区块) -->
+                        <div style=${{ flexShrink: 0, width: '54px', height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '3px', boxShadow: 'inset 0 0 6px rgba(0,0,0,0.6)' }}>
+                          <canvas id=${`battle-enemy-sprite-${index}`} width="48" height="48" style=${{ imageRendering: 'pixelated', width: '48px', height: '48px' }}></canvas>
+                        </div>
 
-                      <!-- HP 文本展示 -->
-                      <div style=${{ marginTop: '2px' }}>
-                        <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.35)', display: 'flex', justifyContent: 'space-between', lineHeight: '1.2' }}>
-                          <span>HP</span>
-                          <span style=${{ color: '#ff6b8b', fontWeight: 'bold' }}>${enemy.hp}/${enemy.maxHp}</span>
+                        <!-- 右置基本状态栏 -->
+                        <div style=${{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 }}>
+                          <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style=${{ color: BATTLE_COLOR, fontWeight: 'bold', fontSize: '10.5px' }}>${enemy.name}</span>
+                            <span style=${{ color: BATTLE_COLOR, fontSize: '7.5px', background: `rgba(${BATTLE_COLOR_RGB}, 0.08)`, padding: '1px 3px', borderRadius: '2px', fontWeight: 'bold' }}>
+                              (${enemy.x}, ${enemy.y})
+                            </span>
+                          </div>
+                          
+                          <div style=${{ display: 'flex', flexWrap: 'wrap', gap: '4px', fontSize: '7.5px', color: 'rgba(255,255,255,0.3)' }}>
+                            <span style=${{ background: 'rgba(255,255,255,0.03)', padding: '0.5px 2px', borderRadius: '1px' }}>物体: #${enemy.objId}</span>
+                            <span style=${{ background: `rgba(${BATTLE_COLOR_RGB}, 0.05)`, color: BATTLE_COLOR, padding: '0.5px 2px', borderRadius: '1px' }}>abc.mkf: #${enemy.id}</span>
+                          </div>
+
+                          <!-- HP 数据文本展示 -->
+                          <div style=${{ marginTop: '2px' }}>
+                            <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.35)', display: 'flex', justifyContent: 'space-between', lineHeight: '1.2' }}>
+                              <span>HP</span>
+                              <span style=${{ color: '#ff6b8b', fontWeight: 'bold' }}>${enemy.hp}/${enemy.maxHp}</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      <div style=${{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '3px', margin: '2px 0' }}>
+                      <!-- 下半部分：3 维属性芯片（攻、防、速） -->
+                      <div style=${{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '3px' }}>
                         <div class="hero-attr-chip" style=${{ padding: '2px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '2px', textAlign: 'center' }}><span class="hero-attr-lbl" style=${{ color: 'rgba(255,255,255,0.25)' }}>攻 </span><span class="hero-attr-val" style=${{ color: 'var(--glow-green)', fontWeight: 'bold' }}>${enemy.attackStrength}</span></div>
                         <div class="hero-attr-chip" style=${{ padding: '2px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '2px', textAlign: 'center' }}><span class="hero-attr-lbl" style=${{ color: 'rgba(255,255,255,0.25)' }}>防 </span><span class="hero-attr-val" style=${{ color: 'var(--glow-blue)', fontWeight: 'bold' }}>${enemy.defense}</span></div>
                         <div class="hero-attr-chip" style=${{ padding: '2px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '2px', textAlign: 'center' }}><span class="hero-attr-lbl" style=${{ color: 'rgba(255,255,255,0.25)' }}>速 </span><span class="hero-attr-val" style=${{ color: 'var(--glow-yellow)', fontWeight: 'bold' }}>${enemy.dexterity}</span></div>
-                      </div>
-
-                      <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.04)', height: '60px', borderRadius: '3px', marginTop: '2px', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.6)' }}>
-                        <canvas id=${`battle-enemy-sprite-${index}`} width="48" height="48" style=${{ imageRendering: 'pixelated', width: '48px', height: '48px' }}></canvas>
                       </div>
                     </div>
                   `;
