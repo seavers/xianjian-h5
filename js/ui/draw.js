@@ -394,11 +394,17 @@ export function drawMiddle() {
 }
 
 // 核心屏幕同步重绘逻辑
-export function renderScreen(refreshBack) {
+export function renderScreen(refreshType) {
   const mainCtx = state.contexts.main;
   if (!mainCtx) return;
 
-  if (refreshBack) {
+  if (refreshType === 'fadeIn' || refreshType == 'fadeOut') {
+    updateFadeInOut();
+    updateCount[1]++;
+    return ;
+  }
+
+  if (refreshType) {
     updateCount[0]++;
     drawMapBack();
   }
@@ -422,6 +428,7 @@ export function renderScreen(refreshBack) {
   }
 
   // 步骤 4：绘制全屏渐变半透明遮罩，用于场景淡入淡出过渡（支持黑色、红色等）
+  // 正常画面渲染时，如果有遮罩直接画在 main 屏幕上，保证不擦除 talk 层的文字
   if (state.fadeAlpha > 0) {
     const color = state.fadeColor || '0, 0, 0';
     mainCtx.fillStyle = `rgba(${color}, ${state.fadeAlpha})`;
@@ -431,9 +438,23 @@ export function renderScreen(refreshBack) {
   updateCount[1]++;
 }
 
-export function update(refreshBack, callback) {
+function updateFadeInOut() {
+  const talkCtx = state.contexts.talk;
+  if (!talkCtx) return;
+
+  // 必须先清空 talk 层，防止半透明黑色帧叠加
+  talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
+
+  if (state.fadeAlpha > 0) {
+    const color = state.fadeColor || '0, 0, 0';
+    talkCtx.fillStyle = `rgba(${color}, ${state.fadeAlpha})`;
+    talkCtx.fillRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
+  }
+}
+
+export function update(refreshType, callback) {
   // 普通画面重绘逻辑，直接同步完成
-  renderScreen(refreshBack);
+  renderScreen(refreshType);
   if (callback) callback();
 }
 
