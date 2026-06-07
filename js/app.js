@@ -238,6 +238,7 @@ function initContexts() {
   state.contexts.back = document.getElementById('back').getContext('2d');
   state.contexts.talk = document.getElementById('talk').getContext('2d');
   state.contexts.startup = document.getElementById('startup').getContext('2d');
+  state.contexts.fade = document.getElementById('fade').getContext('2d');
   
   // 遍历所有 2D 上下文，在引擎底层彻底关闭图像平滑（Image Smoothing），确保复制及渲染极致清晰锐利
   Object.values(state.contexts).forEach(ctx => {

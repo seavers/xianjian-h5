@@ -452,18 +452,18 @@ export function renderScreen(refreshType) {
 }
 
 function updateFadeInOut() {
-  const startupCtx = state.contexts.startup;
-  if (!startupCtx) return;
+  const fadeCtx = state.contexts.fade;
+  if (!fadeCtx) return;
 
   // 必须先清空 startup 层，防止半透明遮罩帧叠加
-  startupCtx.clearRect(0, 0, startupCtx.canvas.width, startupCtx.canvas.height);
+  fadeCtx.clearRect(0, 0, fadeCtx.canvas.width, fadeCtx.canvas.height);
 
   // 若处于渐变期间，根据当前透明度绘制半透明遮罩
   if (state.fadeAlpha > 0) {
     const color = state.fadeColor || '0, 0, 0';
-    startupCtx.fillStyle = `rgba(${color}, ${state.fadeAlpha})`;
-    startupCtx.fillRect(0, 0, startupCtx.canvas.width, startupCtx.canvas.height);
-    startupCtx.canvas.style.display = 'block';
+    fadeCtx.fillStyle = `rgba(${color}, ${state.fadeAlpha})`;
+    fadeCtx.fillRect(0, 0, fadeCtx.canvas.width, fadeCtx.canvas.height);
+    fadeCtx.canvas.style.display = 'block';
   }
 }
 
