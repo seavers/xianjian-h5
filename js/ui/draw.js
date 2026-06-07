@@ -1,5 +1,5 @@
 import { state } from '../engine/state.js';
-import { loadMap, loadGop, loadMgo, loadFon, u9s, u3s } from '../resources/pal.js';
+import { loadMap, loadGop, loadMgo, loadFon, u9s, u3s, loadFbp } from '../resources/pal.js';
 
 export const updateCount = [0, 0, 0];
 let tiles = [];
@@ -411,6 +411,7 @@ export function renderScreen(refreshType) {
     return;
   }
 
+  // 步骤 3：常规状态下的三层大地图及精灵图画家算法级排序渲染
   if (refreshType) {
     updateCount[0]++;
     drawMapBack();

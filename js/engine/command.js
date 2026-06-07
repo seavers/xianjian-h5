@@ -855,6 +855,9 @@ export function performToggleScene(targetSceneId) {
     return;
   }
 
+  // 步骤 1.5：重置剧情背景图，防止背景图覆盖新场景大地图的渲染
+  state.currentFbpId = -1;
+
   state.sceneId = targetSceneId;
   state.mapId = scene.mapId;
   state.startEventId = scene.startEventId;
@@ -1083,12 +1086,21 @@ export function stopMusic(fadeTime) {
   stopBgMusic(seconds);
 }
 
-export function showFbp(fbpId, effect) {
+export async function showFbp(fbpId, effect) {
   // 步骤 1：在全局状态机中记录当前的 FBP 全屏背景图 ID
   state.currentFbpId = fbpId;
 
   // 步骤 2：输出详细的展示 FBP 图片调试日志，以供后续结局大图渲染时对接
   console.log(`[0x76 showFbp] 展示全屏剧情背景图 (FBP ID: ${fbpId}, 渐变效果: ${effect})`);
+
+  // 步骤 3：如果效果参数大于 0 且在脚本线程中，则通过渐变转场展现图片；否则直接重绘展现
+  if (effect > 0 && Script.isExec()) {
+    await fadeOut();
+    await update(true);
+    await fadeIn();
+  } else {
+    await update(true);
+  }
 }
 
 export function setBattlefield(battlefieldId) {

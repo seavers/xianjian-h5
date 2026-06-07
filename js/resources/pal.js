@@ -104,9 +104,18 @@ export function loadRgm(rgmId) {
 }
 
 export function loadFbp(fbpId) {
+  // 步骤 1：若 FBP ID 为 65535 (即 0xFFFF) 或 -1，代表需要绘制全黑画面，直接返回一个 320x200 的纯黑 Canvas
+  if (fbpId === 65535 || fbpId === -1) {
+    const pixels = new Uint32Array(320 * 200);
+    pixels.fill(0xFF000000); // 0xFF000000 代表不透明黑色 (Alpha=255, R=0, G=0, B=0)
+    return createImage(pixels, 320, 200);
+  }
+
+  // 步骤 2：对合法的 FBP 资源从 fbp.mkf 载入并解压
   const key = 'fbp_' + fbpId + '_' + state.paletteId + '_' + state.fNightPalette;
   return fromCache(key, () => {
     const fbp = loadMkf('fbp.mkf', fbpId);
+    if (!fbp) return null;
     const dfbp = deyj(fbp);
     const img = createPalImage(dfbp, 320, 200); 
     return img;
