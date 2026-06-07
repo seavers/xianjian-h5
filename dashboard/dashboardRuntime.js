@@ -713,7 +713,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
           <div class="panel-row" style=${{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <!-- 我方参战阵营 -->
             <div class="panel-col" style=${{ borderRight: '1px solid var(--border-glass)', paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div class="section-header" style=${{ color: 'var(--glow-blue)', fontSize: '9px', fontWeight: 'bold', borderBottom: '1px dotted rgba(0, 225, 255, 0.1)', paddingBottom: '3px', marginBottom: '2px' }}>
+              <div class="section-header" style=${{ color: 'var(--glow-blue)', fontSize: '9.5px', fontWeight: 'bold', borderBottom: '1px dotted rgba(0, 225, 255, 0.15)', paddingBottom: '4px', marginBottom: '4px' }}>
                 🔵 我方参战阵容 (Party Members)
               </div>
               <div id="battle-players-container" style=${{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -721,34 +721,61 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                   const hpPct = Math.min(100, Math.max(0, (player.hp / player.maxHp) * 100));
                   const mpPct = Math.min(100, Math.max(0, (player.mp / player.maxMp) * 100));
                   const isDead = player.hp <= 0;
-                  const isActive = battlePhase === 'select' && index === 0; // 模拟当前回合高亮
+                  const isActive = battlePhase === 'select' && index === 0;
 
                   return html`
-                    <div key=${index} class=${`battle-actor-card ${isDead ? 'dead-actor' : ''} ${isActive ? 'active-turn' : ''}`}>
-                      <div class="battle-actor-header" style=${{ display: 'flex', justifyContent: 'space-between', fontSize: '8.5px', marginBottom: '3px' }}>
-                        <span class="battle-actor-name-lbl" style=${{ color: 'var(--glow-blue)', fontWeight: 'bold' }}>${player.name}</span>
-                        <span class="battle-actor-action-lbl" style=${{ color: 'rgba(255,255,255,0.4)' }}>
-                          ${player.action ? (player.action.type === 'attack' ? `🗡️ 物理 -> #${player.action.target + 1}` : '🔮 施法') : '待命'}
+                    <div key=${index} class=${`battle-actor-card ${isDead ? 'dead-actor' : ''} ${isActive ? 'active-turn' : ''}`} style=${{
+                      background: isDead ? 'rgba(255,59,111,0.02)' : 'rgba(0,225,255,0.02)',
+                      border: isDead ? '1px solid rgba(255,59,111,0.1)' : '1px solid rgba(0,225,255,0.1)',
+                      borderRadius: '4px',
+                      padding: '8px',
+                      position: 'relative',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      boxShadow: isActive ? '0 0 10px rgba(0,225,255,0.15)' : 'none'
+                    }}>
+                      <div class="battle-actor-header" style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8.5px', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '3px' }}>
+                        <span class="battle-actor-name-lbl" style=${{ color: 'var(--glow-blue)', fontWeight: 'bold', fontSize: '10px' }}>${player.name}</span>
+                        <span class="battle-actor-action-lbl" style=${{ color: 'var(--glow-yellow)', fontSize: '8px', background: 'rgba(255,208,0,0.08)', padding: '1px 4px', borderRadius: '2px' }}>
+                          ${player.action ? (player.action.type === 'attack' ? `🗡️ 攻击 ➔ #${player.action.target + 1}` : '🔮 施法') : '待命'}
                         </span>
                       </div>
-                      <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>HP: ${player.hp}/${player.maxHp}</span>
+                      
+                      <!-- 动作包元数据标签 -->
+                      <div style=${{ display: 'flex', gap: '6px', fontSize: '7.5px', color: 'rgba(255,255,255,0.3)' }}>
+                        <span style=${{ background: 'rgba(255,255,255,0.04)', padding: '1px 3px', borderRadius: '1px' }}>大地图 MGO: #${player.mgoId}</span>
+                        <span style=${{ background: 'rgba(0,225,255,0.06)', color: 'var(--glow-blue)', padding: '1px 3px', borderRadius: '1px' }}>战斗 f.mkf: #${player.spriteNum}</span>
                       </div>
-                      <div class="battle-bar-outer" style=${{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '1px', overflow: 'hidden', margin: '2px 0' }}>
-                        <div class="battle-bar-inner battle-hp-bar" style=${{ width: `${hpPct}%`, height: '100%', background: '#ff3b6f' }}></div>
+
+                      <div style=${{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: '2px' }}>
+                        <div>
+                          <div style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.35)', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>HP</span>
+                            <span>${player.hp}/${player.maxHp}</span>
+                          </div>
+                          <div class="battle-bar-outer" style=${{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '1px', overflow: 'hidden', margin: '2px 0' }}>
+                            <div class="battle-bar-inner battle-hp-bar" style=${{ width: `${hpPct}%`, height: '100%', background: 'linear-gradient(90deg, #ff3b6f, #ff6b8b)' }}></div>
+                          </div>
+                        </div>
+                        <div>
+                          <div style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.35)', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>MP</span>
+                            <span>${player.mp}/${player.maxMp}</span>
+                          </div>
+                          <div class="battle-bar-outer" style=${{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '1px', overflow: 'hidden', margin: '2px 0' }}>
+                            <div class="battle-bar-inner battle-mp-bar" style=${{ width: `${mpPct}%`, height: '100%', background: 'linear-gradient(90deg, #00fffa, #00bfff)' }}></div>
+                          </div>
+                        </div>
                       </div>
-                      <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>MP: ${player.mp}/${player.maxMp}</span>
+
+                      <div style=${{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '3px', margin: '2px 0' }}>
+                        <div class="hero-attr-chip" style=${{ padding: '2px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '2px', textAlign: 'center' }}><span class="hero-attr-lbl" style=${{ color: 'rgba(255,255,255,0.25)' }}>攻 </span><span class="hero-attr-val" style=${{ color: 'var(--glow-green)', fontWeight: 'bold' }}>${player.attackStrength}</span></div>
+                        <div class="hero-attr-chip" style=${{ padding: '2px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '2px', textAlign: 'center' }}><span class="hero-attr-lbl" style=${{ color: 'rgba(255,255,255,0.25)' }}>防 </span><span class="hero-attr-val" style=${{ color: 'var(--glow-blue)', fontWeight: 'bold' }}>${player.defense}</span></div>
+                        <div class="hero-attr-chip" style=${{ padding: '2px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '2px', textAlign: 'center' }}><span class="hero-attr-lbl" style=${{ color: 'rgba(255,255,255,0.25)' }}>速 </span><span class="hero-attr-val" style=${{ color: 'var(--glow-yellow)', fontWeight: 'bold' }}>${player.dexterity}</span></div>
                       </div>
-                      <div class="battle-bar-outer" style=${{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '1px', overflow: 'hidden', margin: '2px 0' }}>
-                        <div class="battle-bar-inner battle-mp-bar" style=${{ width: `${mpPct}%`, height: '100%', background: '#00fffa' }}></div>
-                      </div>
-                      <div style=${{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px', marginTop: '3px' }}>
-                        <div class="hero-attr-chip" style=${{ padding: '1px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.02)' }}><span class="hero-attr-lbl">攻</span><span class="hero-attr-val" style=${{ color: 'var(--glow-green)' }}>${player.attackStrength}</span></div>
-                        <div class="hero-attr-chip" style=${{ padding: '1px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.02)' }}><span class="hero-attr-lbl">防</span><span class="hero-attr-val" style=${{ color: 'var(--glow-blue)' }}>${player.defense}</span></div>
-                        <div class="hero-attr-chip" style=${{ padding: '1px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.02)' }}><span class="hero-attr-lbl">速</span><span class="hero-attr-val" style=${{ color: 'var(--glow-yellow)' }}>${player.dexterity}</span></div>
-                      </div>
-                      <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.02)', height: '50px', borderRadius: '1px', marginTop: '3px' }}>
+
+                      <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.04)', height: '60px', borderRadius: '3px', marginTop: '2px', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.6)' }}>
                         <canvas id=${`battle-player-sprite-${index}`} width="48" height="48" style=${{ imageRendering: 'pixelated', width: '48px', height: '48px' }}></canvas>
                       </div>
                     </div>
@@ -759,7 +786,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
 
             <!-- 敌方魔物阵营 -->
             <div class="panel-col" style=${{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div class="section-header" style=${{ color: '#ff3b6f', fontSize: '9px', fontWeight: 'bold', borderBottom: '1px dotted rgba(255, 59, 111, 0.1)', paddingBottom: '3px', marginBottom: '2px' }}>
+              <div class="section-header" style=${{ color: '#ff3b6f', fontSize: '9.5px', fontWeight: 'bold', borderBottom: '1px dotted rgba(255, 59, 111, 0.15)', paddingBottom: '4px', marginBottom: '4px' }}>
                 🔴 敌方魔物阵容 (Enemy Monsters)
               </div>
               <div id="battle-enemies-container" style=${{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -768,23 +795,44 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                   const isDead = enemy.hp <= 0;
 
                   return html`
-                    <div key=${index} class=${`battle-actor-card ${isDead ? 'dead-actor' : ''}`}>
-                      <div class="battle-actor-header" style=${{ display: 'flex', justifyContent: 'space-between', fontSize: '8.5px', marginBottom: '3px' }}>
-                        <span class="battle-actor-name-lbl" style=${{ color: '#ff3b6f', fontWeight: 'bold' }}>#${enemy.id} ${enemy.name}</span>
-                        <span class="battle-actor-action-lbl" style=${{ background: 'rgba(255,59,111,0.1)', color: '#ff3b6f', padding: '1px 3px', fontSize: '7px' }}>(${enemy.x}, ${enemy.y})</span>
+                    <div key=${index} class=${`battle-actor-card ${isDead ? 'dead-actor' : ''}`} style=${{
+                      background: isDead ? 'rgba(255,59,111,0.02)' : 'rgba(255,59,111,0.03)',
+                      border: isDead ? '1px solid rgba(255,59,111,0.1)' : '1px solid rgba(255,59,111,0.15)',
+                      borderRadius: '4px',
+                      padding: '8px',
+                      position: 'relative',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px'
+                    }}>
+                      <div class="battle-actor-header" style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8.5px', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '3px' }}>
+                        <span class="battle-actor-name-lbl" style=${{ color: '#ff3b6f', fontWeight: 'bold', fontSize: '10px' }}>${enemy.name}</span>
+                        <span class="battle-actor-action-lbl" style=${{ background: 'rgba(255,59,111,0.08)', color: '#ff3b6f', padding: '1px 4px', borderRadius: '2px', fontSize: '7.5px' }}>(${enemy.x}, ${enemy.y})</span>
                       </div>
-                      <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', display: 'flex', justifyContent: 'space-between' }}>
-                        <span>HP: ${enemy.hp}/${enemy.maxHp}</span>
+                      
+                      <!-- 动作包元数据标签 -->
+                      <div style=${{ display: 'flex', gap: '6px', fontSize: '7.5px', color: 'rgba(255,255,255,0.3)' }}>
+                        <span style=${{ background: 'rgba(255,255,255,0.04)', padding: '1px 3px', borderRadius: '1px' }}>物体 ID: #${enemy.objId}</span>
+                        <span style=${{ background: 'rgba(255,59,111,0.06)', color: '#ff3b6f', padding: '1px 3px', borderRadius: '1px' }}>战斗 abc.mkf: #${enemy.id}</span>
                       </div>
-                      <div class="battle-bar-outer" style=${{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '1px', overflow: 'hidden', margin: '2px 0' }}>
-                        <div class="battle-bar-inner battle-hp-bar" style=${{ width: `${hpPct}%`, height: '100%', background: '#ff3b6f' }}></div>
+
+                      <div style=${{ marginTop: '2px' }}>
+                        <div style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.35)', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>HP</span>
+                          <span>${enemy.hp}/${enemy.maxHp}</span>
+                        </div>
+                        <div class="battle-bar-outer" style=${{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '1px', overflow: 'hidden', margin: '2px 0' }}>
+                          <div class="battle-bar-inner battle-hp-bar" style=${{ width: `${hpPct}%`, height: '100%', background: 'linear-gradient(90deg, #ff3b6f, #ff6b8b)' }}></div>
+                        </div>
                       </div>
-                      <div style=${{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px', marginTop: '3px' }}>
-                        <div class="hero-attr-chip" style=${{ padding: '1px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.02)' }}><span class="hero-attr-lbl">攻</span><span class="hero-attr-val" style=${{ color: 'var(--glow-green)' }}>${enemy.attackStrength}</span></div>
-                        <div class="hero-attr-chip" style=${{ padding: '1px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.02)' }}><span class="hero-attr-lbl">防</span><span class="hero-attr-val" style=${{ color: 'var(--glow-blue)' }}>${enemy.defense}</span></div>
-                        <div class="hero-attr-chip" style=${{ padding: '1px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.02)' }}><span class="hero-attr-lbl">速</span><span class="hero-attr-val" style=${{ color: 'var(--glow-yellow)' }}>${enemy.dexterity}</span></div>
+
+                      <div style=${{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '3px', margin: '2px 0' }}>
+                        <div class="hero-attr-chip" style=${{ padding: '2px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '2px', textAlign: 'center' }}><span class="hero-attr-lbl" style=${{ color: 'rgba(255,255,255,0.25)' }}>攻 </span><span class="hero-attr-val" style=${{ color: 'var(--glow-green)', fontWeight: 'bold' }}>${enemy.attackStrength}</span></div>
+                        <div class="hero-attr-chip" style=${{ padding: '2px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '2px', textAlign: 'center' }}><span class="hero-attr-lbl" style=${{ color: 'rgba(255,255,255,0.25)' }}>防 </span><span class="hero-attr-val" style=${{ color: 'var(--glow-blue)', fontWeight: 'bold' }}>${enemy.defense}</span></div>
+                        <div class="hero-attr-chip" style=${{ padding: '2px 3px', fontSize: '8px', background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '2px', textAlign: 'center' }}><span class="hero-attr-lbl" style=${{ color: 'rgba(255,255,255,0.25)' }}>速 </span><span class="hero-attr-val" style=${{ color: 'var(--glow-yellow)', fontWeight: 'bold' }}>${enemy.dexterity}</span></div>
                       </div>
-                      <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.02)', height: '50px', borderRadius: '1px', marginTop: '3px' }}>
+
+                      <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.04)', height: '60px', borderRadius: '3px', marginTop: '2px', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.6)' }}>
                         <canvas id=${`battle-enemy-sprite-${index}`} width="48" height="48" style=${{ imageRendering: 'pixelated', width: '48px', height: '48px' }}></canvas>
                       </div>
                     </div>

@@ -18,6 +18,16 @@ function RoleTabComponent({ selectedRoleId, setSelectedRoleId, jumpToScript }) {
 
   const role = useMemo(() => ROLES_DB[selectedRoleId] || ROLES_DB[0], [selectedRoleId]);
 
+  // 获取该角色在全局状态中的运行时配置及战斗贴图包映射
+  const runtimeRole = state.roles[selectedRoleId] || {};
+  const mgoIdVal = runtimeRole.tileId !== undefined ? runtimeRole.tileId : role.mgoRoleId;
+  let battleSpriteVal = runtimeRole.spriteNumInBattle;
+  
+  if (battleSpriteVal === undefined) {
+    const defaultSprites = [0, 1, 2, 4, 3, 8];
+    battleSpriteVal = defaultSprites[selectedRoleId] !== undefined ? defaultSprites[selectedRoleId] : 0;
+  }
+
   // 步骤 1：绘制 RGM 头像 Canvas
   useEffect(() => {
     try {
@@ -127,6 +137,20 @@ function RoleTabComponent({ selectedRoleId, setSelectedRoleId, jumpToScript }) {
               <div class="gamedata-stat-card"><div class="gamedata-stat-label">身法 (SPD)</div><div class="gamedata-stat-value" style=${{ color: '#00e5ff' }}>${role.spd}</div></div>
               <div class="gamedata-stat-card"><div class="gamedata-stat-label">吉运 (LCK)</div><div class="gamedata-stat-value" style=${{ color: '#ffff00' }}>${role.lck}</div></div>
               <div class="gamedata-stat-card"><div class="gamedata-stat-label">状态 (STATUS)</div><div class="gamedata-stat-value" style=${{ color: 'var(--glow-green)' }}>${role.status}</div></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="gamedata-section-title">运行时精灵图集解剖 (Sprite Profiles)</div>
+            <div class="gamedata-block-grid" style=${{ gridTemplateColumns: '1fr 1fr' }}>
+              <div class="gamedata-block-card">
+                <div class="gamedata-block-label">👾 大地图动作包 (mgo.mkf)</div>
+                <div class="gamedata-block-value" style=${{ color: 'var(--glow-yellow)' }}>mgo.mkf #${mgoIdVal}</div>
+              </div>
+              <div class="gamedata-block-card">
+                <div class="gamedata-block-label">⚔ 战斗贴图精灵包 (f.mkf)</div>
+                <div class="gamedata-block-value" style=${{ color: 'var(--glow-green)' }}>f.mkf #${battleSpriteVal}</div>
+              </div>
             </div>
           </div>
           

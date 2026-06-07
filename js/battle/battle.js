@@ -7,7 +7,7 @@ import { deyj } from '../utils/deyj.js';
 // 站位坐标配置 (1人, 2人, 3人)
 const PLAYER_POS_PRESETS = [
   [[240, 170]],                         // 1个队员
-  [[200, 176], [[256, 152]]],           // 2个队员
+  [[200, 176], [256, 152]],             // 2个队员
   [[180, 180], [234, 170], [270, 146]]  // 3个队员
 ];
 
@@ -113,9 +113,10 @@ export async function start(id, failId, fleeId) {
 
     // 从 f.mkf 加载玩家角色战斗动画数据包并进行 deyj 解压
     let spriteNum = roleStats.spriteNumInBattle;
-    if (spriteNum === undefined) {
-      // 步骤 1.5：提供我方角色战斗精灵图包 ID 兜底映射
-      // 0-李逍遥->0, 1-赵灵儿->1, 2-林月如->2, 3-阿奴->4, 4-巫后->3, 5-盖罗娇->8
+    
+    // 步骤 1.5：提供我方角色战斗精灵图包 ID 兜底映射
+    // 当读档或初始精灵包为 0，且角色本身不是李逍遥 (index !== 0) 时，说明需要强行重定位为对应角色的专属包
+    if (spriteNum === undefined || (spriteNum === 0 && role.index !== 0)) {
       const defaultSprites = [0, 1, 2, 4, 3, 8];
       spriteNum = defaultSprites[role.index] !== undefined ? defaultSprites[role.index] : 0;
     }
@@ -135,7 +136,9 @@ export async function start(id, failId, fleeId) {
       y: pos[1],
       spriteData: spriteData,
       currentFrame: 0,
-      action: null // 选择的指令
+      action: null, // 选择的指令
+      mgoId: role.tileId || 0, // 保存大地图 MGO 图元 ID
+      spriteNum: spriteNum // 保存战斗贴图包 ID (f.mkf ID)
     });
   }
 
@@ -146,8 +149,8 @@ export async function start(id, failId, fleeId) {
   }
 
   const enemyObjs = teamObjIds?.map(id=>({battleId,enemyId:id,abcId:state.items?.[id]?.roleId}));
-  const roles = state.party.map(p=>({index:p.index,mgoId:p.tileId}));
-  console.log(`战斗开启: 敌方队伍 ID ${battleId}, 成员 ${enemies.length} 个 ${JSON.stringify(enemyObjs)}; 我方成员 ${players.length} 个 ${JSON.stringify(roles)}`);
+  const roles = players.map(p=>({index:p.index,mgoId:p.mgoId,spriteNum:p.spriteNum}));
+  console.log(`战斗开启: 敌方队伍 ID ${battleId}, 成员 ${enemies.length} 个 ${JSON.stringify(enemyObjs)}; 我方成员 ${players.length} 个 ${JSON.stringify(roles)}。我方人员物理攻击动作从 f.mkf 的 spriteNum 精灵包读取，敌方人员物理攻击动作从 abc.mkf 的 abcId 精灵包读取。`);
 
   // 开启画面的定时绘制渲染与逻辑更新时钟
   startBattleClock();
@@ -700,7 +703,9 @@ export function getBattleState() {
       y: p.y,
       currentFrame: p.currentFrame,
       action: p.action,
-      spriteData: p.spriteData
+      spriteData: p.spriteData,
+      mgoId: p.mgoId,
+      spriteNum: p.spriteNum
     })),
     enemies: enemies.map(e => ({
       id: e.id,
