@@ -15,6 +15,16 @@ const PLAYER_POS_PRESETS = [
   [[180, 180], [234, 170], [270, 146]]  // 3个队员
 ];
 
+// 每个主角对应的默认初始战斗音效数据（提取自 data.mkf #3）
+const DEFAULT_ROLE_SOUNDS = [
+  { attack: 37, weapon: 1, critical: 5, magic: 9, death: 23, dying: 19 }, // 李逍遥
+  { attack: 38, weapon: 2, critical: 6, magic: 10, death: 24, dying: 20 }, // 赵灵儿
+  { attack: 39, weapon: 3, critical: 7, magic: 11, death: 25, dying: 21 }, // 林月如
+  { attack: 38, weapon: 2, critical: 6, magic: 10, death: 24, dying: 20 }, // 巫后
+  { attack: 40, weapon: 4, critical: 8, magic: 12, death: 26, dying: 22 }, // 阿奴
+  { attack: 39, weapon: 3, critical: 7, magic: 11, death: 25, dying: 21 }  // 其它
+];
+
 // 核心状态变量
 let battleId = 0;
 let failScriptId = 0;
@@ -139,6 +149,7 @@ export async function start(id, failId, fleeId) {
     }
     const spriteData = deyj(loadMkf('f.mkf', spriteNum));
 
+    const defSounds = DEFAULT_ROLE_SOUNDS[role.index] || {};
     players.push({
       index: role.index,
       name: role.name || `角色 #${role.index}`,
@@ -161,12 +172,12 @@ export async function start(id, failId, fleeId) {
       action: null, // 选择的指令
       mgoId: role.tileId || 0, // 保存大地图 MGO 图元 ID
       spriteNum: spriteNum, // 保存战斗贴图包 ID (f.mkf ID)
-      attackSound: roleStats.attackSound || 0,
-      weaponSound: roleStats.weaponSound || 0,
-      criticalSound: roleStats.criticalSound || 0,
-      magicSound: roleStats.magicSound || 0,
-      deathSound: roleStats.deathSound || 0,
-      dyingSound: roleStats.dyingSound || 0
+      attackSound: roleStats.attackSound || defSounds.attack || 0,
+      weaponSound: roleStats.weaponSound || defSounds.weapon || 0,
+      criticalSound: roleStats.criticalSound || defSounds.critical || 0,
+      magicSound: roleStats.magicSound || defSounds.magic || 0,
+      deathSound: roleStats.deathSound || defSounds.death || 0,
+      dyingSound: roleStats.dyingSound || defSounds.dying || 0
     });
   }
 

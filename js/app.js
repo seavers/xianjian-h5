@@ -1,5 +1,5 @@
 import { state } from './engine/state.js';
-import { ready, file_caches } from './resources/loader.js';
+import { ready, file_caches, loadMkf } from './resources/loader.js';
 import { loadSss, loadDat, fromCache, caches } from './resources/pal.js';
 import { setRolePos, setRoleTile, setRoleIndex, setRoleGroup, toggleScene, calcMap } from './engine/command.js';
 import { ESC } from './esc/esc.js';
@@ -120,6 +120,118 @@ function initDat() {
   console.log(`载入简体汉字短语字表完成`);
 }
 
+function initPlayerRoles() {
+  const data = loadMkf('data.mkf', 3);
+  if (!data) {
+    console.error('无法加载 data.mkf #3 默认角色属性数据块');
+    return;
+  }
+  const prView = data.toDataView();
+
+  const rgwAvatar = prView.nextShortArray(6);
+  const rgwSpriteNumInBattle = prView.nextShortArray(6);
+  const rgwSpriteNum = prView.nextShortArray(6);
+  const rgwName = prView.nextShortArray(6);
+  const rgwAttackAll = prView.nextShortArray(6);
+  prView.skipByte(12); // rgwUnknown1 (6 * 2B = 12B)
+  const rgwLevel = prView.nextShortArray(6);
+  const rgwMaxHP = prView.nextShortArray(6);
+  const rgwMaxMP = prView.nextShortArray(6);
+  const rgwHP = prView.nextShortArray(6);
+  const rgwMP = prView.nextShortArray(6);
+
+  const rgwEquipment = [];
+  for (let part = 0; part < 6; part++) {
+    rgwEquipment[part] = prView.nextShortArray(6);
+  }
+
+  const rgwAttackStrength = prView.nextShortArray(6);
+  const rgwMagicStrength = prView.nextShortArray(6);
+  const rgwDefense = prView.nextShortArray(6);
+  const rgwDexterity = prView.nextShortArray(6);
+  const rgwFleeRate = prView.nextShortArray(6);
+  const rgwPoisonResistance = prView.nextShortArray(6);
+
+  const rgwElementalResistance = [];
+  for (let elem = 0; elem < 5; elem++) {
+    rgwElementalResistance[elem] = prView.nextShortArray(6);
+  }
+
+  prView.skipByte(36); // rgwUnknown2, 3, 4 (3 * 12B = 36B)
+  const rgwCoveredBy = prView.nextShortArray(6);
+
+  const rgwMagic = [];
+  for (let m = 0; m < 32; m++) {
+    rgwMagic[m] = prView.nextShortArray(6);
+  }
+
+  const rgwWalkFrames = prView.nextShortArray(6);
+  const rgwCooperativeMagic = prView.nextShortArray(6);
+  prView.skipByte(24); // rgwUnknown5, 6 (2 * 12B = 24B)
+  const rgwDeathSound = prView.nextShortArray(6);
+  const rgwAttackSound = prView.nextShortArray(6);
+  const rgwWeaponSound = prView.nextShortArray(6);
+  const rgwCriticalSound = prView.nextShortArray(6);
+  const rgwMagicSound = prView.nextShortArray(6);
+  const rgwCoverSound = prView.nextShortArray(6);
+  const rgwDyingSound = prView.nextShortArray(6);
+
+  for (let i = 0; i < 6; i++) {
+    let role = state.roles[i];
+    if (!role) {
+      role = { type: 'role', index: i, count: 0 };
+      state.roles[i] = role;
+    }
+    role.avatar = rgwAvatar[i];
+    role.spriteNumInBattle = rgwSpriteNumInBattle[i];
+    role.spriteNum = rgwSpriteNum[i];
+    role.nameId = rgwName[i];
+    role.attackAll = rgwAttackAll[i];
+    role.level = rgwLevel[i];
+    role.maxHp = rgwMaxHP[i];
+    role.maxMp = rgwMaxMP[i];
+    role.hp = rgwHP[i];
+    role.mp = rgwMP[i];
+
+    role.equipments = {};
+    for (let part = 0; part < 6; part++) {
+      role.equipments[part] = rgwEquipment[part][i];
+    }
+
+    role.attackStrength = rgwAttackStrength[i];
+    role.magicStrength = rgwMagicStrength[i];
+    role.defense = rgwDefense[i];
+    role.dexterity = rgwDexterity[i];
+    role.fleeRate = rgwFleeRate[i];
+    role.poisonResistance = rgwPoisonResistance[i];
+
+    role.elementalResistance = [];
+    for (let elem = 0; elem < 5; elem++) {
+      role.elementalResistance[elem] = rgwElementalResistance[elem][i];
+    }
+
+    role.coveredBy = rgwCoveredBy[i];
+
+    role.magics = [];
+    for (let m = 0; m < 32; m++) {
+      const magicId = rgwMagic[m][i];
+      if (magicId !== 0) {
+        role.magics.push(magicId);
+      }
+    }
+
+    role.cooperativeMagic = rgwCooperativeMagic[i];
+    role.deathSound = rgwDeathSound[i];
+    role.attackSound = rgwAttackSound[i];
+    role.weaponSound = rgwWeaponSound[i];
+    role.criticalSound = rgwCriticalSound[i];
+    role.magicSound = rgwMagicSound[i];
+    role.coverSound = rgwCoverSound[i];
+    role.dyingSound = rgwDyingSound[i];
+  }
+  console.log('载入默认角色战斗属性 PlayerRoles 完成');
+}
+
 // 绑定全局上下文，挂载至 state
 function initContexts() {
   state.contexts.main = document.getElementById('canvas').getContext('2d');
@@ -165,6 +277,7 @@ ready(() => {
   initScene();
   initItem();
   initDat();
+  initPlayerRoles();
 
   // 核心资源载入完毕后，开始初始化所有 React 开发者调试面板
   if (window.initAllUiPanels) {
