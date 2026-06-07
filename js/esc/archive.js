@@ -311,21 +311,32 @@ export function saveArchive(slotId, callback) {
     }
   }
 
-  // 步骤 3.8：写入角色状态与装备等战斗属性 PlayerRoles (offset 508)
+  // 步骤 3.8：写入角色战斗属性 PlayerRoles (offset 508)，与 parseSaveData 读取顺序完全对称
   for (let i = 0; i < 6; i++) {
     const role = state.roles[i];
     if (role) {
+      // 角色基础身份信息（offset +0 ~ +60）
+      view.setUint16(508 + 0 + i * 2, role.avatar || 0, true);
+      view.setUint16(508 + 12 + i * 2, role.spriteNumInBattle || 0, true);
+      view.setUint16(508 + 24 + i * 2, role.spriteNum || 0, true);
+      view.setUint16(508 + 36 + i * 2, role.nameId || 0, true);
+      view.setUint16(508 + 48 + i * 2, role.attackAll || 0, true);
+      // offset +60: rgwUnknown1，保留底板数据不覆盖
+
+      // 核心战斗数值（offset +72 ~ +120）
       view.setUint16(508 + 72 + i * 2, role.level || 0, true);
       view.setUint16(508 + 84 + i * 2, role.maxHp || 0, true);
       view.setUint16(508 + 96 + i * 2, role.maxMp || 0, true);
       view.setUint16(508 + 108 + i * 2, role.hp || 0, true);
       view.setUint16(508 + 120 + i * 2, role.mp || 0, true);
 
+      // 装备栏（offset +132 ~ +192，6 个部位 × 6 角色）
       for (let part = 0; part < 6; part++) {
         const eqId = role.equipments ? role.equipments[part] : 0;
         view.setUint16(508 + 132 + part * 12 + i * 2, eqId || 0, true);
       }
 
+      // 战斗属性六维（offset +204 ~ +264）
       view.setUint16(508 + 204 + i * 2, role.attackStrength || 0, true);
       view.setUint16(508 + 216 + i * 2, role.magicStrength || 0, true);
       view.setUint16(508 + 228 + i * 2, role.defense || 0, true);
@@ -333,10 +344,35 @@ export function saveArchive(slotId, callback) {
       view.setUint16(508 + 252 + i * 2, role.fleeRate || 0, true);
       view.setUint16(508 + 264 + i * 2, role.poisonResistance || 0, true);
 
+      // 五灵抗性（offset +276 ~ +336，5 元素 × 6 角色）
+      const elemRes = role.elementalResistance || [0, 0, 0, 0, 0];
+      for (let elem = 0; elem < 5; elem++) {
+        view.setUint16(508 + 276 + elem * 12 + i * 2, elemRes[elem] || 0, true);
+      }
+      // offset +336: rgwUnknown2/3/4 (36B)，保留底板数据不覆盖
+
+      // 掩护者（offset +372）
+      view.setUint16(508 + 372 + i * 2, role.coveredBy || 0, true);
+
+      // 法术列表（offset +384 ~ +768，32 个法术 × 6 角色）
       for (let m = 0; m < 32; m++) {
         const magicId = (role.magics && role.magics[m]) || 0;
         view.setUint16(508 + 384 + m * 12 + i * 2, magicId, true);
       }
+
+      // 行走帧数与合体法术（offset +768 ~ +792）
+      view.setUint16(508 + 768 + i * 2, role.walkFrames || 0, true);
+      view.setUint16(508 + 780 + i * 2, role.cooperativeMagic || 0, true);
+      // offset +792: rgwUnknown5/6 (24B)，保留底板数据不覆盖
+
+      // 7 种战斗音效 ID（offset +816 ~ +900）
+      view.setUint16(508 + 816 + i * 2, role.deathSound || 0, true);
+      view.setUint16(508 + 828 + i * 2, role.attackSound || 0, true);
+      view.setUint16(508 + 840 + i * 2, role.weaponSound || 0, true);
+      view.setUint16(508 + 852 + i * 2, role.criticalSound || 0, true);
+      view.setUint16(508 + 864 + i * 2, role.magicSound || 0, true);
+      view.setUint16(508 + 876 + i * 2, role.coverSound || 0, true);
+      view.setUint16(508 + 888 + i * 2, role.dyingSound || 0, true);
     }
   }
 
