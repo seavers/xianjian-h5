@@ -208,10 +208,12 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
   const [inputCoordX, setInputCoordX] = useState('');
   const [inputCoordY, setInputCoordY] = useState('');
   const [inputCoordHalf, setInputCoordHalf] = useState(0);
+  const [hoveredNpc, setHoveredNpc] = useState(null);
 
   // Refs
   const heroCanvasRef = useRef(null);
   const itemBallCanvasRef = useRef(null);
+  const npcSelectedCanvasRef = useRef(null);
   const terminalLogsRef = useRef(null);
   const saveSlotInputRef = useRef(null);
 
@@ -544,6 +546,26 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
       }
     });
   }, [isBattleRunning, battlePlayers, battleEnemies]);
+
+  // 选中的 NPC 2D 精灵图同步重绘 (悬停优先，点击保留)
+  const activeNpcToShow = hoveredNpc || npcs.find(n => n.id === highlightNpcId) || null;
+  useEffect(() => {
+    if (!loadMgoFn) return;
+    if (activeNpcToShow && activeNpcToShow.mgoId !== 0) {
+      try {
+        const npcCanvas = loadMgoFn(activeNpcToShow.mgoId, activeNpcToShow.frame);
+        if (npcCanvas) {
+          drawDecodedSprite(npcCanvas, 'canvas-npc-selected-sprite');
+        } else {
+          drawDecodedSprite(null, 'canvas-npc-selected-sprite');
+        }
+      } catch (e) {
+        drawDecodedSprite(null, 'canvas-npc-selected-sprite');
+      }
+    } else {
+      drawDecodedSprite(null, 'canvas-npc-selected-sprite');
+    }
+  }, [activeNpcToShow, loadMgoFn]);
 
   // 物品详情反解查看
   const inspectItem = (itemId) => {
@@ -1065,41 +1087,62 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                   </label>
                 </div>
               </div>
-              <div class="npc-fleet-grid" style=${{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px', maxHeight: '110px', overflowY: 'auto' }}>
-                ${npcs.length === 0 ? html`
-                  <div style=${{ gridColumn: 'span 6', color: 'rgba(255,255,255,0.15)', fontSize: '8.5px', padding: '10px 0', textAlign: 'center' }}>当前场景暂无活跃的事件/NPC实体</div>
-                ` : npcs.map((npc, idx) => {
-                  const isHighlighted = highlightNpcId === npc.id;
-                  
-                  return html`
-                    <div 
-                      key=${npc.id}
-                      class=${`npc-micro-card ${isHighlighted ? 'highlighted' : ''}`}
-                      onMouseEnter=${() => inspectNpc(npc)}
-                      onClick=${() => { setHighlightNpcId(prev => (prev === npc.id ? null : npc.id)); state.highlightNpcId = state.highlightNpcId === npc.id ? null : npc.id; }}
-                      onDoubleClick=${() => teleportToNpc(npc)}
-                      style=${{
-                        border: isHighlighted ? '1px solid var(--glow-green)' : '1px solid rgba(255,255,255,0.04)',
-                        background: isHighlighted ? 'rgba(0,255,157,0.06)' : 'rgba(0,0,0,0.2)',
-                        padding: '4px',
-                        borderRadius: '2px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        minHeight: '34px'
-                      }}
-                    >
-                      <div class="npc-mc-head" style=${{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: '#fff', fontWeight: 'bold' }}>
-                        <span>#${npc.id}</span>
-                        <span style=${{ fontSize: '7.5px', color: npc.state ? 'var(--glow-green)' : 'rgba(255,255,255,0.2)' }}>${npc.state ? `S:${npc.state}` : 'S:0'}</span>
+              <div style=${{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
+                <!-- 左置选中的 NPC 精灵图片框 -->
+                <div style=${{ flexShrink: 0, width: '62px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '3px', padding: '4px', gap: '3px', minHeight: '80px' }}>
+                  <canvas id="canvas-npc-selected-sprite" ref=${npcSelectedCanvasRef} width="40" height="40" style=${{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '2px', imageRendering: 'pixelated', width: '40px', height: '40px' }}></canvas>
+                  <div style=${{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px', lineHeight: 1.1 }}>
+                    <span style=${{ fontSize: '8px', color: activeNpcToShow ? 'var(--glow-green)' : 'rgba(255,255,255,0.2)', fontWeight: 'bold' }}>
+                      ${activeNpcToShow ? `NPC #${activeNpcToShow.id}` : '无选中'}
+                    </span>
+                    <span style=${{ fontSize: '7px', color: activeNpcToShow ? 'var(--glow-yellow)' : 'rgba(255,255,255,0.15)' }}>
+                      ${activeNpcToShow ? `MGO: #${activeNpcToShow.mgoId}` : '-'}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- 右置 NPC 矩阵网格 -->
+                <div class="npc-fleet-grid" style=${{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', maxHeight: '110px', overflowY: 'auto' }}>
+                  ${npcs.length === 0 ? html`
+                    <div style=${{ gridColumn: 'span 5', color: 'rgba(255,255,255,0.15)', fontSize: '8.5px', padding: '10px 0', textAlign: 'center' }}>当前场景暂无活跃的事件/NPC实体</div>
+                  ` : npcs.map((npc, idx) => {
+                    const isHighlighted = highlightNpcId === npc.id;
+                    
+                    return html`
+                      <div 
+                        key=${npc.id}
+                        class=${`npc-micro-card ${isHighlighted ? 'highlighted' : ''}`}
+                        onMouseEnter=${() => { inspectNpc(npc); setHoveredNpc(npc); }}
+                        onMouseLeave=${() => setHoveredNpc(null)}
+                        onClick=${() => {
+                          const nextId = highlightNpcId === npc.id ? null : npc.id;
+                          setHighlightNpcId(nextId);
+                          state.highlightNpcId = nextId;
+                        }}
+                        onDoubleClick=${() => teleportToNpc(npc)}
+                        style=${{
+                          border: isHighlighted ? '1px solid var(--glow-green)' : '1px solid rgba(255,255,255,0.04)',
+                          background: isHighlighted ? 'rgba(0,255,157,0.06)' : 'rgba(0,0,0,0.2)',
+                          padding: '4px',
+                          borderRadius: '2px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          minHeight: '34px'
+                        }}
+                      >
+                        <div class="npc-mc-head" style=${{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: '#fff', fontWeight: 'bold' }}>
+                          <span>#${npc.id}</span>
+                          <span style=${{ fontSize: '7.5px', color: npc.state ? 'var(--glow-green)' : 'rgba(255,255,255,0.2)' }}>${npc.state ? `S:${npc.state}` : 'S:0'}</span>
+                        </div>
+                        <div class="npc-mc-pos" style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.3)', textAlign: 'right', marginTop: '2px' }}>
+                          (${Math.floor(npc.x / 32)}, ${Math.floor(npc.y / 16)})
+                        </div>
                       </div>
-                      <div class="npc-mc-pos" style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.3)', textAlign: 'right', marginTop: '2px' }}>
-                        (${Math.floor(npc.x / 32)}, ${Math.floor(npc.y / 16)})
-                      </div>
-                    </div>
-                  `;
-                })}
+                    `;
+                  })}
+                </div>
               </div>
             </div>
           </div>
