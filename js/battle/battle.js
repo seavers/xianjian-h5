@@ -309,16 +309,16 @@ function draw() {
     // 头像 (49 + 角色 0-based 索引)
     const avatarImg = loadPic(49 + p.index);
     if (avatarImg) {
-      talkCtx.drawImage(avatarImg, bx + 2, by);
+      talkCtx.drawImage(avatarImg, bx - 3, by);
     }
 
     // 数字渲染：显示「当前HP / 最大HP」和「当前MP / 最大MP」
     // 参考 sdlpal: PAL_DrawNumber(HP, ...) + SPRITENUM_SLASH(#40号图) + PAL_DrawNumber(MaxHP, ...)
     if (p.hp > 0) {
       // HP 行（黄色数字 20~29，中间是 #40 号斜杠图片）
-      drawHpMpLine(talkCtx, p.hp, p.maxHp, 'hp', bx + 27, by + 6);
+      drawHpMpLine(talkCtx, p.hp, p.maxHp, 'hp', bx + 29, by + 6);
       // MP 行（青色数字 57~66，中间是 #40 号斜杠图片）
-      drawHpMpLine(talkCtx, p.mp, p.maxMp, 'mp', bx + 27, by + 20);
+      drawHpMpLine(talkCtx, p.mp, p.maxMp, 'mp', bx + 29, by + 20);
     } else {
       // 阵亡状态
       talkCtx.fillStyle = '#ff3333';
