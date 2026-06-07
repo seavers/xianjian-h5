@@ -871,42 +871,7 @@
 	</aside>
 
 	<!-- ==================== 🗺️ 仙剑奇侠传场景地图查看与瞬移模态弹窗 ==================== -->
-	<div id="map-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
-		<div style="--modal-accent: var(--glow-blue); background: rgba(10,13,20,0.96); border: 1px solid var(--glow-blue); border-radius: 4px; box-shadow: 0 0 25px rgba(0, 225, 255, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
-			<!-- 弹窗头部 -->
-			<div class="tool-modal-header">
-				<div class="tool-modal-title-row">
-					<div class="tool-modal-dot"></div>
-					<span class="tool-modal-heading" style="text-transform: uppercase;">🗺️ PAL REALTIME MAP VIEWER (场景大地图瞬移定位器)</span>
-				</div>
-				<div style="display: flex; gap: 12px; align-items: center;">
-					<span id="map-modal-info" style="font-size: 9px; color: rgba(255,255,255,0.4);">地图: - | 主角坐标: (-, -)</span>
-					<button onclick="closeMapModal()" class="tool-modal-close">✕</button>
-				</div>
-			</div>
-			<!-- 主体视图区 -->
-			<div style="flex: 1; overflow: auto; background: #030305; position: relative; padding: 10px;" id="map-canvas-container">
-				<!-- 用来展示地图的画布 -->
-				<div style="position: relative; display: block; margin: 0 auto; cursor: crosshair; width: fit-content;">
-					<canvas id="map-modal-canvas" style="display: block; image-rendering: pixelated;"></canvas>
-				</div>
-			</div>
-			<!-- 底部工具栏 -->
-			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-top: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
-				<span style="font-size: 8.5px; color: rgba(255,255,255,0.4);">💡 提示：在地图上点击任意位置即可瞬间移动主角。当前地图大小为 128x128 瓦片网格。</span>
-				<div style="display: flex; gap: 8px; align-items: center;">
-					<div style="display: flex; align-items: center; gap: 6px; margin-right: 15px;">
-						<span style="font-size: 9px; color: rgba(255,255,255,0.4); font-weight: bold;">🔍 缩放:</span>
-						<button class="btn-dbg map-zoom-btn" id="btn-map-zoom-1" onclick="setMapZoom(0.25)" style="padding: 1px 6px; font-size: 8.5px;">25%</button>
-						<button class="btn-dbg map-zoom-btn active" id="btn-map-zoom-2" onclick="setMapZoom(0.5)" style="padding: 1px 6px; font-size: 8.5px;">50%</button>
-						<button class="btn-dbg map-zoom-btn" id="btn-map-zoom-3" onclick="setMapZoom(1.0)" style="padding: 1px 6px; font-size: 8.5px;">100%</button>
-					</div>
-					<button class="btn-dbg" onclick="refreshMapModal()" style="color: var(--glow-green); border-color: rgba(0, 255, 157, 0.2); padding: 2px 8px; font-size: 9px; cursor: pointer;">🔄 刷新地图</button>
-					<button class="btn-dbg" onclick="closeMapModal()" style="color: #fff; border-color: rgba(255,255,255,0.1); padding: 2px 8px; font-size: 9px; cursor: pointer;">关闭</button>
-				</div>
-			</div>
-		</div>
-	</div>
+	<div id="map-modal-root"></div>
 
 	<!-- ==================== 🖼️ 仙剑奇侠传通用图片资源浏览器模态弹窗 ==================== -->
 	<div id="image-explorer-root"></div>
