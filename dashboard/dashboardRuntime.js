@@ -639,7 +639,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
 
   return html`
     <!-- 控制台头部 -->
-    <div id="dashboard-header" style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(0,0,0,0.6)', borderBottom: '1px solid var(--border-glass)', flexShrink: 0 }}>
+    <div id="dashboard-header" style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(5,5,8,0.96)', borderBottom: '1px solid var(--border-glass)', flexShrink: 0, position: 'sticky', top: 0, zIndex: 10 }}>
       <div class="db-title dashboard-header-main" style=${{ display: 'flex', alignItems: 'center', gap: '6px' }}>
         <div class="dashboard-status-dot" style=${{ width: '6px', height: '6px', borderRadius: '50%', background: '#00ff9d', boxShadow: '0 0 8px #00ff9d' }}></div>
         <h2 style=${{ fontSize: '11px', fontWeight: 'bold', color: '#fff', margin: 0 }}>PAL RUNTIME REALTIME PROFILE CONSOLE</h2>
@@ -654,7 +654,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
     </div>
 
     <!-- 主面板区 -->
-    <div id="panel-container" style=${{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+    <div id="panel-container" style=${{ display: 'flex', flexDirection: 'column' }}>
       
       <!-- ⚔️ 游戏战斗实时数据面板 -->
       ${isBattleRunning ? html`
@@ -830,10 +830,10 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
           <div class="panel-row" style=${{ display: 'block' }}>
             <div class="panel-col" style=${{ border: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.01)', borderRadius: '2px', padding: '6px 8px' }}>
               <div class="section-header" style=${{ fontSize: '9px', fontWeight: 'bold', marginBottom: '5px' }}>🎒 行囊物品与 20 项隐藏属性解耦监视 (Bag & Item Profiles)</div>
-              <div class="bag-cols-container" style=${{ display: 'flex', gap: '8px' }}>
+              <div class="bag-cols-container">
                 
                 <!-- 左侧行囊 slot grid (固定 20 个格子) -->
-                <div class="bag-grid" style=${{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
+                <div class="bag-grid">
                   ${Array.from({ length: Math.max(20, ownItems.length) }).map((_, i) => {
                     const itemId = ownItems[i];
                     const hasItem = i < ownItems.length;
@@ -866,7 +866,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                 </div>
 
                 <!-- 右侧监视器面板 -->
-                <div class="bag-inspector" style=${{ position: 'relative', width: '190px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '2px', padding: '8px', paddingRight: '56px', minHeight: '136px' }}>
+                <div class="bag-inspector">
                   <div style=${{ position: 'absolute', right: '5px', top: '5px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
                     <canvas id="canvas-item-ball" ref=${itemBallCanvasRef} width="40" height="40" style=${{ background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '2px', imageRendering: 'pixelated', width: '40px', height: '40px' }}></canvas>
                     <span style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.25)' }}>${inspectorInfo.ballId}</span>
