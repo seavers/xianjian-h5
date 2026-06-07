@@ -256,30 +256,42 @@ function draw() {
       if (!icon.img) {
         return;
       }
-      talkCtx.drawImage(icon.img, icon.x, icon.y);
       if (selectedAction === idx && menuState === 'main') {
-        // 绘制高亮选择框 (30x30)
-        talkCtx.strokeStyle = '#ffd700';
-        talkCtx.lineWidth = 1.5;
-        talkCtx.strokeRect(icon.x, icon.y, 30, 30);
+        // 选中图标：正常彩色显示（对应 sdlpal PAL_RLEBlitToSurface 正常渲染）
+        talkCtx.filter = 'none';
+        talkCtx.drawImage(icon.img, icon.x, icon.y);
+      } else {
+        // 未选中图标：灰度暗化（对应 sdlpal PAL_RLEBlitMonoColor bColor=0, iColorShift=-4）
+        talkCtx.filter = 'grayscale(1) brightness(0.55)';
+        talkCtx.drawImage(icon.img, icon.x, icon.y);
       }
     });
+    // 恢复默认滤镜，防止影响后续绘制
+    talkCtx.filter = 'none';
 
-    // 绘制指示当前正在选择的队员箭咀
+    // 绘制指示当前正在选择的队员箭咀（使用 data.mkf #9 第70号图片）
     const activePlayer = players[activePlayerIndex];
     if (activePlayer && activePlayer.hp > 0) {
-      const ax = activePlayer.x - 4;
-      const ay = activePlayer.y - (activePlayer.height || 40) - 10 - (Math.floor(Date.now() / 250) % 2 * 3);
-      drawArrow(talkCtx, ax, ay, '#ff3333');
+      const arrowImg = loadPic(70);
+      const bobOffset = Math.floor(Date.now() / 250) % 2 * 3;
+      if (arrowImg) {
+        const ax = activePlayer.x - arrowImg.width / 2;
+        const ay = activePlayer.y - (activePlayer.height || 40) - arrowImg.height - 2 - bobOffset;
+        talkCtx.drawImage(arrowImg, ax, ay);
+      }
     }
 
-    // 目标敌人选择提示
+    // 目标敌人选择提示（使用 data.mkf #9 第69号图片）
     if (menuState === 'target') {
       const targetEnemy = enemies[targetEnemyIndex];
       if (targetEnemy && targetEnemy.hp > 0) {
-        const ex = targetEnemy.x - 4;
-        const ey = targetEnemy.y - (targetEnemy.height || 40) - 10 - (Math.floor(Date.now() / 250) % 2 * 3);
-        drawArrow(talkCtx, ex, ey, '#ffff00');
+        const arrowImg = loadPic(69);
+        const bobOffset = Math.floor(Date.now() / 250) % 2 * 3;
+        if (arrowImg) {
+          const ex = targetEnemy.x - arrowImg.width / 2;
+          const ey = targetEnemy.y - (targetEnemy.height || 40) - arrowImg.height - 2 - bobOffset;
+          talkCtx.drawImage(arrowImg, ex, ey);
+        }
       }
     }
   }
@@ -300,10 +312,13 @@ function draw() {
       talkCtx.drawImage(avatarImg, bx + 2, by);
     }
 
-    // 数字渲染
+    // 数字渲染：显示「当前HP / 最大HP」和「当前MP / 最大MP」
+    // 参考 sdlpal: PAL_DrawNumber(HP, ...) + SPRITENUM_SLASH(#40号图) + PAL_DrawNumber(MaxHP, ...)
     if (p.hp > 0) {
-      drawValueDigits(talkCtx, p.hp, 'hp', bx + 42, by + 6);
-      drawValueDigits(talkCtx, p.mp, 'mp', bx + 42, by + 20);
+      // HP 行（黄色数字 20~29，中间是 #40 号斜杠图片）
+      drawHpMpLine(talkCtx, p.hp, p.maxHp, 'hp', bx + 27, by + 6);
+      // MP 行（青色数字 57~66，中间是 #40 号斜杠图片）
+      drawHpMpLine(talkCtx, p.mp, p.maxMp, 'mp', bx + 27, by + 20);
     } else {
       // 阵亡状态
       talkCtx.fillStyle = '#ff3333';
@@ -335,28 +350,45 @@ function draw() {
   });
 }
 
-// 绘制状态数字
-function drawValueDigits(ctx, val, type, startX, startY) {
+// 绘制「当前值 / 最大值」一行，包含对应色调数字 + 斜杠图片
+// 参考 sdlpal: HP 用 20~29 号黄色数字，MP 用 57~66 号青色数字，斜杠用 #40 号图片
+function drawHpMpLine(ctx, cur, max, type, startX, startY) {
   const baseId = type === 'hp' ? 20 : 57;
-  const str = val.toString();
-  for (let i = 0; i < str.length; i++) {
-    const digit = parseInt(str.charAt(str.length - 1 - i));
+  const slashImg = loadPic(40); // data.mkf #9 第40号图片 = SPRITENUM_SLASH
+  const digitW = 6; // 每个数字图片宽度（5x8，留1px间隔）
+
+  // 计算两组数字的像素总宽度
+  const curStr = cur.toString();
+  const maxStr = max.toString();
+  const slashW = slashImg ? slashImg.width + 1 : 5;
+
+  // 先确定斜杠位置，斜杠左边放当前值（右对齐），右边放最大值（左对齐）
+  // 当前值：右对齐到斜杠左侧
+  let x = startX;
+  for (let i = 0; i < curStr.length; i++) {
+    const digit = parseInt(curStr.charAt(i));
     const digitImg = loadPic(baseId + digit);
     if (digitImg) {
-      ctx.drawImage(digitImg, startX - i * 7, startY);
+      ctx.drawImage(digitImg, x, startY);
     }
+    x += digitW;
   }
-}
 
-// 绘制方向指示箭头
-function drawArrow(ctx, x, y, color) {
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x + 8, y);
-  ctx.lineTo(x + 4, y + 6);
-  ctx.closePath();
-  ctx.fill();
+  // 斜杠
+  if (slashImg) {
+    ctx.drawImage(slashImg, x, startY);
+    x += slashW;
+  }
+
+  // 最大值：左对齐在斜杠右侧
+  for (let i = 0; i < maxStr.length; i++) {
+    const digit = parseInt(maxStr.charAt(i));
+    const digitImg = loadPic(baseId + digit);
+    if (digitImg) {
+      ctx.drawImage(digitImg, x, startY);
+    }
+    x += digitW;
+  }
 }
 
 // 步骤 4：处理战斗指令输入事件，对接 input.js
