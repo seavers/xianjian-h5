@@ -17,16 +17,25 @@ const big5Decoder = new TextDecoder('big5');
 
 function getRoleName(role) {
   if (!role) return '';
+
+  // 1. 判断角色是否有名字ID，并且全局词汇表已加载
   if (role.nameId !== undefined && state.words && state.words[role.nameId]) {
     try {
       const bytes = state.words[role.nameId];
-      const decodedStr = big5Decoder.decode(new Uint8Array(bytes)).trim();
+      
+      // 2. bytes 为 ByteArray 实例，需要通过 subarray 安全转换为原生的 Uint8Array 视图，再进行 Big5 解码
+      const uint8Array = bytes.buffer.subarray(bytes.byteOffset, bytes.byteOffset + bytes.length);
+      const decodedStr = big5Decoder.decode(uint8Array).trim();
+      
+      // 3. 将解码出的繁体角色姓名转化为简体（如支持）后返回
       const simplifiedFn = window.toSimplifiedFn;
       return simplifiedFn ? simplifiedFn(decodedStr) : decodedStr;
     } catch (e) {
       console.error('解码姓名失败:', e);
     }
   }
+
+  // 4. 若无对应数据则回退至默认名字映射
   return DEFAULT_ROLE_NAMES[role.index] || `角色 #${role.index}`;
 }
 
