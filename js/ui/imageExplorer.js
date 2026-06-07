@@ -880,39 +880,40 @@ function ImageExplorerApp() {
 
   // 根据当前大类分类、二级分类、加载状态，精准实时重新计算资源子项总件数
   useEffect(() => {
-    if (!modules) return;
+    // 只有在弹窗可见且底层依赖模块已加载时，才重新计算资源总数，避免在刚进游戏尚未下载完成时触发报错
+    if (!isVisible || !modules) return;
 
     const { pal, loader, music, sound } = modules;
     try {
       let total = 0;
       if (currentType === 'rgm') {
         const data = loader.load('rgm.mkf');
-        total = data.getInt(0) / 4 - 1;
+        total = data ? (data.getInt(0) / 4 - 1) : 0;
       } else if (currentType === 'fbp') {
         const data = loader.load('fbp.mkf');
-        total = data.getInt(0) / 4 - 1;
+        total = data ? (data.getInt(0) / 4 - 1) : 0;
       } else if (currentType === 'ball') {
         const data = loader.load('ball.mkf');
-        total = data.getInt(0) / 4 - 1;
+        total = data ? (data.getInt(0) / 4 - 1) : 0;
       } else if (currentType === 'mgo') {
-        total = pal.loadMgoCount(subId);
+        total = pal.loadMgoCount(subId) || 0;
       } else if (currentType === 'gop') {
-        total = pal.mkf2Count('gop.mkf', subId);
+        total = pal.mkf2Count('gop.mkf', subId) || 0;
       } else if (currentType === 'pic') {
         const pics = loader.loadMkf('data.mkf', 9);
-        total = pics.getShort(0);
+        total = pics ? pics.getShort(0) : 0;
       } else if (currentType === 'msg') {
         const talk = loader.loadMkf('sss.mkf', 3);
-        total = talk.length / 4 - 1;
+        total = talk ? (talk.length / 4 - 1) : 0;
       } else if (currentType === 'wor16') {
         const data = loader.load('wor16.asc');
-        total = data.length / 2;
+        total = data ? (data.length / 2) : 0;
       } else if (currentType === 'word') {
         const data = loader.load('word.dat');
-        total = data.length / 10;
+        total = data ? (data.length / 10) : 0;
       } else if (currentType === 'rng') {
         const data = loader.load('rng.mkf');
-        total = data.getInt(0) / 4 - 1;
+        total = data ? (data.getInt(0) / 4 - 1) : 0;
       } else if (currentType === 'music') {
         const musMkf = music.getMusMkf();
         total = musMkf ? (Math.floor(musMkf.getInt(0) / 4) - 1) : 100;
@@ -927,7 +928,7 @@ function ImageExplorerApp() {
       console.error("计算资源总数异常:", e);
       setTotalItems(0);
     }
-  }, [currentType, subId, modules]);
+  }, [currentType, subId, modules, isVisible]);
 
   // 大类选项卡切换逻辑，自动适配分辨率初始值与缩放
   const handleTypeChange = (type) => {
@@ -1215,7 +1216,7 @@ function ImageExplorerApp() {
         items.push(html`<${LazySingleItemCard} key=${i} itemId=${i} itemLabelText=${`PIC #${i + 1}`} scale=${currentScale} loadFn=${(id) => pal.loadPic(id + 1)} />`);
       } else if (currentType === 'wor16') {
         const data = loader.load('wor16.asc');
-        const code = data.getShort(i * 2);
+        const code = data ? data.getShort(i * 2) : 0;
         items.push(html`<${LazySingleItemCard} key=${i} itemId=${i} itemLabelText=${`FON #${i}\n0x${code.toString(16).toUpperCase()}`} scale=${currentScale} loadFn=${(id) => pal.loadFon(id)} />`);
       } else if (currentType === 'msg') {
         items.push(html`<${MsgItemCard} key=${i} msgId=${i} labelText=${`MSG #${i}`} palResources=${pal} />`);

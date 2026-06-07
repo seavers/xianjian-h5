@@ -1,11 +1,11 @@
 import { React, html, drawPixelatedToCanvas } from './react-helper.js';
-import { state } from '../../../engine/state.js';
-import { ROLES_DB } from '../../../data/gameData/roles.js';
-import { loadRgm, loadMgoCount, loadMgo, loadGop, loadBall } from '../../../resources/pal.js';
-import { getDetailedItemInfo } from '../../../data/gameData/items.js';
-import { getCommandName, getInstructionChineseDetail } from '../../../data/gameData/scripts.js';
+import { state } from '../../engine/state.js';
+import { ROLES_DB } from '../../data/gameData/roles.js';
+import { loadRgm, loadMgoCount, loadMgo, loadGop, loadBall } from '../../resources/pal.js';
+import { getDetailedItemInfo } from '../../data/gameData/items.js';
+import { getCommandName, getInstructionChineseDetail } from '../../data/gameData/scripts.js';
 import { getRoleName, getItemNameHtml, makeScriptHyperlinks } from './helpers.js';
-import { scriptCodes } from '../../../engine/command.js';
+import { scriptCodes } from '../../engine/command.js';
 
 const { useState, useEffect, useRef, useMemo } = React;
 
