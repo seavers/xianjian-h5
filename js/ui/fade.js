@@ -4,9 +4,10 @@ import { renderScreen } from './draw.js';
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // 全屏渐变过渡动画执行器，仅负责设定渐变透明度 fadeAlpha 并刷新屏幕
-export async function startFadeTransition(type, color = '0, 0, 0') {
+export async function startFadeTransition(type, speed = 1, color = '0, 0, 0') {
   state.fadeColor = color;
   const duration = 12;
+  const sleepTime = 600 * speed / duration;
 
   // 步骤 1.1：根据渐变类型设定初始帧的黑色遮罩透明度并渲染
   if (type === 'fadeOut') {
@@ -18,7 +19,7 @@ export async function startFadeTransition(type, color = '0, 0, 0') {
 
   // 步骤 1.2：在过渡期间步进淡入淡出画面
   for (let frame = 1; frame <= duration; frame++) {
-    await sleep(30);
+    await sleep(sleepTime);
 
     if (type === 'fadeOut') {
       state.fadeAlpha = frame / duration;
@@ -38,10 +39,11 @@ export async function startFadeTransition(type, color = '0, 0, 0') {
 }
 
 // 全屏淡出
-export async function fadeOut() {
+export async function fadeOut(speed) {
   state.isPaused = true;
   state.needToFadeIn = true;
-  await startFadeTransition('fadeOut');
+  speed = speed || 1;
+  await startFadeTransition('fadeOut', speed);
 }
 
 // 检查全屏淡出

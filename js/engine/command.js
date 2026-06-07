@@ -802,11 +802,10 @@ export function setSceneId(sceneId) {
 
 export async function fadeOutScene(fadeOutSpeed) {
   // 步骤 1：利用 intToShort 将传入的无符号短整型 speed 转换为有符号短整型并设定渐变速度
-  const s = intToShort(fadeOutSpeed);
-  state.fadeOutSpeed = s > 0 ? s : 1;
+  const speed = intToShort(fadeOutSpeed);
   
   // 步骤 2：直接异步等待播放淡出效果完毕
-  await fadeOut();
+  await fadeOut(speed);
 }
 
 export async function fadeInScene(speed) {
@@ -879,13 +878,12 @@ export async function toggleScene(sceneId) {
     if (targetSceneId !== undefined && targetSceneId !== null && targetSceneId !== -1 && targetSceneId !== state.sceneId) {
       state.nextSceneId = -1;
 
-      if (state.needToFadeIn) {
+      if (!state.needToFadeIn) {
         await fadeOut();
-        await performToggleScene(targetSceneId);
-        await fadeIn();
-      } else {
-        await performToggleScene(targetSceneId);
       }
+
+      await performToggleScene(targetSceneId);
+      await fadeIn();
     }
   }
 }

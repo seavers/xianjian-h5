@@ -5,6 +5,7 @@ import { Script } from '../engine/script.js';
 import { toggleScene, setRolePos } from '../engine/command.js';
 import { update } from '../ui/draw.js';
 import { loadArchive, saveArchive } from './archive.js';
+import { fadeOut } from '../ui/fade.js';
 
 export const ESC = {
   ShowStatus: false,
@@ -137,12 +138,7 @@ export const ESC = {
 
     document.addEventListener('touchend', function touchHandler(ev) {
       ev.preventDefault();
-      newStory();
-
-      const el = document.getElementById('startup');
-      if (el) {
-        animHide(el);
-      }
+      startNewStory();
       document.removeEventListener('touchend', touchHandler);
     });
   },
@@ -331,25 +327,18 @@ export const ESC = {
   }
 };
 
-function startNewStory() {
+async function startNewStory() {
   ESC.menuStack = []; // 清空菜单栈，防止在淡出过渡期间重复按键触发
-  const el = document.getElementById('startup');
-  if (el) {
-    animHide(el, () => {
-      newStory();
-    });
-  }
-}
+  
+  // 1. 淡出屏幕
+  await fadeOut();
 
-function animHide(el, callback) {
-  el.style.cssText = 'transition: all 1.0s linear';
-  el.style.opacity = 1;
-  el.style.opacity = 0;
-  setTimeout(() => {
-    ESC.hideMenuCanvas();
-    el.style.opacity = 1;
-    if (callback) callback();
-  }, 1200);
+  // 2. 隐藏startup层
+  const el = document.getElementById('startup');
+  el.style.display = 'none';
+
+  // 3. 启动新的故事
+  await newStory();
 }
 
 function newStory() {
