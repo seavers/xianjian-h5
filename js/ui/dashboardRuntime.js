@@ -1,5 +1,6 @@
 export function initDashboardRuntime({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) {
   let selectedItemId = null;
+  let lastOwnItemsStr = '';
   let lastRefreshDashboardTime = null;
   let loadMgoFn = null;
   let loadBallFn = null;
@@ -314,39 +315,63 @@ export function initDashboardRuntime({ drawDecodedSprite, getDetailedItemInfo, s
     document.getElementById('val-attr-eq-ar').innerText = isCheated ? '天蚕宝甲 (+85)' : '粗布麻衣 (+3)';
 
     const itemsContainer = document.getElementById('container-items');
-    itemsContainer.innerHTML = '';
     const ownItems = state.ownItems || [];
-    for (let i = 0; i < Math.max(20, ownItems.length); i++) {
-      const slot = document.createElement('div');
-      slot.className = 'bag-slot';
+    const currentOwnItemsStr = JSON.stringify(ownItems);
 
-      if (i < ownItems.length) {
-        const itemId = ownItems[i];
-        slot.innerHTML = `道具 #${itemId}`;
+    if (itemsContainer) {
+      if (lastOwnItemsStr !== currentOwnItemsStr) {
+        // 步骤 1：仅当物品内容或数量发生改变时，执行完整的 innerHTML 重绘
+        lastOwnItemsStr = currentOwnItemsStr;
+        itemsContainer.innerHTML = '';
 
-        if (selectedItemId === itemId) {
-          slot.className += ' active';
-        }
+        for (let i = 0; i < Math.max(20, ownItems.length); i++) {
+          const slot = document.createElement('div');
+          slot.className = 'bag-slot';
 
-        slot.onmouseenter = () => inspectItem(itemId);
-        slot.onclick = () => {
-          selectedItemId = itemId;
-          refreshDashboard();
-          inspectItem(itemId);
-        };
-        slot.ondblclick = () => {
-          if (state.items && state.items[itemId]) {
-            import('../engine/script.js').then(({ Script }) => {
-              Script.startItemScript(state.items[itemId]);
-            });
+          if (i < ownItems.length) {
+            const itemId = ownItems[i];
+            slot.setAttribute('data-item-id', itemId);
+            slot.innerHTML = `道具 #${itemId}`;
+
+            if (selectedItemId === itemId) {
+              slot.classList.add('active');
+            }
+
+            slot.onmouseenter = () => inspectItem(itemId);
+            slot.onclick = () => {
+              selectedItemId = itemId;
+              refreshDashboard();
+              inspectItem(itemId);
+            };
+            slot.ondblclick = () => {
+              if (state.items && state.items[itemId]) {
+                import('../engine/script.js').then(({ Script }) => {
+                  Script.startItemScript(state.items[itemId]);
+                });
+              }
+            };
+          } else {
+            slot.innerHTML = '<span style="color: rgba(255,255,255,0.04)">-</span>';
           }
-        };
-      } else {
-        slot.innerHTML = '<span style="color: rgba(255,255,255,0.04)">-</span>';
-      }
 
-      itemsContainer.appendChild(slot);
+          itemsContainer.appendChild(slot);
+        }
+      } else {
+        // 步骤 2：若物品列表内容未变，仅切换选中类名，防止滚动条重置与无谓的 DOM 回流
+        Array.from(itemsContainer.children).forEach(slot => {
+          const itemIdAttr = slot.getAttribute('data-item-id');
+          if (itemIdAttr) {
+            const itemId = parseInt(itemIdAttr, 10);
+            const isSelected = selectedItemId === itemId;
+            const hasActive = slot.classList.contains('active');
+            if (isSelected !== hasActive) {
+              slot.classList.toggle('active', isSelected);
+            }
+          }
+        });
+      }
     }
+
 
     const npcContainer = document.getElementById('container-npcs');
     if (window.lastRenderedSceneId !== state.sceneId) {

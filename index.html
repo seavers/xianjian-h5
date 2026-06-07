@@ -817,9 +817,12 @@
 			color: var(--glow-yellow);
 			background: rgba(255, 208, 0, 0.1);
 			padding: 0px 3px;
-			border-radius: 1.5px;
 		}
 	</style>
+	<!-- 引入 React 核心运行时（无构建轻量开发架构） -->
+	<script src="js/vendor/react.production.min.js"></script>
+	<script src="js/vendor/react-dom.production.min.js"></script>
+	<script src="js/vendor/htm.umd.js"></script>
 </head>
 <body>
 
@@ -1437,32 +1440,7 @@
 	</div>
 
 	<!-- ==================== 📚 仙剑奇侠传游戏资料监视与调试弹窗 ==================== -->
-	<div id="game-data-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
-		<div style="--modal-accent: var(--glow-yellow); background: rgba(15,13,8,0.96); border: 1px solid var(--glow-yellow); border-radius: 4px; box-shadow: 0 0 25px rgba(255, 215, 0, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
-			<!-- 弹窗头部 -->
-			<div class="tool-modal-header">
-				<div class="tool-modal-title-row">
-					<div class="tool-modal-dot"></div>
-					<span class="tool-modal-heading" style="text-transform: uppercase;">📚 PAL GAME DATA & PROFILES SYSTEM (游戏实时资料与联动调试系统)</span>
-				</div>
-				<button onclick="closeGameDataModal()" class="tool-modal-close">✕</button>
-			</div>
-			
-			<!-- 资料大类 Tabs 切换栏 -->
-			<div class="tool-modal-tabbar">
-				<button class="btn-dbg gamedata-tab-btn tool-modal-tab-btn active" id="gamedata-tab-role" onclick="switchGameDataTab('role')" style="--tab-accent: var(--glow-yellow);">👤 角色信息 (rgm.mkf / mgo.mkf)</button>
-				<button class="btn-dbg gamedata-tab-btn tool-modal-tab-btn" id="gamedata-tab-npc" onclick="switchGameDataTab('npc')">👾 NPC 信息 (sss.mkf #0)</button>
-				<button class="btn-dbg gamedata-tab-btn tool-modal-tab-btn" id="gamedata-tab-item" onclick="switchGameDataTab('item')">🎒 物品资料</button>
-				<button class="btn-dbg gamedata-tab-btn tool-modal-tab-btn" id="gamedata-tab-script" onclick="switchGameDataTab('script')">📜 脚本信息 (sss.mkf #4)</button>
-				<button class="btn-dbg gamedata-tab-btn tool-modal-tab-btn" id="gamedata-tab-scene" onclick="switchGameDataTab('scene')">🗺️ 场景信息 (sss.mkf #1 / gop.mkf)</button>
-			</div>
-
-			<!-- 主内容展示区：双栏结构 -->
-			<div id="gamedata-main-container" style="flex: 1; display: flex; overflow: hidden; background: #040302;">
-				<!-- 动态载入各个 TAB 的页面 DOM -->
-			</div>
-		</div>
-	</div>
+	<div id="game-data-modal-root"></div>
 
 	<!-- ==================== ⚔️ 仙剑奇侠传战斗资料监视与调试弹窗 ==================== -->
 	<div id="battle-data-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
