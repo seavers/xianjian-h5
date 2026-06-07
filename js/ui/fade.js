@@ -12,11 +12,13 @@ export async function startFadeTransition(type, color = '0, 0, 0') {
   if (type === 'fadeOut') {
     state.fadeAlpha = 0;
   } else {
-    // 步骤 1.2：淡入时，先将遮罩透明度临时置 0 并重绘一帧纯净场景图到主 mainCtx 上
+    // 步骤 1.2：淡入前，首先在 main 层强制重绘一次清澈的新场景第一帧（临时隐藏遮罩以免 main 被画黑）
+    const savedAlpha = state.fadeAlpha;
     state.fadeAlpha = 0;
     renderScreen(true);
+    state.fadeAlpha = savedAlpha;
 
-    // 步骤 1.3：紧接着将 fadeAlpha 设为 1，在 talkCtx 上画全黑盖住，准备进行淡入渐变
+    // 步骤 1.3：紧接着在 talk 层绘制一帧全黑遮盖，防止穿帮白屏闪烁
     state.fadeAlpha = 1;
     renderScreen('fadeIn');
   }
@@ -27,21 +29,21 @@ export async function startFadeTransition(type, color = '0, 0, 0') {
     
     if (type === 'fadeOut') {
       state.fadeAlpha = frame / duration;
+      renderScreen('fadeOut');
     } else {
       state.fadeAlpha = 1 - frame / duration;
+      renderScreen('fadeIn');
     }
-    renderScreen('fadeIn');
   }
 
   // 步骤 1.5：转场终点半透明黑色遮罩绝对定位与重绘同步
   if (type === 'fadeOut') {
     state.fadeAlpha = 1;
-    // 步骤 1.6：淡出完成时，在 mainCtx 上重绘一次全黑，以便 talkCtx 清理时不闪白
-    renderScreen(true);
+    renderScreen('fadeOut');
   } else {
     state.fadeAlpha = 0;
+    renderScreen('fadeIn'); // 步骤 1.6：清空 talk 层的黑色遮罩，露出底下的 main 层
   }
-  renderScreen('fadeIn');
 }
 
 // 步骤 2：使用极简的 async/await 定义全屏淡出
