@@ -1,4 +1,6 @@
 .gamedata-sidebar {
+  flex-shrink: 0;
+  flex-grow: 0;
   border-right: 1px solid var(--border-glass);
   background: rgba(0, 0, 0, 0.3);
   display: flex;

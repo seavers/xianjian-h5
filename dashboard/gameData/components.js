@@ -65,7 +65,7 @@ function RoleTabComponent({ selectedRoleId, setSelectedRoleId, jumpToScript }) {
   }, [role.mgoRoleId, isPlaying]);
 
   return html`
-    <div class="gamedata-sidebar" style=${{ width: '260px' }}>
+    <div class="gamedata-sidebar" style=${{ flex: '0 0 260px' }}>
       <div class="gamedata-sidebar-header">
         <span class="gamedata-sidebar-title">👤 剧中角色列表</span>
       </div>
@@ -207,7 +207,7 @@ function NpcTabComponent({ selectedNpcId, setSelectedNpcId, npcFilterKeyword, se
   }, [activeNpc?.id, activeNpc?.mgoId, activeNpc?.frame]);
 
   return html`
-    <div class="gamedata-sidebar" style=${{ width: '280px' }}>
+    <div class="gamedata-sidebar" style=${{ flex: '0 0 280px' }}>
       <div class="gamedata-sidebar-header">
         <span class="gamedata-sidebar-title">👾 全局 NPC 列表 (共 ${npcs.length} 个)</span>
         <input 
@@ -327,7 +327,7 @@ function ItemTabComponent({ selectedItemId, setSelectedItemId, jumpToScript }) {
   }, [item.id]);
 
   return html`
-    <div class="gamedata-sidebar" style=${{ width: '260px' }}>
+    <div class="gamedata-sidebar" style=${{ flex: '0 0 260px' }}>
       <div class="gamedata-sidebar-header">
         <span class="gamedata-sidebar-title">🎒 游戏物品列表 (共 ${items.length} 个)</span>
       </div>
@@ -480,7 +480,7 @@ function ScriptTabComponent({ selectedScriptId, setSelectedScriptId }) {
   };
 
   return html`
-    <div class="gamedata-sidebar" style=${{ width: '250px' }}>
+    <div class="gamedata-sidebar" style=${{ flex: '0 0 250px' }}>
       <div class="gamedata-sidebar-header">
         <span class="gamedata-sidebar-title">📜 脚本指令检索 (共 ${totalScripts} 条)</span>
         <div style=${{ display: 'flex', gap: '4px' }}>
@@ -628,7 +628,7 @@ function SceneTabComponent({ selectedSceneId, setSelectedSceneId, jumpToScript, 
   }, [scene?.sceneId, scene?.mapId]);
 
   return html`
-    <div class="gamedata-sidebar" style=${{ width: '250px' }}>
+    <div class="gamedata-sidebar" style=${{ flex: '0 0 250px' }}>
       <div class="gamedata-sidebar-header">
         <span class="gamedata-sidebar-title">🗺️ 游戏场景 Scenes 目录</span>
       </div>
