@@ -202,6 +202,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
   const heroCanvasRef = useRef(null);
   const itemBallCanvasRef = useRef(null);
   const terminalLogsRef = useRef(null);
+  const saveSlotInputRef = useRef(null);
 
   // 图像加载辅助 API
   const [loadMgoFn, setLoadMgoFn] = useState(null);
@@ -1191,17 +1192,26 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
       <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', borderTop: '1px dotted rgba(255,255,255,0.03)', paddingTop: '5px' }}>
         <div style=${{ display: 'flex', gap: '4px', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style=${{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>💾 存档控制:</span>
-          <!-- 槽位号：自定义 −/+ 按钮，避免 React 受控下 spin 不响应 -->
+          <!-- 槽位号：非受控 input 直接输入 + −/+ 微调，彻底规避 React 受控 re-render 吞 input 问题 -->
           <div style=${{ display: 'flex', alignItems: 'center', gap: '2px' }}>
             <button
               class="btn-dbg"
-              onClick=${() => setSaveSlotId(v => Math.max(1, v - 1))}
+              onClick=${() => { const n = Math.max(1, saveSlotId - 1); setSaveSlotId(n); if (saveSlotInputRef.current) saveSlotInputRef.current.value = n; }}
               style=${{ padding: '1px 5px', fontSize: '10px', lineHeight: 1, color: '#ffff00', borderColor: 'rgba(255,255,0,0.2)', background: 'rgba(255,255,0,0.04)', minWidth: '18px' }}
             >−</button>
-            <span style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.1)', color: '#ffff00', fontSize: '9px', padding: '1px 6px', minWidth: '32px', textAlign: 'center', borderRadius: '2px', display: 'inline-block', fontWeight: 'bold', letterSpacing: '0.5px' }}>${saveSlotId}</span>
+            <input
+              ref=${saveSlotInputRef}
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              defaultValue=${saveSlotId}
+              onBlur=${(e) => { const n = Math.max(1, parseInt(e.target.value, 10) || 1); setSaveSlotId(n); e.target.value = n; }}
+              onKeyDown=${(e) => { if (e.key === 'Enter') e.target.blur(); }}
+              style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.1)', color: '#ffff00', fontSize: '9px', padding: '1px 0', width: '42px', textAlign: 'center', borderRadius: '2px', outline: 'none', fontWeight: 'bold' }}
+            />
             <button
               class="btn-dbg"
-              onClick=${() => setSaveSlotId(v => v + 1)}
+              onClick=${() => { const n = saveSlotId + 1; setSaveSlotId(n); if (saveSlotInputRef.current) saveSlotInputRef.current.value = n; }}
               style=${{ padding: '1px 5px', fontSize: '10px', lineHeight: 1, color: '#ffff00', borderColor: 'rgba(255,255,0,0.2)', background: 'rgba(255,255,0,0.04)', minWidth: '18px' }}
             >+</button>
           </div>
