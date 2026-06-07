@@ -398,11 +398,9 @@ export function renderScreen(refreshType) {
   const mainCtx = state.contexts.main;
   if (!mainCtx) return;
 
-  // 步骤 1：同步更新最顶层 startup 遮罩层的绘制状态
-  updateFadeInOut();
-
   // 步骤 2：如果是淡入淡出帧更新，直接在此返回，避免触动底下常规画面
   if (refreshType === 'fadeIn' || refreshType === 'fadeOut') {
+    updateFadeInOut();
     updateCount[1]++;
     return ;
   }
@@ -460,15 +458,12 @@ function updateFadeInOut() {
   // 必须先清空 startup 层，防止半透明遮罩帧叠加
   startupCtx.clearRect(0, 0, startupCtx.canvas.width, startupCtx.canvas.height);
 
-  // 步骤 1：只要处于黑屏等待状态，顶层强制填满纯黑色
-  if (state.needToFadeIn) {
-    startupCtx.fillStyle = '#000000';
-    startupCtx.fillRect(0, 0, startupCtx.canvas.width, startupCtx.canvas.height);
-  } else if (state.fadeAlpha > 0) {
-    // 步骤 2：若处于渐变期间，根据当前透明度绘制半透明遮罩
+  // 若处于渐变期间，根据当前透明度绘制半透明遮罩
+  if (state.fadeAlpha > 0) {
     const color = state.fadeColor || '0, 0, 0';
     startupCtx.fillStyle = `rgba(${color}, ${state.fadeAlpha})`;
     startupCtx.fillRect(0, 0, startupCtx.canvas.width, startupCtx.canvas.height);
+    startupCtx.canvas.style.display = 'block';
   }
 }
 

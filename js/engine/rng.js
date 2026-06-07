@@ -2,7 +2,7 @@ import { loadMkf } from '../resources/loader.js';
 import { loadPal } from '../resources/pal.js';
 import { deyj } from '../utils/deyj.js';
 import { state } from './state.js';
-import { fadeIn } from '../ui/fade.js';
+import { checkAndFadeIn } from '../ui/fade.js';
 
 // 步骤 1：解析指定 RNG 动画分包内的指定单帧数据切片
 export function getRngFrameData(rngChunk, frameNum) {
@@ -223,10 +223,7 @@ export async function playRng(rngId, startFrame, endFrame, speed) {
     mainCtx.putImageData(imageData, 0, 0);
 
     // 处理黑夜/白天渐变请求
-    if (state.needToFadeIn) {
-      await fadeIn();
-      state.needToFadeIn = false;
-    }
+    await checkAndFadeIn();
 
     // 平滑延时，确保播放流速均匀
     const elapsed = performance.now() - lastTime;

@@ -3,7 +3,7 @@ import { renderScreen } from './draw.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// 步骤 1：全屏渐变过渡动画执行器，仅负责设定渐变透明度 fadeAlpha 并刷新屏幕，摒弃所有冗余 Hack
+// 全屏渐变过渡动画执行器，仅负责设定渐变透明度 fadeAlpha 并刷新屏幕
 export async function startFadeTransition(type, color = '0, 0, 0') {
   state.fadeColor = color;
   const duration = 12;
@@ -37,20 +37,40 @@ export async function startFadeTransition(type, color = '0, 0, 0') {
   renderScreen(type);
 }
 
-// 步骤 2：全屏淡出。淡出完毕后，进入物理黑屏等待状态（needToFadeIn = true）
+// 全屏淡出
 export async function fadeOut() {
-  await startFadeTransition('fadeOut');
+  state.isPaused = true;
   state.needToFadeIn = true;
+  await startFadeTransition('fadeOut');
 }
 
-// 步骤 3：全屏淡入。淡入开始前，解除物理黑屏状态（needToFadeIn = false），以使 fadeAlpha 渐变生效
+// 检查全屏淡出
+export async function checkAndFadeOut() {
+  if (!state.needToFadeIn) {
+    await fadeOut();
+  }
+}
+
+// 全屏淡入
 export async function fadeIn() {
-  state.needToFadeIn = false;
   await startFadeTransition('fadeIn');
+  state.needToFadeIn = false;
+  state.isPaused = false;
 }
 
-// 步骤 4：定义全屏淡出至红色 (Game Over 效果)
+// 检查全屏淡入
+export async function checkAndFadeIn() {
+  if (state.needToFadeIn) {
+    await fadeIn();
+  }
+}
+
+// 定义全屏淡出至红色 (Game Over 效果)
 export async function fadeScreenToRed() {
   await startFadeTransition('fadeOut', '255, 0, 0');
   state.needToFadeIn = true;
+}
+
+export async function fadeEffect() {
+
 }

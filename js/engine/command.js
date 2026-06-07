@@ -3,7 +3,7 @@ import { CIRCLE_SCRIPT, RESET_SCRIPT, Script } from './script.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
 import { update, canWalk } from '../ui/draw.js';
-import { fadeIn, fadeOut, fadeScreenToRed } from '../ui/fade.js';
+import { fadeEffect, fadeIn, fadeOut, fadeScreenToRed } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
 import { loadArchive } from '../esc/archive.js';
 import { playRng } from './rng.js';
@@ -99,8 +99,9 @@ export async function roleWalk(sx, sy, shalf, context) {
 
 export async function clearWithEffect(effectType) {
   console.log(`[0x73 clearWithEffect] 重新淡入当前场景, 特效类型: ${effectType}`);
-  await fadeIn();
+  await fadeOut();
   await update(true);
+  await fadeIn();
 }
 
 export function setRoleGroup(r1, r2, r3) {
@@ -803,8 +804,7 @@ export async function fadeOutScene(fadeOutSpeed) {
   // 步骤 1：利用 intToShort 将传入的无符号短整型 speed 转换为有符号短整型并设定渐变速度
   const s = intToShort(fadeOutSpeed);
   state.fadeOutSpeed = s > 0 ? s : 1;
-  state.needToFadeIn = true;
-
+  
   // 步骤 2：直接异步等待播放淡出效果完毕
   await fadeOut();
 }
@@ -813,10 +813,9 @@ export async function fadeInScene(speed) {
   // 步骤 1：利用 intToShort 将传入的无符号短整型 speed 转换为有符号短整型，并设定渐变速度
   const s = intToShort(speed);
   state.fadeOutSpeed = s > 0 ? s : 1;
-  state.needToFadeIn = false;
-
+  
   console.log(`[0x51 fadeInScene] 开始淡入当前屏幕，速度: ${state.fadeOutSpeed}`);
-
+  
   // 步骤 2：使用 await 异步等待淡入效果播放完毕，随后同步进行屏幕绘制更新
   await fadeIn();
   await update(true);
@@ -826,16 +825,13 @@ export async function fadeScreen(speed) {
   // 步骤 1：利用 intToShort 将传入 the 无符号短整型 speed 转换为有符号短整型速度 s
   const s = intToShort(speed);
   state.fadeOutSpeed = Math.abs(s);
-  state.needToFadeIn = s < 0;
 
   // 步骤 2：如果是在非脚本线程环境，只更新渐变标记不进行硬挂起
   if (!Script.isExec()) {
     return;
   }
 
-  // 步骤 3：将游戏状态置为暂停挂起，并依次 await 播放淡出、淡入的流畅渐变过渡
-  state.isPaused = true;
-
+  // 步骤 3：依次 await 播放淡出、淡入的流畅渐变过渡
   if (s < 0) {
     // 负数：淡出完后，触发淡入，最后解除挂起以恢复游戏推进
     await fadeOut();
@@ -844,8 +840,6 @@ export async function fadeScreen(speed) {
     // 正数：直接单向执行淡入，并在结束后解除挂起
     await fadeIn();
   }
-
-  state.isPaused = false;
 }
 
 export function performToggleScene(targetSceneId) {
@@ -865,17 +859,15 @@ export function performToggleScene(targetSceneId) {
 
   console.log('切换场景: ' + targetSceneId + ' 地图: ' + state.mapId);
 
-  // 等脚本都设置好场景中主角位置与形象后，再update
-  if(!scene.enterScriptId) {
-    update(true); // 重绘画面
-  }
+  // 刷新出首屏，为淡入做准备
+  update(true); // 重绘画面
 
   // 同步启动场景脚本
   Script.startScene(scene);
   state.nextSceneId = -1;
 }
 
-export function toggleScene(sceneId) {
+export async function toggleScene(sceneId) {
   // 步骤 1：仅设置目标场景 ID，不直接执行切换
   if (sceneId !== undefined && sceneId !== null && sceneId !== -1) {
     state.nextSceneId = sceneId;
@@ -886,19 +878,13 @@ export function toggleScene(sceneId) {
     const targetSceneId = state.nextSceneId;
     if (targetSceneId !== undefined && targetSceneId !== null && targetSceneId !== -1 && targetSceneId !== state.sceneId) {
       state.nextSceneId = -1;
-      const needFade = state.needToFadeIn;
-      state.needToFadeIn = false;
 
-      if (needFade) {
-        state.isPaused = true;
-        fadeOut().then(() => {
-          performToggleScene(targetSceneId);
-          fadeIn().then(() => {
-            state.isPaused = false;
-          });
-        });
+      if (state.needToFadeIn) {
+        await fadeOut();
+        await performToggleScene(targetSceneId);
+        await fadeIn();
       } else {
-        performToggleScene(targetSceneId);
+        await performToggleScene(targetSceneId);
       }
     }
   }

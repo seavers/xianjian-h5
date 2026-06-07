@@ -52,12 +52,6 @@ export const Script = {
       return;
     }
 
-    // 步骤 3：处理游戏硬挂起状态（如渐变动画中或 ESC 打开时，仅重绘画面以保持动画连贯，不步进任何游戏脚本和 auto 漫游）
-    if (state.isPaused) {
-      await update(true);
-      return;
-    }
-
     // 步骤 4：检测是否有延迟触发的 trigger 交互脚本需要激活
     if (state.nextTriggerScriptObject != null) {
       const obj = state.nextTriggerScriptObject;
@@ -104,14 +98,12 @@ export const Script = {
 
   async handleSceneSwitch() {
     const targetSceneId = state.nextSceneId;
-    const needFade = state.needToFadeIn;
-
-    // 重置挂起的切换标志，避免重复执行
+    
+    // 1. 重置挂起的切换标志，避免重复执行
     state.nextSceneId = -1;
-
-    // 步骤 1：将游戏状态置为过渡暂停挂起状态
-    state.isPaused = true;
-
+    
+    // 2. 执行淡入淡出
+    const needFade = state.needToFadeIn;
     if (needFade) {
       // 步骤 2.1：前序执行了 0x50，画面已黑，无需再次 fadeOut。直接更新场景并 fadeIn
       performToggleScene(targetSceneId);
@@ -122,9 +114,6 @@ export const Script = {
       performToggleScene(targetSceneId);
       await fadeIn();
     }
-
-    // 步骤 3：解除过渡挂起状态，恢复常规游戏主循环
-    state.isPaused = false;
   },
 
   // 步进执行动画/步态进度。如果动画正在进行则返回剩余步数，全部执行完毕则返回 0

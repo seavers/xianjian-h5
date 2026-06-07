@@ -5,7 +5,7 @@ import { loadMkf } from '../resources/loader.js';
 import { deyj } from '../utils/deyj.js';
 import { playMusic, stopMusic } from '../resources/music.js';
 import { playSound } from '../resources/sound.js';
-import { fadeIn, fadeOut } from '../ui/fade.js';
+import { checkAndFadeOut, fadeIn, fadeOut } from '../ui/fade.js';
 import { update } from '../ui/draw.js';
 
 // 站位坐标配置 (1人, 2人, 3人)
@@ -59,11 +59,7 @@ export async function start(id, failId, fleeId) {
   fleeScriptId = fleeId;
 
   // 步骤 1.1：判断前序场景是否已被 0x50 淡出。若是，则无需再次淡出；若否，则先播放淡出动画
-  if (state.needToFadeIn) {
-    // 画面已被 0x50 淡出至黑色，只需标记后续加载完后淡入即可
-  } else {
-    await fadeOut();
-  }
+  await checkAndFadeOut();
 
   // 步骤 1.2：切换为战斗模式，并初始化战斗状态机
   state.currentMode = 'battle';

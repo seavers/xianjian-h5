@@ -354,6 +354,6 @@ function animHide(el, callback) {
 
 function newStory() {
   state.currentMode = 'game'; // 激活常规游戏行走模式
-  state.isPaused = false; 
   toggleScene(1);
+  state.isPaused = false;
 }

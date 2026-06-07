@@ -21,19 +21,11 @@ export const state = {
   needToFadeIn: false,  // 标识是否fadeIn、fadeOut 场景
   fadeAlpha: 0,         // 场景渐变过渡的黑色遮罩透明度（0表示完全透明，1表示完全黑色）
   fadeColor: '0, 0, 0', // 场景渐变过渡遮罩的 RGB 颜色（默认为黑色 '0, 0, 0'，支持红色 '255, 0, 0' 等）
-  _isTransitionPaused: false, // 标识切换过渡期间是否挂起主循环
+  paused: false, // 标识切换过渡期间是否挂起主循环
   
   paletteId: 0,         // 调色板ID
   fNightPalette: false, // 白天 or 黑夜切换
 
-  get isPaused() {
-    const startup = document.getElementById('startup');
-    const isEscVisible = !!(startup && startup.style.display === 'block');
-    return isEscVisible || this._isTransitionPaused;
-  },
-  set isPaused(val) {
-    this._isTransitionPaused = val;
-  },
   transitionTask: null, // 场景渐变过渡的同步定时任务对象
   nextTriggerScriptId: -1, // 延迟触发的 trigger 脚本 ID，将在下一 tick 执行
   nextTriggerScriptObject: null, // 延迟触发的 trigger 脚本绑定的实体对象
