@@ -193,6 +193,17 @@ export async function start(id, failId, fleeId) {
 
   // 步骤 1.4：绘制战斗画面的第一帧并启动战斗时钟
   draw();
+
+  // 步骤 1.4.5：由于战斗系统的 draw() 会重绘清空 talkCtx，为防止淡入前战斗画面瞬间闪出穿帮，若仍处于黑屏期，必须同步在 talkCtx 涂满黑色遮罩
+  if (state.fadeAlpha === 1) {
+    const talkCtx = state.contexts.talk;
+    if (talkCtx) {
+      const color = state.fadeColor || '0, 0, 0';
+      talkCtx.fillStyle = `rgba(${color}, 1)`;
+      talkCtx.fillRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
+    }
+  }
+
   startBattleClock();
 
   // 播放战斗背景音乐（由 0x45 setFightMusic 预先写入 state.wNumBattleMusic）

@@ -12,15 +12,15 @@ export async function startFadeTransition(type, color = '0, 0, 0') {
   if (type === 'fadeOut') {
     state.fadeAlpha = 0;
   } else {
-    // 步骤 1.2：淡入前，首先在 main 层强制重绘一次清澈的新场景第一帧（临时隐藏遮罩以免 main 被画黑）
+    // 步骤 1.2：淡入前，优先在 talk 层绘制一帧全黑遮盖，确保屏幕此时已被完全涂黑，杜绝亮屏闪烁穿帮
+    state.fadeAlpha = 1;
+    renderScreen('fadeIn');
+
+    // 步骤 1.3：在大层 talkCtx 被完全遮蔽后，在 main 层强制重绘清澈的新场景第一帧
     const savedAlpha = state.fadeAlpha;
     state.fadeAlpha = 0;
     renderScreen(true);
     state.fadeAlpha = savedAlpha;
-
-    // 步骤 1.3：紧接着在 talk 层绘制一帧全黑遮盖，防止穿帮白屏闪烁
-    state.fadeAlpha = 1;
-    renderScreen('fadeIn');
   }
 
   // 步骤 1.4：步进转场定时渲染逻辑（每 30ms 渲染一帧以提供 60fps 般丝滑视觉体验）
