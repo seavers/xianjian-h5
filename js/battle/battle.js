@@ -4,6 +4,7 @@ import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame } from './bat
 import { loadMkf } from '../resources/loader.js';
 import { deyj } from '../utils/deyj.js';
 import { playMusic, stopMusic } from '../resources/music.js';
+import { playSound } from '../resources/sound.js';
 import { fadeIn, fadeOut } from '../ui/fade.js';
 import { update } from '../ui/draw.js';
 
@@ -111,7 +112,9 @@ export async function start(id, failId, fleeId) {
       currentFrame: 0,
       maxIdleFrames: cfg.wIdleFrames || 4,
       animSpeed: cfg.wIdleAnimSpeed || 4,
-      animTick: 0
+      animTick: 0,
+      attackSound: cfg.wAttackSound || 0,
+      deathSound: cfg.wDeathSound || 0
     });
   }
 
@@ -157,7 +160,13 @@ export async function start(id, failId, fleeId) {
       currentFrame: 0,
       action: null, // 选择的指令
       mgoId: role.tileId || 0, // 保存大地图 MGO 图元 ID
-      spriteNum: spriteNum // 保存战斗贴图包 ID (f.mkf ID)
+      spriteNum: spriteNum, // 保存战斗贴图包 ID (f.mkf ID)
+      attackSound: roleStats.attackSound || 0,
+      weaponSound: roleStats.weaponSound || 0,
+      criticalSound: roleStats.criticalSound || 0,
+      magicSound: roleStats.magicSound || 0,
+      deathSound: roleStats.deathSound || 0,
+      dyingSound: roleStats.dyingSound || 0
     });
   }
 
@@ -606,6 +615,11 @@ async function playPlayerAttack(playerIdx, enemyIdx) {
   const origX = player.x;
   const origY = player.y;
 
+  // 播放准备普通攻击动作叫喊音效
+  if (player.attackSound > 0) {
+    playSound(player.attackSound);
+  }
+
   // 1. 瞬移到敌人身前 (frame 8 准备姿势)
   player.x = enemy.x + 35;
   player.y = enemy.y + 10;
@@ -617,6 +631,11 @@ async function playPlayerAttack(playerIdx, enemyIdx) {
   player.x = enemy.x + 28;
   player.y = enemy.y + 8;
   player.currentFrame = 9;
+
+  // 播放武器打击/挥舞音效
+  if (player.weaponSound > 0) {
+    playSound(player.weaponSound);
+  }
 
   // 简易物理伤害算法
   let dmg = Math.floor((player.attackStrength * 2 - enemy.defense * 1.5) * (0.85 + Math.random() * 0.3));
@@ -630,6 +649,11 @@ async function playPlayerAttack(playerIdx, enemyIdx) {
     isPlayer: false,
     startTime: Date.now()
   });
+
+  // 如果敌人死亡，则播放敌人死亡音效
+  if (enemy.hp <= 0 && enemy.deathSound > 0) {
+    playSound(enemy.deathSound);
+  }
 
   draw();
   await sleep(250);
@@ -650,6 +674,11 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
   const origX = enemy.x;
   const origY = enemy.y;
 
+  // 播放敌方普通物理攻击叫喊音效
+  if (enemy.attackSound > 0) {
+    playSound(enemy.attackSound);
+  }
+
   // 1. 敌人瞬移到队员面前
   enemy.x = player.x - 30;
   enemy.y = player.y - 10;
@@ -665,6 +694,11 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
   const roleStats = state.roles[player.index];
   if (roleStats) {
     roleStats.hp = player.hp;
+  }
+
+  // 如果主角/队友死亡，则播放死亡音效
+  if (player.hp <= 0 && player.deathSound > 0) {
+    playSound(player.deathSound);
   }
 
   damagePopups.push({
