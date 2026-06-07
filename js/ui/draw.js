@@ -404,6 +404,13 @@ export function renderScreen(refreshType) {
     return ;
   }
 
+  // 如果是战斗模式，常规重绘交由战斗系统的 draw() 完成
+  if (state.currentMode === 'battle' && window.Battle && typeof window.Battle.draw === 'function') {
+    window.Battle.draw();
+    updateCount[1]++;
+    return;
+  }
+
   if (refreshType) {
     updateCount[0]++;
     drawMapBack();
