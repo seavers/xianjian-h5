@@ -1,4 +1,4 @@
-import { React, html } from './react-helper.js';
+import { React, html, drawPixelatedToCanvas } from './react-helper.js';
 import { state } from '../../../engine/state.js';
 import { ROLES_DB } from '../../../data/gameData/roles.js';
 import { loadRgm, loadMgoCount, loadMgo, loadGop, loadBall } from '../../../resources/pal.js';
@@ -8,32 +8,6 @@ import { getRoleName, getItemNameHtml, makeScriptHyperlinks } from './helpers.js
 import { scriptCodes } from '../../../engine/command.js';
 
 const { useState, useEffect, useRef, useMemo } = React;
-
-// 像素化缩放自适应绘制 Canvas 辅助函数
-function drawPixelatedToCanvas(srcCanvas, destCanvas) {
-  if (!destCanvas) {
-    return;
-  }
-
-  const ctx = destCanvas.getContext('2d');
-  ctx.imageSmoothingEnabled = false;
-  ctx.clearRect(0, 0, destCanvas.width, destCanvas.height);
-
-  if (!srcCanvas) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(4, 4, destCanvas.width - 8, destCanvas.height - 8);
-    return;
-  }
-
-  // 计算等比缩放因子，并向下取整以防半像素锯齿
-  const scale = Math.min(destCanvas.width / srcCanvas.width, destCanvas.height / srcCanvas.height);
-  const cleanScale = Math.max(0.5, Math.floor(scale));
-  const dx = (destCanvas.width - srcCanvas.width * cleanScale) / 2;
-  const dy = (destCanvas.height - srcCanvas.height * cleanScale) / 2;
-
-  ctx.drawImage(srcCanvas, dx, dy, srcCanvas.width * cleanScale, srcCanvas.height * cleanScale);
-}
 
 // 👤 角色 Tab 子组件
 function RoleTabComponent({ selectedRoleId, setSelectedRoleId, jumpToScript }) {
