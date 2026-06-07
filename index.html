@@ -743,9 +743,9 @@
 				<h2>PAL RUNTIME REALTIME PROFILE CONSOLE</h2>
 			</div>
 			<div style="display:flex; align-items:center; gap:8px;">
-				<button class="btn-dbg" onclick="openBattleDataModal()" style="color: #ff3b6f; border-color: rgba(255, 59, 111, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s; margin-right: 2px;">⚔️ 战斗资料</button>
-				<button class="btn-dbg" onclick="openBattleImageModal()" style="color: #00fffa; border-color: rgba(0, 255, 250, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s; margin-right: 2px;">🖼️ 战斗图片资料</button>
-				<button class="btn-dbg" onclick="openGameDataModal()" style="color: var(--glow-yellow); border-color: rgba(255, 215, 0, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s;">📚 游戏资料</button>
+				<button class="btn-dbg" id="btn-open-battle-data-modal" onclick="openBattleDataModal()" disabled style="color: #ff3b6f; border-color: rgba(255, 59, 111, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s; margin-right: 2px;">⚔️ 战斗资料</button>
+				<button class="btn-dbg" id="btn-open-battle-image-modal" onclick="openBattleImageModal()" disabled style="color: #00fffa; border-color: rgba(0, 255, 250, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s; margin-right: 2px;">🖼️ 战斗图片资料</button>
+				<button class="btn-dbg" id="btn-open-game-data-modal" onclick="openGameDataModal()" disabled style="color: var(--glow-yellow); border-color: rgba(255, 215, 0, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s;">📚 游戏资料</button>
 				<button class="btn-dbg" onclick="openImageExplorer()" style="color: var(--glow-green); border-color: rgba(0, 255, 157, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s;">🖼️ 图片资源</button>
 				<div style="font-size: 8.5px; color:rgba(255,255,255,0.2);">VER: 4.0-DECRYPT-STREAM</div>
 			</div>
@@ -1426,6 +1426,43 @@
 
 		document.addEventListener('DOMContentLoaded', () => {
 			initSoundToggle();
+		});
+
+		// 为异步载入的调试模块按钮增加 ready 保护，避免用户在模块尚未挂载时点击报错
+		function markAsyncActionReady(buttonId) {
+			const button = document.getElementById(buttonId);
+			if (!button) {
+				return;
+			}
+
+			button.disabled = false;
+			button.style.opacity = '1';
+			button.style.cursor = 'pointer';
+		}
+
+		function markAsyncActionFailed(buttonId, error) {
+			const button = document.getElementById(buttonId);
+			if (!button) {
+				return;
+			}
+
+			button.disabled = true;
+			button.style.opacity = '0.45';
+			button.style.cursor = 'not-allowed';
+			console.error(`异步模块加载失败: ${buttonId}`, error);
+		}
+
+		document.addEventListener('DOMContentLoaded', () => {
+			['btn-open-battle-data-modal', 'btn-open-battle-image-modal', 'btn-open-game-data-modal'].forEach(id => {
+				const button = document.getElementById(id);
+				if (!button) {
+					return;
+				}
+
+				button.disabled = true;
+				button.style.opacity = '0.45';
+				button.style.cursor = 'not-allowed';
+			});
 		});
 
 		// 全局 NPC 屏幕打标与仅人物NPC筛选状态
@@ -4321,7 +4358,6 @@
 			window.openGameDataModal = module.openGameDataModal;
 			window.closeGameDataModal = module.closeGameDataModal;
 			window.switchGameDataTab = module.switchGameDataTab;
-			window.searchGameDataRole = module.searchGameDataRole;
 			window.onGameDataRoleSelect = module.onGameDataRoleSelect;
 			window.searchGameDataNpc = module.searchGameDataNpc;
 			window.onGameDataNpcSelect = module.onGameDataNpcSelect;
@@ -4331,6 +4367,9 @@
 			window.onGameDataItemSelect = module.onGameDataItemSelect;
 			window.jumpToGameDataNpc = module.jumpToGameDataNpc;
 			window.toggleHeroAnim = module.toggleHeroAnim;
+			markAsyncActionReady('btn-open-game-data-modal');
+		}).catch((error) => {
+			markAsyncActionFailed('btn-open-game-data-modal', error);
 		});
 
 		// ⚔️ 动态载入战斗资料面板的全部逻辑
@@ -4344,6 +4383,9 @@
 			window.switchBattleDataSpriteFile = module.switchBattleDataSpriteFile;
 			window.onBattleDataSpritePackSelect = module.onBattleDataSpritePackSelect;
 			window.toggleBattleDataSpritePlay = module.toggleBattleDataSpritePlay;
+			markAsyncActionReady('btn-open-battle-data-modal');
+		}).catch((error) => {
+			markAsyncActionFailed('btn-open-battle-data-modal', error);
 		});
 
 		// 🖼️ 动态载入战斗图片与特效资料面板的全部逻辑
@@ -4355,6 +4397,9 @@
 			window.toggleBattleImagePlay = module.toggleBattleImagePlay;
 			window.selectBattleImageFrameDirectly = module.selectBattleImageFrameDirectly;
 			window.changeBattleImagePlaySpeed = module.changeBattleImagePlaySpeed;
+			markAsyncActionReady('btn-open-battle-image-modal');
+		}).catch((error) => {
+			markAsyncActionFailed('btn-open-battle-image-modal', error);
 		});
 
 		// ==================== 🗺️ 场景大地图瞬移定位器逻辑 ====================
