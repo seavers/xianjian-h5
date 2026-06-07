@@ -318,16 +318,6 @@ ready(() => {
       state.isPaused = false;
       console.log(`[Debug] 成功从 localStorage/服务器 载入存档 ID: ${slotId}，进入场景: ${state.sceneId}`);
     });
-
-    // 步骤 6：设置安全延时保护，若 2 秒内读取未响应则自动降级进入默认初始场景，避免黑屏挂起
-    setTimeout(() => {
-      if (!loaded) {
-        console.warn(`[Debug] 载入存档 ID: ${slotId} 超时或失败，降级切换至默认场景`);
-        setRolePos(49, 94, 0);
-        toggleScene(1);
-        state.isPaused = false;
-      }
-    }, 2000);
   }
 
   // 5. 资源就绪及初始化完毕后，正式开启主循环
