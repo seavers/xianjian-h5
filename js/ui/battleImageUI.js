@@ -1,27 +1,12 @@
-// ==================== 🖼️ 仙剑实时战斗图片资料与特效画廊核心逻辑 ====================
+// ==================== 🖼️ 仙剑实时战斗图片资料与特效画廊 React 核心逻辑 ====================
 
 import { loadMkf, load } from '../resources/loader.js';
 import { deyj } from '../utils/deyj.js';
 import { loadSpriteFrame } from '../battle/battleData.js';
 import { loadMkf2 } from '../resources/pal.js';
+import { React, ReactDOM, html, drawPixelatedToCanvas } from './gameData/react-helper.js';
 
-// 当前处于激活态的二级 Tab ('abc' | 'f' | 'fire' | 'data10')
-let activeImageTab = 'abc';
-
-// 当前选中的精灵包 ID
-let selectedPackId = 0;
-
-// 当前选中的帧索引
-let selectedFrameId = 0;
-
-// 动画播放定时器
-let imagePlayTimer = null;
-
-// 自动播放时的当前帧
-let currentPlayFrame = 0;
-
-// 默认每帧播放延时 150ms
-let imagePlaySpeedMs = 150;
+const { useState, useEffect, useRef, useMemo } = React;
 
 // 步骤 1：获取常规 MKF 文件的子块总包数
 function getMkfBlockCount(filename) {
@@ -121,260 +106,316 @@ function drawFrameToCanvas(canvasEl, tabName, packId, frameId) {
   }
 }
 
-// ==================== 🚀 弹窗开启、关闭与大分类 Tab 切换控制 ====================
+// 🖼️ 战斗图片与特效资料监视 App 根组件
+export function BattleImageApp() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('abc');
+  const [selectedPackId, setSelectedPackId] = useState(0);
+  const [selectedFrameId, setSelectedFrameId] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playSpeedMs, setPlaySpeedMs] = useState(150);
 
-export function openBattleImageModal() {
-  const modal = document.getElementById('battle-image-modal');
-  if (modal) {
-    modal.style.display = 'flex';
-  }
-  switchBattleImageTab(activeImageTab);
-}
+  const mainCanvasRef = useRef(null);
 
-export function closeBattleImageModal() {
-  const modal = document.getElementById('battle-image-modal');
-  if (modal) {
-    modal.style.display = 'none';
-  }
-  stopImagePlayTimer();
-}
+  // 绑定全局方法以供原生调用（保持前后兼容）
+  useEffect(() => {
+    window.openBattleImageModal = () => {
+      setIsOpen(true);
+    };
 
-export function switchBattleImageTab(tabName) {
-  activeImageTab = tabName;
-  selectedPackId = 0;
-  selectedFrameId = 0;
-  stopImagePlayTimer();
+    window.closeBattleImageModal = () => {
+      setIsOpen(false);
+    };
 
-  // 选项卡切换状态高亮 (青色配色风格)
-  document.querySelectorAll('.battleimage-tab-btn').forEach(btn => {
-    btn.classList.remove('active');
-    btn.style.color = 'rgba(255,255,255,0.6)';
-    btn.style.borderColor = 'rgba(255,255,255,0.06)';
-    btn.style.background = 'transparent';
-  });
-  
-  const activeTabBtn = document.getElementById(`battleimage-tab-${tabName}`);
-  if (activeTabBtn) {
-    activeTabBtn.classList.add('active');
-    activeTabBtn.style.color = '#00fffa';
-    activeTabBtn.style.borderColor = '#00fffa';
-    activeTabBtn.style.background = 'rgba(0, 255, 250, 0.05)';
-  }
+    window.switchBattleImageTab = (tabName) => {
+      setActiveTab(tabName);
+      setSelectedPackId(0);
+      setSelectedFrameId(0);
+      setIsPlaying(false);
+    };
 
-  // 渲染主体内容区域
-  const mainContainer = document.getElementById('battleimage-main-container');
-  if (!mainContainer) return;
+    window.onBattleImagePackSelect = (packId) => {
+      setSelectedPackId(packId);
+      setSelectedFrameId(0);
+      setIsPlaying(false);
+    };
 
-  renderBattleImageTab(mainContainer);
-}
+    window.toggleBattleImagePlay = () => {
+      setIsPlaying(prev => !prev);
+    };
 
-// ==================== 🖼️ 精灵包及帧的详细展现与自动播放逻辑 ====================
+    window.selectBattleImageFrameDirectly = (frameId) => {
+      setIsPlaying(false);
+      setSelectedFrameId(frameId);
+    };
 
-function stopImagePlayTimer() {
-  if (imagePlayTimer) {
-    clearInterval(imagePlayTimer);
-    imagePlayTimer = null;
-  }
-}
+    window.changeBattleImagePlaySpeed = (ms) => {
+      setPlaySpeedMs(parseInt(ms, 10));
+    };
+  }, []);
 
-export function onBattleImagePackSelect(packId) {
-  selectedPackId = packId;
-  selectedFrameId = 0;
-  stopImagePlayTimer();
-
-  const mainContainer = document.getElementById('battleimage-main-container');
-  if (mainContainer) {
-    renderBattleImageTab(mainContainer);
-  }
-}
-
-export function toggleBattleImagePlay() {
-  const btn = document.getElementById('battleimage-play-btn');
-  if (imagePlayTimer) {
-    stopImagePlayTimer();
-    if (btn) btn.innerText = '▶️ 自动播放';
-  } else {
-    const maxFrames = getFrameCount(activeImageTab, selectedPackId);
-    if (maxFrames <= 0) return;
-
-    if (btn) btn.innerText = '⏸️ 停止播放';
-    currentPlayFrame = selectedFrameId;
-
-    imagePlayTimer = setInterval(() => {
-      currentPlayFrame = (currentPlayFrame + 1) % maxFrames;
-      selectedFrameId = currentPlayFrame;
-
-      // 实时绘制大画布
-      const mainCanvas = document.getElementById('battleimage-main-canvas');
-      drawFrameToCanvas(mainCanvas, activeImageTab, selectedPackId, selectedFrameId);
-
-      // 高亮当前选中的缩略图项并重置其他项的边框颜色
-      document.querySelectorAll('.battleimage-thumb-item').forEach(item => {
-        item.style.borderColor = 'rgba(255,255,255,0.04)';
-      });
-      const activeThumb = document.getElementById(`battleimage-thumb-${selectedFrameId}`);
-      if (activeThumb) {
-        activeThumb.style.borderColor = '#00fffa';
-      }
-
-      // 更新下方帧描述标签
-      const lbl = document.getElementById('battleimage-frame-desc');
-      if (lbl) lbl.innerText = `当前帧: ${selectedFrameId} / ${maxFrames - 1}`;
-
-    }, imagePlaySpeedMs);
-  }
-}
-
-export function selectBattleImageFrameDirectly(frameId) {
-  stopImagePlayTimer();
-  const btn = document.getElementById('battleimage-play-btn');
-  if (btn) btn.innerText = '▶️ 自动播放';
-
-  selectedFrameId = frameId;
-  const mainCanvas = document.getElementById('battleimage-main-canvas');
-  drawFrameToCanvas(mainCanvas, activeImageTab, selectedPackId, selectedFrameId);
-
-  document.querySelectorAll('.battleimage-thumb-item').forEach(item => {
-    item.style.borderColor = 'rgba(255,255,255,0.04)';
-  });
-  const activeThumb = document.getElementById(`battleimage-thumb-${selectedFrameId}`);
-  if (activeThumb) {
-    activeThumb.style.borderColor = '#00fffa';
-  }
-
-  const lbl = document.getElementById('battleimage-frame-desc');
-  if (lbl) {
-    const maxFrames = getFrameCount(activeImageTab, selectedPackId);
-    lbl.innerText = `当前帧: ${selectedFrameId} / ${maxFrames - 1}`;
-  }
-}
-
-export function changeBattleImagePlaySpeed(ms) {
-  imagePlaySpeedMs = parseInt(ms);
-  const lbl = document.getElementById('battleimage-speed-lbl');
-  if (lbl) lbl.innerText = `${imagePlaySpeedMs}ms`;
-
-  // 如果正在播放，重启时钟
-  if (imagePlayTimer) {
-    stopImagePlayTimer();
-    toggleBattleImagePlay();
-  }
-}
-
-function renderBattleImageTab(container) {
-  // 根据不同 Tab 获取子包总数与资源描述
-  let totalPacks = 0;
-  let tabTitleDesc = '';
-  
-  if (activeImageTab === 'abc') {
-    totalPacks = getMkfBlockCount('abc.mkf');
-    tabTitleDesc = '敌人精灵贴图 (abc.mkf)';
-  } else if (activeImageTab === 'f') {
-    totalPacks = getMkfBlockCount('f.mkf');
-    tabTitleDesc = '玩家战斗精灵贴图 (f.mkf)';
-  } else if (activeImageTab === 'fire') {
-    totalPacks = getMkfBlockCount('fire.mkf');
-    tabTitleDesc = '魔法特效贴图 (fire.mkf)';
-  } else if (activeImageTab === 'data10') {
-    totalPacks = getBattleEffectBlockCount();
-    tabTitleDesc = '战斗命中效果贴图 (data.mkf #10)';
-  }
-
-  const maxFrames = getFrameCount(activeImageTab, selectedPackId);
-
-  // 1. 左侧包索引列表
-  let leftHtml = `
-    <div style="width: 200px; border-right: 1px solid var(--border-glass); background: rgba(0,0,0,0.3); display: flex; flex-direction: column; overflow: hidden;">
-      <div style="padding: 10px; background: rgba(0,0,0,0.5); border-bottom: 1px solid var(--border-glass); font-size: 9.5px; font-weight: bold; color: #00fffa; letter-spacing: 0.5px; display:flex; justify-content:space-between; align-items:center;">
-        <span>📦 精灵数据包</span>
-        <span style="font-size: 7.5px; color:rgba(255,255,255,0.25); font-weight:normal;">共 ${totalPacks} 包</span>
-      </div>
-      <div style="flex: 1; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 4px;">
-  `;
-
-  for (let idx = 0; idx < totalPacks; idx++) {
-    const isSelected = selectedPackId === idx;
-    const frameCount = getFrameCount(activeImageTab, idx);
+  // 获取子包总数与资源描述
+  const { totalPacks, tabTitleDesc } = useMemo(() => {
+    let packs = 0;
+    let desc = '';
     
-    leftHtml += `
-      <div onclick="window.onBattleImagePackSelect(${idx})" style="padding: 6px 10px; background: ${isSelected ? 'rgba(0, 255, 250, 0.08)' : 'rgba(255,255,255,0.015)'}; border: 1px solid ${isSelected ? '#00fffa' : 'rgba(255,255,255,0.03)'}; border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.1s;">
-        <span style="font-size: 9px; font-weight: bold; color: ${isSelected ? '#00fffa' : '#fff'};">精灵包 #${idx}</span>
-        <span style="font-size: 8px; color: rgba(255,255,255,0.25);">帧数: ${frameCount}</span>
+    if (activeTab === 'abc') {
+      packs = getMkfBlockCount('abc.mkf');
+      desc = '敌人精灵贴图 (abc.mkf)';
+    } else if (activeTab === 'f') {
+      packs = getMkfBlockCount('f.mkf');
+      desc = '玩家战斗精灵贴图 (f.mkf)';
+    } else if (activeTab === 'fire') {
+      packs = getMkfBlockCount('fire.mkf');
+      desc = '魔法特效贴图 (fire.mkf)';
+    } else if (activeTab === 'data10') {
+      packs = getBattleEffectBlockCount();
+      desc = '战斗命中效果贴图 (data.mkf #10)';
+    }
+    
+    return { totalPacks: packs, tabTitleDesc: desc };
+  }, [activeTab]);
+
+  const maxFrames = useMemo(() => getFrameCount(activeTab, selectedPackId), [activeTab, selectedPackId]);
+
+  // 重置帧索引
+  useEffect(() => {
+    setSelectedFrameId(0);
+  }, [activeTab, selectedPackId]);
+
+  // 自动播放时钟
+  useEffect(() => {
+    if (!isPlaying || maxFrames <= 0) return;
+
+    const timer = setInterval(() => {
+      setSelectedFrameId(prev => (prev + 1) % maxFrames);
+    }, playSpeedMs);
+
+    return () => clearInterval(timer);
+  }, [isPlaying, maxFrames, playSpeedMs]);
+
+  // 绘制主图 Canvas
+  useEffect(() => {
+    if (!mainCanvasRef.current) return;
+    drawFrameToCanvas(mainCanvasRef.current, activeTab, selectedPackId, selectedFrameId);
+  }, [activeTab, selectedPackId, selectedFrameId]);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  const tabs = [
+    { id: 'abc', label: '👹 敌人精灵图Abc.mkf' },
+    { id: 'f', label: '⚔️ 玩家战斗精灵图 f.mkf' },
+    { id: 'fire', label: '🔥 魔法特效 fire.mkf' },
+    { id: 'data10', label: '💥 战斗效果图 data.mkf #10' }
+  ];
+
+  // 渲染帧缩略图 Canvas 子组件
+  function ThumbCard({ fIdx }) {
+    const thumbRef = useRef(null);
+
+    useEffect(() => {
+      if (!thumbRef.current) return;
+      drawFrameToCanvas(thumbRef.current, activeTab, selectedPackId, fIdx);
+    }, [activeTab, selectedPackId, fIdx]);
+
+    const isSelected = selectedFrameId === fIdx;
+
+    return html`
+      <div 
+        key=${fIdx}
+        onClick=${() => { setIsPlaying(false); setSelectedFrameId(fIdx); }} 
+        class="battleimage-thumb-item" 
+        style=${{
+          border: `1px solid ${isSelected ? '#00fffa' : 'rgba(255,255,255,0.04)'}`,
+          background: 'rgba(0,0,0,0.3)',
+          borderRadius: '2px',
+          padding: '4px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '3px',
+          cursor: 'pointer',
+          transition: 'all 0.1s'
+        }}
+      >
+        <canvas ref=${thumbRef} width="40" height="40" style=${{ imageRendering: 'pixelated', width: '40px', height: '40px', background: 'rgba(0,0,0,0.5)' }}></canvas>
+        <span style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.35)' }}>第 ${fIdx} 帧</span>
       </div>
     `;
   }
 
-  leftHtml += `
-      </div>
-    </div>
-  `;
-
-  // 2. 右侧大帧图控制器与缩略图名册 (使用青色配色风格)
-  let rightHtml = `
-    <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 15px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <div style="font-size: 13px; font-weight: bold; color: #00fffa;">${tabTitleDesc} • 包 #${selectedPackId}</div>
-        <div style="font-size: 8px; color: rgba(255,255,255,0.25); text-transform: uppercase;">Sprite Frame Player</div>
-      </div>
-
-      <!-- 核心大 Canvas 画布与自动播放控制 -->
-      <div style="display: flex; gap: 15px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 10px; border-radius: 2px; margin-bottom: 12px; align-items: center;">
-        <div style="width: 128px; height: 128px; background: rgba(5,5,8,0.7); border: 1px solid rgba(255,255,255,0.06); border-radius: 2px; display: flex; align-items: center; justify-content: center; padding: 4px; box-shadow: inset 0 0 10px rgba(0,0,0,0.8);">
-          <canvas id="battleimage-main-canvas" width="120" height="120" style="image-rendering: pixelated; width: 120px; height: 120px;"></canvas>
-        </div>
-        <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 128px;">
-          <div>
-            <div style="font-size: 10px; color: #fff; margin-bottom: 4px;" id="battleimage-frame-desc">当前帧: ${selectedFrameId} / ${maxFrames - 1}</div>
-            <div style="font-size: 8px; color: rgba(255,255,255,0.3); line-height: 1.3;">该包下包含不同帧切切片，您可以通过自动播放来连续预览其动画效果，或直接点击下方缩略图切至单帧。</div>
+  return html`
+    <div id="battle-image-modal" style=${{ display: 'flex', position: 'fixed', zIndex: 99999, left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(5,5,8,0.75)', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style=${{ background: 'rgba(10,13,20,0.96)', border: '1px solid #00fffa', borderRadius: '4px', boxShadow: '0 0 25px rgba(0, 255, 250, 0.15)', width: 'calc(100% - 40px)', height: 'calc(100% - 40px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'JetBrains Mono', sans-serif" }}>
+        <!-- 弹窗头部 -->
+        <div class="tool-modal-header" style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(0,0,0,0.6)', borderBottom: '1px solid var(--border-glass)' }}>
+          <div class="tool-modal-title-row" style=${{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div class="tool-modal-dot" style=${{ width: '5px', height: '5px', background: '#00fffa', borderRadius: '50%', boxShadow: '0 0 6px #00fffa' }}></div>
+            <span class="tool-modal-heading" style=${{ fontSize: '11px', fontWeight: 'bold', color: '#00fffa', letterSpacing: '0.5px', textTransform: 'uppercase' }}>🖼️ PAL BATTLE IMAGES & FX SYSTEM (战斗实时图片与特效预览系统)</span>
           </div>
-          
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <button class="btn-dbg" id="battleimage-play-btn" onclick="window.toggleBattleImagePlay()" style="color: #00fffa; border-color: rgba(0,255,250,0.2); padding: 3px 10px; font-size: 9px; cursor: pointer;">▶️ 自动播放</button>
-            <div style="font-size: 8.5px; color: rgba(255,255,255,0.4); display:flex; align-items:center; gap: 4px;">
-              <span>速度(延时):</span>
-              <input type="range" min="50" max="400" step="20" value="${imagePlaySpeedMs}" oninput="window.changeBattleImagePlaySpeed(this.value)" style="width: 80px; accent-color:#00fffa; cursor:pointer;">
-              <span id="battleimage-speed-lbl" style="color:#ffd000; font-weight:bold;">${imagePlaySpeedMs}ms</span>
+          <button onClick=${() => setIsOpen(false)} class="tool-modal-close" style=${{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: '14px', cursor: 'pointer', outline: 'none' }}>✕</button>
+        </div>
+        
+        <!-- 资料大类 Tabs 切换栏 -->
+        <div class="tool-modal-tabbar" style=${{ background: 'rgba(0,0,0,0.4)', padding: '6px 12px', borderBottom: '1px solid var(--border-glass)', display: 'flex', gap: '4px', alignItems: 'center', flexWrap: 'wrap' }}>
+          ${tabs.map(tab => {
+            const isActive = activeTab === tab.id;
+            return html`
+              <button 
+                key=${tab.id}
+                class=${`btn-dbg battleimage-tab-btn ${isActive ? 'active' : ''}`}
+                onClick=${() => {
+                  setActiveTab(tab.id);
+                  setSelectedPackId(0);
+                  setSelectedFrameId(0);
+                  setIsPlaying(false);
+                }}
+                style=${{
+                  color: isActive ? '#00fffa' : 'rgba(255,255,255,0.6)',
+                  borderColor: isActive ? '#00fffa' : 'rgba(255,255,255,0.06)',
+                  background: isActive ? 'rgba(0, 255, 250, 0.05)' : 'transparent',
+                  padding: '2px 10px',
+                  fontSize: '8.5px',
+                  cursor: 'pointer'
+                }}
+              >${tab.label}</button>
+            `;
+          })}
+        </div>
+
+        <!-- 主内容展示区 -->
+        <div id="battleimage-main-container" style=${{ flex: 1, display: 'flex', overflow: 'hidden', background: '#030305' }}>
+          <!-- 左侧包名册列表 -->
+          <div style=${{ width: '200px', borderRight: '1px solid var(--border-glass)', background: 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style=${{ padding: '10px', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid var(--border-glass)', fontSize: '9.5px', fontWeight: 'bold', color: '#00fffa', letterSpacing: '0.5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>📦 精灵数据包</span>
+              <span style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.25)', fontWeight: 'normal' }}>共 ${totalPacks} 包</span>
+            </div>
+            <div style=${{ flex: 1, overflowY: 'auto', padding: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              ${Array.from({ length: totalPacks }).map((_, idx) => {
+                const isSelected = selectedPackId === idx;
+                return html`
+                  <div 
+                    key=${idx}
+                    onClick=${() => { setSelectedPackId(idx); setIsPlaying(false); }} 
+                    style=${{
+                      padding: '6px 10px',
+                      background: isSelected ? 'rgba(0, 255, 250, 0.08)' : 'rgba(255,255,255,0.015)',
+                      border: `1px solid ${isSelected ? '#00fffa' : 'rgba(255,255,255,0.03)'}`,
+                      borderRadius: '2px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      transition: 'all 0.1s'
+                    }}
+                  >
+                    <span style=${{ fontSize: '9px', fontWeight: 'bold', color: isSelected ? '#00fffa' : '#fff' }}>精灵包 #${idx}</span>
+                    <span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.25)' }}>帧数: ${getFrameCount(activeTab, idx)}</span>
+                  </div>
+                `;
+              })}
+            </div>
+          </div>
+
+          <!-- 右侧预览与帧缩略图 -->
+          <div style=${{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '15px' }}>
+            <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div style=${{ fontSize: '13px', fontWeight: 'bold', color: '#00fffa' }}>${tabTitleDesc} • 包 #${selectedPackId}</div>
+              <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase' }}>Sprite Frame Player</div>
+            </div>
+
+            <!-- 主 Canvas 图与自动播放 -->
+            <div style=${{ display: 'flex', gap: '15px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.03)', padding: '10px', borderRadius: '2px', marginBottom: '12px', alignItems: 'center' }}>
+              <div style=${{ width: '128px', height: '128px', background: 'rgba(5,5,8,0.7)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.8)' }}>
+                <canvas ref=${mainCanvasRef} width="120" height="120" style=${{ imageRendering: 'pixelated', width: '120px', height: '120px' }}></canvas>
+              </div>
+              <div style=${{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '128px' }}>
+                <div>
+                  <div style=${{ fontSize: '10px', color: '#fff', marginBottom: '4px' }}>当前帧: ${selectedFrameId} / ${maxFrames - 1}</div>
+                  <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', lineHeight: '1.3' }}>该包下包含不同帧切切片，您可以通过自动播放来连续预览其动画效果，或直接点击下方缩略图切至单帧。</div>
+                </div>
+                
+                <div style=${{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button class="btn-dbg" onClick=${() => setIsPlaying(!isPlaying)} style=${{ color: '#00fffa', borderColor: 'rgba(0,255,250,0.2)', padding: '3px 10px', fontSize: '9px', cursor: 'pointer' }}>${isPlaying ? '⏸️ 停止播放' : '▶️ 自动播放'}</button>
+                  <div style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>速度(延时):</span>
+                    <input type="range" min="50" max="400" step="20" value=${playSpeedMs} onInput=${(e) => setPlaySpeedMs(parseInt(e.target.value, 10))} style=${{ width: '80px', accentColor: '#00fffa', cursor: 'pointer' }}></input>
+                    <span style=${{ color: '#ffd000', fontWeight: 'bold' }}>${playSpeedMs}ms</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 横向/纵向帧缩略图画廊 -->
+            <div style=${{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.5px' }}>全部帧图像缩略图名册</div>
+              <div style=${{ overflowY: 'auto', display: 'flex', gap: '4px', paddingRight: '2px' }}>
+                ${Array.from({ length: maxFrames }).map((_, fIdx) => html`
+                  <${ThumbCard} key=${fIdx} fIdx=${fIdx} />
+                `)}
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- 缩略图集合 -->
-      <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
-        <div style="font-size: 8.5px; color: rgba(255,255,255,0.3); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px;">全部帧图像缩略图名册</div>
-        <div style="overflow-y: auto; display: flex; gap: 4px; padding-right: 2px;" id="battleimage-thumbs-container">
-  `;
-
-  for (let fIdx = 0; fIdx < maxFrames; fIdx++) {
-    const isSelected = selectedFrameId === fIdx;
-    rightHtml += `
-      <div id="battleimage-thumb-${fIdx}" onclick="window.selectBattleImageFrameDirectly(${fIdx})" class="battleimage-thumb-item" style="border: 1px solid ${isSelected ? '#00fffa' : 'rgba(255,255,255,0.04)'}; background: rgba(0,0,0,0.3); border-radius: 2px; padding: 4px; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; transition: all 0.1s;">
-        <canvas id="battleimage-thumb-canvas-${fIdx}" width="40" height="40" style="image-rendering: pixelated; width: 40px; height: 40px; background: rgba(0,0,0,0.5);"></canvas>
-        <span style="font-size: 7.5px; color: rgba(255,255,255,0.35);">第 ${fIdx} 帧</span>
-      </div>
-    `;
-  }
-
-  rightHtml += `
-        </div>
-      </div>
     </div>
   `;
+}
 
-  container.innerHTML = leftHtml + rightHtml;
+// 惰性挂载入口
+let reactRoot = null;
 
-  // 延迟绘制大图 Canvas 与所有的缩略图 Canvas，确保 DOM 已经被完全插入
-  setTimeout(() => {
-    const mainCanvas = document.getElementById('battleimage-main-canvas');
-    if (mainCanvas) {
-      drawFrameToCanvas(mainCanvas, activeImageTab, selectedPackId, selectedFrameId);
-    }
+export function openBattleImageModal() {
+  const container = document.getElementById('battle-image-modal-root');
+  if (container && !reactRoot) {
+    reactRoot = ReactDOM.createRoot(container);
+    reactRoot.render(html`<${BattleImageApp} />`);
 
-    for (let fIdx = 0; fIdx < maxFrames; fIdx++) {
-      const thumbCanvas = document.getElementById(`battleimage-thumb-canvas-${fIdx}`);
-      if (thumbCanvas) {
-        drawFrameToCanvas(thumbCanvas, activeImageTab, selectedPackId, fIdx);
+    setTimeout(() => {
+      if (window.openBattleImageModal && window.openBattleImageModal !== openBattleImageModal) {
+        window.openBattleImageModal();
       }
-    }
-  }, 30);
+    }, 50);
+  } else if (window.openBattleImageModal && window.openBattleImageModal !== openBattleImageModal) {
+    window.openBattleImageModal();
+  }
+}
+
+export function closeBattleImageModal() {
+  if (window.closeBattleImageModal && window.closeBattleImageModal !== closeBattleImageModal) {
+    window.closeBattleImageModal();
+  }
+}
+
+export function switchBattleImageTab(tabName) {
+  if (window.switchBattleImageTab && window.switchBattleImageTab !== switchBattleImageTab) {
+    window.switchBattleImageTab(tabName);
+  }
+}
+
+export function onBattleImagePackSelect(packId) {
+  if (window.onBattleImagePackSelect) {
+    window.onBattleImagePackSelect(packId);
+  }
+}
+
+export function toggleBattleImagePlay() {
+  if (window.toggleBattleImagePlay) {
+    window.toggleBattleImagePlay();
+  }
+}
+
+export function selectBattleImageFrameDirectly(frameId) {
+  if (window.selectBattleImageFrameDirectly) {
+    window.selectBattleImageFrameDirectly(frameId);
+  }
+}
+
+export function changeBattleImagePlaySpeed(ms) {
+  if (window.changeBattleImagePlaySpeed) {
+    window.changeBattleImagePlaySpeed(ms);
+  }
 }

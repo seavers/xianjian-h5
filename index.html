@@ -1446,31 +1446,7 @@
 	<div id="battle-data-modal-root"></div>
 
 	<!-- ==================== 🖼️ 仙剑奇侠传战斗图片资料监视与调试弹窗 ==================== -->
-	<div id="battle-image-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
-		<div style="--modal-accent: #00fffa; background: rgba(10,13,20,0.96); border: 1px solid #00fffa; border-radius: 4px; box-shadow: 0 0 25px rgba(0, 255, 250, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
-			<!-- 弹窗头部 -->
-			<div class="tool-modal-header">
-				<div class="tool-modal-title-row">
-					<div class="tool-modal-dot"></div>
-					<span class="tool-modal-heading" style="text-transform: uppercase;">🖼️ PAL BATTLE IMAGES & FX SYSTEM (战斗实时图片与特效预览系统)</span>
-				</div>
-				<button onclick="closeBattleImageModal()" class="tool-modal-close">✕</button>
-			</div>
-			
-			<!-- 资料大类 Tabs 切换栏 -->
-			<div class="tool-modal-tabbar">
-				<button class="btn-dbg battleimage-tab-btn tool-modal-tab-btn active" id="battleimage-tab-abc" onclick="switchBattleImageTab('abc')" style="--tab-accent: #00fffa;">👹 敌人精灵图Abc.mkf</button>
-				<button class="btn-dbg battleimage-tab-btn tool-modal-tab-btn" id="battleimage-tab-f" onclick="switchBattleImageTab('f')">⚔️ 玩家战斗精灵图 f.mkf</button>
-				<button class="btn-dbg battleimage-tab-btn tool-modal-tab-btn" id="battleimage-tab-fire" onclick="switchBattleImageTab('fire')">🔥 魔法特效 fire.mkf</button>
-				<button class="btn-dbg battleimage-tab-btn tool-modal-tab-btn" id="battleimage-tab-data10" onclick="switchBattleImageTab('data10')">💥 战斗效果图 data.mkf #10</button>
-			</div>
-
-			<!-- 主内容展示区 -->
-			<div id="battleimage-main-container" style="flex: 1; display: flex; overflow: hidden; background: #030305;">
-				<!-- 动态载入各个 TAB 的页面 DOM -->
-			</div>
-		</div>
-	</div>
+	<div id="battle-image-modal-root"></div>
 
 
 
