@@ -43,9 +43,18 @@ export async function startFadeTransition(type, color = '0, 0, 0') {
   if (type === 'fadeOut') {
     state.fadeAlpha = 1;
     renderScreen('fadeOut');
+
+    // 步骤 1.6：淡出完成时，在 mainCtx 上同步填充一次物理全黑，确保底层也被完全遮住，杜绝亮屏闪烁
+    // 这里绝不调用 renderScreen(true) 以避免无谓且可能产生穿帮的 back 和 middle 重绘渲染
+    const mainCtx = state.contexts.main;
+    if (mainCtx) {
+      const color = state.fadeColor || '0, 0, 0';
+      mainCtx.fillStyle = `rgba(${color}, 1)`;
+      mainCtx.fillRect(0, 0, mainCtx.canvas.width, mainCtx.canvas.height);
+    }
   } else {
     state.fadeAlpha = 0;
-    renderScreen('fadeIn'); // 步骤 1.6：清空 talk 层的黑色遮罩，露出底下的 main 层
+    renderScreen('fadeIn'); // 步骤 1.7：清空 talk 层的黑色遮罩，露出底下的 main 层
   }
 }
 
