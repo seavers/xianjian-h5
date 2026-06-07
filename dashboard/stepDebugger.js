@@ -211,6 +211,7 @@ export function initStepDebugger() {
   window.toggleStepDebug = toggleStepDebug;
   window.executeNextStep = executeNextStep;
   window.resumeRunning = resumeRunning;
+  window.getInstructionDetail = getInstructionDetail;
 
   return {
     getInstructionDetail

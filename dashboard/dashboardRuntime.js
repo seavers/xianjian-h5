@@ -207,31 +207,64 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
     };
 
     window.onScriptExecute = (logItemOrArray) => {
-      if (Array.isArray(logItemOrArray)) {
-        logItemOrArray.forEach(item => {
-          window.scriptLogStore.push(item);
-          if (item.type !== 'auto') {
-            window.scriptMainLogs.push(item);
-          } else {
-            const npcId = item.npcId;
-            if (!window.scriptNpcLogs[npcId]) {
-              window.scriptNpcLogs[npcId] = [];
-            }
-            window.scriptNpcLogs[npcId].push(item);
-            if (window.scriptNpcLogs[npcId].length > 30) {
-              window.scriptNpcLogs[npcId].shift();
-            }
+      const items = Array.isArray(logItemOrArray) ? logItemOrArray : [logItemOrArray];
+      let hasTriggerLog = false;
+
+      items.forEach(item => {
+        if (!item) return;
+
+        // 判定是否是主进程/非 auto 触发的脚本日志
+        if (item.type !== 'auto') {
+          hasTriggerLog = true;
+        }
+
+        // 构造优美、解密的日志行 HTML 字符串并保存在 log 属性中
+        const detailInfo = window.getInstructionDetail ? window.getInstructionDetail(item.code, item.param1, item.param2, item.param3) : '';
+        const typeBadgeColor = item.type === 'auto' ? '#ffd000' : (item.type === 'trig' ? '#00e1ff' : '#ff3b6f');
+        const detailHtml = detailInfo ? `<span style="color: var(--glow-green); margin-left: 8px;">➔ ${detailInfo}</span>` : '';
+        
+        item.html = `
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 2px 4px; border-bottom: 1px dashed rgba(255,255,255,0.02); color: rgba(255,255,255,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <span style="color: rgba(255,255,255,0.25);">${item.time}</span>
+              <span style="color: #ffd000; font-weight: bold;">[${item.scriptId}]</span>
+              <span style="color: ${typeBadgeColor}; border: 1px solid ${typeBadgeColor}; border-radius: 2px; padding: 0px 3px; font-size: 7px; font-weight: bold; text-transform: uppercase;">${item.type}</span>
+              <span style="color: #00e1ff; font-weight: 500;">${item.hexCode}</span>:
+              <span style="color: #fff; font-weight: 500;">${item.desc}</span>
+              <span style="color: rgba(255,255,255,0.3); font-size: 7.5px;">(${item.param1}, ${item.param2}, ${item.param3})</span>
+              ${detailHtml}
+            </div>
+          </div>
+        `;
+
+        window.scriptLogStore.push(item);
+        if (item.type !== 'auto') {
+          window.scriptMainLogs.push(item);
+        } else {
+          const npcId = item.npcId;
+          if (!window.scriptNpcLogs[npcId]) {
+            window.scriptNpcLogs[npcId] = [];
           }
-        });
-
-        if (window.scriptLogStore.length > window.scriptLogStoreMax) {
-          window.scriptLogStore.splice(0, window.scriptLogStore.length - window.scriptLogStoreMax);
+          window.scriptNpcLogs[npcId].push(item);
+          if (window.scriptNpcLogs[npcId].length > 30) {
+            window.scriptNpcLogs[npcId].shift();
+          }
         }
+      });
 
-        const currentLimit = window.logLimit || 200;
-        if (window.scriptMainLogs.length > currentLimit) {
-          window.scriptMainLogs.splice(0, window.scriptMainLogs.length - currentLimit);
-        }
+      if (window.scriptLogStore.length > window.scriptLogStoreMax) {
+        window.scriptLogStore.splice(0, window.scriptLogStore.length - window.scriptLogStoreMax);
+      }
+
+      const currentLimit = window.logLimit || 200;
+      if (window.scriptMainLogs.length > currentLimit) {
+        window.scriptMainLogs.splice(0, window.scriptMainLogs.length - currentLimit);
+      }
+
+      // 性能控制：如果刚才检测到主进程/交互性触发日志（非 auto），则立即触发 React 状态同步进行实时重绘；
+      // 否则（纯高频 auto 漫游日志）只更新内存日志池，交由 200ms 的轮询定时器被动刷新，大幅节省渲染性能！
+      if (hasTriggerLog) {
+        syncStateData();
       }
     };
   }, [loadMgoFn, loadBallFn]);
