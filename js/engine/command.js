@@ -800,14 +800,12 @@ export function setSceneId(sceneId) {
 }
 
 export async function fadeOutScene(fadeOutSpeed) {
+  // 步骤 1：利用 intToShort 将传入的无符号短整型 speed 转换为有符号短整型并设定渐变速度
+  const s = intToShort(fadeOutSpeed);
+  state.fadeOutSpeed = s > 0 ? s : 1;
   state.needToFadeIn = true;
-  state.fadeOutSpeed = fadeOutSpeed;
 
-  // 步骤 2：如果是在非脚本线程环境（例如控制台直接调用），则立即触发切换
-  if (!Script.isExec()) {
-    toggleScene();
-  }
-
+  // 步骤 2：直接异步等待播放淡出效果完毕
   await fadeOut();
 }
 

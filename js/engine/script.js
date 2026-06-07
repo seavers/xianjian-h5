@@ -110,19 +110,22 @@ export const Script = {
     state.nextSceneId = -1;
     state.needToFadeIn = false;
 
+    // 步骤 1：将游戏状态置为过渡暂停挂起状态
+    state.isPaused = true;
+
     if (needFade) {
-      // 场景淡出切换流程，期间暂停主循环
-      state.isPaused = true;
-      
+      // 步骤 2.1：前序执行了 0x50，画面已黑，无需再次 fadeOut。直接更新场景并 fadeIn
+      performToggleScene(targetSceneId);
+      await fadeIn();
+    } else {
+      // 步骤 2.2：普通的直接切换，执行完整的渐变过渡
       await fadeOut();
       performToggleScene(targetSceneId);
       await fadeIn();
-      
-      state.isPaused = false;
-    } else {
-      // 直接切换场景
-      performToggleScene(targetSceneId);
     }
+
+    // 步骤 3：解除过渡挂起状态，恢复常规游戏主循环
+    state.isPaused = false;
   },
 
   // 步进执行动画/步态进度。如果动画正在进行则返回剩余步数，全部执行完毕则返回 0

@@ -4,6 +4,8 @@ import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame } from './bat
 import { loadMkf } from '../resources/loader.js';
 import { deyj } from '../utils/deyj.js';
 import { playMusic, stopMusic } from '../resources/music.js';
+import { fadeIn, fadeOut } from '../ui/fade.js';
+import { update } from '../ui/draw.js';
 
 // 站位坐标配置 (1人, 2人, 3人)
 const PLAYER_POS_PRESETS = [
@@ -45,6 +47,17 @@ export async function start(id, failId, fleeId) {
   failScriptId = failId;
   fleeScriptId = fleeId;
 
+  // 步骤 1.1：判断前序场景是否已被 0x50 淡出。若是，则无需再次淡出；若否，则先播放淡出动画
+  const needFade = state.needToFadeIn;
+  state.needToFadeIn = false;
+
+  if (needFade) {
+    // 画面已被 0x50 淡出至黑色，只需标记后续加载完后淡入即可
+  } else {
+    await fadeOut();
+  }
+
+  // 步骤 1.2：切换为战斗模式，并初始化战斗状态机
   state.currentMode = 'battle';
   isBattleRunning = true;
   turn = 1;
@@ -115,7 +128,7 @@ export async function start(id, failId, fleeId) {
     // 从 f.mkf 加载玩家角色战斗动画数据包并进行 deyj 解压
     let spriteNum = roleStats.spriteNumInBattle;
     
-    // 步骤 1.5：提供我方角色战斗精灵图包 ID 兜底映射
+    // 步骤 1.3：提供我方角色战斗精灵图包 ID 兜底映射
     // 当读档或初始精灵包为 0，且角色本身不是李逍遥 (index !== 0) 时，说明需要强行重定位为对应角色的专属包
     if (spriteNum === undefined || (spriteNum === 0 && role.index !== 0)) {
       const defaultSprites = [0, 1, 2, 4, 3, 8];
@@ -158,7 +171,8 @@ export async function start(id, failId, fleeId) {
   const roles = players.map(p=>({index:p.index,mgoId:p.mgoId,spriteNum:p.spriteNum}));
   console.log(`战斗开启: 敌方队伍 ID ${battleId}, 成员 ${enemies.length} 个 ${JSON.stringify(enemyObjs)}; 我方成员 ${players.length} 个 ${JSON.stringify(roles)}。我方人员物理攻击动作从 f.mkf 的 spriteNum 精灵包读取，敌方人员物理攻击动作从 abc.mkf 的 abcId 精灵包读取。`);
 
-  // 开启画面的定时绘制渲染与逻辑更新时钟
+  // 步骤 1.4：绘制战斗画面的第一帧并启动战斗时钟
+  draw();
   startBattleClock();
 
   // 播放战斗背景音乐（由 0x45 setFightMusic 预先写入 state.wNumBattleMusic）
@@ -167,6 +181,9 @@ export async function start(id, failId, fleeId) {
     console.log(`[Battle] 开始播放战斗背景音乐 ID: ${battleMusicNum}`);
     playMusic(battleMusicNum, true, 0);
   }
+
+  // 步骤 1.5：平滑淡入展现战斗画面
+  await fadeIn();
 
   return new Promise((resolve) => {
     resolvePromise = resolve;
@@ -684,12 +701,12 @@ function checkBattleEnd() {
 }
 
 // 步骤 9：战斗结束，清理状态并结算后续剧情脚本分支
-function endBattle(victory) {
+async function endBattle(victory) {
   phase = 'end';
   clearInterval(battleTimer);
   battleTimer = null;
 
-  // 绘制胜负消息框提示
+  // 步骤 9.1：绘制胜负消息框提示
   const talkCtx = state.contexts.talk;
   if (talkCtx) {
     talkCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -703,30 +720,39 @@ function endBattle(victory) {
     talkCtx.fillText(victory ? '战 斗 胜 利' : '全 员 战 败', 160, 104);
   }
 
-  // 延时 1.5 秒后完全还原切回地图，清理解锁
-  setTimeout(() => {
-    isBattleRunning = false;
-    state.currentMode = 'game';
+  // 步骤 9.2：等待 1.5 秒以展示结果框
+  await sleep(1500);
 
-    // 清空背景层和谈话层以露出大地图
-    state.contexts.back.clearRect(0, 0, 320, 200);
-    state.contexts.talk.clearRect(0, 0, 320, 200);
+  // 步骤 9.3：渐变淡出当前战斗画面至黑色
+  await fadeOut();
 
-    // 恢复场景背景音乐（由 0x43 setMusic 写入 state.wNumMusic）
-    const sceneMusicNum = state.wNumMusic || 0;
-    if (sceneMusicNum > 0) {
-      console.log(`[Battle] 战斗结束，恢复场景背景音乐 ID: ${sceneMusicNum}`);
-      playMusic(sceneMusicNum, true, 0);
-    } else {
-      stopMusic(1);
-    }
+  isBattleRunning = false;
+  state.currentMode = 'game';
 
-    if (resolvePromise) {
-      const p = resolvePromise;
-      resolvePromise = null;
-      p(victory); // 恢复 0x07 startBattle 指令的 async 阻塞挂起
-    }
-  }, 1500);
+  // 清空背景层和谈话层以露出大地图
+  state.contexts.back.clearRect(0, 0, 320, 200);
+  state.contexts.talk.clearRect(0, 0, 320, 200);
+
+  // 步骤 9.4：重新同步绘制一帧大地图画面，作为淡入前的图像准备
+  await update(true);
+
+  // 恢复场景背景音乐（由 0x43 setMusic 写入 state.wNumMusic）
+  const sceneMusicNum = state.wNumMusic || 0;
+  if (sceneMusicNum > 0) {
+    console.log(`[Battle] 战斗结束，恢复场景背景音乐 ID: ${sceneMusicNum}`);
+    playMusic(sceneMusicNum, true, 0);
+  } else {
+    stopMusic(1);
+  }
+
+  // 步骤 9.5：平滑淡入展现大地图画面
+  await fadeIn();
+
+  if (resolvePromise) {
+    const p = resolvePromise;
+    resolvePromise = null;
+    p(victory); // 恢复 0x07 startBattle 指令的 async 阻塞挂起
+  }
 }
 
 // 辅助等待函数
