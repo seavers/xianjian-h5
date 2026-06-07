@@ -234,6 +234,133 @@
 			text-shadow: 0 0 6px rgba(0, 255, 157, 0.15);
 		}
 
+		.dashboard-header-main {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.dashboard-status-dot {
+			width: 5px;
+			height: 5px;
+			background: var(--glow-green);
+			border-radius: 50%;
+			box-shadow: 0 0 6px var(--glow-green);
+		}
+
+		.dashboard-header-actions {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.launch-btn {
+			padding: 2px 6px;
+			font-size: 8.5px;
+			font-weight: bold;
+			cursor: pointer;
+			transition: all 0.1s;
+		}
+
+		.launch-btn:disabled {
+			cursor: not-allowed;
+			opacity: 0.45;
+		}
+
+		.launch-btn--battle {
+			color: #ff3b6f;
+			border-color: rgba(255, 59, 111, 0.2);
+			margin-right: 2px;
+		}
+
+		.launch-btn--battle-image {
+			color: #00fffa;
+			border-color: rgba(0, 255, 250, 0.2);
+			margin-right: 2px;
+		}
+
+		.launch-btn--game-data {
+			color: var(--glow-yellow);
+			border-color: rgba(255, 215, 0, 0.2);
+		}
+
+		.launch-btn--image-explorer {
+			color: var(--glow-green);
+			border-color: rgba(0, 255, 157, 0.2);
+		}
+
+		.tool-modal-header {
+			background: rgba(0, 0, 0, 0.6);
+			padding: 8px 12px;
+			border-bottom: 1px solid var(--border-glass);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.tool-modal-title-row {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.tool-modal-dot {
+			width: 5px;
+			height: 5px;
+			background: var(--modal-accent, var(--glow-green));
+			border-radius: 50%;
+			box-shadow: 0 0 6px var(--modal-accent, var(--glow-green));
+		}
+
+		.tool-modal-heading {
+			font-size: 11px;
+			font-weight: bold;
+			color: var(--modal-accent, var(--glow-green));
+			letter-spacing: 0.5px;
+		}
+
+		.tool-modal-close {
+			background: transparent;
+			border: none;
+			color: rgba(255, 255, 255, 0.4);
+			font-size: 14px;
+			cursor: pointer;
+			transition: color 0.15s;
+			outline: none;
+		}
+
+		.tool-modal-close:hover {
+			color: var(--modal-accent, #ff3b6f);
+		}
+
+		.tool-modal-tabbar {
+			background: rgba(0, 0, 0, 0.4);
+			padding: 6px 12px;
+			border-bottom: 1px solid var(--border-glass);
+			display: flex;
+			gap: 4px;
+			align-items: center;
+			flex-wrap: wrap;
+		}
+
+		.tool-modal-tab-btn {
+			color: rgba(255, 255, 255, 0.6);
+			border-color: rgba(255, 255, 255, 0.06);
+			padding: 2px 10px;
+			font-size: 8.5px;
+			cursor: pointer;
+		}
+
+		.tool-modal-tab-btn--compact {
+			padding: 2px 8px;
+		}
+
+		.tool-modal-tab-btn.is-active,
+		.tool-modal-tab-btn.active {
+			color: var(--tab-accent, var(--modal-accent, var(--glow-green)));
+			border-color: var(--tab-accent, var(--modal-accent, var(--glow-green)));
+		}
+
 		#panel-container {
 			flex: 1;
 			overflow-y: auto;
@@ -738,15 +865,15 @@
 
 		<!-- 控制台头部 -->
 		<div id="dashboard-header">
-			<div class="db-title" style="display:flex; align-items:center; gap:6px;">
-				<div style="width:5px; height:5px; background:#00ff9d; border-radius:50%; box-shadow:0 0 6px #00ff9d;"></div>
+			<div class="db-title dashboard-header-main">
+				<div class="dashboard-status-dot"></div>
 				<h2>PAL RUNTIME REALTIME PROFILE CONSOLE</h2>
 			</div>
-			<div style="display:flex; align-items:center; gap:8px;">
-				<button class="btn-dbg" id="btn-open-battle-data-modal" onclick="openBattleDataModal()" disabled style="color: #ff3b6f; border-color: rgba(255, 59, 111, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s; margin-right: 2px;">⚔️ 战斗资料</button>
-				<button class="btn-dbg" id="btn-open-battle-image-modal" onclick="openBattleImageModal()" disabled style="color: #00fffa; border-color: rgba(0, 255, 250, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s; margin-right: 2px;">🖼️ 战斗图片资料</button>
-				<button class="btn-dbg" id="btn-open-game-data-modal" onclick="openGameDataModal()" disabled style="color: var(--glow-yellow); border-color: rgba(255, 215, 0, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s;">📚 游戏资料</button>
-				<button class="btn-dbg" onclick="openImageExplorer()" style="color: var(--glow-green); border-color: rgba(0, 255, 157, 0.2); padding: 2px 6px; font-size: 8.5px; font-weight: bold; cursor: pointer; transition: all 0.1s;">🖼️ 图片资源</button>
+			<div class="dashboard-header-actions">
+				<button class="btn-dbg launch-btn launch-btn--battle" id="btn-open-battle-data-modal" onclick="openBattleDataModal()" disabled>⚔️ 战斗资料</button>
+				<button class="btn-dbg launch-btn launch-btn--battle-image" id="btn-open-battle-image-modal" onclick="openBattleImageModal()" disabled>🖼️ 战斗图片资料</button>
+				<button class="btn-dbg launch-btn launch-btn--game-data" id="btn-open-game-data-modal" onclick="openGameDataModal()" disabled>📚 游戏资料</button>
+				<button class="btn-dbg launch-btn launch-btn--image-explorer" onclick="openImageExplorer()">🖼️ 图片资源</button>
 				<div style="font-size: 8.5px; color:rgba(255,255,255,0.2);">VER: 4.0-DECRYPT-STREAM</div>
 			</div>
 		</div>
@@ -1121,16 +1248,16 @@
 
 	<!-- ==================== 🗺️ 仙剑奇侠传场景地图查看与瞬移模态弹窗 ==================== -->
 	<div id="map-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
-		<div style="background: rgba(10,13,20,0.96); border: 1px solid var(--glow-blue); border-radius: 4px; box-shadow: 0 0 25px rgba(0, 225, 255, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
+		<div style="--modal-accent: var(--glow-blue); background: rgba(10,13,20,0.96); border: 1px solid var(--glow-blue); border-radius: 4px; box-shadow: 0 0 25px rgba(0, 225, 255, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
 			<!-- 弹窗头部 -->
-			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
-				<div style="display: flex; align-items: center; gap: 6px;">
-					<div style="width: 5px; height: 5px; background: var(--glow-blue); border-radius: 50%; box-shadow: 0 0 6px var(--glow-blue);"></div>
-					<span style="font-size: 11px; font-weight: bold; color: var(--glow-blue); letter-spacing: 0.5px; text-transform: uppercase;">🗺️ PAL REALTIME MAP VIEWER (场景大地图瞬移定位器)</span>
+			<div class="tool-modal-header">
+				<div class="tool-modal-title-row">
+					<div class="tool-modal-dot"></div>
+					<span class="tool-modal-heading" style="text-transform: uppercase;">🗺️ PAL REALTIME MAP VIEWER (场景大地图瞬移定位器)</span>
 				</div>
 				<div style="display: flex; gap: 12px; align-items: center;">
 					<span id="map-modal-info" style="font-size: 9px; color: rgba(255,255,255,0.4);">地图: - | 主角坐标: (-, -)</span>
-					<button onclick="closeMapModal()" style="background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer; transition: color 0.15s; outline:none;" onmouseenter="this.style.color='#ff3b6f'" onmouseleave="this.style.color='rgba(255,255,255,0.4)'">✕</button>
+					<button onclick="closeMapModal()" class="tool-modal-close">✕</button>
 				</div>
 			</div>
 			<!-- 主体视图区 -->
@@ -1159,30 +1286,30 @@
 
 	<!-- ==================== 🖼️ 仙剑奇侠传通用图片资源浏览器模态弹窗 ==================== -->
 	<div id="image-explorer-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
-		<div style="background: rgba(13,13,20,0.96); border: 1px solid var(--glow-green); border-radius: 4px; box-shadow: 0 0 25px rgba(0, 255, 157, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
+		<div style="--modal-accent: var(--glow-green); background: rgba(13,13,20,0.96); border: 1px solid var(--glow-green); border-radius: 4px; box-shadow: 0 0 25px rgba(0, 255, 157, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
 			<!-- 弹窗头部 -->
-			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
-				<div style="display: flex; align-items: center; gap: 6px;">
-					<div style="width: 5px; height: 5px; background: var(--glow-green); border-radius: 50%; box-shadow: 0 0 6px var(--glow-green);"></div>
-					<span style="font-size: 11px; font-weight: bold; color: var(--glow-green); letter-spacing: 0.5px; text-transform: uppercase;">🖼️ PAL IMAGE RESOURCE EXPLORER (图片精灵资源浏览器)</span>
+			<div class="tool-modal-header">
+				<div class="tool-modal-title-row">
+					<div class="tool-modal-dot"></div>
+					<span class="tool-modal-heading" style="text-transform: uppercase;">🖼️ PAL IMAGE RESOURCE EXPLORER (图片精灵资源浏览器)</span>
 				</div>
-				<button onclick="closeImageExplorer()" style="background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer; transition: color 0.15s; outline:none;" onmouseenter="this.style.color='#ff3b6f'" onmouseleave="this.style.color='rgba(255,255,255,0.4)'">✕</button>
+				<button onclick="closeImageExplorer()" class="tool-modal-close">✕</button>
 			</div>
 			
 			<!-- 图片大类 Tabs 切换栏 -->
-			<div style="background: rgba(0,0,0,0.4); padding: 6px 12px; border-bottom: 1px solid var(--border-glass); display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-				<button class="btn-dbg image-tab-btn active" id="tab-rgm" onclick="switchImageType('rgm')" style="color:var(--glow-green); border-color:var(--glow-green); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">头像界面 (rgm.mkf)</button>
-				<button class="btn-dbg image-tab-btn" id="tab-mgo" onclick="switchImageType('mgo')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">角色动作 (mgo.mkf)</button>
-				<button class="btn-dbg image-tab-btn" id="tab-fbp" onclick="switchImageType('fbp')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">背景原画 (fbp.mkf)</button>
-				<button class="btn-dbg image-tab-btn" id="tab-gop" onclick="switchImageType('gop')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">场景图元 (gop.mkf)</button>
-				<button class="btn-dbg image-tab-btn" id="tab-pic" onclick="switchImageType('pic')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">物品效果 (data.mkf #9)</button>
-				<button class="btn-dbg image-tab-btn" id="tab-ball" onclick="switchImageType('ball')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">物品小图标 (ball.mkf)</button>
-				<button class="btn-dbg image-tab-btn" id="tab-msg" onclick="switchImageType('msg')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">剧情文本 (msg)</button>
-				<button class="btn-dbg image-tab-btn" id="tab-wor16" onclick="switchImageType('wor16')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">点阵字库 (wor16.asc)</button>
-				<button class="btn-dbg image-tab-btn" id="tab-word" onclick="switchImageType('word')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">短语资源 (word.dat)</button>
-				<button class="btn-dbg image-tab-btn" id="tab-rng" onclick="switchImageType('rng')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">全屏动画 (rng.mkf)</button>
-				<button class="btn-dbg image-tab-btn" id="tab-music" onclick="switchImageType('music')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">背景音乐 (mus.mkf)</button>
-				<button class="btn-dbg image-tab-btn" id="tab-sound" onclick="switchImageType('sound')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 8px; font-size: 8.5px; cursor: pointer;">游戏音效 (voc.mkf)</button>
+			<div class="tool-modal-tabbar">
+				<button class="btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact active" id="tab-rgm" onclick="switchImageType('rgm')" style="--tab-accent: var(--glow-green);">头像界面 (rgm.mkf)</button>
+				<button class="btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact" id="tab-mgo" onclick="switchImageType('mgo')">角色动作 (mgo.mkf)</button>
+				<button class="btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact" id="tab-fbp" onclick="switchImageType('fbp')">背景原画 (fbp.mkf)</button>
+				<button class="btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact" id="tab-gop" onclick="switchImageType('gop')">场景图元 (gop.mkf)</button>
+				<button class="btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact" id="tab-pic" onclick="switchImageType('pic')">物品效果 (data.mkf #9)</button>
+				<button class="btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact" id="tab-ball" onclick="switchImageType('ball')">物品小图标 (ball.mkf)</button>
+				<button class="btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact" id="tab-msg" onclick="switchImageType('msg')">剧情文本 (msg)</button>
+				<button class="btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact" id="tab-wor16" onclick="switchImageType('wor16')">点阵字库 (wor16.asc)</button>
+				<button class="btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact" id="tab-word" onclick="switchImageType('word')">短语资源 (word.dat)</button>
+				<button class="btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact" id="tab-rng" onclick="switchImageType('rng')">全屏动画 (rng.mkf)</button>
+				<button class="btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact" id="tab-music" onclick="switchImageType('music')">背景音乐 (mus.mkf)</button>
+				<button class="btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact" id="tab-sound" onclick="switchImageType('sound')">游戏音效 (voc.mkf)</button>
 			</div>
 
 			<!-- 二级筛选项控制栏 (根据选中的类型动态显示) -->
@@ -1263,14 +1390,14 @@
 
 	<!-- ==================== 🎬 RNG 剧情动画多尺寸独立播放器浮层 ==================== -->
 	<div id="rng-player-modal" style="display: none; position: fixed; z-index: 100000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
-		<div style="background: rgba(10,10,15,0.98); border: 1px solid var(--glow-green); border-radius: 4px; box-shadow: 0 0 30px rgba(0, 255, 157, 0.2); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
+		<div style="--modal-accent: var(--glow-green); background: rgba(10,10,15,0.98); border: 1px solid var(--glow-green); border-radius: 4px; box-shadow: 0 0 30px rgba(0, 255, 157, 0.2); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
 			<!-- 播放器头部 -->
-			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
-				<div style="display: flex; align-items: center; gap: 6px;">
-					<div style="width: 5px; height: 5px; background: var(--glow-green); border-radius: 50%; box-shadow: 0 0 6px var(--glow-green);"></div>
-					<span style="font-size: 11px; font-weight: bold; color: var(--glow-green); letter-spacing: 0.5px;">🎬 RNG 剧情全屏动画高清播放器</span>
+			<div class="tool-modal-header">
+				<div class="tool-modal-title-row">
+					<div class="tool-modal-dot"></div>
+					<span class="tool-modal-heading">🎬 RNG 剧情全屏动画高清播放器</span>
 				</div>
-				<button onclick="closeRngPlayer()" style="background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer; transition: color 0.15s; outline:none;" onmouseenter="this.style.color='#ff3b6f'" onmouseleave="this.style.color='rgba(255,255,255,0.4)'">✕</button>
+				<button onclick="closeRngPlayer()" class="tool-modal-close">✕</button>
 			</div>
 
 			<!-- 播放画面区 -->
@@ -1311,23 +1438,23 @@
 
 	<!-- ==================== 📚 仙剑奇侠传游戏资料监视与调试弹窗 ==================== -->
 	<div id="game-data-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
-		<div style="background: rgba(15,13,8,0.96); border: 1px solid var(--glow-yellow); border-radius: 4px; box-shadow: 0 0 25px rgba(255, 215, 0, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
+		<div style="--modal-accent: var(--glow-yellow); background: rgba(15,13,8,0.96); border: 1px solid var(--glow-yellow); border-radius: 4px; box-shadow: 0 0 25px rgba(255, 215, 0, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
 			<!-- 弹窗头部 -->
-			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
-				<div style="display: flex; align-items: center; gap: 6px;">
-					<div style="width: 5px; height: 5px; background: var(--glow-yellow); border-radius: 50%; box-shadow: 0 0 6px var(--glow-yellow);"></div>
-					<span style="font-size: 11px; font-weight: bold; color: var(--glow-yellow); letter-spacing: 0.5px; text-transform: uppercase;">📚 PAL GAME DATA & PROFILES SYSTEM (游戏实时资料与联动调试系统)</span>
+			<div class="tool-modal-header">
+				<div class="tool-modal-title-row">
+					<div class="tool-modal-dot"></div>
+					<span class="tool-modal-heading" style="text-transform: uppercase;">📚 PAL GAME DATA & PROFILES SYSTEM (游戏实时资料与联动调试系统)</span>
 				</div>
-				<button onclick="closeGameDataModal()" style="background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer; transition: color 0.15s; outline:none;" onmouseenter="this.style.color='#ff3b6f'" onmouseleave="this.style.color='rgba(255,255,255,0.4)'">✕</button>
+				<button onclick="closeGameDataModal()" class="tool-modal-close">✕</button>
 			</div>
 			
 			<!-- 资料大类 Tabs 切换栏 -->
-			<div style="background: rgba(0,0,0,0.4); padding: 6px 12px; border-bottom: 1px solid var(--border-glass); display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-				<button class="btn-dbg gamedata-tab-btn active" id="gamedata-tab-role" onclick="switchGameDataTab('role')" style="color:var(--glow-yellow); border-color:var(--glow-yellow); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">👤 角色信息 (rgm.mkf / mgo.mkf)</button>
-				<button class="btn-dbg gamedata-tab-btn" id="gamedata-tab-npc" onclick="switchGameDataTab('npc')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">👾 NPC 信息 (sss.mkf #0)</button>
-				<button class="btn-dbg gamedata-tab-btn" id="gamedata-tab-item" onclick="switchGameDataTab('item')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">🎒 物品资料</button>
-				<button class="btn-dbg gamedata-tab-btn" id="gamedata-tab-script" onclick="switchGameDataTab('script')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">📜 脚本信息 (sss.mkf #4)</button>
-				<button class="btn-dbg gamedata-tab-btn" id="gamedata-tab-scene" onclick="switchGameDataTab('scene')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">🗺️ 场景信息 (sss.mkf #1 / gop.mkf)</button>
+			<div class="tool-modal-tabbar">
+				<button class="btn-dbg gamedata-tab-btn tool-modal-tab-btn active" id="gamedata-tab-role" onclick="switchGameDataTab('role')" style="--tab-accent: var(--glow-yellow);">👤 角色信息 (rgm.mkf / mgo.mkf)</button>
+				<button class="btn-dbg gamedata-tab-btn tool-modal-tab-btn" id="gamedata-tab-npc" onclick="switchGameDataTab('npc')">👾 NPC 信息 (sss.mkf #0)</button>
+				<button class="btn-dbg gamedata-tab-btn tool-modal-tab-btn" id="gamedata-tab-item" onclick="switchGameDataTab('item')">🎒 物品资料</button>
+				<button class="btn-dbg gamedata-tab-btn tool-modal-tab-btn" id="gamedata-tab-script" onclick="switchGameDataTab('script')">📜 脚本信息 (sss.mkf #4)</button>
+				<button class="btn-dbg gamedata-tab-btn tool-modal-tab-btn" id="gamedata-tab-scene" onclick="switchGameDataTab('scene')">🗺️ 场景信息 (sss.mkf #1 / gop.mkf)</button>
 			</div>
 
 			<!-- 主内容展示区：双栏结构 -->
@@ -1339,22 +1466,22 @@
 
 	<!-- ==================== ⚔️ 仙剑奇侠传战斗资料监视与调试弹窗 ==================== -->
 	<div id="battle-data-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
-		<div style="background: rgba(10,13,20,0.96); border: 1px solid #ff3b6f; border-radius: 4px; box-shadow: 0 0 25px rgba(255, 59, 111, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
+		<div style="--modal-accent: #ff3b6f; background: rgba(10,13,20,0.96); border: 1px solid #ff3b6f; border-radius: 4px; box-shadow: 0 0 25px rgba(255, 59, 111, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
 			<!-- 弹窗头部 -->
-			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
-				<div style="display: flex; align-items: center; gap: 6px;">
-					<div style="width: 5px; height: 5px; background: #ff3b6f; border-radius: 50%; box-shadow: 0 0 6px #ff3b6f;"></div>
-					<span style="font-size: 11px; font-weight: bold; color: #ff3b6f; letter-spacing: 0.5px; text-transform: uppercase;">⚔️ PAL BATTLE DATA & PROFILES SYSTEM (战斗实时资料与画廊预览系统)</span>
+			<div class="tool-modal-header">
+				<div class="tool-modal-title-row">
+					<div class="tool-modal-dot"></div>
+					<span class="tool-modal-heading" style="text-transform: uppercase;">⚔️ PAL BATTLE DATA & PROFILES SYSTEM (战斗实时资料与画廊预览系统)</span>
 				</div>
-				<button onclick="closeBattleDataModal()" style="background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer; transition: color 0.15s; outline:none;" onmouseenter="this.style.color='#ff3b6f'" onmouseleave="this.style.color='rgba(255,255,255,0.4)'">✕</button>
+				<button onclick="closeBattleDataModal()" class="tool-modal-close">✕</button>
 			</div>
 			
 			<!-- 资料大类 Tabs 切换栏 -->
-			<div style="background: rgba(0,0,0,0.4); padding: 6px 12px; border-bottom: 1px solid var(--border-glass); display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-				<button class="btn-dbg battledata-tab-btn active" id="battledata-tab-enemy" onclick="switchBattleDataTab('enemy')" style="color:#ff3b6f; border-color:#ff3b6f; padding: 2px 10px; font-size: 8.5px; cursor: pointer;">👹 敌人属性 (data.mkf #1)</button>
-				<button class="btn-dbg battledata-tab-btn" id="battledata-tab-team" onclick="switchBattleDataTab('team')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">👥 敌方队伍 (data.mkf #2)</button>
-				<button class="btn-dbg battledata-tab-btn" id="battledata-tab-pos" onclick="switchBattleDataTab('pos')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">📍 战场坐标 (data.mkf #13)</button>
-				<button class="btn-dbg battledata-tab-btn" id="battledata-tab-sprite" onclick="switchBattleDataTab('sprite')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">🖼️ 战斗贴图 (abc.mkf / f.mkf)</button>
+			<div class="tool-modal-tabbar">
+				<button class="btn-dbg battledata-tab-btn tool-modal-tab-btn active" id="battledata-tab-enemy" onclick="switchBattleDataTab('enemy')" style="--tab-accent: #ff3b6f;">👹 敌人属性 (data.mkf #1)</button>
+				<button class="btn-dbg battledata-tab-btn tool-modal-tab-btn" id="battledata-tab-team" onclick="switchBattleDataTab('team')">👥 敌方队伍 (data.mkf #2)</button>
+				<button class="btn-dbg battledata-tab-btn tool-modal-tab-btn" id="battledata-tab-pos" onclick="switchBattleDataTab('pos')">📍 战场坐标 (data.mkf #13)</button>
+				<button class="btn-dbg battledata-tab-btn tool-modal-tab-btn" id="battledata-tab-sprite" onclick="switchBattleDataTab('sprite')">🖼️ 战斗贴图 (abc.mkf / f.mkf)</button>
 			</div>
 
 			<!-- 主内容展示区 -->
@@ -1366,22 +1493,22 @@
 
 	<!-- ==================== 🖼️ 仙剑奇侠传战斗图片资料监视与调试弹窗 ==================== -->
 	<div id="battle-image-modal" style="display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); align-items: center; justify-content: center; padding: 20px;">
-		<div style="background: rgba(10,13,20,0.96); border: 1px solid #00fffa; border-radius: 4px; box-shadow: 0 0 25px rgba(0, 255, 250, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
+		<div style="--modal-accent: #00fffa; background: rgba(10,13,20,0.96); border: 1px solid #00fffa; border-radius: 4px; box-shadow: 0 0 25px rgba(0, 255, 250, 0.15); width: calc(100% - 40px); height: calc(100% - 40px); display: flex; flex-direction: column; overflow: hidden; font-family:'JetBrains Mono', sans-serif;">
 			<!-- 弹窗头部 -->
-			<div style="background: rgba(0,0,0,0.6); padding: 8px 12px; border-bottom: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
-				<div style="display: flex; align-items: center; gap: 6px;">
-					<div style="width: 5px; height: 5px; background: #00fffa; border-radius: 50%; box-shadow: 0 0 6px #00fffa;"></div>
-					<span style="font-size: 11px; font-weight: bold; color: #00fffa; letter-spacing: 0.5px; text-transform: uppercase;">🖼️ PAL BATTLE IMAGES & FX SYSTEM (战斗实时图片与特效预览系统)</span>
+			<div class="tool-modal-header">
+				<div class="tool-modal-title-row">
+					<div class="tool-modal-dot"></div>
+					<span class="tool-modal-heading" style="text-transform: uppercase;">🖼️ PAL BATTLE IMAGES & FX SYSTEM (战斗实时图片与特效预览系统)</span>
 				</div>
-				<button onclick="closeBattleImageModal()" style="background: transparent; border: none; color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer; transition: color 0.15s; outline:none;" onmouseenter="this.style.color='#00fffa'" onmouseleave="this.style.color='rgba(255,255,255,0.4)'">✕</button>
+				<button onclick="closeBattleImageModal()" class="tool-modal-close">✕</button>
 			</div>
 			
 			<!-- 资料大类 Tabs 切换栏 -->
-			<div style="background: rgba(0,0,0,0.4); padding: 6px 12px; border-bottom: 1px solid var(--border-glass); display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-				<button class="btn-dbg battleimage-tab-btn active" id="battleimage-tab-abc" onclick="switchBattleImageTab('abc')" style="color:#00fffa; border-color:#00fffa; padding: 2px 10px; font-size: 8.5px; cursor: pointer;">👹 敌人精灵图Abc.mkf</button>
-				<button class="btn-dbg battleimage-tab-btn" id="battleimage-tab-f" onclick="switchBattleImageTab('f')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">⚔️ 玩家战斗精灵图 f.mkf</button>
-				<button class="btn-dbg battleimage-tab-btn" id="battleimage-tab-fire" onclick="switchBattleImageTab('fire')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">🔥 魔法特效 fire.mkf</button>
-				<button class="btn-dbg battleimage-tab-btn" id="battleimage-tab-data10" onclick="switchBattleImageTab('data10')" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.06); padding: 2px 10px; font-size: 8.5px; cursor: pointer;">💥 战斗效果图 data.mkf #10</button>
+			<div class="tool-modal-tabbar">
+				<button class="btn-dbg battleimage-tab-btn tool-modal-tab-btn active" id="battleimage-tab-abc" onclick="switchBattleImageTab('abc')" style="--tab-accent: #00fffa;">👹 敌人精灵图Abc.mkf</button>
+				<button class="btn-dbg battleimage-tab-btn tool-modal-tab-btn" id="battleimage-tab-f" onclick="switchBattleImageTab('f')">⚔️ 玩家战斗精灵图 f.mkf</button>
+				<button class="btn-dbg battleimage-tab-btn tool-modal-tab-btn" id="battleimage-tab-fire" onclick="switchBattleImageTab('fire')">🔥 魔法特效 fire.mkf</button>
+				<button class="btn-dbg battleimage-tab-btn tool-modal-tab-btn" id="battleimage-tab-data10" onclick="switchBattleImageTab('data10')">💥 战斗效果图 data.mkf #10</button>
 			</div>
 
 			<!-- 主内容展示区 -->
