@@ -272,4 +272,17 @@ export function initScriptLogPanel({ getInstructionDetail }) {
 
   			// renderScriptLogs({ force: true, stickToBottom: true });
   		}
+
+		window.clearScriptLogs = clearScriptLogs;
+		window.changeLogLimit = changeLogLimit;
+		window.toggleShowAllScriptLogs = toggleShowAllScriptLogs;
+		window.renderScriptLogs = renderScriptLogs;
+		window.syncScriptLogFilterView = syncScriptLogFilterView;
+		window.appendScriptLog = appendScriptLog;
+
+		return {
+			renderScriptLogs,
+			syncScriptLogFilterView,
+			appendScriptLog
+		};
 }
