@@ -1,6 +1,6 @@
 export function initDebugActions() {
   function showTips(message) {
-    import('./talk.js').then(({ Talk }) => {
+    import('../js/ui/talk.js').then(({ Talk }) => {
       Talk.talkTips(message);
     });
   }
@@ -15,7 +15,7 @@ export function initDebugActions() {
     }
 
     const newTickTime = Math.round(900 / fps);
-    const appModule = await import('../app.js');
+    const appModule = await import('../js/app.js');
     appModule.setTickTime(newTickTime);
   }
 
@@ -25,7 +25,7 @@ export function initDebugActions() {
       return;
     }
 
-    const { setMoney } = await import('../engine/command.js');
+    const { setMoney } = await import('../js/engine/command.js');
     setMoney(9999);
     showTips('李逍遥财气冲天，获得 9999 文钱！');
   }
@@ -35,7 +35,7 @@ export function initDebugActions() {
       return;
     }
 
-    const { obtain } = await import('../engine/command.js');
+    const { obtain } = await import('../js/engine/command.js');
     obtain(99);
     obtain(100);
     obtain(101);
@@ -62,7 +62,7 @@ export function initDebugActions() {
   // 步骤 3：统一封装调试存档控制，便于入口页只保留绑定关系。
   async function debugSaveGame(slotId) {
     const resolvedSlotId = slotId || parseInt(document.getElementById('input-save-slot-id')?.value, 10) || 1;
-    const { saveArchive } = await import('../esc/archive.js');
+    const { saveArchive } = await import('../js/esc/archive.js');
 
     saveArchive(resolvedSlotId, () => {
       showTips(`⚙️ 调试控制：进度保存成功！当前进度 ID: #${resolvedSlotId}`);
@@ -71,12 +71,12 @@ export function initDebugActions() {
 
   async function debugLoadGame(slotId) {
     const resolvedSlotId = slotId || parseInt(document.getElementById('input-save-slot-id')?.value, 10) || 1;
-    const { loadArchive } = await import('../esc/archive.js');
+    const { loadArchive } = await import('../js/esc/archive.js');
 
     loadArchive(resolvedSlotId, async () => {
       const [{ setRolePos }, { update }] = await Promise.all([
-        import('../engine/command.js'),
-        import('./draw.js')
+        import('../js/engine/command.js'),
+        import('../js/ui/draw.js')
       ]);
 
       setRolePos(window.state.mx, window.state.my, window.state.mhalf);
@@ -87,7 +87,7 @@ export function initDebugActions() {
 
   async function debugSaveGameInstant() {
     try {
-      const { getMaxSaveSlotId } = await import('../esc/archive.js');
+      const { getMaxSaveSlotId } = await import('../js/esc/archive.js');
       const maxId = await getMaxSaveSlotId();
       const nextSlotId = Math.max(5, maxId) + 1;
 

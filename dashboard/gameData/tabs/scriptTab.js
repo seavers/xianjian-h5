@@ -1,6 +1,6 @@
-import { state } from '../../../engine/state.js';
-import { scriptCodes } from '../../../engine/command.js';
-import { getCommandName, getInstructionChineseDetail } from '../../../data/gameData/scripts.js';
+import { state } from '../../../js/engine/state.js';
+import { scriptCodes } from '../../../js/engine/command.js';
+import { getCommandName, getInstructionChineseDetail } from '../../../js/data/gameData/scripts.js';
 import { makeScriptHyperlinks } from '../helpers.js';
 import { renderDetailPanel, renderListItem, renderSidebar } from '../renderers.js';
 import { gameDataStore } from '../store.js';

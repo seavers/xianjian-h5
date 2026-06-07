@@ -1,5 +1,5 @@
-import { loadWord } from '../../resources/pal.js';
-import { state } from '../../engine/state.js';
+import { loadWord } from '../../js/resources/pal.js';
+import { state } from '../../js/engine/state.js';
 
 const roleNameMap = {};
 

@@ -1,6 +1,6 @@
-import { loadBall } from '../../../resources/pal.js';
-import { state } from '../../../engine/state.js';
-import { getDetailedItemInfo } from '../../../data/gameData/items.js';
+import { loadBall } from '../../../js/resources/pal.js';
+import { state } from '../../../js/engine/state.js';
+import { getDetailedItemInfo } from '../../../js/data/gameData/items.js';
 import { drawPixelated, getItemNameHtml } from '../helpers.js';
 import { renderBindingItem, renderBlockCard, renderBlockGrid, renderDetailHeader, renderDetailPanel, renderListItem, renderSectionTitle, renderSidebar, renderStatCard, renderStatGrid } from '../renderers.js';
 import { gameDataStore } from '../store.js';

@@ -1188,27 +1188,27 @@
 
 
 
-		import('./js/ui/imageExplorer.js').then(({ initImageExplorer }) => {
+		import('./dashboard/imageExplorer.js').then(({ initImageExplorer }) => {
 			initImageExplorer({ drawDecodedSprite, getDetailedItemInfo });
 		});
 
-		import('./js/ui/sceneTools.js').then(({ initSceneTools }) => {
+		import('./dashboard/sceneTools.js').then(({ initSceneTools }) => {
 			initSceneTools();
 		});
 
 		Promise.all([
-			import('./js/ui/stepDebugger.js'),
-			import('./js/ui/scriptLogPanel.js')
+			import('./dashboard/stepDebugger.js'),
+			import('./dashboard/scriptLogPanel.js')
 		]).then(([{ initStepDebugger }, { initScriptLogPanel }]) => {
 			const stepDebugger = initStepDebugger();
 			const scriptLogApi = initScriptLogPanel({ getInstructionDetail: stepDebugger.getInstructionDetail });
 
-			return import('./js/ui/dashboardRuntime.js').then(({ initDashboardRuntime }) => {
+			return import('./dashboard/dashboardRuntime.js').then(({ initDashboardRuntime }) => {
 				initDashboardRuntime({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi });
 			});
 		});
 
-		import('./js/ui/debugActions.js').then(({ initDebugActions }) => {
+		import('./dashboard/debugActions.js').then(({ initDebugActions }) => {
 			initDebugActions();
 		});
 
@@ -1242,7 +1242,7 @@
 		})();
 
 		// 📚 动态载入游戏资料面板的全部逻辑
-		import('./js/ui/gameData.js').then((module) => {
+		import('./dashboard/gameData.js').then((module) => {
 			window.openGameDataModal = module.openGameDataModal;
 			window.closeGameDataModal = module.closeGameDataModal;
 			window.switchGameDataTab = module.switchGameDataTab;
@@ -1261,7 +1261,7 @@
 		});
 
 		// ⚔️ 动态载入战斗资料面板的全部逻辑
-		import('./js/ui/battleDataUI.js').then((module) => {
+		import('./dashboard/battleDataUI.js').then((module) => {
 			window.openBattleDataModal = module.openBattleDataModal;
 			window.closeBattleDataModal = module.closeBattleDataModal;
 			window.switchBattleDataTab = module.switchBattleDataTab;
@@ -1277,7 +1277,7 @@
 		});
 
 		// 🖼️ 动态载入战斗图片与特效资料面板的全部逻辑
-		import('./js/ui/battleImageUI.js').then((module) => {
+		import('./dashboard/battleImageUI.js').then((module) => {
 			window.openBattleImageModal = module.openBattleImageModal;
 			window.closeBattleImageModal = module.closeBattleImageModal;
 			window.switchBattleImageTab = module.switchBattleImageTab;
@@ -1292,7 +1292,7 @@
 
 
 
-		import('./js/ui/mapModal.js').then(({ initMapModal }) => {
+		import('./dashboard/mapModal.js').then(({ initMapModal }) => {
 			initMapModal();
 		});
 	</script>

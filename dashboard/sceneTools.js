@@ -11,7 +11,7 @@ export function initSceneTools() {
   let coords = [];
 
   function showTips(message) {
-    import('./talk.js').then(({ Talk }) => {
+    import('../js/ui/talk.js').then(({ Talk }) => {
       Talk.talkTips(message);
     });
   }

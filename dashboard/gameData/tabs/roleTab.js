@@ -1,6 +1,6 @@
-import { loadMgo, loadMgoCount, loadRgm } from '../../../resources/pal.js';
-import { state } from '../../../engine/state.js';
-import { ROLES_DB } from '../../../data/gameData/roles.js';
+import { loadMgo, loadMgoCount, loadRgm } from '../../../js/resources/pal.js';
+import { state } from '../../../js/engine/state.js';
+import { ROLES_DB } from '../../../js/data/gameData/roles.js';
 import { drawPixelated } from '../helpers.js';
 import { renderBlockCard, renderBlockGrid, renderDetailHeader, renderDetailPanel, renderListItem, renderSectionTitle, renderSidebar, renderStatCard, renderStatGrid } from '../renderers.js';
 import { gameDataStore } from '../store.js';

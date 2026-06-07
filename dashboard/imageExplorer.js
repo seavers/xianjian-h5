@@ -856,11 +856,11 @@ function ImageExplorerApp() {
   // 并发异步载入底层解析 API
   useEffect(() => {
     Promise.all([
-      import('../resources/pal.js'),
-      import('../resources/loader.js'),
-      import('../engine/rng.js'),
-      import('../resources/music.js'),
-      import('../resources/sound.js')
+      import('../js/resources/pal.js'),
+      import('../js/resources/loader.js'),
+      import('../js/engine/rng.js'),
+      import('../js/resources/music.js'),
+      import('../js/resources/sound.js')
     ]).then(([pal, loader, rng, music, sound]) => {
       setModules({ pal, loader, rng, music, sound });
       window.musicModule = music; // 保持全局引用兼容

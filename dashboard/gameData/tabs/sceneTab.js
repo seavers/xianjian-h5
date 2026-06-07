@@ -1,5 +1,5 @@
-import { loadGop, loadMgo } from '../../../resources/pal.js';
-import { state } from '../../../engine/state.js';
+import { loadGop, loadMgo } from '../../../js/resources/pal.js';
+import { state } from '../../../js/engine/state.js';
 import { drawPixelated, getRoleName } from '../helpers.js';
 import { renderDetailPanel, renderListItem, renderSidebar } from '../renderers.js';
 import { gameDataStore } from '../store.js';

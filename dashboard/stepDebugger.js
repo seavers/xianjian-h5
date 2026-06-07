@@ -5,11 +5,11 @@ export function initStepDebugger() {
   let loadMsgFn = null;
   let toSimplifiedFn = null;
 
-  import('../resources/pal.js').then(({ loadMsg }) => {
+  import('../js/resources/pal.js').then(({ loadMsg }) => {
     loadMsgFn = loadMsg;
   });
 
-  import('../utils/t2s.js').then(({ toSimplified }) => {
+  import('../js/utils/t2s.js').then(({ toSimplified }) => {
     toSimplifiedFn = toSimplified;
     window.toSimplifiedFn = toSimplified;
   });
@@ -154,7 +154,7 @@ export function initStepDebugger() {
       return;
     }
 
-    const { scriptCodes } = await import('../engine/command.js');
+    const { scriptCodes } = await import('../js/engine/command.js');
     const codeObj = scriptCodes[script.code];
     const desc = codeObj ? codeObj.desc : '未知指令';
     const detailInfo = getInstructionDetail(script.code, script.param1, script.param2, script.param3);

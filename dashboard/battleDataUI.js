@@ -1,9 +1,9 @@
 // ==================== ⚔️ 仙剑实时战斗资料与调试画廊 React 核心逻辑 ====================
 
-import { loadMkf, load } from '../resources/loader.js';
-import { deyj } from '../utils/deyj.js';
-import { state } from '../engine/state.js';
-import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame } from '../battle/battleData.js';
+import { loadMkf, load } from '../js/resources/loader.js';
+import { deyj } from '../js/utils/deyj.js';
+import { state } from '../js/engine/state.js';
+import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame } from '../js/battle/battleData.js';
 import { React, ReactDOM, html, drawPixelatedToCanvas } from './gameData/ui-helper.js';
 
 const { useState, useEffect, useRef, useMemo } = React;

@@ -51,7 +51,7 @@ function MapModalApp() {
     const mapId = state.mapId;
     setInfoText(`地图: 0x${mapId.toString(16).toUpperCase()} (${mapId}) | 主角坐标: (${state.mx}, ${state.my})${state.mhalf ? ' +0.5' : ''}`);
 
-    import('../resources/pal.js').then(({ loadMap, loadGop, u9s }) => {
+    import('../js/resources/pal.js').then(({ loadMap, loadGop, u9s }) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -166,8 +166,8 @@ function MapModalApp() {
     if (window.setRolePos) {
       window.setRolePos(mx, my, mhalf);
       Promise.all([
-        import('./talk.js'),
-        import('./draw.js')
+        import('../js/ui/talk.js'),
+        import('../js/ui/draw.js')
       ]).then(([{ Talk }, { update }]) => {
         Talk.talkTips(`瞬间移动！已将主角位置修改为 (${mx}, ${my})` + (mhalf ? ' (半网格)' : ''));
         update(true);

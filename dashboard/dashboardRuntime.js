@@ -1,7 +1,7 @@
 // ==================== 💻 仙剑实时控制台开发者侧边栏 React 核心逻辑 ====================
 
 import { React, ReactDOM, html, drawPixelatedToCanvas } from './gameData/ui-helper.js';
-import { state } from '../engine/state.js';
+import { state } from '../js/engine/state.js';
 
 const { useState, useEffect, useRef, useMemo } = React;
 
@@ -14,7 +14,7 @@ function drawBattleSprite(canvasEl, spriteData, frameIndex) {
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
-  import('../battle/battleData.js').then(({ loadSpriteFrame }) => {
+  import('../js/battle/battleData.js').then(({ loadSpriteFrame }) => {
     const frameImg = loadSpriteFrame(spriteData, frameIndex);
     if (!frameImg) {
       return;
@@ -173,7 +173,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
   const [loadBallFn, setLoadBallFn] = useState(null);
 
   useEffect(() => {
-    import('../resources/pal.js').then(({ loadMgo, loadBall }) => {
+    import('../js/resources/pal.js').then(({ loadMgo, loadBall }) => {
       setLoadMgoFn(() => loadMgo);
       setLoadBallFn(() => loadBall);
     });
@@ -383,14 +383,14 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
       setProfTimerSeq(debugInfo ? debugInfo.animIndex : 0);
     }
 
-    import('../engine/script.js').then(({ Script }) => {
+    import('../js/engine/script.js').then(({ Script }) => {
       setProfThreads(Script.all ? Script.all.length : 0);
     });
 
     setProfTimerPause('No');
 
     // 7. 同步时间戳与同步用时
-    import('../app.js').then(appModule => {
+    import('../js/app.js').then(appModule => {
       const timeStr = new Date().toTimeString().split(' ')[0];
       setSyncTimeText(`${timeStr} | ${appModule.lastMainLoopTime}ms`);
     });
