@@ -17,6 +17,9 @@ function MapModalApp() {
     mapId: null
   });
 
+  // 用于区分单击与双击的定时器句柄
+  const clickTimerRef = useRef(null);
+
   // 挂载全局方法到 window，实现对外部 Vanilla 调用接口的解耦与完美适配
   useEffect(() => {
     window.openMapModal = () => {
@@ -240,8 +243,15 @@ function MapModalApp() {
           <div style=${{ position: 'relative', display: 'block', margin: '0 auto', cursor: 'crosshair', width: 'fit-content' }}>
             <canvas 
               ref=${canvasRef}
-              onClick=${(e) => handleTeleport(e, false)}
-              onDblClick=${(e) => handleTeleport(e, true)}
+              onClick=${(e) => {
+                // 单击延迟执行，留出双击判定窗口（200ms），双击时取消单击瞬移
+                if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+                clickTimerRef.current = setTimeout(() => { clickTimerRef.current = null; handleTeleport(e, false); }, 200);
+              }}
+              onDoubleClick=${(e) => {
+                if (clickTimerRef.current) { clearTimeout(clickTimerRef.current); clickTimerRef.current = null; }
+                handleTeleport(e, true);
+              }}
               onMouseMove=${handleMouseMove}
               onMouseLeave=${handleMouseLeave}
               style=${{
