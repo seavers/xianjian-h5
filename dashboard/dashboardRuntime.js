@@ -220,6 +220,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
   const [logLimit, setLogLimit] = useState(200);
   const [showAllLogs, setShowAllLogs] = useState(false);
   const [logs, setLogs] = useState([]);
+  const [autoScroll, setAutoScroll] = useState(true);
 
   // --- 剧情脚本单步调试器 ---
   const [stepDebugEnabled, setStepDebugEnabled] = useState(false);
@@ -251,6 +252,10 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
   const npcSelectedCanvasRef = useRef(null);
   const terminalLogsRef = useRef(null);
   const saveSlotInputRef = useRef(null);
+  const autoScrollRef = useRef(true);
+  autoScrollRef.current = autoScroll;
+  const highlightNpcIdRef = useRef(null);
+  highlightNpcIdRef.current = highlightNpcId;
 
   // 图像加载辅助 API
   const [loadMgoFn, setLoadMgoFn] = useState(null);
@@ -293,6 +298,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
     window.onScriptExecute = (logItemOrArray) => {
       const items = Array.isArray(logItemOrArray) ? logItemOrArray : [logItemOrArray];
       let hasTriggerLog = false;
+      let hasFilteredAutoLog = false;
 
       items.forEach(item => {
         if (!item) return;
@@ -300,12 +306,16 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
         // 判定是否是主进程/非 auto 触发的脚本日志
         if (item.type !== 'auto') {
           hasTriggerLog = true;
+        } else if (highlightNpcIdRef.current !== null && String(highlightNpcIdRef.current) === String(item.npcId)) {
+          // auto 日志且当前正在过滤此 NPC，需要刷新显示
+          hasFilteredAutoLog = true;
         }
 
-        // 构造优美、解密的日志行 HTML 字符串并保存在 log 属性中
+        // 构造日志行 HTML，在 type badge 后增加当前对象标识标签
         const detailInfo = window.getInstructionDetail ? window.getInstructionDetail(item.code, item.param1, item.param2, item.param3) : '';
         const typeBadgeColor = item.type === 'auto' ? '#ffd000' : (item.type === 'trig' ? '#00e1ff' : '#ff3b6f');
         const detailHtml = detailInfo ? `<span style="color: var(--glow-green); margin-left: 8px;">➔ ${detailInfo}</span>` : '';
+        const objTagHtml = item.objTag ? `<span style="color: #ff9d00; font-weight: bold; font-size: 7.5px; background: rgba(255,157,0,0.1); border: 1px solid rgba(255,157,0,0.25); border-radius: 2px; padding: 0px 3px;">${item.objTag}</span>` : '';
         
         item.html = `
           <div style="display: flex; align-items: center; justify-content: space-between; padding: 2px 4px; border-bottom: 1px dashed rgba(255,255,255,0.02); color: rgba(255,255,255,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
@@ -313,6 +323,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
               <span style="color: rgba(255,255,255,0.25);">${item.time}</span>
               <span style="color: #ffd000; font-weight: bold;">[${item.scriptId}]</span>
               <span style="color: ${typeBadgeColor}; border: 1px solid ${typeBadgeColor}; border-radius: 2px; padding: 0px 3px; font-size: 7px; font-weight: bold; text-transform: uppercase;">${item.type}</span>
+              ${objTagHtml}
               <span style="color: #00e1ff; font-weight: 500;">${item.hexCode}</span>:
               <span style="color: #fff; font-weight: 500;">${item.desc}</span>
               <span style="color: rgba(255,255,255,0.3); font-size: 7.5px;">(${item.param1}, ${item.param2}, ${item.param3})</span>
@@ -345,9 +356,8 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
         window.scriptMainLogs.splice(0, window.scriptMainLogs.length - currentLimit);
       }
 
-      // 性能控制：如果刚才检测到主进程/交互性触发日志（非 auto），则立即触发 React 状态同步进行实时重绘；
-      // 否则（纯高频 auto 漫游日志）只更新内存日志池，交由 200ms 的轮询定时器被动刷新，大幅节省渲染性能！
-      if (hasTriggerLog) {
+      // 智能刷新控制：非 auto 日志立即刷新；auto 日志仅在当前过滤的 NPC 匹配时才刷新，否则只入池不刷新
+      if (hasTriggerLog || hasFilteredAutoLog) {
         syncStateData();
       }
     };
@@ -544,12 +554,22 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
       setStepInstruction(null);
     }
 
-    // 9. 同步控制台终端指令日志流
+    // 9. 同步控制台终端指令日志流（三种模式：全部 / 选中NPC的auto / 默认非auto）
     const showAll = window.showAllScriptLogs || false;
     setShowAllLogs(showAll);
-    setLogFilterModeText(showAll ? '已开启全部显示(包含 auto 心跳)' : '默认仅显示非 auto 指令');
 
-    const logSource = showAll ? (window.scriptLogStore || []) : (window.scriptMainLogs || []);
+    let logSource = [];
+    if (showAll) {
+      setLogFilterModeText('已开启全部显示(包含 auto 心跳)');
+      logSource = window.scriptLogStore || [];
+    } else if (highlightNpcId !== null) {
+      setLogFilterModeText(`当前仅显示 NPC #${highlightNpcId} 的 auto 指令`);
+      logSource = window.scriptNpcLogs[highlightNpcId] || [];
+    } else {
+      setLogFilterModeText('默认仅显示非 auto 指令');
+      logSource = window.scriptMainLogs || [];
+    }
+
     const limit = window.logLimit || 200;
     setLogLimit(limit);
     setLogs([...logSource]);
@@ -561,6 +581,13 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
     const interval = setInterval(syncStateData, 200);
     return () => clearInterval(interval);
   }, [npcs.length, onlyHumanNpc, onlyVisibleNpc, onlyHasTrigNpc, selectedRoleIndex]);
+
+  // 自动滚动：当日志更新时自动滚动到底部
+  useEffect(() => {
+    if (autoScroll && terminalLogsRef.current) {
+      terminalLogsRef.current.scrollTop = terminalLogsRef.current.scrollHeight;
+    }
+  }, [logs, autoScroll]);
 
   // 主角 2D 走步预览重绘
   useEffect(() => {
@@ -1425,6 +1452,9 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
             ${showAllLogs ? '普通日志' : '全部日志'}
           </button>
           <button onClick=${() => window.clearScriptLogs?.()} style=${{ background: 'rgba(255, 59, 111, 0.12)', border: '1px solid rgba(255, 59, 111, 0.25)', color: 'var(--glow-red)', padding: '1px 6px', fontSize: '8px', fontWeight: 'bold', borderRadius: '2px', cursor: 'pointer', outline: 'none' }}>🗑️ 清空日志</button>
+          <button onClick=${() => setAutoScroll(!autoScroll)} style=${{ background: autoScroll ? 'rgba(0, 255, 157, 0.12)' : 'rgba(255, 255, 255, 0.04)', border: autoScroll ? '1px solid rgba(0, 255, 157, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)', color: autoScroll ? 'var(--glow-green)' : 'rgba(255, 255, 255, 0.35)', padding: '1px 6px', fontSize: '8px', fontWeight: 'bold', borderRadius: '2px', cursor: 'pointer', outline: 'none' }}>
+            ${autoScroll ? '📜 自动滚动' : '⏸️ 自动滚动'}
+          </button>
         </div>
       </div>
       

@@ -166,11 +166,27 @@ export const Script = {
       const code = scriptCodes[script.code];
       const desc = code ? code.desc : '未知指令';
 
+      // 生成当前对象的简短标识标签，角色→R1~R6，场景→#N，NPC→NXXX，物品→IXXX
+      let objTag = '';
+      if (obj) {
+        if (obj.type === 'role') {
+          objTag = `R${(obj.index || 0) + 1}`;
+        } else if (type === 'scene') {
+          objTag = `#${obj.sceneId || state.sceneId || '?'}`;
+        } else if (type === 'item') {
+          const itemIdx = state.items.indexOf(obj);
+          objTag = itemIdx >= 0 ? `I${itemIdx}` : '';
+        } else if (typeof obj.id === 'number') {
+          objTag = `N${obj.id}`;
+        }
+      }
+
       // 记录到全局状态机中的 scriptLogs，供右侧 Dashboard 实时渲染
       const logItem = {
         npcId: obj ? obj.id : '无',
         roleId: obj && typeof obj.mgoId === 'number' ? obj.mgoId : null,
         type: type,
+        objTag: objTag,
         scriptId: scriptEntry,
         code: script.code,
         hexCode: '0x' + Hex.toHex(script.code),
@@ -248,11 +264,15 @@ export const Script = {
     const code = scriptCodes[script.code];
     const desc = code ? code.desc : '未知指令';
 
+    // 生成 auto NPC 的对象标识标签
+    const objTag = obj && typeof obj.id === 'number' ? `N${obj.id}` : '';
+
     // 记录到全局状态机中的 scriptLogs，供右侧 Dashboard 实时渲染
     const logItem = {
       npcId: obj ? obj.id : '无',
       mgoId: obj && typeof obj.mgoId === 'number' ? obj.mgoId : null,
       type: type,
+      objTag: objTag,
       scriptId: scriptId,
       code: script.code,
       hexCode: '0x' + Hex.toHex(script.code),

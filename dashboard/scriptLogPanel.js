@@ -112,10 +112,12 @@ export function initScriptLogPanel({ getInstructionDetail }) {
 
   			const leftSpan = document.createElement('span');
   			leftSpan.style.cssText = "width: 490px; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0;";
+  			const objTagHtml = log.objTag ? `<span style="color: #ff9d00; font-weight: bold; font-size: 7.5px; background: rgba(255,157,0,0.1); border: 1px solid rgba(255,157,0,0.25); border-radius: 2px; padding: 0px 3px; margin-right: 3px;">${log.objTag}</span>` : '';
   			leftSpan.innerHTML = `
   				<span class="log-time">${log.time}</span>
   				<span class="log-script-id">[${log.scriptId}]</span>
   				<span class="log-badge ${log.type}">${log.type}</span>
+  				${objTagHtml}
   				<span class="log-code">${log.hexCode}</span>: 
   				<span class="log-desc">${log.desc}</span> 
   				<span style="color:rgba(255,255,255,0.18); margin-left: 2px;">(${log.param1}, ${log.param2}, ${log.param3})</span>
