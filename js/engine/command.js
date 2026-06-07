@@ -898,7 +898,8 @@ export function stopCode() {
 
 export function changeScript(scriptId, counter, param3, { type }) {
   if (counter == 0) {
-    return scriptId;
+    // 这里必须得endFlag，否则药材童子那里会死循环，脚本ID：14733
+    return {endFlag: true, nextScriptId: scriptId};
   }
 
   const obj = this;
