@@ -1,5 +1,5 @@
 import { state } from './state.js';
-import { CIRCLE_SCRIPT, RESET_SCRIPT, Script } from './script.js';
+import { CIRCLE_SCRIPT, REPLACE_ENTRY, RESET_SCRIPT, Script } from './script.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
 import { update, canWalk } from '../ui/draw.js';
@@ -1196,12 +1196,8 @@ export async function startBattle(battleId, failScriptId, fleeScriptId) {
   }
 }
 
-export function replaceEntry(scriptId) {
-  if(this.type == 'scene') {
-    this.enterScriptId = scriptId;
-  } else if(this.type == 'npc') {
-    this.trigScr = scriptId;
-  }
+export function replaceEntry() {
+  return REPLACE_ENTRY;
 }
 
 export async function confirmMenu(failScriptId) {

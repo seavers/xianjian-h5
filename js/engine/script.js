@@ -6,6 +6,7 @@ import { fadeIn, fadeOut } from '../ui/fade.js';
 
 export const RESET_SCRIPT = -1;   //返回最初的入口，下次触发从上次入口重新执行
 export const CIRCLE_SCRIPT = -2;  //返回当前的入口，下次循环从当前入口再次执行
+export const REPLACE_ENTRY = -3;  //将当前的入口替换为下一个脚本
 
 export const Script = {
 
@@ -228,6 +229,9 @@ export const Script = {
       }
 
       if (ret == null) {
+        scriptEntry = scriptEntry + 1;
+      } else if (ret === REPLACE_ENTRY) {
+        startScriptId = scriptEntry + 1;
         scriptEntry = scriptEntry + 1;
       } else if (ret === RESET_SCRIPT) {
         scriptEntry = startScriptId;
