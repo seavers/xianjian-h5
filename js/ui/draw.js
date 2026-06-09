@@ -419,15 +419,15 @@ export function renderScreen(refreshType) {
   }
 
   // 步骤 5：如果当前有 FBP 背景图需要展示，直接在主屏幕绘制 FBP 图像，并跳过后续地图与实体绘制
-  if (state.currentFbpId !== undefined && state.currentFbpId !== -1) {
-    mainCtx.clearRect(0, 0, mainCtx.canvas.width, mainCtx.canvas.height);
-    const fbpImg = loadFbp(state.currentFbpId);
-    if (fbpImg) {
-      mainCtx.drawImage(fbpImg, 0, 0);
-    }
-    updateCount[1]++;
-    return;
-  }
+  // if (state.currentFbpId !== undefined && state.currentFbpId !== -1) {
+  //   mainCtx.clearRect(0, 0, mainCtx.canvas.width, mainCtx.canvas.height);
+  //   const fbpImg = loadFbp(state.currentFbpId);
+  //   if (fbpImg) {
+  //     mainCtx.drawImage(fbpImg, 0, 0);
+  //   }
+  //   updateCount[1]++;
+  //   return;
+  // }
 
   // 步骤 6：收集并绘制大地图的前景瓦片与所有事件实体、主角及跟随者
   tiles = [];
