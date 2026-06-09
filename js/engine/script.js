@@ -50,6 +50,7 @@ export const Script = {
     // 步骤 1：检测是否需要进行场景切换（一律在主循环头部做同步判定）
     if (state.nextSceneId !== state.sceneId && state.nextSceneId !== -1) {
       await this.handleSceneSwitch();
+      state.nextSceneId = -1;
       return;
     }
 

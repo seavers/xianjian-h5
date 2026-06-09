@@ -837,6 +837,9 @@ export async function fadeScreen(speed) {
     await fadeIn();
   } else {
     // 正数：直接单向执行淡入，并在结束后解除挂起
+    
+    // 这里得先执行一次更新，比如见灵儿姥姥切到到床上那段脚本9030有问题 
+    update(true);
     await fadeIn();
   }
 }
@@ -888,7 +891,13 @@ export async function toggleScene(sceneId) {
   }
 }
 
-export function finishCode() {
+export async function finishCode() {
+  // 参考 钓鱼剧情况脚本 14438
+  if(state.needToFadeIn && state.nextSceneId == -1) {
+    update(true);
+    await fadeIn();
+  }
+
   return {endFlag: true, nextScriptId: RESET_SCRIPT};
 }
 
@@ -981,6 +990,11 @@ export async function clearTalk() {
 export async function updateScreen() {
   state.fadeAlpha = 0;
 
+  // 参考钓鱼剧情脚本 14363
+  if(state.needToFadeIn) {
+    update(true);
+    await fadeIn();
+  }
   // 步骤 1：同步清屏和中间层重绘，重绘大地图以更新队伍坐标
   update(true);
 
