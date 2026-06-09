@@ -176,7 +176,7 @@ export function jumpIfNotInZone(targetObjectId, zone, failScriptId) {
 }
 
 export function placeItemUsedAsObject(targetObjectId, stateVal, failScriptId) {
-  const pCurrent = this;
+  const pCurrent = targetObjectId === 0xFFFF ? this : state.eventObjects[targetObjectId];
   if (!pCurrent) return;
 
   if (targetObjectId <= state.startEventId || targetObjectId > state.endEventId) {
@@ -1024,6 +1024,12 @@ export async function updateScreenAndWait(time, p2, p3, context) {
     // 执行下一条
     return;
   }
+
+  // 这里也需要处理渐入，见灵儿吃药后醒来的脚本 14895
+  if(state.needToFadeIn) {
+    update(true);
+    await fadeIn();
+  }
   
   if (time == 0) {
     await Script.stepAutoAndUpdate();
@@ -1031,7 +1037,10 @@ export async function updateScreenAndWait(time, p2, p3, context) {
     return;
   }
   
-  await updateScreen();
+  update(true);
+
+  // 步骤 2：增加 80ms 的非阻塞式延迟，以满足剧情或转场时图像更新的视觉停留感要求
+  await new Promise(resolve => setTimeout(resolve, TICK_TIME));
 
   // 返回>0，跳出场景脚本循环，来重绘
   return await timesAction(time, this, () => {});
