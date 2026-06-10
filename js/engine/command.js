@@ -935,7 +935,8 @@ export function gotoScript(scriptId) {
 export async function subScript(scriptId, objId) {
   // 步骤 1：分析第二个参数 objId，若为 0 或者是 0xFFFF 则说明子脚本沿用父线程当前主体 this
   // 否则从全局状态机 state.eventObjects 中获取对应的目标事件实体对象
-  const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
+  // 这里要判断 0，比如黑水镇开箱子，就是用的 objId=0，见objId=1220，脚本 2415
+  const obj = objId == 0 || objId === 0xFFFF ? this : state.eventObjects[objId];
 
   // 步骤 2：直接调用 runTriggerScript
   await Script.runTriggerScript(scriptId, obj, 'sub');
