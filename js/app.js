@@ -262,7 +262,7 @@ function initPlayerRoles() {
     const view = levelUpData.toDataView();
     state.levelUpExp = [];
     for (let i = 0; i <= 99; i++) {
-      state.levelUpExp[i] = view.getUint16(i * 2, true);
+      state.levelUpExp[i] = view.nextShort();
     }
   }
 }
