@@ -100,7 +100,7 @@ export async function roleWalk(sx, sy, shalf, context) {
 export async function clearWithEffect(effectType) {
   console.log(`[0x73 clearWithEffect] 重新淡入当前场景, 特效类型: ${effectType}`);
   await fadeOut();
-  await update();
+  await update(true);
   await fadeIn();
 }
 
@@ -993,11 +993,12 @@ export async function updateScreen() {
 
   // 参考钓鱼剧情脚本 14363
   if(state.needToFadeIn) {
-    update();
+    update(true);
     await fadeIn();
+    return ;
   }
   // 步骤 1：同步清屏和中间层重绘，重绘大地图以更新队伍坐标
-  update();
+  update(true);
 
   // 步骤 2：增加 80ms 的非阻塞式延迟，以满足剧情或转场时图像更新的视觉停留感要求
   await new Promise(resolve => setTimeout(resolve, TICK_TIME));
