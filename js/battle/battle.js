@@ -769,7 +769,7 @@ async function endBattle(victory) {
 
   // 清空背景层和谈话层以露出大地图
   // state.contexts.back.clearRect(0, 0, 320, 200);
-  // state.contexts.talk.clearRect(0, 0, 320, 200);
+  state.contexts.talk.clearRect(0, 0, 320, 200);
 
   // 步骤 9.4：重新同步绘制一帧大地图画面，作为淡入前的图像准备
   // await update(true);
