@@ -69,12 +69,12 @@ export function drawRhombus(x, y, drawContext1, color = '#888888') {
   ctx.closePath();
 }
 
-export function drawMapBack() {
+export function drawMapBack(forceUpdate) {
   const backCtx = state.contexts.back;
   if (!backCtx) return;
 
   // 1. 自动脏检查：如果镜头坐标、地图ID、调色板配置都未改变，跳过重绘背景
-  if (
+  if (!forceUpdate &&
     state.mapId === lastMapId &&
     state.mapX === lastMapX &&
     state.mapY === lastMapY &&
@@ -413,10 +413,8 @@ export function renderScreen(refreshType) {
   }
 
   // 步骤 4：根据大地图刷新标记，载入并局部更新大地图背景瓦片
-  if (refreshType) {
-    updateCount[0]++;
-    drawMapBack();
-  }
+  updateCount[0]++;
+  drawMapBack(refreshType);
 
   // 步骤 5：如果当前有 FBP 背景图需要展示，直接在主屏幕绘制 FBP 图像，并跳过后续地图与实体绘制
   // if (state.currentFbpId !== undefined && state.currentFbpId !== -1) {

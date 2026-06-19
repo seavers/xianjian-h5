@@ -762,17 +762,17 @@ async function endBattle(victory) {
   await sleep(1500);
 
   // 步骤 9.3：渐变淡出当前战斗画面至黑色
-  await fadeOut();
+  // await fadeOut();
 
   isBattleRunning = false;
   state.currentMode = 'game';
 
   // 清空背景层和谈话层以露出大地图
-  state.contexts.back.clearRect(0, 0, 320, 200);
-  state.contexts.talk.clearRect(0, 0, 320, 200);
+  // state.contexts.back.clearRect(0, 0, 320, 200);
+  // state.contexts.talk.clearRect(0, 0, 320, 200);
 
   // 步骤 9.4：重新同步绘制一帧大地图画面，作为淡入前的图像准备
-  await update(true);
+  // await update(true);
 
   // 恢复场景背景音乐（由 0x43 setMusic 写入 state.wNumMusic）
   const sceneMusicNum = state.wNumMusic || 0;
@@ -784,7 +784,8 @@ async function endBattle(victory) {
   }
 
   // 步骤 9.5：平滑淡入展现大地图画面
-  await fadeIn();
+  // 这里不应该fadeIn，因为有很多战斗脚本里会fadeIn，比如腐尸战斗脚本40653
+  // await fadeIn();
 
   if (resolvePromise) {
     const p = resolvePromise;
