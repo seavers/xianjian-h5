@@ -771,9 +771,10 @@ export async function changeHpMp(toAll, value) {
   console.log(`[0x1D changeHpMp] 剧情改变角色属性 (${scope}), HP/MP 变动量: ${changeValue}`);
 }
 
-export function setSceneEnterScr(sceneId, enterScriptId) {
+export function setSceneEnterScr(sceneId, enterScriptId, teleportScriptId) {
   const scene = state.scenes[sceneId];
   scene.enterScriptId = enterScriptId;
+  scene.exitScriptId = teleportScriptId;
 }
 
 export function setNpcAutoScr(objId, autoScr) {
