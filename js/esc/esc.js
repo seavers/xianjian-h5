@@ -316,7 +316,7 @@ export const ESC = {
 
       loadArchive(slotId, () => {
         setRolePos(state.mx, state.my, state.mhalf);
-        update(true);
+        update();
         ESC.clearMenus();
       });
     }).oncancel(() => {

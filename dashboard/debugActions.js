@@ -80,7 +80,7 @@ export function initDebugActions() {
       ]);
 
       setRolePos(window.state.mx, window.state.my, window.state.mhalf);
-      update(true);
+      update();
       showTips(`⚙️ 调试控制：进度读取成功！加载场景 #${window.state.sceneId}`);
     });
   }

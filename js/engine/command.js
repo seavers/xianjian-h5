@@ -100,7 +100,7 @@ export async function roleWalk(sx, sy, shalf, context) {
 export async function clearWithEffect(effectType) {
   console.log(`[0x73 clearWithEffect] 重新淡入当前场景, 特效类型: ${effectType}`);
   await fadeOut();
-  await update(true);
+  await update();
   await fadeIn();
 }
 
@@ -261,7 +261,7 @@ export function changeSceneMap(sceneId, targetMapId) {
 export async function fadeToCurrentScene() {
   console.log(`[0x9B fadeToCurrentScene] 执行渐变淡入当前场景`);
   await fadeIn();
-  await update(true);
+  await update();
 }
 
 export function setPartySamePosition() {
@@ -629,7 +629,7 @@ export function toggleDayNight(param1) {
   const status = state.fNightPalette ? '黑夜模式' : '白天常态';
 
   console.log(`[0x80 toggleDayNight] 切换昼夜调色板, 当前状态: ${status}, 切换模式: ${mode}`);
-  update(true);
+  update();
 }
 
 export async function useDayPalette() {
@@ -638,7 +638,7 @@ export async function useDayPalette() {
 
   // 步骤 2：输出详细的白天调色板生效调试日志，供滤镜渲染使用
   console.log('[0x53 useDayPalette] 强制开启白天调色板模式');
-  update(true);
+  update();
 }
 
 export async function useNightPalette() {
@@ -817,7 +817,7 @@ export async function fadeInScene(speed) {
   
   // 步骤 2：使用 await 异步等待淡入效果播放完毕，随后同步进行屏幕绘制更新
   await fadeIn();
-  await update(true);
+  await update();
 }
 
 export async function fadeScreen(speed) {
@@ -839,7 +839,7 @@ export async function fadeScreen(speed) {
     // 正数：直接单向执行淡入，并在结束后解除挂起
     
     // 这里得先执行一次更新，比如见灵儿姥姥切到到床上那段脚本9030有问题 
-    update(true);
+    update();
     await fadeIn();
   }
 }
@@ -862,7 +862,7 @@ export function performToggleScene(targetSceneId) {
   console.log('切换场景: ' + targetSceneId + ' 地图: ' + state.mapId);
 
   // 刷新出首屏，为淡入做准备
-  update(true); // 重绘画面
+  update(); // 重绘画面
 
   // 同步启动场景脚本
   Script.startScene(scene);
@@ -894,7 +894,7 @@ export async function toggleScene(sceneId) {
 export async function finishCode() {
   // 参考 钓鱼剧情况脚本 14438
   if(state.needToFadeIn && state.nextSceneId == -1) {
-    update(true);
+    update();
     await fadeIn();
   }
 
@@ -993,11 +993,11 @@ export async function updateScreen() {
 
   // 参考钓鱼剧情脚本 14363
   if(state.needToFadeIn) {
-    update(true);
+    update();
     await fadeIn();
   }
   // 步骤 1：同步清屏和中间层重绘，重绘大地图以更新队伍坐标
-  update(true);
+  update();
 
   // 步骤 2：增加 80ms 的非阻塞式延迟，以满足剧情或转场时图像更新的视觉停留感要求
   await new Promise(resolve => setTimeout(resolve, TICK_TIME));
@@ -1028,7 +1028,7 @@ export async function updateScreenAndWait(time, p2, p3, context) {
 
   // 这里也需要处理渐入，见灵儿吃药后醒来的脚本 14895
   if(state.needToFadeIn) {
-    update(true);
+    update();
     await fadeIn();
   }
   
@@ -1038,7 +1038,7 @@ export async function updateScreenAndWait(time, p2, p3, context) {
     return;
   }
   
-  update(true);
+  update();
 
   // 步骤 2：增加 80ms 的非阻塞式延迟，以满足剧情或转场时图像更新的视觉停留感要求
   await new Promise(resolve => setTimeout(resolve, TICK_TIME));
@@ -1099,7 +1099,7 @@ export function showFbp(fbpId, effect) {
   // 步骤 1：在全局状态机中记录当前的 FBP 全屏背景图 ID，并直接触发屏幕重绘
   state.currentFbpId = fbpId;
   console.log(`[0x76 showFbp] 展示全屏剧情背景图 (FBP ID: ${fbpId}, 渐变效果: ${effect})`);
-  update(true);
+  update();
 }
 
 export function setBattlefield(battlefieldId) {
@@ -1482,7 +1482,7 @@ export async function loadLastSavedGame() {
 
   // 4. 淡入屏幕并刷新渲染
   await fadeIn();
-  await update(true);
+  await update();
   
   console.log(`[0x4E loadLastSavedGame] 存档重载完成`);
 

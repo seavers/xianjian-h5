@@ -347,7 +347,7 @@ export const Script = {
     }
 
     // 步骤 3：重绘整个画面
-    await update(true);
+    await update();
   }
 
 };
