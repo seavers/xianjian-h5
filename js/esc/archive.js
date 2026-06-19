@@ -308,6 +308,7 @@ export function saveArchive(slotId, callback) {
       view.setInt16(offsetParty + 4, 0, true);
       view.setUint16(offsetParty + 6, 0, true);
       view.setUint16(offsetParty + 8, 0, true);
+    }
   }
 
   // 步骤 3.7：写入经验数据 Exp (offset 124 ~ 508, 384B)
