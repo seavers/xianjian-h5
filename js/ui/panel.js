@@ -6,13 +6,21 @@ export const UI = {
     drawPic3(45, x, y, size);
   },
 
-  drawNum(num, x, y) {
+  drawNum(num, x, y, colorName = 'yellow') {
     let currNum = num;
     let currX = x;
+    let base = 20; // 步骤 1：根据传入的颜色名选择正确的数字图片基准索引
+    if (colorName === 'blue') {
+      base = 30;
+    } else if (colorName === 'cyan') {
+      base = 57;
+    }
+
+    // 步骤 2：逐位计算并从低到高在屏幕上自右向左绘制数字图片
     while (true) {
       currX -= 6;
       const n = currNum % 10;
-      drawPic(20 + n, currX, y);
+      drawPic(base + n, currX, y);
 
       currNum -= n;
       currNum /= 10;
@@ -20,6 +28,11 @@ export const UI = {
         break;
       }
     }
+  },
+
+  drawSlash(x, y) {
+    // 步骤 3：绘制 '/' 精灵小图（在 H5 资源包中索引为 40）
+    drawPic(40, x, y);
   },
 
   drawArea(x, y, width, height, style = 1) {

@@ -308,7 +308,29 @@ export function saveArchive(slotId, callback) {
       view.setInt16(offsetParty + 4, 0, true);
       view.setUint16(offsetParty + 6, 0, true);
       view.setUint16(offsetParty + 8, 0, true);
-    }
+  }
+
+  // 步骤 3.7：写入经验数据 Exp (offset 124 ~ 508, 384B)
+  if (state.exp) {
+    let offset = 124;
+    const writeExpArray = (arr) => {
+      for (let i = 0; i < 6; i++) {
+        const item = arr[i] || { wExp: 0, wReserved: 0, wLevel: 1, wCount: 0 };
+        view.setUint16(offset, item.wExp, true);
+        view.setUint16(offset + 2, item.wReserved, true);
+        view.setUint16(offset + 4, item.wLevel, true);
+        view.setUint16(offset + 6, item.wCount, true);
+        offset += 8;
+      }
+    };
+    writeExpArray(state.exp.rgPrimaryExp);
+    writeExpArray(state.exp.rgHealthExp);
+    writeExpArray(state.exp.rgMagicExp);
+    writeExpArray(state.exp.rgAttackExp);
+    writeExpArray(state.exp.rgMagicPowerExp);
+    writeExpArray(state.exp.rgDefenseExp);
+    writeExpArray(state.exp.rgDexterityExp);
+    writeExpArray(state.exp.rgFleeExp);
   }
 
   // 步骤 3.8：写入角色战斗属性 PlayerRoles (offset 508)，与 parseSaveData 读取顺序完全对称
@@ -552,7 +574,39 @@ function parseSaveData(byteArray) {
   }
   
   view.skipByte(30); // rgTrail (5 * 6B)
-  view.skipByte(384); // Exp (ALLEXPERIENCE: 384B)
+
+  // 步骤 1：解析 ALLEXPERIENCE (384B)，包含 8 组各 6 个角色的经验信息
+  const expData = {
+    rgPrimaryExp: [],
+    rgHealthExp: [],
+    rgMagicExp: [],
+    rgAttackExp: [],
+    rgMagicPowerExp: [],
+    rgDefenseExp: [],
+    rgDexterityExp: [],
+    rgFleeExp: []
+  };
+  const readExpArray = (v) => {
+    const arr = [];
+    for (let i = 0; i < 6; i++) {
+      arr.push({
+        wExp: v.nextShort(),
+        wReserved: v.nextShort(),
+        wLevel: v.nextShort(),
+        wCount: v.nextShort()
+      });
+    }
+    return arr;
+  };
+  expData.rgPrimaryExp = readExpArray(view);
+  expData.rgHealthExp = readExpArray(view);
+  expData.rgMagicExp = readExpArray(view);
+  expData.rgAttackExp = readExpArray(view);
+  expData.rgMagicPowerExp = readExpArray(view);
+  expData.rgDefenseExp = readExpArray(view);
+  expData.rgDexterityExp = readExpArray(view);
+  expData.rgFleeExp = readExpArray(view);
+  state.exp = expData;
 
   // 读取并填充主角/队员战斗属性 (PlayerRoles: 900B)
   const prView = view.nextView();

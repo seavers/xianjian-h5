@@ -1,5 +1,5 @@
 import { state } from '../engine/state.js';
-import { loadFbp, loadPic } from '../resources/pal.js';
+import { loadFbp, loadPic, loadRgm, loadBall } from '../resources/pal.js';
 import { UI, PanelFactory } from '../ui/panel.js';
 import { Script } from '../engine/script.js';
 import { toggleScene, setRolePos } from '../engine/command.js';
@@ -89,17 +89,121 @@ export const ESC = {
 
   onStatus() {
     const fbp = loadFbp(0);
+    let currentPartyIndex = 0;
+
     const renderFn = () => {
       const startupCtx = state.contexts.startup;
-      if (startupCtx && fbp) {
-        startupCtx.drawImage(fbp, 0, 0);
+      if (!startupCtx || !fbp) return;
+
+      // 步骤 1：绘制状态背景图
+      startupCtx.drawImage(fbp, 0, 0);
+
+      // 步骤 2：校验并获取当前角色的基础及属性数据
+      if (!state.party || state.party.length === 0) return;
+      const role = state.party[currentPartyIndex];
+      if (!role) return;
+
+      const iPlayerRole = role.index;
+      const roleStats = state.roles[iPlayerRole];
+      if (!roleStats) return;
+
+      // 步骤 3：绘制角色头像大图
+      const avatarImg = loadRgm(roleStats.avatar);
+      if (avatarImg) {
+        startupCtx.drawImage(avatarImg, 110, 30);
+      }
+
+      // 步骤 4：绘制角色名字（使用黄色）
+      UI.drawWord(roleStats.nameId, 110, 8, 0xFCDC84);
+
+      // 步骤 5：绘制属性项标签文本（使用青绿色 0x8cbeae）
+      const labelColor = 0x8cbeae;
+      UI.drawWord(2, 6, 6, labelColor);    // 经验值
+      UI.drawWord(48, 6, 32, labelColor);  // 修行
+      UI.drawWord(49, 6, 54, labelColor);  // 体力
+      UI.drawWord(50, 6, 76, labelColor);  // 真气
+      UI.drawWord(51, 6, 98, labelColor);  // 武术
+      UI.drawWord(52, 6, 118, labelColor); // 灵力
+      UI.drawWord(53, 6, 138, labelColor); // 防御
+      UI.drawWord(54, 6, 158, labelColor); // 身法
+      UI.drawWord(55, 6, 178, labelColor); // 吉运
+
+      // 步骤 6：绘制各属性的具体数值，且对齐至各原版预定边界位置
+      const curExp = (state.exp && state.exp.rgPrimaryExp[iPlayerRole]) ? state.exp.rgPrimaryExp[iPlayerRole].wExp : 0;
+      const nextExp = (state.levelUpExp && state.levelUpExp[roleStats.level]) ? state.levelUpExp[roleStats.level] : 0;
+      UI.drawNum(curExp, 58 + 6 * 5, 6, 'yellow');
+      UI.drawNum(nextExp, 58 + 6 * 5, 15, 'cyan');
+
+      UI.drawNum(roleStats.level, 54 + 6 * 2, 35, 'yellow');
+
+      UI.drawNum(roleStats.hp, 42 + 6 * 4, 56, 'yellow');
+      UI.drawNum(roleStats.maxHp, 63 + 6 * 4, 61, 'blue');
+      UI.drawSlash(65, 58);
+
+      UI.drawNum(roleStats.mp, 42 + 6 * 4, 78, 'yellow');
+      UI.drawNum(roleStats.maxMp, 63 + 6 * 4, 83, 'blue');
+      UI.drawSlash(65, 80);
+
+      UI.drawNum(roleStats.attackStrength, 42 + 6 * 4, 102, 'yellow');
+      UI.drawNum(roleStats.magicStrength, 42 + 6 * 4, 122, 'yellow');
+      UI.drawNum(roleStats.defense, 42 + 6 * 4, 142, 'yellow');
+      UI.drawNum(roleStats.dexterity, 42 + 6 * 4, 162, 'yellow');
+      UI.drawNum(roleStats.fleeRate, 42 + 6 * 4, 182, 'yellow');
+
+      // 步骤 7：在装备栏位绘制对应装备图片及文字名称
+      const equipImageBoxes = [
+        { x: 189, y: -1 },
+        { x: 247, y: 39 },
+        { x: 251, y: 101 },
+        { x: 201, y: 133 },
+        { x: 141, y: 141 },
+        { x: 81, y: 125 }
+      ];
+      const equipNames = [
+        { x: 195, y: 38 },
+        { x: 253, y: 78 },
+        { x: 257, y: 140 },
+        { x: 207, y: 172 },
+        { x: 147, y: 180 },
+        { x: 87, y: 164 }
+      ];
+
+      for (let part = 0; part < 6; part++) {
+        const itemId = roleStats.equipments[part];
+        if (itemId && itemId !== 0) {
+          const itemConfig = state.items[itemId];
+          if (itemConfig) {
+            const bitmapId = itemConfig.roleId;
+            const ballImg = loadBall(bitmapId);
+            if (ballImg) {
+              const box = equipImageBoxes[part];
+              startupCtx.drawImage(ballImg, box.x + 1, box.y + 1);
+            }
+          }
+
+          const nameBox = equipNames[part];
+          const wordData = state.words[itemId];
+          const wordLen = wordData ? wordData.length / 2 : 0;
+          const widthPx = wordLen * 16;
+          let offsetX = 0;
+          if (nameBox.x + widthPx > 320) {
+            offsetX = 320 - nameBox.x - widthPx;
+          }
+          UI.drawWord(itemId, nameBox.x + offsetX, nameBox.y, 0xD4D0C0);
+        }
       }
     };
 
     const onInputFn = (input) => {
-      // 状态栏展示时，按 E 键、S 键、空格或回车均可退回主菜单
-      if (input === 'e' || input === 's' || input === 'blank') {
+      // 步骤 8：状态界面按 E/S/空格/ESC 退回，按左右/上下方向键切换查看的队员
+      if (input === 'e' || input === 's' || input === 'blank' || input === 'ESC') {
         ESC.popMenu();
+      } else if (input === 'left' || input === 'up') {
+        currentPartyIndex = (currentPartyIndex - 1 + state.party.length) % state.party.length;
+        ESC.renderAll();
+      } else if (input === 'right' || input === 'down') {
+        currentPartyIndex = (currentPartyIndex + 1) % state.party.length;
+        ESC.renderAll();
       }
     };
 

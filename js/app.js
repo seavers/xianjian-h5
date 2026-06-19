@@ -230,6 +230,41 @@ function initPlayerRoles() {
     role.dyingSound = rgwDyingSound[i];
   }
   console.log('载入默认角色战斗属性 PlayerRoles 完成');
+
+  // 步骤 1：初始化全员的空经验值结构，以便在新游戏状态下也能正常读取等级和初始经验
+  state.exp = {
+    rgPrimaryExp: [],
+    rgHealthExp: [],
+    rgMagicExp: [],
+    rgAttackExp: [],
+    rgMagicPowerExp: [],
+    rgDefenseExp: [],
+    rgDexterityExp: [],
+    rgFleeExp: []
+  };
+  for (let i = 0; i < 6; i++) {
+    const role = state.roles[i];
+    const initialLevel = role ? role.level : 1;
+    const emptyExp = () => ({ wExp: 0, wReserved: 0, wLevel: initialLevel, wCount: 0 });
+    state.exp.rgPrimaryExp.push(emptyExp());
+    state.exp.rgHealthExp.push(emptyExp());
+    state.exp.rgMagicExp.push(emptyExp());
+    state.exp.rgAttackExp.push(emptyExp());
+    state.exp.rgMagicPowerExp.push(emptyExp());
+    state.exp.rgDefenseExp.push(emptyExp());
+    state.exp.rgDexterityExp.push(emptyExp());
+    state.exp.rgFleeExp.push(emptyExp());
+  }
+
+  // 步骤 2：从 data.mkf 第 5 个 chunk 中加载 100 个元素的升级经验表
+  const levelUpData = loadMkf('data.mkf', 5);
+  if (levelUpData) {
+    const view = levelUpData.toDataView();
+    state.levelUpExp = [];
+    for (let i = 0; i <= 99; i++) {
+      state.levelUpExp[i] = view.getUint16(i * 2, true);
+    }
+  }
 }
 
 // 绑定全局上下文，挂载至 state
