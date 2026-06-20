@@ -11,9 +11,7 @@ export function initSceneTools() {
   let coords = [];
 
   function showTips(message) {
-    import('../js/ui/talk.js').then(({ Talk }) => {
-      Talk.talkTips(message);
-    });
+    console.log(message);
   }
 
   // 步骤 1：从本地存储恢复快捷场景坐标配置，并在异常时兜底回默认值。

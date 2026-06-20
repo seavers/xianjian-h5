@@ -171,8 +171,7 @@ function MapModalApp() {
       Promise.all([
         import('../js/ui/talk.js'),
         import('../js/ui/draw.js')
-      ]).then(([{ Talk }, { update }]) => {
-        Talk.talkTips(`瞬间移动！已将主角位置修改为 (${mx}, ${my})` + (mhalf ? ' (半网格)' : ''));
+      ]).then(([{ update }]) => {
         update();
       });
 

@@ -1,8 +1,6 @@
 export function initDebugActions() {
   function showTips(message) {
-    import('../js/ui/talk.js').then(({ Talk }) => {
-      Talk.talkTips(message);
-    });
+    console.log(message);
   }
 
   // 步骤 1：调整游戏运行速度，并同步更新面板上的 FPS 提示与主循环 tick。

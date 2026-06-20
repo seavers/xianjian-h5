@@ -739,9 +739,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
     const thalf = Math.round((npc.x - tx * 32) / 16);
     if (window.setRolePos) {
       window.setRolePos(tx, ty, thalf);
-      import('./talk.js').then(({ Talk }) => {
-        Talk.talkTips(`双击瞬移！已直接传送至 NPC #${npc.id} 所在的坐标 (${tx}, ${ty})`);
-      });
+      console.log(`双击瞬移！已直接传送至 NPC #${npc.id} 所在的坐标 (${tx}, ${ty})`);
     }
   };
 
@@ -797,9 +795,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
     const half = parseInt(inputCoordHalf, 10);
     if (!isNaN(x) && !isNaN(y) && window.setRolePos) {
       window.setRolePos(x, y, half);
-      import('./talk.js').then(({ Talk }) => {
-        Talk.talkTips(`坐标修改！已传送至 (${x}, ${y})`);
-      });
+      console.log(`坐标修改！已传送至 (${x}, ${y})`);
     }
   };
 
