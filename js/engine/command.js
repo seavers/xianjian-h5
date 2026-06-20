@@ -499,6 +499,11 @@ export async function npcWalk4(x, y, half, context) {
   return await stepAction(context, () => Npc.anim(this, x, y, half, 2));
 }
 
+export async function npcWalk5(x, y, half, context) {
+  // 步骤 1：调用 Npc.anim 使得当前 NPC 移动到指定的目标瓦片坐标，折算实际移动步长为极速 (8)
+  return await stepAction(context, () => Npc.anim(this, x, y, half, 8));
+}
+
 export async function teamWalk(x, y, half, context) {
   // 步骤 1：让队长开始行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
   return await stepAction(context, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 2));
@@ -1685,5 +1690,6 @@ scriptCodes[0x6F] = { func: replaceObject, desc: '替换并终结脚本实体' }
 scriptCodes[0x7F] = { func: moveViewport, desc: '平移或定位镜头视口' };
 scriptCodes[0x80] = { func: toggleDayNight, desc: '切换昼夜调色板' };
 scriptCodes[0x81] = { func: faceNpcTrig, desc: '面朝NPC触发脚本' };
+scriptCodes[0x82] = { func: npcWalk5, desc: 'NPC以极速行走移动至坐标' };
 
 scriptCodes[0xFFFF] = { func: talk, desc: '展示剧情人物对话框' };
