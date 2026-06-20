@@ -1,5 +1,5 @@
 import { state } from '../engine/state.js';
-import { loadFbp, loadPic, loadRgm, loadBall } from '../resources/pal.js';
+import { loadFbp, loadPic, loadRgm, loadBall, loadWord } from '../resources/pal.js';
 import { UI, PanelFactory } from '../ui/panel.js';
 import { Script } from '../engine/script.js';
 import { toggleScene, setRolePos } from '../engine/command.js';
@@ -311,30 +311,239 @@ export const ESC = {
   },
 
   onUseItem() {
-    if (!state.ownItems || state.ownItems.length === 0) {
-      state.ownItems = [99];
-    }
+    ESC.openItemSelector('use');
+  },
 
-    const useItemPanel = PanelFactory.createTable(state.ownItems);
-    useItemPanel.skin(10).size(18, 8);
-    useItemPanel.x = 2;
-    useItemPanel.y = 32;
+  onEquipItem() {
+    // 步骤 1：若队伍有成员，则弹出选择角色面板
+    if (!state.party || state.party.length === 0) return;
 
-    const renderFn = () => {
-      useItemPanel.draw();
-    };
+    const partyNames = state.party.map(role => state.roles[role.index].nameId);
+    const rolePanel = PanelFactory.createList(partyNames);
+    rolePanel.x = 28;
+    rolePanel.y = 60;
 
-    useItemPanel.onchange((value) => {
-      Script.startItemScript(state.items[value]);
-      ESC.clearMenus();
+    rolePanel.onchange((nameId) => {
+      const chosenPartyRole = state.party.find(r => state.roles[r.index].nameId === nameId);
+      if (chosenPartyRole) {
+        const targetRole = state.roles[chosenPartyRole.index];
+        // 步骤 2：选定队员后，带入成员对象并开启物品大面板（'equip' 模式）
+        ESC.openItemSelector('equip', targetRole);
+      }
     }).oncancel(() => {
       ESC.popMenu();
     });
 
-    ESC.pushMenu('useItem', useItemPanel, renderFn);
+    ESC.pushMenu('chooseEquipRole', rolePanel, () => rolePanel.draw());
   },
 
-  onEquipItem() {},
+  openItemSelector(mode, targetRole = null) {
+    // 步骤 1：去重统计行囊道具并保持其排序顺序，防止出现空物品面板
+    const itemCounts = {};
+    const uniqueItems = [];
+    const ownItems = state.ownItems || [];
+    for (const id of ownItems) {
+      if (itemCounts[id] === undefined) {
+        itemCounts[id] = 0;
+        uniqueItems.push(id);
+      }
+      itemCounts[id]++;
+    }
+
+    let selectedIndex = 0;
+    let scrollRow = 0;
+
+    const renderFn = () => {
+      const startupCtx = state.contexts.startup;
+      if (!startupCtx) return;
+
+      // 步骤 2：绘制豪华的大面板红色背景，使用 10 号 Skin（320x136 像素）
+      UI.drawArea(0, 0, 18, 7, 10);
+
+      // 步骤 3：自上向下依次在 3 列网格中渲染可见行物品，并支持选中高亮与不同可用状态颜色
+      const n = uniqueItems.length;
+      for (let i = 0; i < n; i++) {
+        const itemId = uniqueItems[i];
+        const row = Math.floor(i / 3);
+        const col = i % 3;
+
+        // 只渲染位于当前可视范围内的行
+        if (row < scrollRow || row >= scrollRow + 7) {
+          continue;
+        }
+
+        const xText = 28 + col * 88;
+        const yText = 16 + (row - scrollRow) * 18;
+        const isSelected = (i === selectedIndex);
+
+        // 校验该物品在当前选定模式/角色下的可用性
+        let isUsable = false;
+        if (mode === 'use') {
+          isUsable = (state.items[itemId].flags & 1) !== 0;
+        } else if (mode === 'equip' && targetRole) {
+          isUsable = ((state.items[itemId].flags & 2) !== 0) && ((state.items[itemId].flags & (1 << (6 + targetRole.index))) !== 0);
+        }
+
+        // 金黄色为选中且可用，亮灰色为可用，暗红/褐红色为不可用状态
+        let color = 0xD4D0C0;
+        if (isUsable) {
+          color = isSelected ? 0xFCDC84 : 0xD4D0C0;
+        } else {
+          color = isSelected ? 0xC0B050 : 0x803020;
+        }
+
+        UI.drawWord(itemId, xText, yText, color);
+
+        // 如果是当前高亮选中项，在其右下角绘制白色三角形指示器 (PIC #70)
+        if (isSelected) {
+          const arrowImg = loadPic(70);
+          const wordData = state.words[itemId];
+          const wordLen = wordData ? wordData.length / 2 : 0;
+          if (arrowImg) {
+            startupCtx.drawImage(arrowImg, xText + wordLen * 16 - 2, yText + 5);
+          }
+        }
+
+        // 若当前物品数量大于 1，则在其右侧对齐处渲染蓝绿色的数字数量
+        const count = itemCounts[itemId];
+        if (count > 1) {
+          UI.drawNum(count, xText + 72, yText + 2, 'cyan');
+        }
+      }
+
+      // 步骤 4：在最左下角绘制小图标底框 (PIC #71)，并在框中央绘制选中的物品球体大图标 (ball.mkf)
+      if (n > 0 && selectedIndex < n) {
+        const currItemId = uniqueItems[selectedIndex];
+        const boxImg = loadPic(71);
+        if (boxImg) {
+          startupCtx.drawImage(boxImg, 0, 140);
+        }
+
+        const itemConfig = state.items[currItemId];
+        if (itemConfig) {
+          const ballImg = loadBall(itemConfig.roleId);
+          if (ballImg) {
+            startupCtx.drawImage(ballImg, 8, 147);
+          }
+        }
+
+        // 步骤 5：解析当前选中项的 GBK 二进制描述流，识别 '*' 字符进行换行并用金黄色渲染
+        const descBytes = state.desc[currItemId];
+        if (descBytes) {
+          let dx = 75;
+          let dy = 144;
+          let idx = 0;
+          while (idx < descBytes.length) {
+            const b = descBytes.getByte(idx);
+            if (b === 42) {
+              dx = 75;
+              dy += 16;
+              idx++;
+            } else {
+              if (idx + 1 < descBytes.length) {
+                const charCode = descBytes.getShort(idx);
+                const img = loadWord(charCode, 0xFCDC84);
+                if (img) {
+                  startupCtx.drawImage(img, dx, dy);
+                }
+                dx += 16;
+                idx += 2;
+              } else {
+                idx++;
+              }
+            }
+          }
+        }
+      }
+    };
+
+    const onInputFn = (input) => {
+      const n = uniqueItems.length;
+      if (input === 'ESC' || input === 'e') {
+        ESC.popMenu();
+        return;
+      }
+
+      if (n === 0) return;
+
+      // 步骤 6：根据左右/上下键盘命令在 3 列网格网中换项，并自动滚动面板可视区
+      if (input === 'left') {
+        if (selectedIndex % 3 > 0) {
+          selectedIndex--;
+          updateScroll();
+          ESC.renderAll();
+        }
+      } else if (input === 'right') {
+        if (selectedIndex % 3 < 2 && selectedIndex + 1 < n) {
+          selectedIndex++;
+          updateScroll();
+          ESC.renderAll();
+        }
+      } else if (input === 'up') {
+        if (selectedIndex - 3 >= 0) {
+          selectedIndex -= 3;
+          updateScroll();
+          ESC.renderAll();
+        }
+      } else if (input === 'down') {
+        if (selectedIndex + 3 < n) {
+          selectedIndex += 3;
+          updateScroll();
+          ESC.renderAll();
+        }
+      } else if (input === 'blank') {
+        // 步骤 7：按下确定键 (空格)，根据使用模式或装备模式，调度触发对应的脚本线程
+        const currItemId = uniqueItems[selectedIndex];
+        let isUsable = false;
+        if (mode === 'use') {
+          isUsable = (state.items[currItemId].flags & 1) !== 0;
+        } else if (mode === 'equip' && targetRole) {
+          isUsable = ((state.items[currItemId].flags & 2) !== 0) && ((state.items[currItemId].flags & (1 << (6 + targetRole.index))) !== 0);
+        }
+
+        if (!isUsable) return;
+
+        if (mode === 'use') {
+          // 弹出选择队伍成员的小 Panel，决定对谁使用该物品
+          const partyNames = state.party.map(role => state.roles[role.index].nameId);
+          const rolePanel = PanelFactory.createList(partyNames);
+          rolePanel.x = 220;
+          rolePanel.y = 30;
+
+          rolePanel.onchange((nameId) => {
+            const chosenPartyRole = state.party.find(r => state.roles[r.index].nameId === nameId);
+            if (chosenPartyRole) {
+              const item = state.items[currItemId];
+              item.index = chosenPartyRole.index;
+              Script.startItemScript(item);
+              ESC.clearMenus();
+            }
+          }).oncancel(() => {
+            ESC.popMenu();
+          });
+
+          ESC.pushMenu('chooseUseRole', rolePanel, () => rolePanel.draw());
+        } else if (mode === 'equip' && targetRole) {
+          // 将物品的上下文指向选中的角色并激活装备执行脚本
+          const item = state.items[currItemId];
+          item.index = targetRole.index;
+          Script.start(item.equScr, item, 'item');
+          ESC.clearMenus();
+        }
+      }
+    };
+
+    const updateScroll = () => {
+      const currRow = Math.floor(selectedIndex / 3);
+      if (currRow < scrollRow) {
+        scrollRow = currRow;
+      } else if (currRow >= scrollRow + 7) {
+        scrollRow = currRow - 7 + 1;
+      }
+    };
+
+    ESC.pushMenu(mode + 'Item', null, renderFn, onInputFn);
+  },
 
   onMagic() {},
 
