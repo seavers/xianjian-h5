@@ -387,10 +387,10 @@ export const ESC = {
 
         UI.drawWord(itemId, xText, yText, color);
 
-        // 若当前物品数量大于 1，则在其右侧对齐处渲染蓝绿色的数字数量
+        // 若当前物品数量大于 1，则在其右侧对齐处渲染蓝绿色的数字数量，整体下移 6 像素以平齐
         const count = itemCounts[itemId];
         if (count > 1) {
-          UI.drawNum(count, xText + 72, yText + 2, 'cyan');
+          UI.drawNum(count, xText + 72, yText + 8, 'cyan');
         }
 
         // 步骤 6：如果是当前选中的高亮项，无论是否有数量、几个字，指示器 (PIC #70) 均固定绘制在第二个字靠右 (xText + 32)
@@ -436,7 +436,7 @@ export const ESC = {
             } else if (b < 128) {
               const img = loadWord(b, 0xFCDC84);
               if (img) {
-                startupCtx.drawImage(img, dx, dy);
+                startupCtx.drawImage(img, dx, dy + 1);
               }
               dx += 8;
               idx++;

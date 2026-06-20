@@ -264,7 +264,7 @@ export function loadWord(charCode, color) {
       for (let y = 0; y < height; y++) {
         const b = ISO_FONT[offset + y];
         for (let x = 0; x < width; x++) {
-          const bit = b & (1 << (7 - x));
+          const bit = b & (1 << x);
           pixels[y * width + x] = bit ? (fontColor | 0xFF000000) : 0x00000000;
         }
       }
