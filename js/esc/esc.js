@@ -315,47 +315,34 @@ export const ESC = {
   },
 
   onEquipItem() {
-    // 步骤 1：若队伍有成员，则弹出选择角色面板
-    if (!state.party || state.party.length === 0) return;
-
-    const partyNames = state.party.map(role => state.roles[role.index].nameId);
-    const rolePanel = PanelFactory.createList(partyNames);
-    rolePanel.x = 28;
-    rolePanel.y = 60;
-
-    rolePanel.onchange((nameId) => {
-      const chosenPartyRole = state.party.find(r => state.roles[r.index].nameId === nameId);
-      if (chosenPartyRole) {
-        const targetRole = state.roles[chosenPartyRole.index];
-        // 步骤 2：选定队员后，带入成员对象并开启物品大面板（'equip' 模式）
-        ESC.openItemSelector('equip', targetRole);
-      }
-    }).oncancel(() => {
-      ESC.popMenu();
-    });
-
-    ESC.pushMenu('chooseEquipRole', rolePanel, () => rolePanel.draw());
+    // 步骤 1：直接开启物品大面板（'equip' 模式），先选择装备
+    ESC.openItemSelector('equip');
   },
 
   openItemSelector(mode, targetRole = null) {
-    // 步骤 1：去重统计行囊道具并保持其排序顺序，防止出现空物品面板
-    const itemCounts = {};
-    const uniqueItems = [];
-    const ownItems = state.ownItems || [];
-    for (const id of ownItems) {
-      if (itemCounts[id] === undefined) {
-        itemCounts[id] = 0;
-        uniqueItems.push(id);
-      }
-      itemCounts[id]++;
-    }
-
     let selectedIndex = 0;
     let scrollRow = 0;
 
     const renderFn = () => {
       const startupCtx = state.contexts.startup;
       if (!startupCtx) return;
+
+      // 步骤 1.2：动态统计行囊道具种类和数量，支持在穿脱装备后的数量变化同步刷新
+      const itemCounts = {};
+      const uniqueItems = [];
+      const ownItems = state.ownItems || [];
+      for (const id of ownItems) {
+        if (itemCounts[id] === undefined) {
+          itemCounts[id] = 0;
+          uniqueItems.push(id);
+        }
+        itemCounts[id]++;
+      }
+
+      // 如果因为换装后背包数量变动导致 uniqueItems 数量减少，防止 selectedIndex 越界
+      if (selectedIndex >= uniqueItems.length) {
+        selectedIndex = Math.max(0, uniqueItems.length - 1);
+      }
 
       // 步骤 2：绘制豪华的大面板红色背景，使用 10 号 Skin（320x136 像素）
       UI.drawArea(0, 0, 18, 7, 10);
@@ -376,12 +363,12 @@ export const ESC = {
         const yText = 16 + (row - scrollRow) * 18;
         const isSelected = (i === selectedIndex);
 
-        // 校验该物品在当前选定模式/角色下的可用性
+        // 校验该物品在当前选定模式下的可用性（使用模式 vs 装备模式）
         let isUsable = false;
         if (mode === 'use') {
           isUsable = (state.items[itemId].flags & 1) !== 0;
-        } else if (mode === 'equip' && targetRole) {
-          isUsable = ((state.items[itemId].flags & 2) !== 0) && ((state.items[itemId].flags & (1 << (6 + targetRole.index))) !== 0);
+        } else if (mode === 'equip') {
+          isUsable = (state.items[itemId].flags & 2) !== 0; // 只要本身是装备就可用
         }
 
         // 金黄色为选中且可用，亮灰色为可用，暗红/褐红色为不可用状态
@@ -458,6 +445,18 @@ export const ESC = {
     };
 
     const onInputFn = (input) => {
+      // 步骤 1.2：按键时动态收集最新的背包道具信息，确保逻辑计算一致
+      const itemCounts = {};
+      const uniqueItems = [];
+      const ownItems = state.ownItems || [];
+      for (const id of ownItems) {
+        if (itemCounts[id] === undefined) {
+          itemCounts[id] = 0;
+          uniqueItems.push(id);
+        }
+        itemCounts[id]++;
+      }
+
       const n = uniqueItems.length;
       if (input === 'ESC' || input === 'e') {
         ESC.popMenu();
@@ -497,8 +496,8 @@ export const ESC = {
         let isUsable = false;
         if (mode === 'use') {
           isUsable = (state.items[currItemId].flags & 1) !== 0;
-        } else if (mode === 'equip' && targetRole) {
-          isUsable = ((state.items[currItemId].flags & 2) !== 0) && ((state.items[currItemId].flags & (1 << (6 + targetRole.index))) !== 0);
+        } else if (mode === 'equip') {
+          isUsable = (state.items[currItemId].flags & 2) !== 0;
         }
 
         if (!isUsable) return;
@@ -523,12 +522,6 @@ export const ESC = {
           });
 
           ESC.pushMenu('chooseUseRole', rolePanel, () => rolePanel.draw());
-        } else if (mode === 'equip' && targetRole) {
-          // 将物品的上下文指向选中的角色并激活装备执行脚本
-          const item = state.items[currItemId];
-          item.index = targetRole.index;
-          Script.start(item.equScr, item, 'item');
-          ESC.clearMenus();
         }
       }
     };
@@ -543,6 +536,141 @@ export const ESC = {
     };
 
     ESC.pushMenu(mode + 'Item', null, renderFn, onInputFn);
+  },
+
+  openEquipComparison(itemId) {
+    let roleIndexInParty = 0;
+
+    const renderFn = () => {
+      const startupCtx = state.contexts.startup;
+      if (!startupCtx) return;
+
+      // 步骤 2.2：绘制全屏木纹装备对比背景图 fbp(1)
+      const fbp = loadFbp(1);
+      if (fbp) {
+        startupCtx.drawImage(fbp, 0, 0);
+      }
+
+      // 步骤 2.2：绘制左上角的小框底图 (PIC #71) 及对应的球形图标 (ball.mkf)
+      const boxImg = loadPic(71);
+      if (boxImg) {
+        startupCtx.drawImage(boxImg, 8, 8);
+      }
+      const item = state.items[itemId];
+      if (item) {
+        const ballImg = loadBall(item.roleId);
+        if (ballImg) {
+          startupCtx.drawImage(ballImg, 16, 15);
+        }
+      }
+
+      // 步骤 2.2：绘制物品名字及右下角的绿色数量字样
+      if (item) {
+        UI.drawWord(itemId, 5, 70, 0xD4D0C0);
+        const ownItems = state.ownItems || [];
+        const count = ownItems.filter(id => id === itemId).length;
+        if (count > 0) {
+          UI.drawNum(count, 51 + 12, 57, 'cyan');
+        }
+      }
+
+      // 步骤 2.2：在左下角使用豪华的金饰卷轴框 (style=10) 绘制使用人切换列表
+      UI.drawArea(2, 95, 5, state.party.length, 10);
+      for (let i = 0; i < state.party.length; i++) {
+        const partyRole = state.party[i];
+        const nameId = state.roles[partyRole.index].nameId;
+        const isSelected = (i === roleIndexInParty);
+        // 选中的队员显示为黄色，非选中则统一显示为淡红色 0xC08080
+        const color = isSelected ? 0xFCDC84 : 0xC08080;
+        UI.drawWord(nameId, 15, 108 + i * 18, color);
+      }
+
+      // 步骤 2.2：绘制当前选定角色的已装穿戴状况和 5 个战斗属性数字
+      if (state.party.length > 0) {
+        const curRole = state.roles[state.party[roleIndexInParty].index];
+
+        // 绘制 6 个装备部位的当前穿戴装备名字 (灰色 0xD4D0C0)
+        for (let part = 0; part < 6; part++) {
+          const eqItemId = curRole.equipments[part];
+          if (eqItemId && eqItemId !== 0) {
+            UI.drawWord(eqItemId, 135, 12 + part * 18, 0xD4D0C0);
+          }
+        }
+
+        // 绘制武术、灵力、防御、身法、吉运的当前总属性数值 (蓝绿色 cyan)
+        UI.drawNum(curRole.attackStrength || 0, 290, 12, 'cyan');
+        UI.drawNum(curRole.magicStrength || 0, 290, 30, 'cyan');
+        UI.drawNum(curRole.defense || 0, 290, 48, 'cyan');
+        UI.drawNum(curRole.dexterity || 0, 290, 66, 'cyan');
+        UI.drawNum(curRole.fleeRate || 0, 290, 84, 'cyan');
+      }
+    };
+
+    const onInputFn = (input) => {
+      const partyLen = state.party.length;
+      if (input === 'ESC' || input === 'e') {
+        // 退回上一步的装备选择器，闭包完全保留，光标与选择状态完好无损
+        ESC.popMenu();
+        return;
+      }
+
+      if (partyLen === 0) return;
+
+      // 步骤 2.2：按上下方向键切换不同的对比队员，并刷新显示
+      if (input === 'up') {
+        roleIndexInParty = (roleIndexInParty - 1 + partyLen) % partyLen;
+        ESC.renderAll();
+      } else if (input === 'down') {
+        roleIndexInParty = (roleIndexInParty + 1) % partyLen;
+        ESC.renderAll();
+      } else if (input === 'blank') {
+        // 空格键触发装备穿脱逻辑，自动在角色上正负加减属性值以刷新数值
+        const curRole = state.roles[state.party[roleIndexInParty].index];
+
+        // 只有当前角色被标志为可穿戴时才能穿脱，防范不匹配的情况
+        const isEquipable = ((state.items[itemId].flags & 2) !== 0) && ((state.items[itemId].flags & (1 << (6 + curRole.index))) !== 0);
+        if (!isEquipable) return;
+
+        const part = getItemEquipPart(itemId);
+        if (part === -1) return;
+
+        if (curRole.equipments[part] === itemId) {
+          // 当前已装：执行脱下逻辑 (属性扣减，装备归还背包，装备槽清空)
+          const attrs = getEquipItemAttributes(itemId);
+          for (const key in attrs) {
+            curRole[key] -= attrs[key];
+          }
+          state.ownItems.push(itemId);
+          curRole.equipments[part] = 0;
+        } else {
+          // 当前未装：执行穿戴逻辑 (卸下旧装备，扣除旧属性；穿上新装备，从背包划去，增加新属性)
+          const oldItemId = curRole.equipments[part];
+          if (oldItemId && oldItemId !== 0) {
+            const oldAttrs = getEquipItemAttributes(oldItemId);
+            for (const key in oldAttrs) {
+              oldAttrs[key] = Math.floor(oldAttrs[key]); // 规范化整数
+              curRole[key] -= oldAttrs[key];
+            }
+            state.ownItems.push(oldItemId);
+          }
+
+          curRole.equipments[part] = itemId;
+          const idx = state.ownItems.indexOf(itemId);
+          if (idx > -1) {
+            state.ownItems.splice(idx, 1);
+          }
+
+          const newAttrs = getEquipItemAttributes(itemId);
+          for (const key in newAttrs) {
+            curRole[key] += newAttrs[key];
+          }
+        }
+        // 重新渲染全部
+        ESC.renderAll();
+      }
+    };
+
+    ESC.pushMenu('equipComparison', null, renderFn, onInputFn);
   },
 
   onMagic() {},
@@ -658,4 +786,56 @@ function newStory() {
   state.currentMode = 'game'; // 激活常规游戏行走模式
   toggleScene(1);
   state.isPaused = false;
+}
+
+// 步骤 1.1：静态解析装备脚本以识别其穿戴对应的槽部位 (0-5)
+function getItemEquipPart(itemId) {
+  const item = state.items[itemId];
+  if (!item || !item.equScr) return -1;
+  let scriptId = item.equScr;
+  // 查找脚本前 5 条指令中对应的 0x18 (equipItem) 穿戴指令
+  for (let i = 0; i < 5; i++) {
+    const scr = state.scripts[scriptId + i];
+    if (scr && scr.code === 0x18) {
+      return scr.param1 - 0x0B;
+    }
+  }
+  return -1;
+}
+
+// 步骤 1.1：静态提取装备脚本中指定战斗属性 (17-21) 的永久变化数值
+function getEquipItemAttributes(itemId) {
+  const item = state.items[itemId];
+  const attrs = {
+    attackStrength: 0,
+    magicStrength: 0,
+    defense: 0,
+    dexterity: 0,
+    fleeRate: 0
+  };
+  if (!item || !item.equScr) return attrs;
+
+  const STAT_MAP = {
+    17: 'attackStrength',
+    18: 'magicStrength',
+    19: 'defense',
+    20: 'dexterity',
+    21: 'fleeRate'
+  };
+
+  let scriptId = item.equScr;
+  // 遍历前 10 条指令，读取 0x19 (increasePlayerAttribute) 并进行 16 位有符号 short 换算
+  for (let i = 0; i < 10; i++) {
+    const scr = state.scripts[scriptId + i];
+    if (!scr) break;
+    if (scr.code === 0x19) {
+      const key = STAT_MAP[scr.param1];
+      if (key) {
+        let val = scr.param2;
+        if (val > 32767) val -= 65536; // 还原为 JS 中的有符号短整型
+        attrs[key] += val;
+      }
+    }
+  }
+  return attrs;
 }
