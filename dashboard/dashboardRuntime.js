@@ -573,6 +573,9 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
     const limit = window.logLimit || 200;
     setLogLimit(limit);
     setLogs([...logSource]);
+
+    // 触发日志终端的原生 DOM 渲染，以避免 React 虚拟 DOM 冲突导致的 removeChild 报错
+    window.renderScriptLogs?.();
   };
 
   // 挂载轮询定时器
@@ -1472,9 +1475,6 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
       <!-- 指令日志外层限高 stream -->
       <div class="log-stream" ref=${terminalLogsRef} id="container-logs-wrapper" style=${{ height: '70vh', overflowY: 'auto', background: '#050508' }}>
         <div class="log-stream-inner" id="container-logs" style=${{ display: 'flex', flexDirection: 'column', gap: '1px', padding: '4px' }}>
-          ${logs.length === 0 ? html`<div style=${{ color: 'rgba(255,255,255,0.15)', fontSize: '8.5px' }}>等待并行脚本指令执行日志流式输入...</div>` : logs.map((log, i) => html`
-            <div key=${i} dangerouslySetInnerHTML=${{ __html: log.html || log }} style=${{ fontSize: '8px', fontFamily: "'JetBrains Mono', monospace", lineHeight: '1.2' }}></div>
-          `)}
         </div>
       </div>
     </div>
