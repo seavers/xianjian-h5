@@ -1,5 +1,5 @@
 import { state } from './engine/state.js';
-import { ready, file_caches, loadMkf } from './resources/loader.js';
+import { ready, file_caches, loadMkf, load } from './resources/loader.js';
 import { loadSss, loadDat, fromCache, caches } from './resources/pal.js';
 import { setRolePos, setRoleTile, setRoleIndex, setRoleGroup, toggleScene, calcMap } from './engine/command.js';
 import { ESC } from './esc/esc.js';
@@ -118,6 +118,50 @@ function initDat() {
     state.words.push(d);
   }
   console.log(`载入简体汉字短语字表完成`);
+}
+
+function initDesc() {
+  state.desc = {};
+  const data = load('desc.dat');
+  if (!data) return;
+
+  let start = 0;
+  for (let i = 0; i < data.length; i++) {
+    const b = data.getByte(i);
+    // 步骤 1：按照换行符分割 desc.dat 文本文件的每一行
+    if (b === 10 || i === data.length - 1) {
+      let end = i;
+      if (b === 10 && data.getByte(i - 1) === 13) {
+        end = i - 1; // 排除 \r
+      }
+      if (i === data.length - 1 && b !== 10 && b !== 13) {
+        end = i + 1;
+      }
+
+      const lineData = data.slice(start, end);
+      start = i + 1;
+
+      // 步骤 2：在每一行中寻找分隔符 '=' 并解析 ID 与说明描述
+      let eqIdx = -1;
+      for (let j = 0; j < lineData.length; j++) {
+        if (lineData.getByte(j) === 61) {
+          eqIdx = j;
+          break;
+        }
+      }
+      if (eqIdx !== -1) {
+        let idStr = '';
+        for (let j = 0; j < eqIdx; j++) {
+          idStr += String.fromCharCode(lineData.getByte(j));
+        }
+        const wObjectID = parseInt(idStr.trim(), 16);
+
+        const content = lineData.slice(eqIdx + 1, lineData.length);
+        state.desc[wObjectID] = content;
+      }
+    }
+  }
+  console.log(`载入描述词表完成，共计 ${Object.keys(state.desc).length} 条`);
 }
 
 function initPlayerRoles() {
@@ -313,6 +357,7 @@ ready(() => {
   initScene();
   initItem();
   initDat();
+  initDesc();
   initPlayerRoles();
 
   // 核心资源载入完毕后，开始初始化所有 React 开发者调试面板

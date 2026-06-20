@@ -47,6 +47,7 @@ const files = [
   ['wor16.asc'],      // 码表
   ['jianti.fon', 0],  // 简体字库
   ['word.dat'],       // 短语
+  ['desc.dat'],       // 描述
   ['fbp.mkf', 72],    // 背景图
   ['map.mkf', 226],   // 地图
   ['gop.mkf', 226],   // 图元
