@@ -193,6 +193,38 @@ export function loadText(text, index) {
 }
 
 export function loadWord(charCode, color) {
+  // 步骤 1：若属于半角 ASCII 字符，通过 H5 Canvas 动态渲染点阵图像以避免字库码表缺失
+  if (charCode < 128) {
+    const key = 'ascii_' + charCode + '_' + (color || 'default');
+    return fromCache(key, () => {
+      const c = document.createElement('canvas');
+      c.width = 8;
+      c.height = 15;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, 8, 15);
+
+      // 设置明晰的等宽英文字体及居中对齐排版
+      ctx.font = "bold 13px 'Courier New', monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      // 步骤 2：解析十六进制色值并转为 RGB 填充颜色
+      let fillStyle = '#fcdc84';
+      if (color) {
+        const r = (color & 0xFF0000) >> 16;
+        const g = (color & 0x00FF00) >> 8;
+        const b = (color & 0x0000FF);
+        fillStyle = `rgb(${r},${g},${b})`;
+      }
+      ctx.fillStyle = fillStyle;
+
+      // 步骤 3：在画布中心点绘制单字节 ASCII 字符
+      ctx.fillText(String.fromCharCode(charCode), 4, 7.5);
+      return c;
+    });
+  }
+
+  // 步骤 4：对于正常的双字节汉字，继续原有的字形点阵解析加载流程
   const fonId = _charCode2FonId(charCode);
   return loadFon(fonId, color);
 }

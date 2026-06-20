@@ -327,7 +327,7 @@ export const ESC = {
       const startupCtx = state.contexts.startup;
       if (!startupCtx) return;
 
-      // 步骤 1.2：动态统计行囊道具种类和数量，支持在穿脱装备后的数量变化同步刷新
+      // 步骤 1：动态统计行囊道具种类和数量，支持在穿脱装备后的数量变化同步刷新
       const itemCounts = {};
       const uniqueItems = [];
       const ownItems = state.ownItems || [];
@@ -339,15 +339,18 @@ export const ESC = {
         itemCounts[id]++;
       }
 
-      // 如果因为换装后背包数量变动导致 uniqueItems 数量减少，防止 selectedIndex 越界
+      // 步骤 2：对选择索引进行双向夹逼限幅保护，防止数量缩水导致越界崩溃
       if (selectedIndex >= uniqueItems.length) {
         selectedIndex = Math.max(0, uniqueItems.length - 1);
       }
+      if (selectedIndex < 0) {
+        selectedIndex = 0;
+      }
 
-      // 步骤 2：绘制豪华的大面板红色背景，使用 10 号 Skin（320x136 像素）
+      // 步骤 3：绘制大面板红色背景，使用 10 号 Skin（320x136 像素）
       UI.drawArea(0, 0, 18, 7, 10);
 
-      // 步骤 3：自上向下依次在 3 列网格中渲染可见行物品，并支持选中高亮与不同可用状态颜色
+      // 步骤 4：在 3 列网格网中绘制当前可视页面的物品
       const n = uniqueItems.length;
       for (let i = 0; i < n; i++) {
         const itemId = uniqueItems[i];
@@ -363,15 +366,18 @@ export const ESC = {
         const yText = 16 + (row - scrollRow) * 18;
         const isSelected = (i === selectedIndex);
 
-        // 校验该物品在当前选定模式下的可用性（使用模式 vs 装备模式）
+        // 校验该物品在当前选定模式下的可用性并防范配置未定义
+        const item = state.items[itemId];
+        if (!item) continue;
+
         let isUsable = false;
         if (mode === 'use') {
-          isUsable = (state.items[itemId].flags & 1) !== 0;
+          isUsable = (item.flags & 1) !== 0;
         } else if (mode === 'equip') {
-          isUsable = (state.items[itemId].flags & 2) !== 0; // 只要本身是装备就可用
+          isUsable = (item.flags & 2) !== 0;
         }
 
-        // 步骤 1.3：确定绘制颜色（不可用项采用鲜红褐色 0xC03020，不可用选中采用淡红色 0xE86858，绝非明黄色）
+        // 步骤 5：确定绘制颜色（不可用项采用鲜红褐色，不可用选中采用淡红色，可用选中采用明黄色）
         let color = 0xD4D0C0;
         if (isUsable) {
           color = isSelected ? 0xFCDC84 : 0xD4D0C0;
@@ -387,19 +393,16 @@ export const ESC = {
           UI.drawNum(count, xText + 72, yText + 2, 'cyan');
         }
 
-        // 步骤 1.2：如果是当前高亮选中项，根据是否有数量，动态计算白色三角形指示器 (PIC #70) 的 x 坐标
+        // 步骤 6：如果是当前选中的高亮项，无论是否有数量、几个字，指示器 (PIC #70) 均固定绘制在第二个字靠右 (xText + 32)
         if (isSelected) {
           const arrowImg = loadPic(70);
-          const wordData = state.words[itemId];
-          const wordLen = wordData ? wordData.length / 2 : 0;
           if (arrowImg) {
-            const arrowX = (count > 1) ? (xText + 74) : (xText + wordLen * 16 - 2);
-            startupCtx.drawImage(arrowImg, arrowX, yText + 5);
+            startupCtx.drawImage(arrowImg, xText + 32, yText + 5);
           }
         }
       }
 
-      // 步骤 4：在最左下角绘制小图标底框 (PIC #71)，并在框中央绘制选中的物品球体大图标 (ball.mkf)
+      // 步骤 7：在最左下角绘制小图标底框，并在框中央绘制选中的物品球体大图标
       if (n > 0 && selectedIndex < n) {
         const currItemId = uniqueItems[selectedIndex];
         const boxImg = loadPic(71);
@@ -415,7 +418,7 @@ export const ESC = {
           }
         }
 
-        // 步骤 1.3：解析 GBK 二进制描述流。依据首字节范围判断单双字节，支持半角位移 (8 像素)，完美渲染英文/数字属性加成
+        // 步骤 8：解析并绘制 GBK/Big5 二进制描述流，完美兼容包含在 desc.dat 中的 ASCII 属性变更字串
         const descBytes = state.desc[currItemId];
         if (descBytes) {
           let dx = 75;
@@ -428,14 +431,14 @@ export const ESC = {
               dy += 16;
               idx++;
             } else if (b === 32) {
-              dx += 8; // 半角空格位移 8 像素
+              dx += 8;
               idx++;
             } else if (b < 128) {
               const img = loadWord(b, 0xFCDC84);
               if (img) {
                 startupCtx.drawImage(img, dx, dy);
               }
-              dx += 8; // 半角 ASCII 字符位移 8 像素
+              dx += 8;
               idx++;
             } else {
               if (idx + 1 < descBytes.length) {
@@ -456,7 +459,7 @@ export const ESC = {
     };
 
     const onInputFn = (input) => {
-      // 步骤 1.2：按键时动态收集最新的背包道具信息，确保逻辑计算一致
+      // 步骤 9：按键时动态收集最新的背包道具信息以保证逻辑一致
       const itemCounts = {};
       const uniqueItems = [];
       const ownItems = state.ownItems || [];
@@ -476,7 +479,15 @@ export const ESC = {
 
       if (n === 0) return;
 
-      // 步骤 6：根据左右/上下键盘命令在 3 列网格网中换项，并自动滚动面板可视区
+      // 再次夹逼以保证安全性
+      if (selectedIndex >= n) {
+        selectedIndex = n - 1;
+      }
+      if (selectedIndex < 0) {
+        selectedIndex = 0;
+      }
+
+      // 步骤 10：根据左右/上下方向键更改高亮索引并自动滚动可是区域
       if (input === 'left') {
         if (selectedIndex % 3 > 0) {
           selectedIndex--;
@@ -502,13 +513,16 @@ export const ESC = {
           ESC.renderAll();
         }
       } else if (input === 'blank') {
-        // 步骤 7：按下确定键 (空格)，根据使用模式或装备模式，调度触发对应的脚本线程
+        // 步骤 11：按下确定键 (空格)，根据模式执行使用或者跳转至装备对比页面
         const currItemId = uniqueItems[selectedIndex];
+        const item = state.items[currItemId];
+        if (!item) return;
+
         let isUsable = false;
         if (mode === 'use') {
-          isUsable = (state.items[currItemId].flags & 1) !== 0;
+          isUsable = (item.flags & 1) !== 0;
         } else if (mode === 'equip') {
-          isUsable = (state.items[currItemId].flags & 2) !== 0;
+          isUsable = (item.flags & 2) !== 0;
         }
 
         if (!isUsable) return;
@@ -523,9 +537,9 @@ export const ESC = {
           rolePanel.onchange((nameId) => {
             const chosenPartyRole = state.party.find(r => state.roles[r.index].nameId === nameId);
             if (chosenPartyRole) {
-              const item = state.items[currItemId];
-              item.index = chosenPartyRole.index;
-              Script.startItemScript(item);
+              const itemToUse = state.items[currItemId];
+              itemToUse.index = chosenPartyRole.index;
+              Script.startItemScript(itemToUse);
               ESC.clearMenus();
             }
           }).oncancel(() => {
@@ -533,6 +547,9 @@ export const ESC = {
           });
 
           ESC.pushMenu('chooseUseRole', rolePanel, () => rolePanel.draw());
+        } else if (mode === 'equip') {
+          // 选中可装备的道具时，按空格跳转到比对装备前后属性对备面板
+          ESC.openEquipComparison(currItemId);
         }
       }
     };
@@ -556,13 +573,23 @@ export const ESC = {
       const startupCtx = state.contexts.startup;
       if (!startupCtx) return;
 
-      // 步骤 2.2：绘制全屏木纹装备对比背景图 fbp(1)
+      // 步骤 1：检验队伍成员的合法性，防止快速按键期间因数据同步引起空指针访问
+      if (!state.party || state.party.length === 0) return;
+      if (roleIndexInParty >= state.party.length) {
+        roleIndexInParty = 0;
+      }
+      const partyRole = state.party[roleIndexInParty];
+      if (!partyRole) return;
+      const curRole = state.roles[partyRole.index];
+      if (!curRole) return;
+
+      // 步骤 2：绘制全屏木纹装备对比背景图 fbp(1)
       const fbp = loadFbp(1);
       if (fbp) {
         startupCtx.drawImage(fbp, 0, 0);
       }
 
-      // 步骤 2.2：绘制左上角的小框底图 (PIC #71) 及对应的球形图标 (ball.mkf)
+      // 步骤 3：绘制左上角的小框底图 (PIC #71) 及对应的球形图标 (ball.mkf)
       const boxImg = loadPic(71);
       if (boxImg) {
         startupCtx.drawImage(boxImg, 8, 8);
@@ -575,7 +602,7 @@ export const ESC = {
         }
       }
 
-      // 步骤 2.2：绘制物品名字及右下角的绿色数量字样
+      // 步骤 4：绘制物品名字及右下角的绿色数量字样
       if (item) {
         UI.drawWord(itemId, 5, 70, 0xD4D0C0);
         const ownItems = state.ownItems || [];
@@ -585,49 +612,52 @@ export const ESC = {
         }
       }
 
-      // 步骤 2.2：在左下角使用豪华的金饰卷轴框 (style=10) 绘制使用人切换列表
+      // 步骤 5：在左下角使用豪华的金饰卷轴框 (style=10) 绘制使用人切换列表，非选中使用淡红色
       UI.drawArea(2, 95, 5, state.party.length, 10);
       for (let i = 0; i < state.party.length; i++) {
-        const partyRole = state.party[i];
-        const nameId = state.roles[partyRole.index].nameId;
+        const pRole = state.party[i];
+        if (!pRole || !state.roles[pRole.index]) continue;
+        const nameId = state.roles[pRole.index].nameId;
         const isSelected = (i === roleIndexInParty);
-        // 选中的队员显示为黄色，非选中则统一显示为淡红色 0xC08080
         const color = isSelected ? 0xFCDC84 : 0xC08080;
         UI.drawWord(nameId, 15, 108 + i * 18, color);
       }
 
-      // 步骤 2.2：绘制当前选定角色的已装穿戴状况和 5 个战斗属性数字
-      if (state.party.length > 0) {
-        const curRole = state.roles[state.party[roleIndexInParty].index];
-
-        // 绘制 6 个装备部位的当前穿戴装备名字 (灰色 0xD4D0C0)
-        for (let part = 0; part < 6; part++) {
-          const eqItemId = curRole.equipments[part];
-          if (eqItemId && eqItemId !== 0) {
-            UI.drawWord(eqItemId, 135, 12 + part * 18, 0xD4D0C0);
-          }
+      // 步骤 6：绘制 6 个装备部位的当前穿戴装备名字 (灰色 0xD4D0C0)
+      for (let part = 0; part < 6; part++) {
+        const eqItemId = curRole.equipments[part];
+        if (eqItemId && eqItemId !== 0) {
+          UI.drawWord(eqItemId, 135, 12 + part * 18, 0xD4D0C0);
         }
-
-        // 绘制武术、灵力、防御、身法、吉运的当前总属性数值 (蓝绿色 cyan)
-        UI.drawNum(curRole.attackStrength || 0, 290, 12, 'cyan');
-        UI.drawNum(curRole.magicStrength || 0, 290, 30, 'cyan');
-        UI.drawNum(curRole.defense || 0, 290, 48, 'cyan');
-        UI.drawNum(curRole.dexterity || 0, 290, 66, 'cyan');
-        UI.drawNum(curRole.fleeRate || 0, 290, 84, 'cyan');
       }
+
+      // 步骤 7：绘制武术、灵力、防御、身法、吉运的当前总属性数值 (蓝绿色 cyan)
+      UI.drawNum(curRole.attackStrength || 0, 290, 12, 'cyan');
+      UI.drawNum(curRole.magicStrength || 0, 290, 30, 'cyan');
+      UI.drawNum(curRole.defense || 0, 290, 48, 'cyan');
+      UI.drawNum(curRole.dexterity || 0, 290, 66, 'cyan');
+      UI.drawNum(curRole.fleeRate || 0, 290, 84, 'cyan');
     };
 
     const onInputFn = (input) => {
+      // 步骤 8：进行按键时的防御式空指针与越界校验
+      if (!state.party || state.party.length === 0) return;
       const partyLen = state.party.length;
       if (input === 'ESC' || input === 'e') {
-        // 退回上一步的装备选择器，闭包完全保留，光标与选择状态完好无损
         ESC.popMenu();
         return;
       }
 
       if (partyLen === 0) return;
+      if (roleIndexInParty >= partyLen) {
+        roleIndexInParty = 0;
+      }
+      const partyRole = state.party[roleIndexInParty];
+      if (!partyRole) return;
+      const curRole = state.roles[partyRole.index];
+      if (!curRole) return;
 
-      // 步骤 2.2：按上下方向键切换不同的对比队员，并刷新显示
+      // 步骤 9：按上下方向键切换不同的对比队员
       if (input === 'up') {
         roleIndexInParty = (roleIndexInParty - 1 + partyLen) % partyLen;
         ESC.renderAll();
@@ -635,18 +665,18 @@ export const ESC = {
         roleIndexInParty = (roleIndexInParty + 1) % partyLen;
         ESC.renderAll();
       } else if (input === 'blank') {
-        // 空格键触发装备穿脱逻辑，自动在角色上正负加减属性值以刷新数值
-        const curRole = state.roles[state.party[roleIndexInParty].index];
+        // 步骤 10：空格键触发穿戴/卸下对比装备，增减对应五维属性
+        const curItem = state.items[itemId];
+        if (!curItem) return;
 
-        // 只有当前角色被标志为可穿戴时才能穿脱，防范不匹配的情况
-        const isEquipable = ((state.items[itemId].flags & 2) !== 0) && ((state.items[itemId].flags & (1 << (6 + curRole.index))) !== 0);
+        const isEquipable = ((curItem.flags & 2) !== 0) && ((curItem.flags & (1 << (6 + curRole.index))) !== 0);
         if (!isEquipable) return;
 
         const part = getItemEquipPart(itemId);
         if (part === -1) return;
 
         if (curRole.equipments[part] === itemId) {
-          // 当前已装：执行脱下逻辑 (属性扣减，装备归还背包，装备槽清空)
+          // 脱下逻辑 (属性扣减，装备归还背包，装备槽清空)
           const attrs = getEquipItemAttributes(itemId);
           for (const key in attrs) {
             curRole[key] -= attrs[key];
@@ -654,12 +684,12 @@ export const ESC = {
           state.ownItems.push(itemId);
           curRole.equipments[part] = 0;
         } else {
-          // 当前未装：执行穿戴逻辑 (卸下旧装备，扣除旧属性；穿上新装备，从背包划去，增加新属性)
+          // 穿戴逻辑 (卸下旧装备，扣除旧属性；穿上新装备，从背包划去，增加新属性)
           const oldItemId = curRole.equipments[part];
           if (oldItemId && oldItemId !== 0) {
             const oldAttrs = getEquipItemAttributes(oldItemId);
             for (const key in oldAttrs) {
-              oldAttrs[key] = Math.floor(oldAttrs[key]); // 规范化整数
+              oldAttrs[key] = Math.floor(oldAttrs[key]);
               curRole[key] -= oldAttrs[key];
             }
             state.ownItems.push(oldItemId);
@@ -676,7 +706,6 @@ export const ESC = {
             curRole[key] += newAttrs[key];
           }
         }
-        // 重新渲染全部
         ESC.renderAll();
       }
     };
