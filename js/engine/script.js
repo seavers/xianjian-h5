@@ -48,7 +48,8 @@ export const Script = {
     }
 
     // 步骤 1：检测是否需要进行场景切换（一律在主循环头部做同步判定）
-    if (state.nextSceneId !== state.sceneId && state.nextSceneId !== -1) {
+    // 这里不能判定 state.nextSceneId !== state.sceneId 因为有些场景会切换到同一个sceneId，比如水井下的地图切换脚本17454
+    if (state.nextSceneId !== -1) {
       await this.handleSceneSwitch();
       state.nextSceneId = -1;
       return;
@@ -88,6 +89,9 @@ export const Script = {
       if (Script.activeThread === t) {
         Script.activeThread = null;
       }
+
+      // 跳过这里，不update，不然切换场景ID+setRolePos后的update会丢失背景，见鬼阴山场景69切换脚本16975
+      return;
     }
     
     // 步骤 6：步进 auto NPC 漫游并统一重绘刷新
