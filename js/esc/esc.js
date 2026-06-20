@@ -371,30 +371,31 @@ export const ESC = {
           isUsable = (state.items[itemId].flags & 2) !== 0; // 只要本身是装备就可用
         }
 
-        // 金黄色为选中且可用，亮灰色为可用，暗红/褐红色为不可用状态
+        // 步骤 1.3：确定绘制颜色（不可用项采用鲜红褐色 0xC03020，不可用选中采用淡红色 0xE86858，绝非明黄色）
         let color = 0xD4D0C0;
         if (isUsable) {
           color = isSelected ? 0xFCDC84 : 0xD4D0C0;
         } else {
-          color = isSelected ? 0xC0B050 : 0x803020;
+          color = isSelected ? 0xE86858 : 0xC03020;
         }
 
         UI.drawWord(itemId, xText, yText, color);
-
-        // 如果是当前高亮选中项，在其右下角绘制白色三角形指示器 (PIC #70)
-        if (isSelected) {
-          const arrowImg = loadPic(70);
-          const wordData = state.words[itemId];
-          const wordLen = wordData ? wordData.length / 2 : 0;
-          if (arrowImg) {
-            startupCtx.drawImage(arrowImg, xText + wordLen * 16 - 2, yText + 5);
-          }
-        }
 
         // 若当前物品数量大于 1，则在其右侧对齐处渲染蓝绿色的数字数量
         const count = itemCounts[itemId];
         if (count > 1) {
           UI.drawNum(count, xText + 72, yText + 2, 'cyan');
+        }
+
+        // 步骤 1.2：如果是当前高亮选中项，根据是否有数量，动态计算白色三角形指示器 (PIC #70) 的 x 坐标
+        if (isSelected) {
+          const arrowImg = loadPic(70);
+          const wordData = state.words[itemId];
+          const wordLen = wordData ? wordData.length / 2 : 0;
+          if (arrowImg) {
+            const arrowX = (count > 1) ? (xText + 74) : (xText + wordLen * 16 - 2);
+            startupCtx.drawImage(arrowImg, arrowX, yText + 5);
+          }
         }
       }
 
@@ -414,7 +415,7 @@ export const ESC = {
           }
         }
 
-        // 步骤 5：解析当前选中项的 GBK 二进制描述流，识别 '*' 字符进行换行并用金黄色渲染
+        // 步骤 1.3：解析 GBK 二进制描述流。依据首字节范围判断单双字节，支持半角位移 (8 像素)，完美渲染英文/数字属性加成
         const descBytes = state.desc[currItemId];
         if (descBytes) {
           let dx = 75;
@@ -425,6 +426,16 @@ export const ESC = {
             if (b === 42) {
               dx = 75;
               dy += 16;
+              idx++;
+            } else if (b === 32) {
+              dx += 8; // 半角空格位移 8 像素
+              idx++;
+            } else if (b < 128) {
+              const img = loadWord(b, 0xFCDC84);
+              if (img) {
+                startupCtx.drawImage(img, dx, dy);
+              }
+              dx += 8; // 半角 ASCII 字符位移 8 像素
               idx++;
             } else {
               if (idx + 1 < descBytes.length) {
