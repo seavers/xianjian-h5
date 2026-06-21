@@ -91,6 +91,9 @@ export const Shop = {
     const startupCtx = state.contexts.startup;
     if (!startupCtx) return;
 
+    // 步骤 0.5：在每次重绘菜单组件前，强行将底层大地图和角色再次同步重绘，防止底图变黑或被清空
+    update(true);
+
     // 步骤 1：清空当前交互层 Canvas 以准备重绘
     startupCtx.clearRect(0, 0, startupCtx.canvas.width, startupCtx.canvas.height);
 
@@ -113,10 +116,10 @@ export const Shop = {
       const color = isSelected ? highlightColor : normalColor;
 
       // 绘制商品名称
-      UI.drawWord(itemId, 150, 23 + i * 18, color);
+      UI.drawWord(itemId, 150, 22 + i * 18, color);
 
-      // 绘制商品价格
-      UI.drawNum(itemConfig.gold, 285, 23 + i * 18, 'yellow');
+      // 绘制商品价格 (数字比文字偏下 5 像素以完美对齐)
+      UI.drawNum(itemConfig.gold, 285, 27 + i * 18, 'yellow');
     }
 
     // 步骤 4：绘制左上方选中商品的挂画大底框及其球形大图标 (x: 40, y: 8)
@@ -136,7 +139,7 @@ export const Shop = {
 
     // 步骤 5：计算并绘制左侧“现有”及数量框 (现有短语 ID: 35)
     UI.drawArea(20, 100, 5, 1, 1);
-    UI.drawWord(35, 28, 108, normalColor);
+    UI.drawWord(35, 28, 110, normalColor);
 
     // 检索计算自己行囊及各名队员装备中所包含的此商品总数
     let count = state.ownItems.filter(id => id === currentItemId).length;
@@ -149,12 +152,12 @@ export const Shop = {
         }
       }
     }
-    UI.drawNum(count, 114, 108, 'yellow');
+    UI.drawNum(count, 114, 115, 'yellow');
 
-    // 步骤 6：绘制左侧“金钱”及金额框 (金钱短语 ID: 15)
+    // 步骤 6：绘制左侧“金钱”及金额框 (金钱短语 ID: 21)
     UI.drawArea(20, 141, 5, 1, 1);
-    UI.drawWord(15, 28, 149, normalColor);
-    UI.drawNum(state.money, 114, 149, 'yellow');
+    UI.drawWord(21, 28, 151, normalColor);
+    UI.drawNum(state.money, 114, 156, 'yellow');
 
     // 步骤 7：若处于确认弹窗状态下，渲染“否/是”选择小框 (否 ID: 19, 是 ID: 20)
     if (this.confirming) {
