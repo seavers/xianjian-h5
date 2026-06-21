@@ -617,13 +617,13 @@ export const ESC = {
         }
       }
 
-      // 步骤 4：绘制物品名字及右下角的绿色数量字样
+      // 步骤 4：绘制物品名字及右下角的绿色数量字样 (右移1像素，X坐标设为64)
       if (item) {
         UI.drawWord(itemId, 5, 70, COLOR_GRAY);
         const ownItems = state.ownItems || [];
         const count = ownItems.filter(id => id === itemId).length;
         if (count > 0) {
-          UI.drawNum(count, 51 + 12, 57, 'cyan');
+          UI.drawNum(count, 64, 57, 'cyan');
         }
       }
 
@@ -643,14 +643,6 @@ export const ESC = {
           color = isSelected ? COLOR_LIGHT_RED : COLOR_RED_BROWN;
         }
         UI.drawWord(nameId, 15, 108 + i * 18, color);
-
-        // 如果该队员当前被选中，绘制白色三角形选择指示器，定位在第二个汉字靠右位置 (15 + 32 = 47)
-        if (isSelected) {
-          const arrowImg = loadPic(70);
-          if (arrowImg) {
-            startupCtx.drawImage(arrowImg, 47, 108 + i * 18 + 5);
-          }
-        }
       }
 
       // 步骤 6：绘制 6 个装备部位的当前穿戴装备名字 (灰色 COLOR_GRAY)，Y 轴间距为原版的 22 像素偏移，X 轴左移对齐
@@ -661,12 +653,12 @@ export const ESC = {
         }
       }
 
-      // 步骤 7：绘制武术、灵力、防御、身法、吉运的当前总属性数值 (明黄色 yellow)，Y 轴间距为原版的 22 像素偏移，X 轴右边缘对齐为 284
-      UI.drawNum(curRole.attackStrength || 0, 284, 14, 'yellow');
-      UI.drawNum(curRole.magicStrength || 0, 284, 36, 'yellow');
-      UI.drawNum(curRole.defense || 0, 284, 58, 'yellow');
-      UI.drawNum(curRole.dexterity || 0, 284, 80, 'yellow');
-      UI.drawNum(curRole.fleeRate || 0, 284, 102, 'yellow');
+      // 步骤 7：绘制武术、灵力、防御、身法、吉运的当前总属性数值 (明黄色 yellow)，Y 轴间距为原版的 22 像素偏移，X 轴右边缘对齐为 290
+      UI.drawNum(curRole.attackStrength || 0, 290, 14, 'yellow');
+      UI.drawNum(curRole.magicStrength || 0, 290, 36, 'yellow');
+      UI.drawNum(curRole.defense || 0, 290, 58, 'yellow');
+      UI.drawNum(curRole.dexterity || 0, 290, 80, 'yellow');
+      UI.drawNum(curRole.fleeRate || 0, 290, 102, 'yellow');
     };
 
     const onInputFn = (input) => {
@@ -709,6 +701,9 @@ export const ESC = {
           // 脱下逻辑 (属性扣减，装备归还背包，装备槽清空)
           const attrs = getEquipItemAttributes(itemId);
           for (const key in attrs) {
+            if (typeof curRole[key] !== 'number' || isNaN(curRole[key])) {
+              curRole[key] = 0;
+            }
             curRole[key] -= attrs[key];
           }
           state.ownItems.push(itemId);
@@ -719,6 +714,9 @@ export const ESC = {
           if (oldItemId && oldItemId !== 0) {
             const oldAttrs = getEquipItemAttributes(oldItemId);
             for (const key in oldAttrs) {
+              if (typeof curRole[key] !== 'number' || isNaN(curRole[key])) {
+                curRole[key] = 0;
+              }
               oldAttrs[key] = Math.floor(oldAttrs[key]);
               curRole[key] -= oldAttrs[key];
             }
@@ -733,6 +731,9 @@ export const ESC = {
 
           const newAttrs = getEquipItemAttributes(itemId);
           for (const key in newAttrs) {
+            if (typeof curRole[key] !== 'number' || isNaN(curRole[key])) {
+              curRole[key] = 0;
+            }
             curRole[key] += newAttrs[key];
           }
 
@@ -903,6 +904,8 @@ function getEquipItemAttributes(itemId) {
   for (let i = 0; i < 10; i++) {
     const scr = state.scripts[scriptId + i];
     if (!scr) break;
+    // 输出装备脚本诊断日志，协助校验属性偏移是否成功
+    console.log(`[getEquipItemAttributes] itemId: ${itemId}, nameId: ${item.nameId}, equScr: ${item.equScr}, i: ${i}, code: 0x${scr.code.toString(16)}, param1: ${scr.param1}, param2: ${scr.param2}`);
     if (scr.code === 0x19) {
       const key = STAT_MAP[scr.param1];
       if (key) {
