@@ -66,6 +66,11 @@ export const ESC = {
   onInput(input) {
     // 步骤 1：若按下 ESC，根据设计直接关闭所有菜单退回游戏，不需要逐级 pop
     if (input === 'ESC') {
+      // 特殊情况：如果当前位于装备比对界面，则仅 popMenu 回退至装备列表，而不是直接关闭所有菜单
+      if (this.menuStack.length > 0 && this.menuStack[this.menuStack.length - 1].name === 'equipComparison') {
+        this.popMenu();
+        return;
+      }
       this.clearMenus();
       return;
     }
@@ -622,8 +627,8 @@ export const ESC = {
         }
       }
 
-      // 步骤 5：在左下角使用木纹卷轴框 (style=1) 绘制使用人切换列表，选中可装备为明黄色，未选中可装备为深黑色，不可装备统一为红褐色
-      UI.drawArea(2, 95, 5, state.party.length, 1);
+      // 步骤 5：在左下角使用大红木纹卷轴框 (style=1) 绘制使用人切换列表，选中可装备为明黄色，未选中可装备为深黑色，选中不可装备为粉红，未选中不可装备为红褐色
+      UI.drawArea(2, 95, 3, state.party.length, 1);
       for (let i = 0; i < state.party.length; i++) {
         const pRole = state.party[i];
         if (!pRole || !state.roles[pRole.index]) continue;
@@ -635,9 +640,17 @@ export const ESC = {
         if (isEquipable) {
           color = isSelected ? COLOR_YELLOW : COLOR_DARK_GRAY;
         } else {
-          color = COLOR_RED_BROWN;
+          color = isSelected ? COLOR_LIGHT_RED : COLOR_RED_BROWN;
         }
         UI.drawWord(nameId, 15, 108 + i * 18, color);
+
+        // 如果该队员当前被选中，绘制白色三角形选择指示器，定位在第二个汉字靠右位置 (15 + 32 = 47)
+        if (isSelected) {
+          const arrowImg = loadPic(70);
+          if (arrowImg) {
+            startupCtx.drawImage(arrowImg, 47, 108 + i * 18 + 5);
+          }
+        }
       }
 
       // 步骤 6：绘制 6 个装备部位的当前穿戴装备名字 (灰色 COLOR_GRAY)，Y 轴间距为原版的 22 像素偏移，X 轴左移对齐
@@ -648,12 +661,12 @@ export const ESC = {
         }
       }
 
-      // 步骤 7：绘制武术、灵力、防御、身法、吉运的当前总属性数值 (蓝绿色 cyan)，Y 轴间距为原版的 22 像素偏移，X 轴右边缘为 260
-      UI.drawNum(curRole.attackStrength || 0, 260, 14, 'cyan');
-      UI.drawNum(curRole.magicStrength || 0, 260, 36, 'cyan');
-      UI.drawNum(curRole.defense || 0, 260, 58, 'cyan');
-      UI.drawNum(curRole.dexterity || 0, 260, 80, 'cyan');
-      UI.drawNum(curRole.fleeRate || 0, 260, 102, 'cyan');
+      // 步骤 7：绘制武术、灵力、防御、身法、吉运的当前总属性数值 (明黄色 yellow)，Y 轴间距为原版的 22 像素偏移，X 轴右边缘对齐为 284
+      UI.drawNum(curRole.attackStrength || 0, 284, 14, 'yellow');
+      UI.drawNum(curRole.magicStrength || 0, 284, 36, 'yellow');
+      UI.drawNum(curRole.defense || 0, 284, 58, 'yellow');
+      UI.drawNum(curRole.dexterity || 0, 284, 80, 'yellow');
+      UI.drawNum(curRole.fleeRate || 0, 284, 102, 'yellow');
     };
 
     const onInputFn = (input) => {
