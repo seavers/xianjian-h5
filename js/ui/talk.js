@@ -4,6 +4,17 @@ import { loadMsg, loadWord, loadPic, loadRgm } from '../resources/pal.js';
 
 export let isTalking = false;
 
+let previousMode = 'game';
+
+function enterTalkMode() {
+  isTalking = true;
+  if (state.currentMode !== 'talk') {
+    previousMode = state.currentMode;
+    state.currentMode = 'talk';
+  }
+}
+
+
 
 // 模块级对话坐标与状态管理
 let talkUp = null;    // tx
@@ -42,8 +53,7 @@ async function showUp(pRgmId) {
     talkUp = null;
   }
 
-  isTalking = true;
-  state.currentMode = 'talk';
+  enterTalkMode();
   talkPosition = 'up';
 
   talkUp = pRgmId ? {
@@ -75,8 +85,7 @@ async function showDown(pRgmId) {
     talkDown = null;
   }
 
-  isTalking = true;
-  state.currentMode = 'talk';
+  enterTalkMode();
   talkPosition = 'down';
 
   talkDown = pRgmId ? {
@@ -112,8 +121,7 @@ function showMessage() {
 }
 
 export async function drawTalk(msgId) {
-  isTalking = true;
-  state.currentMode = 'talk';
+  enterTalkMode();
 
   if (message) {
     message = false;
@@ -361,7 +369,7 @@ export function clearTalk() {
 
   isTalking = false;
   if (state.currentMode === 'talk') {
-    state.currentMode = 'game';
+    state.currentMode = previousMode || 'game';
   }
 }
 
@@ -421,8 +429,7 @@ function waitKey() {
 
 
 async function drawMessage(msgId) {
-  isTalking = true;
-  state.currentMode = 'talk';
+  enterTalkMode();
   const text = loadMsg(msgId);
   const texts = calcText(text);
   const length = texts.length;
@@ -435,8 +442,7 @@ async function drawMessage(msgId) {
 }
 
 async function drawTips(msgId) {
-  isTalking = true;
-  state.currentMode = 'talk';
+  enterTalkMode();
   const text = loadMsg(msgId);
   const texts = calcText(text);
 
