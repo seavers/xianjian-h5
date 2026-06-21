@@ -7,6 +7,7 @@ import { playMusic, stopMusic } from '../resources/music.js';
 import { playSound } from '../resources/sound.js';
 import { checkAndFadeOut, fadeIn, fadeOut } from '../ui/fade.js';
 import { update } from '../ui/draw.js';
+import { Script } from '../engine/script.js';
 
 // 站位坐标配置 (1人, 2人, 3人)
 const PLAYER_POS_PRESETS = [
@@ -119,7 +120,10 @@ export async function start(id, failId, fleeId) {
       animSpeed: cfg.wIdleAnimSpeed || 4,
       animTick: 0,
       attackSound: cfg.wAttackSound || 0,
-      deathSound: cfg.wDeathSound || 0
+      deathSound: cfg.wDeathSound || 0,
+      wScriptOnTurnStart: state.items[objId]?.useScr || 0,
+      wScriptOnBattleEnd: state.items[objId]?.equScr || 0,
+      wScriptOnReady: state.items[objId]?.dropScr || 0
     });
   }
 
@@ -190,7 +194,9 @@ export async function start(id, failId, fleeId) {
       criticalSound: roleStats.criticalSound || defSounds.critical || 0,
       magicSound: roleStats.magicSound || defSounds.magic || 0,
       deathSound: roleStats.deathSound || defSounds.death || 0,
-      dyingSound: roleStats.dyingSound || defSounds.dying || 0
+      dyingSound: roleStats.dyingSound || defSounds.dying || 0,
+      wScriptOnFriendDeath: state.items[role.index + 1]?.useScr || 0,
+      wScriptOnDying: state.items[role.index + 1]?.equScr || 0
     });
   }
 
@@ -217,6 +223,15 @@ export async function start(id, failId, fleeId) {
 
   // 步骤 1.5：平滑淡入展现战斗画面
   await fadeIn();
+
+  // 运行战前 pre-battle 的回合开始脚本
+  for (let i = 0; i < enemies.length; i++) {
+    const enemy = enemies[i];
+    if (enemy.hp > 0 && enemy.wScriptOnTurnStart) {
+      const result = await Script.runTriggerScript(enemy.wScriptOnTurnStart, enemy, 'enemy');
+      enemy.wScriptOnTurnStart = result;
+    }
+  }
 
   return new Promise((resolve) => {
     resolvePromise = resolve;
@@ -246,6 +261,11 @@ function startBattleClock() {
       }
     });
 
+    // 如果处于对话按键等待挂起状态，同步更新对话框的闪烁箭头动画
+    if (window.Talk && window.Talk.isWaiting) {
+      window.Talk.tickArrow();
+    }
+
     // 刷新绘制
     draw();
   }, 100);
@@ -255,9 +275,9 @@ function startBattleClock() {
 function draw() {
   const backCtx = state.contexts.back;
   const mainCtx = state.contexts.main;
-  const talkCtx = state.contexts.talk;
+  const battleCtx = state.contexts.battle;
 
-  if (!backCtx || !mainCtx || !talkCtx) {
+  if (!backCtx || !mainCtx || !battleCtx) {
     return;
   }
 
@@ -268,7 +288,7 @@ function draw() {
   }
 
   mainCtx.clearRect(0, 0, 320, 200);
-  talkCtx.clearRect(0, 0, 320, 200);
+  battleCtx.clearRect(0, 0, 320, 200);
 
   // 2. 收集并合并所有活着的战斗成员（包括我方与敌方），按照屏幕纵深 Y 坐标升序排序
   // 随后采用 2.5D 画家算法依次绘制，确保前排大体型角色能正确遮挡后排人物而不会遮盖异常
@@ -330,16 +350,16 @@ function draw() {
       }
       if (selectedAction === idx && menuState === 'main') {
         // 选中图标：正常彩色显示（对应 sdlpal PAL_RLEBlitToSurface 正常渲染）
-        talkCtx.filter = 'none';
-        talkCtx.drawImage(icon.img, icon.x, icon.y);
+        battleCtx.filter = 'none';
+        battleCtx.drawImage(icon.img, icon.x, icon.y);
       } else {
         // 未选中图标：灰度暗化（对应 sdlpal PAL_RLEBlitMonoColor bColor=0, iColorShift=-4）
-        talkCtx.filter = 'grayscale(1) brightness(0.55)';
-        talkCtx.drawImage(icon.img, icon.x, icon.y);
+        battleCtx.filter = 'grayscale(1) brightness(0.55)';
+        battleCtx.drawImage(icon.img, icon.x, icon.y);
       }
     });
     // 恢复默认滤镜，防止影响后续绘制
-    talkCtx.filter = 'none';
+    battleCtx.filter = 'none';
 
     // 绘制指示当前正在选择的队员箭头
     // 参考 sdlpal: x = pos.x - 8, y = pos.y - 74（pos 是角色脚底中心，74 是固定头顶偏移）
@@ -352,7 +372,7 @@ function draw() {
         // sdlpal: x = playerPos.x - 8, y = playerPos.y - 74
         const ax = activePlayer.x - 8;
         const ay = activePlayer.y - 74;
-        talkCtx.drawImage(arrowImg, ax, ay);
+        battleCtx.drawImage(arrowImg, ax, ay);
       }
     }
     // 敌人目标选中使用高亮闪烁（已在角色绘制阶段处理），此处不再重复绘制箭头
@@ -365,27 +385,27 @@ function draw() {
 
     // 边框
     if (borderImage) {
-      talkCtx.drawImage(borderImage, bx, by);
+      battleCtx.drawImage(borderImage, bx, by);
     }
 
     // 头像 (49 + 角色 0-based 索引)
     const avatarImg = loadPic(49 + p.index);
     if (avatarImg) {
-      talkCtx.drawImage(avatarImg, bx - 3, by);
+      battleCtx.drawImage(avatarImg, bx - 3, by);
     }
 
     // 数字渲染：显示「当前HP / 最大HP」和「当前MP / 最大MP」
     // 参考 sdlpal: PAL_DrawNumber(HP, ...) + SPRITENUM_SLASH(#40号图) + PAL_DrawNumber(MaxHP, ...)
     if (p.hp > 0) {
       // HP 行（黄色数字 20~29，中间是 #40 号斜杠图片）
-      drawHpMpLine(talkCtx, p.hp, p.maxHp, 'hp', bx + 29, by + 6);
+      drawHpMpLine(battleCtx, p.hp, p.maxHp, 'hp', bx + 29, by + 6);
       // MP 行（青色数字 57~66，中间是 #40 号斜杠图片）
-      drawHpMpLine(talkCtx, p.mp, p.maxMp, 'mp', bx + 29, by + 20);
+      drawHpMpLine(battleCtx, p.mp, p.maxMp, 'mp', bx + 29, by + 20);
     } else {
       // 阵亡状态
-      talkCtx.fillStyle = '#ff3333';
-      talkCtx.font = 'bold 8px sans-serif';
-      talkCtx.fillText('阵亡', bx + 44, by + 18);
+      battleCtx.fillStyle = '#ff3333';
+      battleCtx.font = 'bold 8px sans-serif';
+      battleCtx.fillText('阵亡', bx + 44, by + 18);
     }
   });
 
@@ -397,18 +417,18 @@ function draw() {
     const yOffset = (elapsed / 750) * 18;
     const alpha = 1.0 - (elapsed / 750);
 
-    talkCtx.save();
-    talkCtx.globalAlpha = alpha;
-    talkCtx.fillStyle = p.isPlayer ? '#ffffff' : '#ff3333';
-    talkCtx.strokeStyle = '#000000';
-    talkCtx.lineWidth = 2;
-    talkCtx.font = 'bold 12px sans-serif';
-    talkCtx.textAlign = 'center';
+    battleCtx.save();
+    battleCtx.globalAlpha = alpha;
+    battleCtx.fillStyle = p.isPlayer ? '#ffffff' : '#ff3333';
+    battleCtx.strokeStyle = '#000000';
+    battleCtx.lineWidth = 2;
+    battleCtx.font = 'bold 12px sans-serif';
+    battleCtx.textAlign = 'center';
     
     const ty = p.actor.y - (p.actor.height || 40) - yOffset;
-    talkCtx.strokeText(p.value.toString(), p.actor.x, ty);
-    talkCtx.fillText(p.value.toString(), p.actor.x, ty);
-    talkCtx.restore();
+    battleCtx.strokeText(p.value.toString(), p.actor.x, ty);
+    battleCtx.fillText(p.value.toString(), p.actor.x, ty);
+    battleCtx.restore();
   });
 }
 
@@ -597,6 +617,15 @@ async function runActionPhase() {
       const enemy = enemies[actor.index];
       if (enemy.hp <= 0) continue;
 
+      // 准备行动时触发 wScriptOnReady
+      if (enemy.wScriptOnReady) {
+        const result = await Script.runTriggerScript(enemy.wScriptOnReady, enemy, 'enemy');
+        enemy.wScriptOnReady = result;
+      }
+
+      // 如果在此期间敌人死亡或战斗结束（比如脚本内杀死了敌人/结束了战斗），则跳过
+      if (enemy.hp <= 0 || checkBattleEnd()) continue;
+
       // 敌方攻击：随机挑一个活着我方成员作为目标
       const alivePlayerIdxs = [];
       players.forEach((p, pIdx) => {
@@ -612,6 +641,15 @@ async function runActionPhase() {
 
   // 行动阶段后，判定本回合战斗是否结束
   if (!checkBattleEnd()) {
+    // 运行回合开始脚本
+    for (let i = 0; i < enemies.length; i++) {
+      const enemy = enemies[i];
+      if (enemy.hp > 0 && enemy.wScriptOnTurnStart) {
+        const result = await Script.runTriggerScript(enemy.wScriptOnTurnStart, enemy, 'enemy');
+        enemy.wScriptOnTurnStart = result;
+      }
+    }
+
     // 重置进入下一回合指令录入
     phase = 'select';
     selectedAction = 0;
@@ -726,6 +764,26 @@ async function playPlayerAttack(playerIdx, enemyIdx) {
   await sleep(100);
 }
 
+// 检测并运行玩家濒死/死亡触发脚本
+async function checkPlayerInjury(player, originalHp) {
+  if (player.hp <= 0 && originalHp > 0) {
+    // 队友死亡触发：遍历除死者外其它存活的队友，运行其 wScriptOnFriendDeath
+    for (let i = 0; i < players.length; i++) {
+      const p = players[i];
+      if (p.index !== player.index && p.hp > 0 && p.wScriptOnFriendDeath) {
+        const result = await Script.runTriggerScript(p.wScriptOnFriendDeath, p, 'player');
+        p.wScriptOnFriendDeath = result;
+      }
+    }
+  } else if (player.hp > 0 && player.hp < player.maxHp / 5 && originalHp >= player.maxHp / 5) {
+    // 濒死触发：运行受伤者自身的 wScriptOnDying
+    if (player.wScriptOnDying) {
+      const result = await Script.runTriggerScript(player.wScriptOnDying, player, 'player');
+      player.wScriptOnDying = result;
+    }
+  }
+}
+
 // 步骤 7：播放敌方攻击出手动画
 async function playEnemyAttack(enemyIdx, playerIdx) {
   const enemy = enemies[enemyIdx];
@@ -770,6 +828,7 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
 
   // 步骤 7.7：兜底伤害至最小 1 点，并对玩家角色扣减对应 HP
   if (dmg < 1) dmg = 1;
+  const originalHp = player.hp;
   player.hp = Math.max(0, player.hp - dmg);
 
   // 同步削减全局角色状态中的 HP，以便大地图和存档顺利响应
@@ -792,6 +851,9 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
 
   draw();
   await sleep(250);
+
+  // 检测并运行濒死/死亡触发脚本
+  await checkPlayerInjury(player, originalHp);
 
   // 3. 返回原位
   enemy.x = origX;
@@ -822,6 +884,14 @@ async function endBattle(victory) {
   clearInterval(battleTimer);
   battleTimer = null;
 
+  // 运行战斗结束脚本
+  for (let i = 0; i < enemies.length; i++) {
+    const enemy = enemies[i];
+    if (enemy.wScriptOnBattleEnd) {
+      await Script.runTriggerScript(enemy.wScriptOnBattleEnd, enemy, 'enemy');
+    }
+  }
+
   // 步骤 9.1：绘制胜负消息框提示
   const talkCtx = state.contexts.talk;
   if (talkCtx) {
@@ -845,9 +915,12 @@ async function endBattle(victory) {
   isBattleRunning = false;
   state.currentMode = 'game';
 
-  // 清空背景层和谈话层以露出大地图
+  // 清空背景层、谈话层与战斗层以露出大地图
   // state.contexts.back.clearRect(0, 0, 320, 200);
   state.contexts.talk.clearRect(0, 0, 320, 200);
+  if (state.contexts.battle) {
+    state.contexts.battle.clearRect(0, 0, 320, 200);
+  }
 
   // 步骤 9.4：重新同步绘制一帧大地图画面，作为淡入前的图像准备
   // await update(true);

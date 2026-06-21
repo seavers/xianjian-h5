@@ -92,6 +92,8 @@ export const state = {
     main: null,
     back: null,
     talk: null,
-    startup: null
+    startup: null,
+    fade: null,
+    battle: null
   }
 };
