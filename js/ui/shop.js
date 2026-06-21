@@ -8,6 +8,7 @@ export const Shop = {
   storeId: 0,
   storeItems: [],
   selectedIndex: 0,
+  scrollIndex: 0, // 滚动视口起始索引
   confirming: false,
   confirmValue: 0, // 0: 否, 1: 是
   resolve: null,
@@ -16,6 +17,7 @@ export const Shop = {
   async open(storeId) {
     this.storeId = storeId;
     this.selectedIndex = 0;
+    this.scrollIndex = 0;
     this.confirming = false;
     this.confirmValue = 0;
 
@@ -98,7 +100,7 @@ export const Shop = {
     startupCtx.clearRect(0, 0, startupCtx.canvas.width, startupCtx.canvas.height);
 
     // 步骤 2：绘制右侧可供挑选的商品大卷轴框 (x: 122, y: 8, width: 8, height: 8)
-    UI.drawArea(122, 8, 8, 8, 10);
+    UI.drawArea(122, 8, 9, 9, 10);
 
     const palette = loadPal(state.paletteId);
     const time = Date.now();
@@ -106,20 +108,23 @@ export const Shop = {
     const highlightColor = palette[colorIndex] & 0x00FFFFFF;
     const normalColor = 0xD4D0C0;
 
-    // 步骤 3：逐行渲染当前商店商品名称和价格
-    for (let i = 0; i < this.storeItems.length; i++) {
-      const itemId = this.storeItems[i];
+    // 步骤 3：逐行渲染当前商店商品名称和价格 (限制最大可见为 9，且防止溢出大红框)
+    for (let i = 0; i < 9; i++) {
+      const itemIdx = this.scrollIndex + i;
+      if (itemIdx >= this.storeItems.length) break;
+
+      const itemId = this.storeItems[itemIdx];
       const itemConfig = state.items[itemId];
       if (!itemConfig) continue;
 
-      const isSelected = (this.selectedIndex === i && !this.confirming);
+      const isSelected = (this.selectedIndex === itemIdx && !this.confirming);
       const color = isSelected ? highlightColor : normalColor;
 
       // 绘制商品名称
       UI.drawWord(itemId, 150, 22 + i * 18, color);
 
       // 绘制商品价格 (数字比文字偏下 5 像素以完美对齐)
-      UI.drawNum(itemConfig.gold, 285, 27 + i * 18, 'yellow');
+      UI.drawNum(itemConfig.gold, 268, 27 + i * 18, 'yellow');
     }
 
     // 步骤 4：绘制左上方选中商品的挂画大底框及其球形大图标 (x: 40, y: 8)
@@ -152,12 +157,14 @@ export const Shop = {
         }
       }
     }
-    UI.drawNum(count, 108, 109, 'yellow');
+    // 数字偏下 4 像素（109 + 4 = 113）以与文字在卷轴小框内垂直居中对齐
+    UI.drawNum(count, 102, 113, 'yellow');
 
     // 步骤 6：绘制左侧“金钱”及金额框 (金钱短语 ID: 21)
     UI.drawLabel(20, 141, 5);
     UI.drawWord(21, 28, 150, normalColor);
-    UI.drawNum(state.money, 108, 150, 'yellow');
+    // 数字偏下 4 像素（150 + 4 = 154）以与文字在卷轴小框内垂直居中对齐
+    UI.drawNum(state.money, 102, 154, 'yellow');
 
     // 步骤 7：若处于确认弹窗状态下，渲染“否/是”选择小框 (否 ID: 19, 是 ID: 20)
     if (this.confirming) {
@@ -171,6 +178,15 @@ export const Shop = {
       UI.drawLabel(205, 100, 2);
       UI.drawWord(20, 221, 109, yesNoColor(1));
     }
+  },
+
+  adjustScroll() {
+    if (this.selectedIndex < this.scrollIndex) {
+      this.scrollIndex = this.selectedIndex;
+    } else if (this.selectedIndex >= this.scrollIndex + 8) {
+      this.scrollIndex = this.selectedIndex - 9 + 1;
+    }
+    this.scrollIndex = Math.max(0, Math.min(this.scrollIndex, this.storeItems.length - 9));
   },
 
   onInput(input) {
@@ -209,11 +225,13 @@ export const Shop = {
       switch (input) {
         case 'up': {
           this.selectedIndex = (this.selectedIndex - 1 + this.storeItems.length) % this.storeItems.length;
+          this.adjustScroll();
           this.draw();
           break;
         }
         case 'down': {
           this.selectedIndex = (this.selectedIndex + 1) % this.storeItems.length;
+          this.adjustScroll();
           this.draw();
           break;
         }
