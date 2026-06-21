@@ -138,8 +138,8 @@ export const Shop = {
     }
 
     // 步骤 5：计算并绘制左侧“现有”及数量框 (现有短语 ID: 35)
-    UI.drawArea(20, 100, 5, 1, 1);
-    UI.drawWord(35, 28, 110, normalColor);
+    UI.drawLabel(20, 100, 5);
+    UI.drawWord(35, 28, 109, normalColor);
 
     // 检索计算自己行囊及各名队员装备中所包含的此商品总数
     let count = state.ownItems.filter(id => id === currentItemId).length;
@@ -152,24 +152,24 @@ export const Shop = {
         }
       }
     }
-    UI.drawNum(count, 114, 115, 'yellow');
+    UI.drawNum(count, 108, 109, 'yellow');
 
     // 步骤 6：绘制左侧“金钱”及金额框 (金钱短语 ID: 21)
-    UI.drawArea(20, 141, 5, 1, 1);
-    UI.drawWord(21, 28, 151, normalColor);
-    UI.drawNum(state.money, 114, 156, 'yellow');
+    UI.drawLabel(20, 141, 5);
+    UI.drawWord(21, 28, 150, normalColor);
+    UI.drawNum(state.money, 108, 150, 'yellow');
 
     // 步骤 7：若处于确认弹窗状态下，渲染“否/是”选择小框 (否 ID: 19, 是 ID: 20)
     if (this.confirming) {
       const yesNoColor = (val) => (this.confirmValue === val) ? highlightColor : normalColor;
 
       // 绘制“否”按钮
-      UI.drawArea(130, 100, 2, 1, 1);
-      UI.drawWord(19, 145, 108, yesNoColor(0));
+      UI.drawLabel(130, 100, 2);
+      UI.drawWord(19, 146, 109, yesNoColor(0));
 
       // 绘制“是”按钮
-      UI.drawArea(205, 100, 2, 1, 1);
-      UI.drawWord(20, 220, 108, yesNoColor(1));
+      UI.drawLabel(205, 100, 2);
+      UI.drawWord(20, 221, 109, yesNoColor(1));
     }
   },
 
