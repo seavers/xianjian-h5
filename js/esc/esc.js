@@ -612,31 +612,38 @@ export const ESC = {
         }
       }
 
-      // 步骤 5：在左下角使用豪华的金饰卷轴框 (style=10) 绘制使用人切换列表，非选中使用淡红色
-      UI.drawArea(2, 95, 5, state.party.length, 10);
+      // 步骤 5：在左下角使用木纹卷轴框 (style=1) 绘制使用人切换列表，非选中采用深黑色，选中采用深红褐色以高对比度显示
+      UI.drawArea(2, 95, 5, state.party.length, 1);
       for (let i = 0; i < state.party.length; i++) {
         const pRole = state.party[i];
         if (!pRole || !state.roles[pRole.index]) continue;
         const nameId = state.roles[pRole.index].nameId;
         const isSelected = (i === roleIndexInParty);
-        const color = isSelected ? 0xFCDC84 : 0xC08080;
+        const isEquipable = ((state.items[itemId].flags & 2) !== 0) && ((state.items[itemId].flags & (1 << (6 + pRole.index))) !== 0);
+
+        let color = 0x111111;
+        if (isSelected) {
+          color = isEquipable ? 0x7C2414 : 0xC08080;
+        } else {
+          color = isEquipable ? 0x111111 : 0x888888;
+        }
         UI.drawWord(nameId, 15, 108 + i * 18, color);
       }
 
-      // 步骤 6：绘制 6 个装备部位的当前穿戴装备名字 (灰色 0xD4D0C0)
+      // 步骤 6：绘制 6 个装备部位的当前穿戴装备名字 (灰色 0xD4D0C0)，Y 轴间距为原版的 22 像素偏移，X 轴左移对齐
       for (let part = 0; part < 6; part++) {
         const eqItemId = curRole.equipments[part];
         if (eqItemId && eqItemId !== 0) {
-          UI.drawWord(eqItemId, 135, 12 + part * 18, 0xD4D0C0);
+          UI.drawWord(eqItemId, 130, 11 + part * 22, 0xD4D0C0);
         }
       }
 
-      // 步骤 7：绘制武术、灵力、防御、身法、吉运的当前总属性数值 (蓝绿色 cyan)
-      UI.drawNum(curRole.attackStrength || 0, 290, 12, 'cyan');
-      UI.drawNum(curRole.magicStrength || 0, 290, 30, 'cyan');
-      UI.drawNum(curRole.defense || 0, 290, 48, 'cyan');
-      UI.drawNum(curRole.dexterity || 0, 290, 66, 'cyan');
-      UI.drawNum(curRole.fleeRate || 0, 290, 84, 'cyan');
+      // 步骤 7：绘制武术、灵力、防御、身法、吉运的当前总属性数值 (蓝绿色 cyan)，Y 轴间距为原版的 22 像素偏移，X 轴右边缘为 260
+      UI.drawNum(curRole.attackStrength || 0, 260, 14, 'cyan');
+      UI.drawNum(curRole.magicStrength || 0, 260, 36, 'cyan');
+      UI.drawNum(curRole.defense || 0, 260, 58, 'cyan');
+      UI.drawNum(curRole.dexterity || 0, 260, 80, 'cyan');
+      UI.drawNum(curRole.fleeRate || 0, 260, 102, 'cyan');
     };
 
     const onInputFn = (input) => {
