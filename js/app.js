@@ -266,6 +266,9 @@ function initPlayerRoles() {
       }
     }
 
+    role.walkFrames = rgwWalkFrames[i];
+    role.frameWalkCount = rgwWalkFrames[i] || 3;
+
     role.cooperativeMagic = rgwCooperativeMagic[i];
     role.deathSound = rgwDeathSound[i];
     role.attackSound = rgwAttackSound[i];

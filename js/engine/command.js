@@ -54,7 +54,7 @@ export function calcMap() {
 }
 
 function refreshRoleFrame(role) {
-  const frameWalkCount = role.type === 'role' ? 3 : role.frameWalkCount;
+  const frameWalkCount = role.frameWalkCount || 3;
   let frame = role.frame % frameWalkCount;
   
   switch (role.dir) {
@@ -76,7 +76,7 @@ function refreshRoleFrame(role) {
 }
 
 export function refreshWalkFrame(role) {
-  const frameWalkCount = role.type === 'role' ? 3 : role.frameWalkCount;
+  const frameWalkCount = role.frameWalkCount || 3;
 
   role.count = role.count ?? -1; // 默认为 -1
   role.count++;
