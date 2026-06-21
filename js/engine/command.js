@@ -1154,6 +1154,11 @@ export function setMoney(add, failScriptId) {
   }
 }
 
+export function halveMoney() {
+  // 步骤 1：将当前拥有的金钱数值减半，进行向下取整处理
+  state.money = Math.floor(state.money / 2);
+}
+
 export function obtain(ballId) {
   state.ownItems.push(ballId);
 }
@@ -1692,5 +1697,6 @@ scriptCodes[0x7F] = { func: moveViewport, desc: '平移或定位镜头视口' };
 scriptCodes[0x80] = { func: toggleDayNight, desc: '切换昼夜调色板' };
 scriptCodes[0x81] = { func: faceNpcTrig, desc: '面朝NPC触发脚本' };
 scriptCodes[0x82] = { func: npcWalk5, desc: 'NPC以极速行走移动至坐标' };
+scriptCodes[0x8F] = { func: halveMoney, desc: '金钱数值减半' };
 
 scriptCodes[0xFFFF] = { func: talk, desc: '展示剧情人物对话框' };
