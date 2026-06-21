@@ -4,7 +4,7 @@ import { Confirm } from '../ui/confirm.js';
 import { CIRCLE_SCRIPT, REPLACE_ENTRY, RESET_SCRIPT, Script } from './script.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
-import { update, canWalk } from '../ui/draw.js';
+import { update, canWalk, clearDrawToBlack } from '../ui/draw.js';
 import { fadeEffect, fadeIn, fadeOut, fadeScreenToRed } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
 import { loadArchive } from '../esc/archive.js';
@@ -880,7 +880,6 @@ export async function fadeInScene(speed) {
   
   // 步骤 2：使用 await 异步等待淡入效果播放完毕，随后同步进行屏幕绘制更新
   await fadeIn();
-  await update();
 }
 
 export async function fadeScreen(speed) {
@@ -1162,8 +1161,14 @@ export function stopMusic(fadeTime) {
 
 export function showFbp(fbpId, effect) {
   // 步骤 1：在全局状态机中记录当前的 FBP 全屏背景图 ID，并直接触发屏幕重绘
-  state.currentFbpId = fbpId;
+  const currentFbpId = intToShort(fbpId);
+  state.currentFbpId = currentFbpId;
   console.log(`[0x76 showFbp] 展示全屏剧情背景图 (FBP ID: ${fbpId}, 渐变效果: ${effect})`);
+
+  if (currentFbpId == -1) {
+    clearDrawToBlack();
+    return ;
+  }
   update();
 }
 

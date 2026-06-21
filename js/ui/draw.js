@@ -524,3 +524,14 @@ export function drawEventArea() {
     }
   }
 }
+
+export function clearDrawToBlack() {
+  const backCtx = state.contexts.back;
+  const mainCtx = state.contexts.main;
+  if(!backCtx || !mainCtx) {
+    return;
+  }
+
+  backCtx.clearRect(0, 0, 320, 200);
+  mainCtx.clearRect(0, 0, mainCtx.canvas.width, mainCtx.canvas.height);
+}
