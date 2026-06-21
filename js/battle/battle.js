@@ -121,6 +121,10 @@ export async function start(id, failId, fleeId) {
       animTick: 0,
       attackSound: cfg.wAttackSound || 0,
       deathSound: cfg.wDeathSound || 0,
+      wMagic: cfg.wMagic || 0,
+      wMagicRate: cfg.wMagicRate || 0,
+      wMagicStrength: cfg.wMagicStrength || 10,
+      wMagicSound: cfg.wMagicSound || 0,
       wScriptOnTurnStart: state.items[objId]?.useScr || 0,
       wScriptOnBattleEnd: state.items[objId]?.equScr || 0,
       wScriptOnReady: state.items[objId]?.dropScr || 0
@@ -788,6 +792,49 @@ async function checkPlayerInjury(player, originalHp) {
 async function playEnemyAttack(enemyIdx, playerIdx) {
   const enemy = enemies[enemyIdx];
   const player = players[playerIdx];
+
+  // 步骤 0.5：判定是否触发法术攻击 (wMagic 不为 0 且随机数小于 wMagicRate)
+  const useMagic = enemy.wMagic !== undefined && enemy.wMagic !== 0 && (Math.floor(Math.random() * 10) < (enemy.wMagicRate || 10));
+  if (useMagic) {
+    // 播放法术音效
+    if (enemy.wMagicSound > 0) {
+      playSound(enemy.wMagicSound);
+    }
+
+    // 播放法术施法蓄力延时
+    await sleep(200);
+
+    // 获取敌方等级并对其法术攻击力进行战场等级修正
+    const enemyLevel = enemy.level || 1;
+    let str = enemy.wMagicStrength || 10;
+    str += (enemyLevel + 6) * 6;
+    if (str < 0) {
+      str = 0;
+    }
+
+    // 获取玩家的防御力
+    let def = player.defense;
+
+    // 计算法术基础伤害并折减
+    let baseDmg = calcBaseDamage(str, def);
+    let dmg = Math.floor(baseDmg / 2);
+    dmg += Math.floor(Math.random() * 2);
+
+    if (dmg < 1) dmg = 1;
+    player.hp = Math.max(0, player.hp - dmg);
+
+    // 同步削减全局角色状态中的 HP
+    const roleStats = state.roles[player.index];
+    if (roleStats) {
+      roleStats.hp = player.hp;
+    }
+
+    // 如果主角/队友死亡，则播放死亡音效
+    if (player.hp <= 0 && player.deathSound > 0) {
+      playSound(player.deathSound);
+    }
+    return;
+  }
 
   const origX = enemy.x;
   const origY = enemy.y;
