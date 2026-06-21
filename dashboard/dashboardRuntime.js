@@ -196,11 +196,12 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
   });
 
   // --- NPC列表状态与屏幕打标 ---
+  // 从全局 window 对象同步初始状态，确保与游戏画面渲染状态一致
   const [npcs, setNpcs] = useState([]);
-  const [showNpcIdOnScreen, setShowNpcIdOnScreen] = useState(false);
-  const [onlyHumanNpc, setOnlyHumanNpc] = useState(true);
-  const [onlyVisibleNpc, setOnlyVisibleNpc] = useState(false);
-  const [onlyHasTrigNpc, setOnlyHasTrigNpc] = useState(false);
+  const [showNpcIdOnScreen, setShowNpcIdOnScreen] = useState(!!window.SHOW_NPC_ID_ON_SCREEN);
+  const [onlyHumanNpc, setOnlyHumanNpc] = useState(window.ONLY_HUMAN_NPC !== false);
+  const [onlyVisibleNpc, setOnlyVisibleNpc] = useState(!!window.ONLY_VISIBLE_NPC);
+  const [onlyHasTrigNpc, setOnlyHasTrigNpc] = useState(!!window.ONLY_HAS_TRIG_NPC);
   const [highlightNpcId, setHighlightNpcId] = useState(null);
 
   // --- 极客剖析指标与指令终端 ---
@@ -1206,15 +1207,36 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                     屏幕标 ID
                   </label>
                   <label style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: '3px', cursor: 'pointer', userSelect: 'none' }}>
-                    <input type="checkbox" checked=${onlyHumanNpc} onChange=${(e) => setOnlyHumanNpc(e.target.checked)} style=${{ accentColor: 'var(--glow-green)', cursor: 'pointer' }}></input>
+                    <input type="checkbox" checked=${onlyHumanNpc} onChange=${(e) => {
+                      // 1. 更新 React 内部状态，重新过滤控制台列表
+                      setOnlyHumanNpc(e.target.checked);
+                      
+                      // 2. 同步更新全局变量并重绘画布以展示/隐藏非人物实体 ID
+                      window.ONLY_HUMAN_NPC = e.target.checked;
+                      window.updateGameScreen?.(true);
+                    }} style=${{ accentColor: 'var(--glow-green)', cursor: 'pointer' }}></input>
                     仅人物
                   </label>
                   <label style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: '3px', cursor: 'pointer', userSelect: 'none' }}>
-                    <input type="checkbox" checked=${onlyVisibleNpc} onChange=${(e) => setOnlyVisibleNpc(e.target.checked)} style=${{ accentColor: 'var(--glow-green)', cursor: 'pointer' }}></input>
+                    <input type="checkbox" checked=${onlyVisibleNpc} onChange=${(e) => {
+                      // 1. 更新 React 内部状态，重新过滤控制台列表
+                      setOnlyVisibleNpc(e.target.checked);
+                      
+                      // 2. 同步更新全局变量并重绘画布以展示/隐藏非可视实体 ID
+                      window.ONLY_VISIBLE_NPC = e.target.checked;
+                      window.updateGameScreen?.(true);
+                    }} style=${{ accentColor: 'var(--glow-green)', cursor: 'pointer' }}></input>
                     仅可视
                   </label>
                   <label style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: '3px', cursor: 'pointer', userSelect: 'none' }}>
-                    <input type="checkbox" checked=${onlyHasTrigNpc} onChange=${(e) => setOnlyHasTrigNpc(e.target.checked)} style=${{ accentColor: 'var(--glow-green)', cursor: 'pointer' }}></input>
+                    <input type="checkbox" checked=${onlyHasTrigNpc} onChange=${(e) => {
+                      // 1. 更新 React 内部状态，重新过滤控制台列表
+                      setOnlyHasTrigNpc(e.target.checked);
+                      
+                      // 2. 同步更新全局变量并重绘画布以展示/隐藏非触发实体 ID
+                      window.ONLY_HAS_TRIG_NPC = e.target.checked;
+                      window.updateGameScreen?.(true);
+                    }} style=${{ accentColor: 'var(--glow-green)', cursor: 'pointer' }}></input>
                     仅有触发
                   </label>
                 </div>
