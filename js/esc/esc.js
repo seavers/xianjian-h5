@@ -543,25 +543,12 @@ export const ESC = {
         if (!isUsable) return;
 
         if (mode === 'use') {
-          // 弹出选择队伍成员的小 Panel，决定对谁使用该物品
-          const partyNames = state.party.map(role => state.roles[role.index].nameId);
-          const rolePanel = PanelFactory.createList(partyNames);
-          rolePanel.x = 220;
-          rolePanel.y = 30;
+          // 不再选择角色，直接使用物品并执行脚本
+          const itemToUse = state.items[currItemId];
+          itemToUse.index = (state.party && state.party.length > 0 && state.party[0]) ? state.party[0].index : 0;
 
-          rolePanel.onchange((nameId) => {
-            const chosenPartyRole = state.party.find(r => state.roles[r.index].nameId === nameId);
-            if (chosenPartyRole) {
-              const itemToUse = state.items[currItemId];
-              itemToUse.index = chosenPartyRole.index;
-              Script.startItemScript(itemToUse);
-              ESC.clearMenus();
-            }
-          }).oncancel(() => {
-            ESC.popMenu();
-          });
-
-          ESC.pushMenu('chooseUseRole', rolePanel, () => rolePanel.draw());
+          Script.startItemScript(itemToUse);
+          ESC.clearMenus();
         } else if (mode === 'equip') {
           // 选中可装备的道具时，按空格跳转到比对装备前后属性对备面板
           ESC.openEquipComparison(currItemId);
