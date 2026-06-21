@@ -109,6 +109,8 @@ export async function start(id, failId, fleeId) {
       defense: cfg.wDefense || 10,
       dexterity: cfg.wDexterity || 10,
       attackStrength: cfg.wAttackStrength || 10,
+      level: cfg.wLevel || 1,
+      physicalResistance: cfg.wPhysicalResistance || 0,
       x: pos.x,
       y: yPos,
       spriteData: spriteData,
@@ -129,6 +131,24 @@ export async function start(id, failId, fleeId) {
   for (let i = 0; i < partySize; i++) {
     const role = state.party[i];
     const roleStats = state.roles[role.index] || {};
+
+    // 步骤 1.2.1：确保队伍成员进入战斗前，装备属性已经过校正
+    if (roleStats && roleStats.equipments && !roleStats._equipCorrected) {
+      roleStats._equipCorrected = true;
+      for (let part = 0; part < 6; part++) {
+        const eqId = roleStats.equipments[part];
+        if (eqId && eqId !== 0) {
+          const eqAttrs = getEquipItemAttributes(eqId);
+          for (const key in eqAttrs) {
+            if (typeof roleStats[key] !== 'number' || isNaN(roleStats[key])) {
+              roleStats[key] = 0;
+            }
+            roleStats[key] += eqAttrs[key];
+          }
+        }
+      }
+    }
+
     const pos = posPreset[i] || [200, 150];
 
     // 从 f.mkf 加载玩家角色战斗动画数据包并进行 deyj 解压
@@ -641,8 +661,44 @@ async function playPlayerAttack(playerIdx, enemyIdx) {
     playSound(player.weaponSound);
   }
 
-  // 简易物理伤害算法
-  let dmg = Math.floor((player.attackStrength * 2 - enemy.defense * 1.5) * (0.85 + Math.random() * 0.3));
+  // 步骤 6.1：获取攻防双方属性，并对敌方的战场防御力进行等级加成修正
+  let str = player.attackStrength;
+  let def = enemy.defense;
+  const enemyLevel = enemy.level || 1;
+  def += (enemyLevel + 6) * 4;
+
+  // 步骤 6.2：根据攻击力与防御力计算物理基础伤害，并对其进行抗性折减
+  let baseDmg = calcBaseDamage(str, def);
+  const res = enemy.physicalResistance || 0;
+  if (res !== 0) {
+    baseDmg = Math.floor(baseDmg / res);
+  }
+
+  // 步骤 6.3：加入 1~2 点的物理打击基础随机伤害
+  let dmg = baseDmg + Math.floor(Math.random() * 2) + 1;
+
+  // 步骤 6.4：进行普通攻击的暴击效果随机判定 (1/6 概率触发 3 倍暴击)
+  let isCritical = false;
+  if (Math.floor(Math.random() * 6) === 0) {
+    dmg *= 3;
+    isCritical = true;
+  }
+
+  // 步骤 6.5：若攻击者是主角李逍遥，则额外有 1/12 的概率再次发生 2 倍爆发伤害
+  if (player.index === 0 && Math.floor(Math.random() * 12) === 0) {
+    dmg *= 2;
+    isCritical = true;
+  }
+
+  // 步骤 6.6：乘以 1.0 ~ 1.125 的伤害随机波动因子
+  dmg = Math.floor(dmg * (1.0 + Math.random() * 0.125));
+
+  // 步骤 6.7：播放暴击受击音效以增强打击质感反馈
+  if (isCritical && player.criticalSound > 0) {
+    playSound(player.criticalSound);
+  }
+
+  // 步骤 6.8：兜底伤害至最小 1 点，并对敌人扣减对应 HP
   if (dmg < 1) dmg = 1;
   enemy.hp = Math.max(0, enemy.hp - dmg);
 
@@ -689,8 +745,30 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
   draw();
   await sleep(150);
 
-  // 2. 造成物理伤害
-  let dmg = Math.floor((enemy.attackStrength * 2 - player.defense * 1.5) * (0.85 + Math.random() * 0.3));
+  // 步骤 7.1：获取敌方等级并对其物理攻击力进行战场等级修正
+  const enemyLevel = enemy.level || 1;
+  let str = enemy.attackStrength;
+  str += (enemyLevel + 6) * 6;
+  if (str < 0) {
+    str = 0;
+  }
+
+  // 步骤 7.2：获取玩家的防御力
+  let def = player.defense;
+
+  // 步骤 7.3：敌人的物理攻击力加上 0~2 的随机打击波动
+  const finalStr = str + Math.floor(Math.random() * 3);
+
+  // 步骤 7.4：计算物理基础伤害
+  let baseDmg = calcBaseDamage(finalStr, def);
+
+  // 步骤 7.5：折减一半（敌人攻击主角时，防御折减系数固定为 2）
+  let dmg = Math.floor(baseDmg / 2);
+
+  // 步骤 7.6：加上 0~1 点的随机打击微小伤害浮动
+  dmg += Math.floor(Math.random() * 2);
+
+  // 步骤 7.7：兜底伤害至最小 1 点，并对玩家角色扣减对应 HP
   if (dmg < 1) dmg = 1;
   player.hp = Math.max(0, player.hp - dmg);
 
@@ -844,6 +922,8 @@ export function getBattleState() {
       defense: e.defense,
       dexterity: e.dexterity,
       attackStrength: e.attackStrength,
+      level: e.level,
+      physicalResistance: e.physicalResistance,
       x: e.x,
       y: e.y,
       currentFrame: e.currentFrame,
@@ -851,4 +931,55 @@ export function getBattleState() {
       spriteData: e.spriteData
     }))
   };
+}
+
+// 步骤 11：解析装备的永久属性增益
+function getEquipItemAttributes(itemId) {
+  const item = state.items[itemId];
+  const attrs = {
+    attackStrength: 0,
+    magicStrength: 0,
+    defense: 0,
+    dexterity: 0,
+    fleeRate: 0
+  };
+  if (!item || !item.equScr) return attrs;
+
+  const STAT_MAP = {
+    17: 'attackStrength',
+    18: 'magicStrength',
+    19: 'defense',
+    20: 'dexterity',
+    21: 'fleeRate'
+  };
+
+  let scriptId = item.equScr;
+  for (let i = 0; i < 10; i++) {
+    const scr = state.scripts[scriptId + i];
+    if (!scr) break;
+    if (scr.code === 0x17) {
+      const key = STAT_MAP[scr.param2];
+      if (key) {
+        let val = scr.param3;
+        if (val > 32767) val -= 65536;
+        attrs[key] += val;
+      }
+    }
+  }
+  return attrs;
+}
+
+// 步骤 12：基础伤害计算 (完全还原自 sdlpal 中的 PAL_CalcBaseDamage)
+function calcBaseDamage(attackStrength, defense) {
+  let damage = 0;
+
+  if (attackStrength > defense) {
+    damage = Math.floor(attackStrength * 2 - defense * 1.6 + 0.5);
+  } else if (attackStrength > defense * 0.6) {
+    damage = Math.floor(attackStrength - defense * 0.6 + 0.5);
+  } else {
+    damage = 0;
+  }
+
+  return damage;
 }
