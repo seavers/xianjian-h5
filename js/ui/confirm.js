@@ -105,6 +105,11 @@ export const Confirm = {
       startupCanvas.style.display = 'none';
     }
 
+    // 步骤 1.5：清空底层剧情对话框并重置对话状态，防止后续键盘输入被对话拦截
+    if (window.Talk && window.Talk.closeTalk) {
+      window.Talk.closeTalk();
+    }
+
     // 步骤 2：切回常规游戏运行模式并 resolve Promise
     state.currentMode = 'game';
 

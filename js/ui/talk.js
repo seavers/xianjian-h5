@@ -516,6 +516,7 @@ export const Talk = {
   talkMessage: showMessage,
   drawTalk,
   clearTalk: forceScrollPage,
+  closeTalk: clearTalk,
   tickArrow,
   onInput,
   get isTalking() {
