@@ -1220,6 +1220,16 @@ export function stopMusic(fadeTime) {
   stopBgMusic(seconds);
 }
 
+export function playCdMusic(cdTrack, fallbackMusicNum) {
+  // 步骤 1：在状态机中记录当前背景音乐编号
+  state.wNumMusic = fallbackMusicNum;
+
+  // 步骤 2：由于 Web 平台没有 CD 驱动器，因此直接使用 RIX 音乐作为回退进行播放
+  console.log(`[0xA3 playCdMusic] 播放 CD 音乐不可用 (音轨 ID: ${cdTrack})，回退播放 RIX 音乐 ID: ${fallbackMusicNum}`);
+
+  playMusic(fallbackMusicNum, true, 0.0);
+}
+
 export function showFbp(fbpId, effect) {
   // 步骤 1：在全局状态机中记录当前的 FBP 全屏背景图 ID，并直接触发屏幕重绘
   const currentFbpId = intToShort(fbpId);
@@ -1782,6 +1792,7 @@ scriptCodes[0x98] = { func: setFollower, desc: '设置队伍随行临时跟随�
 scriptCodes[0x99] = { func: changeSceneMap, desc: '切换指定场景所用地图' };
 scriptCodes[0x9B] = { func: fadeToCurrentScene, desc: '屏幕渐变淡入当前场景' };
 scriptCodes[0xA1] = { func: setPartySamePosition, desc: '使队伍全员位置和主角李逍遥重合' };
+scriptCodes[0xA3] = { func: playCdMusic, desc: '播放CD音乐并以RIX音乐回退' };
 scriptCodes[0xA7] = { func: skipAutoScript, desc: '空指令直接跳过' };
 scriptCodes[0x7A] = { func: teamWalk2, desc: '队伍快速行走至坐标' };
 scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
