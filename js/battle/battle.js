@@ -218,7 +218,6 @@ export async function start(id, failId, fleeId) {
 
   // 步骤 1.4：绘制战斗画面的第一帧并启动战斗时钟
   draw();
-  startBattleClock();
 
   // 播放战斗背景音乐（由 0x45 setFightMusic 预先写入 state.wNumBattleMusic）
   const battleMusicNum = state.wNumBattleMusic || 0;
@@ -239,42 +238,37 @@ export async function start(id, failId, fleeId) {
     }
   }
 
-  return new Promise((resolve) => {
-    resolvePromise = resolve;
-  });
-}
-
-// 步骤 2：启动战斗渲染时钟与敌人动画嘀嗒
-function startBattleClock() {
-  if (battleTimer) {
-    clearInterval(battleTimer);
-  }
-
-  battleTimer = setInterval(() => {
+  while(true) {
     if (!isBattleRunning) {
       return;
     }
 
-    // 步进敌人 idle 动画帧
-    enemies.forEach(e => {
-      if (e.hp <= 0) {
-        return;
-      }
-      e.animTick++;
-      if (e.animTick >= e.animSpeed) {
-        e.animTick = 0;
-        e.currentFrame = (e.currentFrame + 1) % e.maxIdleFrames;
-      }
-    });
+    await startBattleClock();
+    await sleep(100);
+  }
+}
 
-    // 如果处于对话按键等待挂起状态，同步更新对话框的闪烁箭头动画
-    if (window.Talk && window.Talk.isWaiting) {
-      window.Talk.tickArrow();
+// 步骤 2：启动战斗渲染时钟与敌人动画嘀嗒
+function startBattleClock() {
+  // 步进敌人 idle 动画帧
+  enemies.forEach(e => {
+    if (e.hp <= 0) {
+      return;
     }
+    e.animTick++;
+    if (e.animTick >= e.animSpeed) {
+      e.animTick = 0;
+      e.currentFrame = (e.currentFrame + 1) % e.maxIdleFrames;
+    }
+  });
 
-    // 刷新绘制
-    draw();
-  }, 100);
+  // 如果处于对话按键等待挂起状态，同步更新对话框的闪烁箭头动画
+  if (window.Talk && window.Talk.isWaiting) {
+    window.Talk.tickArrow();
+  }
+
+  // 刷新绘制
+  draw();
 }
 
 // 步骤 3：战斗系统界面统一渲染绘制核心
@@ -1112,7 +1106,8 @@ function calcBaseDamage(attackStrength, defense) {
   return damage;
 }
 
-export function setBattleResult(result) {
+export async function setBattleResult(result) {
   // 步骤 13：设置当前由脚本强行指定的战斗结果，以在主循环中自动退出战斗
   battleResult = result;
+  await endBattle(result);
 }
