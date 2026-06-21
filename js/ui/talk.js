@@ -25,6 +25,10 @@ let currentArrowIcon = 67;
 
 let talkPromiseResolve = null;
 
+let skipTyping = false;
+let typingResolve = null;
+let typingTimer = null;
+
 export function registerTalkResolve(resolve) {
   talkPromiseResolve = resolve;
 }
@@ -190,14 +194,35 @@ function drawWord(charCode, x, y, color) {
 
 async function drawLine(text, x, y) {
   const texts = calcText(text);
+  skipTyping = false;
 
   // 步骤 1：遍历已解析的字符数组，依次渲染每个字符，并在字符间根据其配置的延时进行等待，以实现平滑打字动画
   for (let i = 0; i < texts.length; i++) {
     const charCode = texts[i].charCode;
     drawWord(charCode, x + i * 16, y, texts[i].color);
 
+    if (skipTyping) {
+      continue;
+    }
+
     const delay = texts[i].delay !== undefined ? texts[i].delay : 15;
-    await new Promise((resolve) => setTimeout(resolve, delay));
+    if (delay > 0) {
+      await new Promise((resolve) => {
+        typingResolve = () => {
+          if (typingTimer) {
+            clearTimeout(typingTimer);
+            typingTimer = null;
+          }
+          typingResolve = null;
+          resolve();
+        };
+        typingTimer = setTimeout(() => {
+          typingResolve = null;
+          typingTimer = null;
+          resolve();
+        }, delay);
+      });
+    }
   }
 }
 
@@ -342,6 +367,11 @@ export function onInput(input) {
       const resolve = talkPromiseResolve;
       talkPromiseResolve = null;
       resolve();
+    } else if (isTalking) {
+      skipTyping = true;
+      if (typingResolve) {
+        typingResolve();
+      }
     }
   }
 }

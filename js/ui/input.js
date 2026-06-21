@@ -47,8 +47,8 @@ if (typeof document !== 'undefined') {
 
     const mode = state.currentMode;
 
-    // 步骤 0：对话等待按键挂起期间，优先拦截并交由 Talk 模块处理
-    if (Talk.isWaiting) {
+    // 步骤 0：对话状态下，优先拦截并交由 Talk 模块处理
+    if (Talk.isTalking) {
       ev.preventDefault();
       Talk.onInput(input);
       return;
@@ -161,8 +161,8 @@ if (typeof document !== 'undefined') {
 
     const mode = state.currentMode;
 
-    // 步骤 1：在剧情对话等待按键期间，点击屏幕任意区域代表确认推进
-    if (Talk.isWaiting) {
+    // 步骤 1：在剧情对话期间，点击屏幕任意区域交由 Talk 模块处理
+    if (Talk.isTalking) {
       Talk.onInput('blank');
       return;
     }
