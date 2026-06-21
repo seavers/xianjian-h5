@@ -98,7 +98,7 @@ export const Shop = {
     startupCtx.clearRect(0, 0, startupCtx.canvas.width, startupCtx.canvas.height);
 
     // 步骤 2：绘制右侧可供挑选的商品大卷轴框 (x: 122, y: 8, width: 8, height: 8)
-    UI.drawArea(122, 8, 8, 8, 1);
+    UI.drawArea(122, 8, 8, 8, 10);
 
     const palette = loadPal(state.paletteId);
     const time = Date.now();
