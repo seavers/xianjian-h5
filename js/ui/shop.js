@@ -181,7 +181,7 @@ export const Shop = {
 
     // 步骤 5：计算并绘制左侧“现有”及数量框 (现有短语 ID: 35)
     UI.drawLabel(20, 100, 5);
-    UI.drawWord(35, 28, 109, normalColor);
+    UI.drawWord(35, 28, 109, 0x000000);
 
     // 检索计算自己行囊及各名队员装备中所包含的此商品总数
     let count = state.ownItems.filter(id => id === currentItemId).length;
@@ -199,13 +199,13 @@ export const Shop = {
 
     // 步骤 6：绘制左侧“金钱”及金额框 (金钱短语 ID: 21)
     UI.drawLabel(20, 141, 5);
-    UI.drawWord(21, 28, 150, normalColor);
+    UI.drawWord(21, 28, 150, 0x000000);
     // 数字偏下 4 像素（150 + 4 = 154）以与文字在卷轴小框内垂直居中对齐
     UI.drawNum(state.money, 102, 154, 'yellow');
 
     // 步骤 7：若处于确认弹窗状态下，渲染“否/是”选择小框 (否 ID: 19, 是 ID: 20)
     if (this.confirming) {
-      const yesNoColor = (val) => (this.confirmValue === val) ? highlightColor : normalColor;
+      const yesNoColor = (val) => (this.confirmValue === val) ? highlightColor : 0x000000;
 
       // 绘制“否”按钮
       UI.drawLabel(130, 100, 2);
@@ -308,12 +308,12 @@ export const Shop = {
 
       // 绘制金钱标签框 (x: 100, y: 150) 与金钱数值 (居中对齐)
       UI.drawLabel(100, 150, 5);
-      UI.drawWord(21, 108, 159, normalColor);
+      UI.drawWord(21, 108, 159, 0x000000);
       UI.drawNum(state.money, 188, 163, 'yellow');
 
       // 绘制售价标签框 (x: 224, y: 150) 与售价数值 (原价的一半，居中对齐)
       UI.drawLabel(224, 150, 5);
-      UI.drawWord(36, 232, 159, normalColor);
+      UI.drawWord(25, 232, 159, 0x000000);
       if (currentItemConfig) {
         const price = Math.floor(currentItemConfig.gold / 2);
         UI.drawNum(price, 312, 163, 'yellow');
@@ -321,13 +321,13 @@ export const Shop = {
     } else {
       // 若无可售道具，只绘制默认金钱框即可
       UI.drawLabel(100, 150, 5);
-      UI.drawWord(21, 108, 159, normalColor);
+      UI.drawWord(21, 108, 159, 0x000000);
       UI.drawNum(state.money, 188, 163, 'yellow');
     }
 
     // 步骤 6：如果处于弹窗确认状态，绘制“否/是”选择小框 (x: 120 / 200, y: 100)
     if (this.confirming) {
-      const yesNoColor = (val) => (this.confirmValue === val) ? highlightColor : normalColor;
+      const yesNoColor = (val) => (this.confirmValue === val) ? highlightColor : 0x000000;
 
       // 绘制“否”按钮
       UI.drawLabel(120, 100, 2);
