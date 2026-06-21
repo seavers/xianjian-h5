@@ -582,6 +582,28 @@ export const ESC = {
   },
 
   openEquipComparison(itemId) {
+    // 对队伍中所有角色的初始属性根据其已有装备进行一次性校正，防止初始基础值遗漏装备属性导致一直为 0
+    if (state.party) {
+      for (const pRole of state.party) {
+        const role = state.roles[pRole.index];
+        if (role && role.equipments && !role._equipCorrected) {
+          role._equipCorrected = true; // 标记只在打开本页面时校正一次
+          for (let part = 0; part < 6; part++) {
+            const eqId = role.equipments[part];
+            if (eqId && eqId !== 0) {
+              const eqAttrs = getEquipItemAttributes(eqId);
+              for (const key in eqAttrs) {
+                if (typeof role[key] !== 'number' || isNaN(role[key])) {
+                  role[key] = 0;
+                }
+                role[key] += eqAttrs[key];
+              }
+            }
+          }
+        }
+      }
+    }
+
     let roleIndexInParty = 0;
 
     const renderFn = () => {
@@ -900,16 +922,16 @@ function getEquipItemAttributes(itemId) {
   };
 
   let scriptId = item.equScr;
-  // 遍历前 10 条指令，读取 0x19 (increasePlayerAttribute) 并进行 16 位有符号 short 换算
+  // 遍历前 10 条指令，读取 0x17 (setPlayerExtraAttribute) 并进行 16 位有符号 short 换算
   for (let i = 0; i < 10; i++) {
     const scr = state.scripts[scriptId + i];
     if (!scr) break;
     // 输出装备脚本诊断日志，协助校验属性偏移是否成功
-    console.log(`[getEquipItemAttributes] itemId: ${itemId}, nameId: ${item.nameId}, equScr: ${item.equScr}, i: ${i}, code: 0x${scr.code.toString(16)}, param1: ${scr.param1}, param2: ${scr.param2}`);
-    if (scr.code === 0x19) {
-      const key = STAT_MAP[scr.param1];
+    console.log(`[getEquipItemAttributes] itemId: ${itemId}, nameId: ${item.nameId}, equScr: ${item.equScr}, i: ${i}, code: 0x${scr.code.toString(16)}, param1: ${scr.param1}, param2: ${scr.param2}, param3: ${scr.param3}`);
+    if (scr.code === 0x17) {
+      const key = STAT_MAP[scr.param2]; // 0x17 指令中，param2 对应属性项 ID (17-21)
       if (key) {
-        let val = scr.param2;
+        let val = scr.param3; // 0x17 指令中，param3 对应具体属性加成数值
         if (val > 32767) val -= 65536; // 还原为 JS 中的有符号短整型
         attrs[key] += val;
       }
