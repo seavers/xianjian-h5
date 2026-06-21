@@ -1,6 +1,6 @@
 import { state } from '../engine/state.js';
 import { Script } from '../engine/script.js';
-import { refreshWalkFrame, setRolePos, startEventTrig } from '../engine/command.js';
+import { refreshWalkFrame, setRolePos, startEventTrig, adjustDirectionsForSearchTrigger, adjustDirectionsForTouchTrigger } from '../engine/command.js';
 import { canWalk, update } from './draw.js';
 import { ESC } from '../esc/esc.js';
 
@@ -301,6 +301,10 @@ function onXY(x, y, half, dir) {
       case 7: // 远距离触发
       case 8: // 最远距离触发
         if (s < (o.trigMode - 4) * 32 + 16) {    
+          const leader = state.party[0] || state.roles[0];
+          if (leader) {
+            adjustDirectionsForTouchTrigger(leader, o);
+          }
           startEventTrig(o);
         }
         break;
@@ -351,6 +355,10 @@ export function onBlank() {
       const ey = Math.floor(o.y / 16);
 
       if (dx === ex && dy === ey && dh === eh) {
+        const leader = state.party[0] || state.roles[0];
+        if (leader) {
+          adjustDirectionsForSearchTrigger(leader, o);
+        }
         startEventTrig(o);
         return;
       }

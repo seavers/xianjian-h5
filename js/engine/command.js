@@ -4,7 +4,7 @@ import { Confirm } from '../ui/confirm.js';
 import { CIRCLE_SCRIPT, REPLACE_ENTRY, RESET_SCRIPT, Script } from './script.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
-import { update, canWalk, clearDrawToBlack } from '../ui/draw.js';
+import { update, canWalk, clearDrawToBlack, checkNeedDraw } from '../ui/draw.js';
 import { fadeEffect, fadeIn, fadeOut, fadeScreenToRed } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
 import { loadArchive } from '../esc/archive.js';
@@ -460,6 +460,56 @@ export function setNpcDir(dir) {
   }
 }
 
+export function adjustDirectionsForSearchTrigger(leader, npc) {
+  // 步骤 1：判断 NPC 是否有可转向的朝向（若其帧数不足或处于特殊动作播放状态，则跳过转向）
+  if (!(npc.frameWalkCount * 4 > npc.frame)) {
+    return;
+  }
+
+  // 步骤 2：使 NPC 面对主角队伍（即设置为主角当前朝向的相反朝向，并将当前帧设为站立帧 0）
+  npc.frame = 0;
+  npc.dir = (leader.dir + 2) % 4;
+  refreshRoleFrame(npc);
+
+  // 步骤 3：使队伍中的所有角色朝向 NPC（即与主角 leader 当前的朝向一致，并重置为站立帧 0）
+  for (let i = 0; i < state.party.length; i++) {
+    const role = state.party[i];
+    if (role) {
+      role.dir = leader.dir;
+      role.frame = 0;
+      refreshRoleFrame(role);
+    }
+  }
+
+  // 步骤 4：强制刷新屏幕以使朝向变换生效
+  update(true);
+}
+
+export function adjustDirectionsForTouchTrigger(leader, npc) {
+  // 步骤 1：如果 NPC 本身没有任何移动朝向帧，则直接跳过朝向调整
+  if (!npc.frameWalkCount) {
+    return;
+  }
+
+  // 步骤 2：重置 NPC 帧为站立状态，并根据玩家与 NPC 的坐标相对偏移方向，调整 NPC 朝向使其面对玩家
+  npc.frame = 0;
+
+  const xOffset = leader.x - npc.x;
+  const yOffset = leader.y - npc.y;
+
+  if (xOffset > 0) {
+    npc.dir = (yOffset > 0) ? 3 : 2; // East (3) or North (2)
+  } else {
+    npc.dir = (yOffset > 0) ? 0 : 1; // South (0) or West (1)
+  }
+
+  refreshRoleFrame(npc);
+
+  // 步骤 3：强制刷新屏幕以使朝向变换生效
+  update(true);
+}
+
+
 export function setNpcPos(objId, dx, dy) {
   const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
   if (!obj) return;
@@ -507,21 +557,29 @@ export async function npcWalk5(x, y, half, context) {
 }
 
 export async function teamWalk(x, y, half, context) {
+  await checkNeedDraw();
+
   // 步骤 1：让队长开始行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
   return await stepAction(context, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 2));
 }
 
 export async function teamWalk2(x, y, half, context) {
+  await checkNeedDraw();
+
   // 步骤 1：让队长开始快速行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
   return await stepAction(context, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 4));
 }
 
 export async function teamWalk3(x, y, half, context) {
+  await checkNeedDraw();
+
   // 步骤 1：让队长开始中速行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
   return await stepAction(context, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 6));
 }
 
 export async function teamWalk4(x, y, half, context) {
+  await checkNeedDraw();
+  
   // 步骤 1：让队长开始极速行走运动，跟随者会在重绘时自动计算其相对坐标，实现跟随移动
   return await stepAction(context, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 8));
 }
