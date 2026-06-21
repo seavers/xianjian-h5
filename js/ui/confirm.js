@@ -67,11 +67,11 @@ export const Confirm = {
 
     // 步骤 4：绘制“否”按钮小框，文字居中 (否：word.dat #19)
     UI.drawLabel(130, 100, 2);
-    UI.drawWord(19, 136, 109, yesNoColor(0));
+    UI.drawWord(19, 146, 109, yesNoColor(0));
 
     // 步骤 5：绘制“是”按钮小框，文字居中 (是：word.dat #20)
-    UI.drawLabel(200, 100, 2);
-    UI.drawWord(20, 211, 109, yesNoColor(1));
+    UI.drawLabel(205, 100, 2);
+    UI.drawWord(20, 221, 109, yesNoColor(1));
   },
 
   onInput(input) {

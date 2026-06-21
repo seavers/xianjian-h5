@@ -291,7 +291,7 @@ function _charCode2FonId(code) {
 const bbb = 1665;
 
 export function loadFon(fonId, color) {
-  if (color) {
+  if (color !== undefined) {
     return loadFon2(fonId, color);
   }
 
@@ -322,27 +322,30 @@ export function loadFon(fonId, color) {
 }
 
 export function loadFon2(fonId, color) {
-  const index = fonId;
-  const fon = load('jianti.fon');
-  const base = bbb + index * 30;
+  const key = 'word_' + fonId + '_' + color;
+  return fromCache(key, () => {
+    const index = fonId;
+    const fon = load('jianti.fon');
+    const base = bbb + index * 30;
 
-  const data = fon.slice(base, base + 30);
-  const view = data.toDataView();
+    const data = fon.slice(base, base + 30);
+    const view = data.toDataView();
 
-  const width = 16;
-  const height = 15;
+    const width = 16;
+    const height = 15;
 
-  const pixels = [];
-  for (let i = 0; i < width * height; i++) {
-    const pos = i % 16 < 8 ? i + 16 : i;
-    if (view.nextBits(1)) {
-      pixels[pos] = color | 0xFF000000; // 最低字节为0xFF，并带有具体颜色通道
-    } else {
-      pixels[pos] = 0x00000000;
+    const pixels = [];
+    for (let i = 0; i < width * height; i++) {
+      const pos = i % 16 < 8 ? i + 16 : i;
+      if (view.nextBits(1)) {
+        pixels[pos] = color | 0xFF000000; // 最低字节为0xFF，并带有具体颜色通道
+      } else {
+        pixels[pos] = 0x00000000;
+      }
     }
-  }
 
-  return createImage(pixels, width, height);
+    return createImage(pixels, width, height);
+  });
 }
 
 export function loadPic(picId) {

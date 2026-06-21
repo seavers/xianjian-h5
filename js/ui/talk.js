@@ -132,6 +132,8 @@ export async function drawTalk(msgId) {
     await waitKey();
   } else if (isNextScrollTalks(t)) {
     // await waitKey();
+  } else if (isNextConfirm(t)) {
+    // 步骤 2.5：如果是确认选择菜单，则不在此等待按键且不清空对话框，保留文字在底层
   } else if(!isNextTalk(t)) {
     await waitKey();
     clearTalk();
@@ -446,6 +448,15 @@ function isNextScrollTalks(t) {
   const script = state.scripts[t.scriptId + 1];
   if (!script) return false;
   return script.code === 0x8E;
+}
+
+function isNextConfirm(t) {
+  if (!t) return false;
+
+  // 步骤 3：探测下一条指令是否为确认选择菜单，也使用 scriptId + 1
+  const script = state.scripts[t.scriptId + 1];
+  if (!script) return false;
+  return script.code === 0x0A;
 }
 
 
