@@ -189,42 +189,61 @@ function drawWord(charCode, x, y, color) {
 }
 
 async function drawLine(text, x, y) {
-  return new Promise(function(resolve) {
-    const texts = calcText(text);
-    let i = 0;
-    const timer = setInterval(() => {
-      if (i >= texts.length) {
-        clearInterval(timer);
-        resolve('');
-        return;
-      }
-      const charCode = texts[i].charCode;
-      drawWord(charCode, x + i * 16, y, texts[i].color);
-      i++;
-    }, 15);
-  })
+  const texts = calcText(text);
+
+  // 步骤 1：遍历已解析的字符数组，依次渲染每个字符，并在字符间根据其配置的延时进行等待，以实现平滑打字动画
+  for (let i = 0; i < texts.length; i++) {
+    const charCode = texts[i].charCode;
+    drawWord(charCode, x + i * 16, y, texts[i].color);
+
+    const delay = texts[i].delay !== undefined ? texts[i].delay : 15;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
 }
 
 function calcText(text) {
   let color = null;
+  let currentDelayTime = 3;
 
   const r = [];
   for (let i = 0; i < text.length; i++) {
     const b = text.getByte(i);
 
+    // 步骤 1：处理不同类型的控制字符（颜色和延迟）
     if (b === 34) { // "
       color = color === 0xFCDC84 ? null : 0xFCDC84;
     } else if (b === 45) { // -
       color = color === 0xFFFF00 ? null : 0xFFFF00;
     } else if (b === 39) { // '
       color = color === 0x0000FF ? null : 0x0000FF;
+    } else if (b === 36 && i + 2 < text.length) { // $，表示打字延迟控制字符
+      const digit1 = text.getByte(i + 1);
+      const digit2 = text.getByte(i + 2);
+
+      // 步骤 2：如果 $ 后面跟随两个有效数字，解析为十进制延迟值，并按比例换算，跳过这 2 个字节
+      if (digit1 >= 48 && digit1 <= 57 && digit2 >= 48 && digit2 <= 57) {
+        const val = (digit1 - 48) * 10 + (digit2 - 48);
+        currentDelayTime = Math.floor(val * 10 / 7);
+        i += 2;
+      } else {
+        const delay = currentDelayTime === 3 ? 15 : currentDelayTime * 8;
+        r.push({
+          charCode: text.getShort(i++),
+          color: color,
+          delay: delay
+        });
+      }
     } else {
+      // 步骤 3：常规字符解析，记录对应的汉字点阵字形 charCode，并将当前生效的延迟毫秒数保存到 delay 属性中
+      const delay = currentDelayTime === 3 ? 15 : currentDelayTime * 8;
       r.push({
         charCode: text.getShort(i++),
-        color: color
+        color: color,
+        delay: delay
       });
     }
   }
+
   return r;
 }
 
