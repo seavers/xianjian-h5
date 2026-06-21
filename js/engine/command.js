@@ -842,6 +842,15 @@ export function setObjectScript(objectId, value, index) {
   }
 }
 
+export function enemyUseMagic(magicId, rate, param3, context) {
+  // 步骤 1：判断执行上下文是否为敌人类型的自动/战斗脚本
+  if (context && context.type === 'enemy') {
+    // 步骤 2：设置该敌人在战斗中使用的法术以及触发法术攻击的概率比例
+    this.wMagic = magicId;
+    this.wMagicRate = rate === 0 ? 10 : rate;
+  }
+}
+
 export function setNpcFrame(frame) {
   this.frame = frame;
   this.dir = 0;        // 强制指向南方(0)
@@ -1663,6 +1672,7 @@ scriptCodes[0x45] = { func: setFightMusic, desc: '设置战斗背景音乐' };
 scriptCodes[0x47] = { func: playSoundEffect, desc: '设置特技音效' };
 scriptCodes[0x46] = { func: setRolePos, desc: '设置主角/队员瓦片位置' };
 scriptCodes[0x65] = { func: setRoleTile, desc: '设置主角/队员形象' };
+scriptCodes[0x67] = { func: enemyUseMagic, desc: '设置敌方使用的法术与概率' };
 scriptCodes[0x15] = { func: setRoleIndex, desc: '设置队员动作方向/帧' };
 scriptCodes[0x75] = { func: setRoleGroup, desc: '设置组队伙伴' };
 scriptCodes[0x76] = { func: showFbp, desc: '展示全屏剧情背景图' };
