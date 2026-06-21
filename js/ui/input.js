@@ -47,6 +47,13 @@ if (typeof document !== 'undefined') {
 
     const mode = state.currentMode;
 
+    // 步骤 0：对话等待按键挂起期间，优先拦截并交由 Talk 模块处理
+    if (Talk.isWaiting) {
+      ev.preventDefault();
+      Talk.onInput(input);
+      return;
+    }
+
     if (mode === 'battle') {
       ev.preventDefault();
       if (window.Battle && window.Battle.onInput) {
@@ -75,13 +82,6 @@ if (typeof document !== 'undefined') {
     if (mode === 'startup' || mode === 'esc') {
       ev.preventDefault();
       ESC.onInput(input);
-      return;
-    }
-
-    // 步骤 2：对话等待按键挂起期间，拦截并交由 Talk 模块处理
-    if (Talk.isWaiting) {
-      ev.preventDefault();
-      Talk.onInput(input);
       return;
     }
 
