@@ -4,6 +4,7 @@ import { loadSss, loadDat, fromCache, caches } from './resources/pal.js';
 import { setRolePos, setRoleTile, setRoleIndex, setRoleGroup, toggleScene, calcMap } from './engine/command.js';
 import { ESC } from './esc/esc.js';
 import { Shop } from './ui/shop.js';
+import { Confirm } from './ui/confirm.js';
 import { Hex } from './utils/hex.js';
 import { Talk } from './ui/talk.js';
 import { Script } from './engine/script.js';
@@ -372,6 +373,7 @@ ready(() => {
   window.setRolePos = setRolePos;
   window.Battle = Battle;
   window.Shop = Shop;
+  window.Confirm = Confirm;
 
   if (!DEBUG) {
     state.currentMode = 'startup';

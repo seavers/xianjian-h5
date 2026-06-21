@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import { Shop } from '../ui/shop.js';
+import { Confirm } from '../ui/confirm.js';
 import { CIRCLE_SCRIPT, REPLACE_ENTRY, RESET_SCRIPT, Script } from './script.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
@@ -1233,10 +1234,7 @@ export function replaceEntry() {
 }
 
 export async function confirmMenu(failScriptId) {
-  let result = true;
-  if (typeof window !== 'undefined' && window.confirm) {
-    result = window.confirm("是否确定？\n点击【确定】选择是，点击【取消】选择否。");
-  }
+  const result = await Confirm.open();
   if (!result) {
     return failScriptId;
   }
