@@ -656,6 +656,16 @@ export async function useNightPalette() {
   console.log('[0x54 useNightPalette] 强制开启黑夜调色板模式');
 }
 
+export function setPalette(paletteId) {
+  // 步骤 1：更新全局状态的调色板 ID
+  state.paletteId = paletteId;
+
+  // 步骤 2：若当前无需渐变淡入，则立即强制重绘底层大地图以生效新调色板
+  if (!state.needToFadeIn) {
+    update(true);
+  }
+}
+
 export async function addMagic(magicId, roleId) {
   // 步骤 1：分析主角索引位置，若 roleId 为 0 代表当前触发脚本的主角 (下标 0)，否则对应 roleId - 1
   const roleIndex = roleId === 0 ? 0 : roleId - 1;
@@ -1697,6 +1707,7 @@ scriptCodes[0x7F] = { func: moveViewport, desc: '平移或定位镜头视口' };
 scriptCodes[0x80] = { func: toggleDayNight, desc: '切换昼夜调色板' };
 scriptCodes[0x81] = { func: faceNpcTrig, desc: '面朝NPC触发脚本' };
 scriptCodes[0x82] = { func: npcWalk5, desc: 'NPC以极速行走移动至坐标' };
+scriptCodes[0x8B] = { func: setPalette, desc: '切换使用指定调色板' };
 scriptCodes[0x8F] = { func: halveMoney, desc: '金钱数值减半' };
 
 scriptCodes[0xFFFF] = { func: talk, desc: '展示剧情人物对话框' };
