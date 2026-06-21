@@ -925,7 +925,8 @@ export function performToggleScene(targetSceneId) {
   console.log('切换场景: ' + targetSceneId + ' 地图: ' + state.mapId);
 
   // 刷新出首屏，为淡入做准备
-  update(); // 重绘画面
+  // 这里不再重绘，因为有些场景这个时候没有准备好，比如彩依的回忆剧情脚本26386
+  // update(); // 重绘画面
 
   // 同步启动场景脚本
   Script.startScene(scene);

@@ -113,12 +113,12 @@ export const Script = {
     if (needFade) {
       // 步骤 2.1：前序执行了 0x50，画面已黑，无需再次 fadeOut。直接更新场景并 fadeIn
       performToggleScene(targetSceneId);
-      await fadeIn();
+      // await fadeIn();
     } else {
       // 步骤 2.2：普通的直接切换，执行完整的渐变过渡
       await fadeOut();
       performToggleScene(targetSceneId);
-      await fadeIn();
+      // await fadeIn();
     }
   },
 
