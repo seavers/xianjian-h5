@@ -289,6 +289,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
     window.scriptLogStore = window.scriptLogStore || [];
     window.scriptMainLogs = window.scriptMainLogs || [];
     window.scriptNpcLogs = window.scriptNpcLogs || {};
+    window.scriptLogWriteCount = window.scriptLogWriteCount || 0;
     window.scriptLogStoreMax = 1000;
 
     window.refreshDashboard = () => {
@@ -346,6 +347,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
             window.scriptNpcLogs[npcId].shift();
           }
         }
+        window.scriptLogWriteCount = (window.scriptLogWriteCount || 0) + 1;
       });
 
       if (window.scriptLogStore.length > window.scriptLogStoreMax) {

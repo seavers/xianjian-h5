@@ -4,6 +4,7 @@ export function initScriptLogPanel({ getInstructionDetail }) {
   		window.scriptLogStore = [];
   		window.scriptLogStoreMax = 1000;
   		window.lastLogFilterSignature = '';
+  		window.scriptLogWriteCount = 0;
   		window.scriptMainLogs = []; // 主指令内存池（非auto）
   		window.scriptNpcLogs = {}; // 每个 NPC 独立的分组日志映射表，键为 npcId，值为数组
 
@@ -21,6 +22,7 @@ export function initScriptLogPanel({ getInstructionDetail }) {
   			window.scriptLogStore = [];
   			window.scriptMainLogs = [];
   			window.scriptNpcLogs = {};
+  			window.scriptLogWriteCount = 0;
 
   			renderScriptLogs({ force: true });
   		}
@@ -165,7 +167,7 @@ export function initScriptLogPanel({ getInstructionDetail }) {
   			const filterState = getScriptLogFilterState();
 
   			// 缓存 Signature 避免频繁重绘
-  			const filterSignature = `${filterState.mode}:${selectedNpcId ?? 'none'}:${window.logLimit}:${activeNpcCount}:${window.scriptMainLogs.length}`;
+  			const filterSignature = `${filterState.mode}:${selectedNpcId ?? 'none'}:${window.logLimit}:${activeNpcCount}:${window.scriptLogWriteCount || 0}`;
   			if (!force && window.lastLogFilterSignature === filterSignature) {
   				updateScriptLogFilterUI();
   				return;
@@ -230,7 +232,7 @@ export function initScriptLogPanel({ getInstructionDetail }) {
   			const selectedNpcId = getSelectedNpcLogId();
   			const activeNpcCount = Object.keys(window.scriptNpcLogs).length;
   			const filterState = getScriptLogFilterState();
-  			const filterSignature = `${filterState.mode}:${selectedNpcId ?? 'none'}:${window.logLimit}:${activeNpcCount}:${window.scriptMainLogs.length}`;
+  			const filterSignature = `${filterState.mode}:${selectedNpcId ?? 'none'}:${window.logLimit}:${activeNpcCount}:${window.scriptLogWriteCount || 0}`;
 
   			if (!force && window.lastLogFilterSignature === filterSignature) {
   				updateScriptLogFilterUI();
@@ -272,6 +274,7 @@ export function initScriptLogPanel({ getInstructionDetail }) {
   				}
   			}
 
+  			window.scriptLogWriteCount = (window.scriptLogWriteCount || 0) + 1;
   			// renderScriptLogs({ force: true, stickToBottom: true });
   		}
 
