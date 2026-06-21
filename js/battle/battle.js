@@ -231,6 +231,9 @@ export async function start(id, failId, fleeId) {
 
   // 运行战前 pre-battle 的回合开始脚本
   for (let i = 0; i < enemies.length; i++) {
+    if (checkBattleEnd()) {
+      break;
+    }
     const enemy = enemies[i];
     if (enemy.hp > 0 && enemy.wScriptOnTurnStart) {
       const result = await Script.runTriggerScript(enemy.wScriptOnTurnStart, enemy, 'enemy');
@@ -240,7 +243,7 @@ export async function start(id, failId, fleeId) {
 
   while(true) {
     if (!isBattleRunning) {
-      return;
+      return battleResult;
     }
 
     await startBattleClock();
@@ -907,9 +910,14 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
 
 // 步骤 8：检查并进行战斗胜负胜败判定
 function checkBattleEnd() {
+  // 如果战斗已经不处于运行状态，或结算阶段已开启，说明已判定结束，直接返回 true
+  if (!isBattleRunning || phase === 'end') {
+    return true;
+  }
+
   // 步骤 8.1：若通过 0x89 脚本指令强制设定了战斗结果
   if (battleResult !== 1000) {
-    endBattle(battleResult === 3);
+    endBattle(battleResult);
     return true;
   }
 
@@ -917,10 +925,12 @@ function checkBattleEnd() {
   const allPlayersDead = players.every(p => p.hp <= 0);
 
   if (allEnemiesDead) {
-    endBattle(true);
+    battleResult = 3;
+    endBattle(3);
     return true;
   } else if (allPlayersDead) {
-    endBattle(false);
+    battleResult = 1;
+    endBattle(1);
     return true;
   }
 
@@ -928,7 +938,7 @@ function checkBattleEnd() {
 }
 
 // 步骤 9：战斗结束，清理状态并结算后续剧情脚本分支
-async function endBattle(victory) {
+async function endBattle(result) {
   phase = 'end';
   clearInterval(battleTimer);
   battleTimer = null;
@@ -944,15 +954,30 @@ async function endBattle(victory) {
   // 步骤 9.1：绘制胜负消息框提示
   const talkCtx = state.contexts.talk;
   if (talkCtx) {
-    talkCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    talkCtx.fillRect(80, 80, 160, 40);
-    talkCtx.strokeStyle = '#ffd700';
-    talkCtx.strokeRect(80, 80, 160, 40);
+    let resultText = '';
+    let textColor = '';
+    if (result === 3 || result === true) {
+      resultText = '战 斗 胜 利';
+      textColor = '#00ffaa';
+    } else if (result === 1 || result === false) {
+      resultText = '全 员 战 败';
+      textColor = '#ff3333';
+    } else if (result === 0xFFFF) {
+      resultText = '逃 跑 成 功';
+      textColor = '#ffd700';
+    }
 
-    talkCtx.fillStyle = victory ? '#00ffaa' : '#ff3333';
-    talkCtx.font = 'bold 12px sans-serif';
-    talkCtx.textAlign = 'center';
-    talkCtx.fillText(victory ? '战 斗 胜 利' : '全 员 战 败', 160, 104);
+    if (resultText) {
+      talkCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      talkCtx.fillRect(80, 80, 160, 40);
+      talkCtx.strokeStyle = '#ffd700';
+      talkCtx.strokeRect(80, 80, 160, 40);
+
+      talkCtx.fillStyle = textColor;
+      talkCtx.font = 'bold 12px sans-serif';
+      talkCtx.textAlign = 'center';
+      talkCtx.fillText(resultText, 160, 104);
+    }
   }
 
   // 步骤 9.2：等待 1.5 秒以展示结果框
@@ -1109,5 +1134,7 @@ function calcBaseDamage(attackStrength, defense) {
 export async function setBattleResult(result) {
   // 步骤 13：设置当前由脚本强行指定的战斗结果，以在主循环中自动退出战斗
   battleResult = result;
-  await endBattle(result);
+  if (isBattleRunning && phase !== 'end') {
+    await endBattle(result);
+  }
 }

@@ -660,10 +660,10 @@ export function setPalette(paletteId) {
   // 步骤 1：更新全局状态的调色板 ID
   state.paletteId = paletteId;
 
-  // 步骤 2：若当前无需渐变淡入，则立即强制重绘底层大地图以生效新调色板
-  if (!state.needToFadeIn) {
-    update(true);
-  }
+  // // 步骤 2：若当前无需渐变淡入，则立即强制重绘底层大地图以生效新调色板
+  // if (!state.needToFadeIn) {
+  //   update(true);
+  // }
 }
 
 export function setBattleResult(result) {
@@ -1261,31 +1261,34 @@ export async function startBattle(battleId, failScriptId, fleeScriptId) {
   // 步骤 1：输出战斗启动的详细调试日志，表明当前的战斗 ID 以及对应的跳转分支
   console.log(`[0x07 startBattle] 开始战斗 (Battle ID: ${battleId}, 战败跳转: ${failScriptId}, flee: ${fleeScriptId})`);
 
-  let victory = false;
+  let result = 3; // 默认胜利
 
   // 步骤 2：判断是否已引入真实的战斗系统，若有则调用并异步挂起，直到战斗正常结束并返回胜负结果
   if (window.Battle && typeof window.Battle.start === 'function') {
-    victory = await window.Battle.start(battleId, failScriptId, fleeScriptId);
+    result = await window.Battle.start(battleId, failScriptId, fleeScriptId);
   } else {
     // 降级使用弹窗模拟，以防开发期模块未载入
     if (typeof window !== 'undefined' && window.confirm) {
-      victory = window.confirm(`[触发战斗 ID: ${battleId}]\n点击【确定】模拟战斗胜利，点击【取消】模拟战斗逃跑/战败。`);
+      const victory = window.confirm(`[触发战斗 ID: ${battleId}]\n点击【确定】模拟战斗胜利，点击【取消】模拟战斗逃跑/战败。`);
+      result = victory ? 3 : 1;
     } else {
-      victory = true;
+      result = 3;
     }
   }
 
   // 步骤 3：根据选择的结果，若模拟失败/逃跑且对应分支存在，则精准跳转到对应的剧情脚本分支
-  if (!victory) {
+  if (result === 0xFFFF) {
     if (fleeScriptId) {
       console.log(`[0x07 startBattle] 战斗逃跑，跳转至逃跑分支: ${fleeScriptId}`);
       return fleeScriptId;
-    } else if (failScriptId) {
+    }
+  } else if (result === 1) {
+    if (failScriptId) {
       console.log(`[0x07 startBattle] 战斗战败，跳转至战败分支: ${failScriptId}`);
       return failScriptId;
     }
   } else {
-    console.log(`[0x07 startBattle] 战斗胜利，继续后续主线剧情。`);
+    console.log(`[0x07 startBattle] 战斗结束，结果代码: ${result}，继续后续主线剧情。`);
   }
 }
 
