@@ -806,6 +806,35 @@ export function setNpcTrigScr(objId, trigScr) {
   obj.trigScr = trigScr;
 }
 
+export function setObjectScript(objectId, value, index) {
+  // 步骤 1：获取对应的事件物体/物品配置项
+  const item = state.items[objectId];
+  if (!item) return;
+
+  // 步骤 2：根据 targetIndex (index + 2) 对映射的属性字段进行更新
+  const targetIndex = index + 2;
+  switch (targetIndex) {
+    case 0:
+      item.roleId = value;
+      break;
+    case 1:
+      item.gold = value;
+      break;
+    case 2:
+      item.useScr = value;
+      break;
+    case 3:
+      item.equScr = value;
+      break;
+    case 4:
+      item.dropScr = value;
+      break;
+    case 5:
+      item.flags = value;
+      break;
+  }
+}
+
 export function setNpcFrame(frame) {
   this.frame = frame;
   this.dir = 0;        // 强制指向南方(0)
@@ -1709,5 +1738,6 @@ scriptCodes[0x81] = { func: faceNpcTrig, desc: '面朝NPC触发脚本' };
 scriptCodes[0x82] = { func: npcWalk5, desc: 'NPC以极速行走移动至坐标' };
 scriptCodes[0x8B] = { func: setPalette, desc: '切换使用指定调色板' };
 scriptCodes[0x8F] = { func: halveMoney, desc: '金钱数值减半' };
+scriptCodes[0x90] = { func: setObjectScript, desc: '设置事件物体脚本或属性数据' };
 
 scriptCodes[0xFFFF] = { func: talk, desc: '展示剧情人物对话框' };
