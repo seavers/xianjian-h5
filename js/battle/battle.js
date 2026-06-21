@@ -42,6 +42,7 @@ let players = [];
 let enemies = [];
 let damagePopups = [];
 let isBattleRunning = false;
+let battleResult = 1000;
 
 // 战斗状态机属性
 let turn = 0;
@@ -58,6 +59,7 @@ export async function start(id, failId, fleeId) {
   battleId = id;
   failScriptId = failId;
   fleeScriptId = fleeId;
+  battleResult = 1000; // 重置脚本控制的战斗结果
 
   // 步骤 1.1：判断前序场景是否已被 0x50 淡出。若是，则无需再次淡出；若否，则先播放淡出动画
   await checkAndFadeOut();
@@ -911,6 +913,12 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
 
 // 步骤 8：检查并进行战斗胜负胜败判定
 function checkBattleEnd() {
+  // 步骤 8.1：若通过 0x89 脚本指令强制设定了战斗结果
+  if (battleResult !== 1000) {
+    endBattle(battleResult === 3);
+    return true;
+  }
+
   const allEnemiesDead = enemies.every(e => e.hp <= 0);
   const allPlayersDead = players.every(p => p.hp <= 0);
 
@@ -1102,4 +1110,9 @@ function calcBaseDamage(attackStrength, defense) {
   }
 
   return damage;
+}
+
+export function setBattleResult(result) {
+  // 步骤 13：设置当前由脚本强行指定的战斗结果，以在主循环中自动退出战斗
+  battleResult = result;
 }

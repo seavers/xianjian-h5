@@ -666,6 +666,13 @@ export function setPalette(paletteId) {
   }
 }
 
+export function setBattleResult(result) {
+  // 步骤 1：若当前处于战斗状态下，通知并同步战斗主模块强制设定胜负结果
+  if (window.Battle && typeof window.Battle.setBattleResult === 'function') {
+    window.Battle.setBattleResult(result);
+  }
+}
+
 export async function addMagic(magicId, roleId) {
   // 步骤 1：分析主角索引位置，若 roleId 为 0 代表当前触发脚本的主角 (下标 0)，否则对应 roleId - 1
   const roleIndex = roleId === 0 ? 0 : roleId - 1;
@@ -1736,6 +1743,7 @@ scriptCodes[0x7F] = { func: moveViewport, desc: '平移或定位镜头视口' };
 scriptCodes[0x80] = { func: toggleDayNight, desc: '切换昼夜调色板' };
 scriptCodes[0x81] = { func: faceNpcTrig, desc: '面朝NPC触发脚本' };
 scriptCodes[0x82] = { func: npcWalk5, desc: 'NPC以极速行走移动至坐标' };
+scriptCodes[0x89] = { func: setBattleResult, desc: '设定战斗胜负结果并退出' };
 scriptCodes[0x8B] = { func: setPalette, desc: '切换使用指定调色板' };
 scriptCodes[0x8F] = { func: halveMoney, desc: '金钱数值减半' };
 scriptCodes[0x90] = { func: setObjectScript, desc: '设置事件物体脚本或属性数据' };
