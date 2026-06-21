@@ -44,6 +44,9 @@ let damagePopups = [];
 let isBattleRunning = false;
 let battleResult = 1000;
 
+// 控制是否渲染操作界面（左下角选择区和右下/中间角色HP/MP区）
+let showCommandUI = false;
+
 // 战斗状态机属性
 let turn = 0;
 let phase = 'select'; // 'select' | 'action' | 'end'
@@ -69,6 +72,7 @@ export async function start(id, failId, fleeId) {
   isBattleRunning = true;
   turn = 1;
   phase = 'select';
+  showCommandUI = false; // 初始时，隐藏战斗操作界面（待战前脚本结束后方可显示）
   activePlayerIndex = 0;
   selectedAction = 0;
   menuState = 'main';
@@ -241,6 +245,12 @@ export async function start(id, failId, fleeId) {
     }
   }
 
+  // 战前回合开始脚本执行完毕后，如战斗未结束则显示操作界面
+  if (phase === 'select' && !checkBattleEnd()) {
+    showCommandUI = true;
+    draw();
+  }
+
   while(true) {
     if (!isBattleRunning) {
       return battleResult;
@@ -338,7 +348,7 @@ function draw() {
   });
 
   // 4. 指令选择阶段 UI 绘制
-  if (phase === 'select') {
+  if (showCommandUI && phase === 'select') {
     // 绘制菱形指令选择菜单
     const iconCoords = [
       { img: attackIcon, x: 27, y: 140 }, // 攻击 (0)
@@ -382,35 +392,37 @@ function draw() {
   }
 
   // 5. 绘制右侧状态栏面板 (头像与 HP/MP)
-  players.forEach((p, i) => {
-    const bx = 91 + 77 * i;
-    const by = 165;
+  if (showCommandUI) {
+    players.forEach((p, i) => {
+      const bx = 91 + 77 * i;
+      const by = 165;
 
-    // 边框
-    if (borderImage) {
-      battleCtx.drawImage(borderImage, bx, by);
-    }
+      // 边框
+      if (borderImage) {
+        battleCtx.drawImage(borderImage, bx, by);
+      }
 
-    // 头像 (49 + 角色 0-based 索引)
-    const avatarImg = loadPic(49 + p.index);
-    if (avatarImg) {
-      battleCtx.drawImage(avatarImg, bx - 3, by);
-    }
+      // 头像 (49 + 角色 0-based 索引)
+      const avatarImg = loadPic(49 + p.index);
+      if (avatarImg) {
+        battleCtx.drawImage(avatarImg, bx - 3, by);
+      }
 
-    // 数字渲染：显示「当前HP / 最大HP」和「当前MP / 最大MP」
-    // 参考 sdlpal: PAL_DrawNumber(HP, ...) + SPRITENUM_SLASH(#40号图) + PAL_DrawNumber(MaxHP, ...)
-    if (p.hp > 0) {
-      // HP 行（黄色数字 20~29，中间是 #40 号斜杠图片）
-      drawHpMpLine(battleCtx, p.hp, p.maxHp, 'hp', bx + 29, by + 6);
-      // MP 行（青色数字 57~66，中间是 #40 号斜杠图片）
-      drawHpMpLine(battleCtx, p.mp, p.maxMp, 'mp', bx + 29, by + 20);
-    } else {
-      // 阵亡状态
-      battleCtx.fillStyle = '#ff3333';
-      battleCtx.font = 'bold 8px sans-serif';
-      battleCtx.fillText('阵亡', bx + 44, by + 18);
-    }
-  });
+      // 数字渲染：显示「当前HP / 最大HP」和「当前MP / 最大MP」
+      // 参考 sdlpal: PAL_DrawNumber(HP, ...) + SPRITENUM_SLASH(#40号图) + PAL_DrawNumber(MaxHP, ...)
+      if (p.hp > 0) {
+        // HP 行（黄色数字 20~29，中间是 #40 号斜杠图片）
+        drawHpMpLine(battleCtx, p.hp, p.maxHp, 'hp', bx + 29, by + 6);
+        // MP 行（青色数字 57~66，中间是 #40 号斜杠图片）
+        drawHpMpLine(battleCtx, p.mp, p.maxMp, 'mp', bx + 29, by + 20);
+      } else {
+        // 阵亡状态
+        battleCtx.fillStyle = '#ff3333';
+        battleCtx.font = 'bold 8px sans-serif';
+        battleCtx.fillText('阵亡', bx + 44, by + 18);
+      }
+    });
+  }
 
   // 6. 绘制弹出的红/白伤害字样
   const time = Date.now();
@@ -576,6 +588,8 @@ export function onInput(input) {
 
 // 步骤 5：按速度出手顺序依次执行战斗结算
 async function runActionPhase() {
+  // 结算期间隐藏操作界面与角色状态栏
+  showCommandUI = false;
   phase = 'action';
   draw();
 
@@ -668,6 +682,9 @@ async function runActionPhase() {
     });
 
     turn++;
+
+    // 新回合指令选择时显示操作界面
+    showCommandUI = true;
     draw();
   }
 }
@@ -939,9 +956,14 @@ function checkBattleEnd() {
 
 // 步骤 9：战斗结束，清理状态并结算后续剧情脚本分支
 async function endBattle(result) {
+  // 战斗结束，隐藏操作界面与角色状态栏
+  showCommandUI = false;
   phase = 'end';
   clearInterval(battleTimer);
   battleTimer = null;
+
+  // 擦除已隐藏的操作界面
+  draw();
 
   // 运行战斗结束脚本
   for (let i = 0; i < enemies.length; i++) {
