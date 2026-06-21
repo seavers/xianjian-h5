@@ -97,6 +97,63 @@ function LazySingleItemCard({ itemId, itemLabelText, loadFn, scale }) {
   `;
 }
 
+// 1.5. 游戏调色板色块展示组件：用于展示256种颜色的色块及十六进制信息
+function PaletteItemCard({ index, colorInt }) {
+  // colorInt 是 ARGB 格式，即 (a << 24) + (r << 16) + (g << 8) + b
+  const r = (colorInt >> 16) & 0xFF;
+  const g = (colorInt >> 8) & 0xFF;
+  const b = colorInt & 0xFF;
+  const hex = '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+  const rgbStr = `rgb(${r}, ${g}, ${b})`;
+
+  return html`
+    <div 
+      onMouseEnter=${(e) => {
+        e.currentTarget.style.borderColor = 'var(--glow-yellow)';
+        e.currentTarget.style.background = 'rgba(255, 230, 100, 0.03)';
+      }}
+      onMouseLeave=${(e) => {
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.02)';
+        e.currentTarget.style.background = 'rgba(255,255,255,0.015)';
+      }}
+      style=${{
+        background: 'rgba(255,255,255,0.015)',
+        border: '1px solid rgba(255,255,255,0.02)',
+        borderRadius: '2px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '6px',
+        transition: 'all 0.1s',
+        minWidth: '70px',
+        minHeight: '70px',
+        boxSizing: 'border-box'
+      }}
+    >
+      <div style=${{ 
+        width: '40px', 
+        height: '40px', 
+        background: rgbStr, 
+        border: '1px solid rgba(255,255,255,0.1)', 
+        borderRadius: '1px' 
+      }}></div>
+      <span style=${{
+        fontSize: '7.5px',
+        color: 'rgba(255,255,255,0.4)',
+        fontWeight: 'bold',
+        marginTop: '4px',
+        textAlign: 'center',
+        whiteSpace: 'pre-line',
+        lineHeight: 1.2
+      }}>
+        IDX: ${index}
+        ${hex}
+      </span>
+    </div>
+  `;
+}
+
 // 2. 原生点阵短语卡片懒加载子组件
 function LazyWordItemCard({ wordId, labelText, loaderModule, palResources }) {
   const containerRef = useRef(null);
@@ -922,6 +979,8 @@ function ImageExplorerApp() {
         const soundsMkf = sound.getSoundsMkf();
         const mkf = vocMkf || soundsMkf;
         total = mkf ? (Math.floor(mkf.getInt(0) / 4) - 1) : 250;
+      } else if (currentType === 'palette') {
+        total = 256;
       }
       setTotalItems(total);
     } catch (e) {
@@ -952,6 +1011,7 @@ function ImageExplorerApp() {
       else if (type === 'rng') setCurrentScale(1);
       else if (type === 'music') setCurrentScale(1);
       else if (type === 'sound') setCurrentScale(1);
+      else if (type === 'palette') setCurrentScale(1);
     }
   };
 
@@ -1201,6 +1261,11 @@ function ImageExplorerApp() {
     const items = [];
     const { pal, loader, rng, music, sound } = modules;
 
+    let palette = null;
+    if (currentType === 'palette') {
+      palette = pal.loadPal(window.state ? window.state.paletteId : 0);
+    }
+
     for (let i = startIdx; i < endIdx; i++) {
       if (currentType === 'rgm') {
         items.push(html`<${LazySingleItemCard} key=${i} itemId=${i} itemLabelText=${`RGM #${i}`} scale=${currentScale} loadFn=${(id) => pal.loadRgm(id)} />`);
@@ -1228,6 +1293,9 @@ function ImageExplorerApp() {
         items.push(html`<${MusicItemCard} key=${i} musicId=${i} labelText=${`BGM #${i}`} musicModule=${music} activePlayingId=${activePlayingId} setActivePlayingId=${setActivePlayingId} />`);
       } else if (currentType === 'sound') {
         items.push(html`<${SoundItemCard} key=${i} soundId=${i} labelText=${`SFX #${i}`} soundModule=${sound} />`);
+      } else if (currentType === 'palette') {
+        const colorVal = palette ? palette[i] : 0;
+        items.push(html`<${PaletteItemCard} key=${i} index=${i} colorInt=${colorVal} />`);
       }
     }
     return items;
@@ -1270,6 +1338,7 @@ function ImageExplorerApp() {
           <button class=${`btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact ${currentType === 'rng' ? 'active' : ''}`} onClick=${() => handleTypeChange('rng')}>全屏动画 (rng.mkf)</button>
           <button class=${`btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact ${currentType === 'music' ? 'active' : ''}`} onClick=${() => handleTypeChange('music')}>背景音乐 (mus.mkf)</button>
           <button class=${`btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact ${currentType === 'sound' ? 'active' : ''}`} onClick=${() => handleTypeChange('sound')}>游戏音效 (voc.mkf)</button>
+          <button class=${`btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact ${currentType === 'palette' ? 'active' : ''}`} onClick=${() => handleTypeChange('palette')} style=${{ '--tab-accent': 'var(--glow-yellow)' }}>游戏调色板 (palette)</button>
         </div>
 
         <!-- 二级筛选项控制栏 (根据选中的类型动态显示) -->

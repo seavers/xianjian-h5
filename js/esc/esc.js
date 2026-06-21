@@ -6,6 +6,16 @@ import { toggleScene, setRolePos } from '../engine/command.js';
 import { update } from '../ui/draw.js';
 import { loadArchive, saveArchive } from './archive.js';
 import { fadeOut } from '../ui/fade.js';
+import {
+  COLOR_YELLOW,
+  COLOR_GRAY,
+  COLOR_DARK_GRAY,
+  COLOR_RED_BROWN,
+  COLOR_MUTED_RED,
+  COLOR_LIGHT_RED,
+  COLOR_DARK_RED,
+  COLOR_CYAN
+} from '../ui/colors.js';
 
 export const ESC = {
   ShowStatus: false,
@@ -377,12 +387,12 @@ export const ESC = {
           isUsable = (item.flags & 2) !== 0;
         }
 
-        // 步骤 5：确定绘制颜色（不可用项采用鲜红褐色，不可用选中采用淡红色，可用选中采用明黄色）
-        let color = 0xD4D0C0;
+        // 步骤 5：确定绘制颜色，从调色板常量中进行选择
+        let color = COLOR_GRAY;
         if (isUsable) {
-          color = isSelected ? 0xFCDC84 : 0xD4D0C0;
+          color = isSelected ? COLOR_YELLOW : COLOR_GRAY;
         } else {
-          color = isSelected ? 0xE86858 : 0xC03020;
+          color = isSelected ? COLOR_LIGHT_RED : COLOR_DARK_RED;
         }
 
         UI.drawWord(itemId, xText, yText, color);
@@ -434,7 +444,7 @@ export const ESC = {
               dx += 8;
               idx++;
             } else if (b < 128) {
-              const img = loadWord(b, 0xFCDC84);
+              const img = loadWord(b, COLOR_YELLOW);
               if (img) {
                 startupCtx.drawImage(img, dx, dy + 1);
               }
@@ -443,7 +453,7 @@ export const ESC = {
             } else {
               if (idx + 1 < descBytes.length) {
                 const charCode = descBytes.getShort(idx);
-                const img = loadWord(charCode, 0xFCDC84);
+                const img = loadWord(charCode, COLOR_YELLOW);
                 if (img) {
                   startupCtx.drawImage(img, dx, dy);
                 }
@@ -604,7 +614,7 @@ export const ESC = {
 
       // 步骤 4：绘制物品名字及右下角的绿色数量字样
       if (item) {
-        UI.drawWord(itemId, 5, 70, 0xD4D0C0);
+        UI.drawWord(itemId, 5, 70, COLOR_GRAY);
         const ownItems = state.ownItems || [];
         const count = ownItems.filter(id => id === itemId).length;
         if (count > 0) {
@@ -612,7 +622,7 @@ export const ESC = {
         }
       }
 
-      // 步骤 5：在左下角使用木纹卷轴框 (style=1) 绘制使用人切换列表，非选中采用深黑色，选中采用深红褐色以高对比度显示
+      // 步骤 5：在左下角使用木纹卷轴框 (style=1) 绘制使用人切换列表，选中可装备为明黄色，未选中可装备为深黑色，不可装备统一为红褐色
       UI.drawArea(2, 95, 5, state.party.length, 1);
       for (let i = 0; i < state.party.length; i++) {
         const pRole = state.party[i];
@@ -621,20 +631,20 @@ export const ESC = {
         const isSelected = (i === roleIndexInParty);
         const isEquipable = ((state.items[itemId].flags & 2) !== 0) && ((state.items[itemId].flags & (1 << (6 + pRole.index))) !== 0);
 
-        let color = 0x111111;
-        if (isSelected) {
-          color = isEquipable ? 0x7C2414 : 0xC08080;
+        let color = COLOR_DARK_GRAY;
+        if (isEquipable) {
+          color = isSelected ? COLOR_YELLOW : COLOR_DARK_GRAY;
         } else {
-          color = isEquipable ? 0x111111 : 0x888888;
+          color = COLOR_RED_BROWN;
         }
         UI.drawWord(nameId, 15, 108 + i * 18, color);
       }
 
-      // 步骤 6：绘制 6 个装备部位的当前穿戴装备名字 (灰色 0xD4D0C0)，Y 轴间距为原版的 22 像素偏移，X 轴左移对齐
+      // 步骤 6：绘制 6 个装备部位的当前穿戴装备名字 (灰色 COLOR_GRAY)，Y 轴间距为原版的 22 像素偏移，X 轴左移对齐
       for (let part = 0; part < 6; part++) {
         const eqItemId = curRole.equipments[part];
         if (eqItemId && eqItemId !== 0) {
-          UI.drawWord(eqItemId, 130, 11 + part * 22, 0xD4D0C0);
+          UI.drawWord(eqItemId, 130, 11 + part * 22, COLOR_GRAY);
         }
       }
 
