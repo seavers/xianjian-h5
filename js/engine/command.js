@@ -1404,8 +1404,9 @@ export async function buyMenu(storeId) {
   await Shop.open(storeId);
 }
 
-export function sellMenu() {
+export async function sellMenu() {
   console.log('[0x27 sellMenu] 呼出商店卖出菜单');
+  await Shop.openSellMenu();
 }
 
 export function curePoisonByKind(toAll, poisonId) {
