@@ -1260,7 +1260,12 @@ export async function clearTalk() {
   await window.Talk.clearTalk();
 }
 
-export async function updateScreen() {
+export async function updateScreen(p1, p2, p3, {type}) {
+  if (type === 'enemy') {
+    await window.Talk.closeTalk();
+    return;
+  }
+
   state.fadeAlpha = 0;
 
   // 参考钓鱼剧情脚本 14363

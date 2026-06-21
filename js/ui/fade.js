@@ -73,6 +73,12 @@ export async function fadeScreenToRed() {
   state.needToFadeIn = true;
 }
 
+export async function clearFade() {
+  state.fadeAlpha = 0;
+  state.needToFadeIn = false;
+  state.isPaused = false;
+}
+
 export async function fadeEffect() {
 
 }

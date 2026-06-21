@@ -1,5 +1,6 @@
 import { state } from '../engine/state.js';
 import { loadMap, loadGop, loadMgo, loadFon, u9s, u3s, loadFbp } from '../resources/pal.js';
+import { clearFade, fadeIn } from './fade.js';
 
 export const updateCount = [0, 0, 0];
 let tiles = [];
@@ -522,6 +523,13 @@ export function drawEventArea() {
     if (o) {
       drawRhombus(o.x, o.y);
     }
+  }
+}
+
+export async function checkNeedDraw() {
+  if (state.needToFadeIn) {
+    await clearFade();
+    updateFadeInOut();
   }
 }
 
