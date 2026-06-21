@@ -117,6 +117,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
   const [pixelPosText, setPixelPosText] = useState('(-, -)');
   const [eventRangeText, setEventRangeText] = useState('---');
   const [rangeSize, setRangeSize] = useState('-');
+  const [eventDensity, setEventDensity] = useState('-');
   const [syncTimeText, setSyncTimeText] = useState('--:--:--');
   const [paletteIdText, setPaletteIdText] = useState('-');
 
