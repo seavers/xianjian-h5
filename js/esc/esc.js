@@ -735,6 +735,11 @@ export const ESC = {
           for (const key in newAttrs) {
             curRole[key] += newAttrs[key];
           }
+
+          // 步骤 11：替换装备时，将当前手里拿着待比对的装备 itemId 更新为替换下来的旧装备
+          if (oldItemId && oldItemId !== 0) {
+            itemId = oldItemId;
+          }
         }
         ESC.renderAll();
       }
