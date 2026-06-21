@@ -43,6 +43,7 @@ async function showUp(pRgmId) {
   }
 
   isTalking = true;
+  state.currentMode = 'talk';
   talkPosition = 'up';
 
   talkUp = pRgmId ? {
@@ -75,6 +76,7 @@ async function showDown(pRgmId) {
   }
 
   isTalking = true;
+  state.currentMode = 'talk';
   talkPosition = 'down';
 
   talkDown = pRgmId ? {
@@ -111,6 +113,7 @@ function showMessage() {
 
 export async function drawTalk(msgId) {
   isTalking = true;
+  state.currentMode = 'talk';
 
   if (message) {
     message = false;
@@ -357,6 +360,9 @@ export function clearTalk() {
   talkDown = null;
 
   isTalking = false;
+  if (state.currentMode === 'talk') {
+    state.currentMode = 'game';
+  }
 }
 
 
@@ -416,6 +422,7 @@ function waitKey() {
 
 async function drawMessage(msgId) {
   isTalking = true;
+  state.currentMode = 'talk';
   const text = loadMsg(msgId);
   const texts = calcText(text);
   const length = texts.length;
@@ -429,6 +436,7 @@ async function drawMessage(msgId) {
 
 async function drawTips(msgId) {
   isTalking = true;
+  state.currentMode = 'talk';
   const text = loadMsg(msgId);
   const texts = calcText(text);
 

@@ -47,8 +47,8 @@ if (typeof document !== 'undefined') {
 
     const mode = state.currentMode;
 
-    // 步骤 0：对话状态下，优先拦截并交由 Talk 模块处理（排除 confirm 模式以支持其选项输入）
-    if (Talk.isTalking && mode !== 'confirm') {
+    // 步骤 0：对话模式下，优先拦截并交由 Talk 模块处理
+    if (mode === 'talk') {
       ev.preventDefault();
       Talk.onInput(input);
       return;
@@ -161,8 +161,8 @@ if (typeof document !== 'undefined') {
 
     const mode = state.currentMode;
 
-    // 步骤 1：在剧情对话期间，点击屏幕任意区域交由 Talk 模块处理（排除 confirm 模式以支持其选项输入）
-    if (Talk.isTalking && mode !== 'confirm') {
+    // 步骤 1：在剧情对话模式期间，点击屏幕任意区域交由 Talk 模块处理
+    if (mode === 'talk') {
       Talk.onInput('blank');
       return;
     }
