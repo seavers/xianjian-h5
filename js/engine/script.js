@@ -110,18 +110,8 @@ export const Script = {
     // 1. 重置挂起的切换标志，避免重复执行
     state.nextSceneId = -1;
     
-    // 2. 执行淡入淡出
-    const needFade = state.needToFadeIn;
-    if (needFade) {
-      // 步骤 2.1：前序执行了 0x50，画面已黑，无需再次 fadeOut。直接更新场景并 fadeIn
-      performToggleScene(targetSceneId);
-      // await fadeIn();
-    } else {
-      // 步骤 2.2：普通的直接切换，执行完整的渐变过渡
-      await fadeOut();
-      performToggleScene(targetSceneId);
-      // await fadeIn();
-    }
+    // 2. 这里不再执行淡入淡出，因为有些场景不fadeInOut，比如锁妖塔底关于赵灵儿的回忆，切换场景ID后是clearEffect过场，而不是fadeInOut
+    performToggleScene(targetSceneId);
   },
 
   // 步进执行动画/步态进度。如果动画正在进行则返回剩余步数，全部执行完毕则返回 0
