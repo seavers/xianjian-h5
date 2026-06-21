@@ -93,23 +93,6 @@ if (typeof document !== 'undefined') {
 }
 
 function handleGameInput(input, ev) {
-  // 步骤 1：特殊快捷键激活 ESC 系统模块
-  if (input === 'ESC') {
-    ev.preventDefault();
-    ESC.onMenu();
-    return;
-  }
-  if (input === 'e') {
-    ev.preventDefault();
-    ESC.onItem();
-    return;
-  }
-  if (input === 's') {
-    ev.preventDefault();
-    ESC.onStatus();
-    return;
-  }
-
   // 步骤 2：如果当前处于硬暂停，丢弃输入
   if (state.isPaused) {
     ev.preventDefault();
@@ -121,8 +104,25 @@ function handleGameInput(input, ev) {
     return;
   }
 
+  
   // 步骤 4：常规移动和按键交互分发
   switch (input) {
+    // 步骤 1：特殊快捷键激活 ESC 系统模块
+    case 'ESC': {
+      ev.preventDefault();
+      ESC.onMenu();
+      break;
+    }
+    case 'e': {
+      ev.preventDefault();
+      ESC.onItem();
+      break;
+    }
+    case 's': {
+      ev.preventDefault();
+      ESC.onStatus();
+      break;
+    }
     case 'blank': {
       ev.preventDefault();
       onBlank();
