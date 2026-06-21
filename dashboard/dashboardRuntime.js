@@ -117,8 +117,8 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
   const [pixelPosText, setPixelPosText] = useState('(-, -)');
   const [eventRangeText, setEventRangeText] = useState('---');
   const [rangeSize, setRangeSize] = useState('-');
-  const [eventDensity, setEventDensity] = useState('-');
   const [syncTimeText, setSyncTimeText] = useState('--:--:--');
+  const [paletteIdText, setPaletteIdText] = useState('-');
 
   // --- 事件触发统计状态 ---
   const [trigModes, setTrigModes] = useState([]);
@@ -390,6 +390,10 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
       setMapIdText(`0x${state.mapId.toString(16).toUpperCase()} (${state.mapId})`);
       setTilePosText(`(${state.mx}, ${state.my})${state.mhalf ? ' +0.5' : ''}`);
       setPixelPosText(`(${state.mapX}, ${state.mapY})`);
+      
+      // 同步当前场景的调色板 ID 及白天黑夜状态
+      const paletteMode = state.fNightPalette ? '黑夜' : '白天';
+      setPaletteIdText(`0x${state.paletteId.toString(16).toUpperCase()} (${state.paletteId}) [${paletteMode}]`);
       
       const rangeSizeVal = state.endEventId - state.startEventId;
       setEventRangeText(`${state.startEventId} ➔ ${state.endEventId}`);
@@ -1022,15 +1026,16 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
           <div class="panel-row" style=${{ display: 'block' }}>
             <div class="panel-col" style=${{ border: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.01)', borderRadius: '2px', padding: '6px 8px' }}>
               <div class="section-header" style=${{ fontSize: '9px', fontWeight: 'bold', marginBottom: '5px' }}>🗺️ 场景与大地图高级状态剖析 (Scene & Map Profiles)</div>
-              <div class="scene-dense-grid" style=${{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
+              <div class="scene-dense-grid" style=${{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
                 <div class="scene-item"><span class="scene-label">场景 ID (Scene)</span><span class="scene-val">${sceneId}</span></div>
                 <div class="scene-item"><span class="scene-label">地图 ID (Map)</span><span class="scene-val">${mapIdText}</span></div>
+                <div class="scene-item"><span class="scene-label">调色板 (Palette)</span><span class="scene-val" style=${{ color: 'var(--glow-yellow)' }}>${paletteIdText}</span></div>
                 <div class="scene-item"><span class="scene-label">瓦片坐标 (mx, my)</span><span class="scene-val">${tilePosText}</span></div>
                 <div class="scene-item"><span class="scene-label">像素坐标</span><span class="scene-val">${pixelPosText}</span></div>
+                <div class="scene-item"><span class="scene-label">系统同步时钟</span><span class="scene-val" style=${{ color: 'var(--glow-yellow)' }}>${syncTimeText}</span></div>
                 <div class="scene-item"><span class="scene-label">事件区间 (Range)</span><span class="scene-val">${eventRangeText}</span></div>
                 <div class="scene-item"><span class="scene-label">事件区间大小</span><span class="scene-val">${rangeSize}</span></div>
                 <div class="scene-item"><span class="scene-label">活跃事件密度</span><span class="scene-val">${eventDensity}</span></div>
-                <div class="scene-item"><span class="scene-label">系统同步时钟</span><span class="scene-val" style=${{ color: 'var(--glow-yellow)' }}>${syncTimeText}</span></div>
               </div>
               <div class="stat-modes-container" style=${{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '5px' }}>
                 ${trigModes.length === 0 ? html`<span style=${{ color: 'rgba(255,255,255,0.15)', fontSize: '8px' }}>暂无活跃触发模式统计</span>` : trigModes.map((m, i) => html`
