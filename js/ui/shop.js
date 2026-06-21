@@ -1,5 +1,6 @@
 import { state } from '../engine/state.js';
-import { loadPal, loadBall, loadPic, loadMkf } from '../resources/pal.js';
+import { loadPal, loadBall, loadPic } from '../resources/pal.js';
+import { loadMkf } from '../resources/loader.js';
 import { UI } from './panel.js';
 import { update } from './draw.js';
 
