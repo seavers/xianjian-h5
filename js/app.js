@@ -3,6 +3,7 @@ import { ready, file_caches, loadMkf, load } from './resources/loader.js';
 import { loadSss, loadDat, fromCache, caches } from './resources/pal.js';
 import { setRolePos, setRoleTile, setRoleIndex, setRoleGroup, toggleScene, calcMap } from './engine/command.js';
 import { ESC } from './esc/esc.js';
+import { Shop } from './ui/shop.js';
 import { Hex } from './utils/hex.js';
 import { Talk } from './ui/talk.js';
 import { Script } from './engine/script.js';
@@ -370,6 +371,7 @@ ready(() => {
   window.toggleScene = toggleScene;
   window.setRolePos = setRolePos;
   window.Battle = Battle;
+  window.Shop = Shop;
 
   if (!DEBUG) {
     state.currentMode = 'startup';

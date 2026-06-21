@@ -1,4 +1,5 @@
 import { state } from './state.js';
+import { Shop } from '../ui/shop.js';
 import { CIRCLE_SCRIPT, REPLACE_ENTRY, RESET_SCRIPT, Script } from './script.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
@@ -1398,8 +1399,9 @@ export function removeEquipment(roleId, partId) {
   console.log(`[0x23 removeEquipment] 角色 Index: ${roleIndex}, 卸除装备部位: ${partId === 0 ? '全部' : partId}`);
 }
 
-export function buyMenu(storeId) {
+export async function buyMenu(storeId) {
   console.log(`[0x26 buyMenu] 呼出商店买入菜单, 商店ID: ${storeId}`);
+  await Shop.open(storeId);
 }
 
 export function sellMenu() {

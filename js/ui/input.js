@@ -55,6 +55,14 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if (mode === 'shop') {
+      ev.preventDefault();
+      if (window.Shop && window.Shop.onInput) {
+        window.Shop.onInput(input);
+      }
+      return;
+    }
+
     // 步骤 1：启动或菜单模式，交由 ESC 模块处理
     if (mode === 'startup' || mode === 'esc') {
       ev.preventDefault();
