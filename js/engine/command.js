@@ -991,7 +991,7 @@ export function performToggleScene(targetSceneId) {
 
   // 刷新出首屏，为淡入做准备
   // 这里不再重绘，因为有些场景这个时候没有准备好，比如彩依的回忆剧情脚本26386
-  // update(); // 重绘画面
+  update(true); // 重绘画面
 
   // 同步启动场景脚本
   Script.startScene(scene);
@@ -1173,7 +1173,8 @@ export async function updateScreenAndWait(time, p2, p3, context) {
     return;
   }
   
-  update();
+  // 战斗完成后，需要重新汇制完整地图
+  update(true);
 
   // 步骤 2：增加 80ms 的非阻塞式延迟，以满足剧情或转场时图像更新的视觉停留感要求
   await new Promise(resolve => setTimeout(resolve, TICK_TIME));
