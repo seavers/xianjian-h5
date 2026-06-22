@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { Shop } from '../ui/shop.js';
 import { Confirm } from '../ui/confirm.js';
-import { CIRCLE_SCRIPT, REPLACE_ENTRY, RESET_SCRIPT, Script } from './script.js';
+import { CIRCLE_SCRIPT, GOTO_SCRIPT, REPLACE_ENTRY, RESET_SCRIPT, Script } from './script.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
 import { update, canWalk, clearDrawToBlack, checkNeedDraw } from '../ui/draw.js';
@@ -400,20 +400,14 @@ export function npcWalk(objId, dx, dy) {
   const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
   if (!obj) return;
 
+  
   let x = obj.x;
   let y = obj.y;
-
-  if (dx <= 65536 / 2) {
-    x += dx;
-  } else {
-    x -= 65536 - dx;
-  }
   
-  if (dy <= 65536 / 2) {
-    y += dy;
-  } else {
-    y -= 65536 - dy;
-  }
+  dx = intToShort(dx);
+  dy = intToShort(dy);
+  x += dx;
+  y += dy;
 
   obj.x = x;
   obj.y = y;
@@ -551,16 +545,16 @@ export function setNpcMove(objId, dx, dy) {
 }
 
 export async function npcWalk2(x, y, half, context) {
-  return await stepAction(context, () => Npc.anim(this, x, y, half, 3));
+  return await stepAction(context, () => Npc.anim(this, x, y, half, 2));
 }
 
 export async function npcWalk3(x, y, half, context) {
-  return await stepAction(context, () => Npc.anim(this, x, y, half, 2));
+  return await stepAction(context, () => Npc.anim(this, x, y, half, 4));
 }
 
 export async function npcWalk4(x, y, half, context) {
   // 步骤 1：调用 Npc.anim 使得当前 NPC 移动到指定的目标瓦片坐标，折算实际移动步长为中速 (2)
-  return await stepAction(context, () => Npc.anim(this, x, y, half, 2));
+  return await stepAction(context, () => Npc.anim(this, x, y, half, 6));
 }
 
 export async function npcWalk5(x, y, half, context) {
@@ -1064,7 +1058,7 @@ export function changeScript(scriptId, counter, param3, { type }) {
 }
 
 export function gotoScript(scriptId) {
-  return scriptId;
+  return {gotoFlag: GOTO_SCRIPT, nextScriptId: scriptId};
 }
 
 export async function subScript(scriptId, objId) {
@@ -1795,8 +1789,10 @@ scriptCodes[0x70] = { func: roleWalk, desc: '插值移动主角位置' };
 scriptCodes[0x73] = { func: clearWithEffect, desc: '动画淡出清除' };
 
 scriptCodes[0x6C] = { func: npcWalk, desc: 'NPC平移偏移距离' };
-scriptCodes[0x10] = { func: npcWalk2, desc: 'NPC快速移动至坐标' };
-scriptCodes[0x11] = { func: npcWalk3, desc: 'NPC慢速移动至坐标' };
+scriptCodes[0x11] = { func: npcWalk2, desc: 'NPC慢速移动至坐标' };
+scriptCodes[0x7C] = { func: npcWalk3, desc: 'NPC中速移动至坐标' };
+scriptCodes[0x10] = { func: npcWalk4, desc: 'NPC快速移动至坐标' };
+scriptCodes[0x82] = { func: npcWalk5, desc: 'NPC极速移动至坐标' };
 scriptCodes[0x12] = { func: setNpcPos, desc: '设置NPC位置' };
 scriptCodes[0x13] = { func: setNpcPosAbsolute, desc: '设置NPC绝对像素位置' };
 scriptCodes[0x7D] = { func: setNpcMove, desc: 'NPC偏移位置' };
@@ -1812,7 +1808,6 @@ scriptCodes[0xA3] = { func: playCdMusic, desc: '播放CD音乐并以RIX音乐回
 scriptCodes[0xA7] = { func: skipAutoScript, desc: '空指令直接跳过' };
 scriptCodes[0x7A] = { func: teamWalk2, desc: '队伍快速行走至坐标' };
 scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
-scriptCodes[0x7C] = { func: npcWalk4, desc: 'NPC以中速行走移动至坐标' };
 
 scriptCodes[0x59] = { func: setSceneId, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
@@ -1854,7 +1849,6 @@ scriptCodes[0x6F] = { func: replaceObject, desc: '替换并终结脚本实体' }
 scriptCodes[0x7F] = { func: moveViewport, desc: '平移或定位镜头视口' };
 scriptCodes[0x80] = { func: toggleDayNight, desc: '切换昼夜调色板' };
 scriptCodes[0x81] = { func: faceNpcTrig, desc: '面朝NPC触发脚本' };
-scriptCodes[0x82] = { func: npcWalk5, desc: 'NPC以极速行走移动至坐标' };
 scriptCodes[0x89] = { func: setBattleResult, desc: '设定战斗胜负结果并退出' };
 scriptCodes[0x8B] = { func: setPalette, desc: '切换使用指定调色板' };
 scriptCodes[0x8F] = { func: halveMoney, desc: '金钱数值减半' };
