@@ -53,8 +53,24 @@ export function calcMap() {
   }
 }
 
+export function getFrameWalkCount(role) {
+  if (!role) return 3;
+  const mgoId = role.type === 'role' ? role.tileId : role.mgoId;
+  if (mgoId !== undefined) {
+    try {
+      const count = loadMgoCount(mgoId);
+      if (count > 0) {
+        return Math.floor(count / 4);
+      }
+    } catch (e) {
+      // 容错
+    }
+  }
+  return role.frameWalkCount || (role.type === 'role' ? (role.walkFrames || 3) : 3);
+}
+
 function refreshRoleFrame(role) {
-  const frameWalkCount = role.frameWalkCount || 3;
+  const frameWalkCount = getFrameWalkCount(role);
   let frame = role.frame % frameWalkCount;
   
   switch (role.dir) {
@@ -76,7 +92,7 @@ function refreshRoleFrame(role) {
 }
 
 export function refreshWalkFrame(role) {
-  const frameWalkCount = role.frameWalkCount || 3;
+  const frameWalkCount = getFrameWalkCount(role);
 
   role.count = role.count ?? -1; // 默认为 -1
   role.count++;

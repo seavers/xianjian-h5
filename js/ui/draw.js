@@ -1,5 +1,5 @@
 import { state } from '../engine/state.js';
-import { loadMap, loadGop, loadMgo, loadFon, u9s, u3s, loadFbp } from '../resources/pal.js';
+import { loadMap, loadGop, loadMgo, loadFon, u9s, u3s, loadFbp, loadMgoCount } from '../resources/pal.js';
 import { clearFade, fadeIn } from './fade.js';
 
 export const updateCount = [0, 0, 0];
@@ -257,6 +257,22 @@ function getPositionAtDistance(history, targetDist) {
   return history[history.length - 1];
 }
 
+function getFrameWalkCount(role) {
+  if (!role) return 3;
+  const mgoId = role.type === 'role' ? role.tileId : role.mgoId;
+  if (mgoId !== undefined) {
+    try {
+      const count = loadMgoCount(mgoId);
+      if (count > 0) {
+        return Math.floor(count / 4);
+      }
+    } catch (e) {
+      // 容错
+    }
+  }
+  return role.frameWalkCount || (role.type === 'role' ? (role.walkFrames || 3) : 3);
+}
+
 export function drawRole() {
   const leader = state.party[0];
   
@@ -291,6 +307,7 @@ export function drawRole() {
 
   // 步骤 2：如果有跟随者，根据累计移动的 Y 像素距离从历史轨迹中获取其位置和状态
   if (leader) {
+    const leaderWalkCount = getFrameWalkCount(leader) || 3;
     for (let i = 1; i < state.party.length; i++) {
       const follower = state.party[i];
       if (follower) {
@@ -300,8 +317,16 @@ export function drawRole() {
           follower.x = pos.x;
           follower.y = pos.y;
           follower.dir = pos.dir;
-          follower.frame = pos.frame;
           follower.layer = pos.layer;
+
+          // 重新根据跟随者自身的行走帧数安全映射动作帧，避免越界消失
+          const followerWalkCount = getFrameWalkCount(follower) || 3;
+          const leaderStep = pos.frame % leaderWalkCount;
+          const followerStep = Math.min(
+            followerWalkCount - 1,
+            Math.floor((leaderStep / leaderWalkCount) * followerWalkCount)
+          );
+          follower.frame = pos.dir * followerWalkCount + followerStep;
         }
       }
     }
