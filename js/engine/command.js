@@ -140,6 +140,7 @@ export function setRoleGroup(r1, r2, r3) {
           y: leader ? leader.y : 0,
           layer: leader ? leader.layer : 0,
           tileId: [2, 3, 7, 5][roleIndex] || 0,
+          dir: 0,
           frame: 0,
           index: roleIndex,
           count: 0,

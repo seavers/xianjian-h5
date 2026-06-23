@@ -171,7 +171,7 @@ export async function start(id, failId, fleeId) {
     // 步骤 1.3：提供我方角色战斗精灵图包 ID 兜底映射
     // 当读档或初始精灵包为 0，且角色本身不是李逍遥 (index !== 0) 时，说明需要强行重定位为对应角色的专属包
     if (spriteNum === undefined || (spriteNum === 0 && role.index !== 0)) {
-      const defaultSprites = [0, 1, 2, 4, 3, 8];
+      const defaultSprites = [0, 1, 2, 3, 4, 8];
       spriteNum = defaultSprites[role.index] !== undefined ? defaultSprites[role.index] : 0;
     }
     const spriteData = deyj(loadMkf('f.mkf', spriteNum));

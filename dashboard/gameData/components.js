@@ -24,7 +24,7 @@ function RoleTabComponent({ selectedRoleId, setSelectedRoleId, jumpToScript }) {
   let battleSpriteVal = runtimeRole.spriteNumInBattle;
   
   if (battleSpriteVal === undefined) {
-    const defaultSprites = [0, 1, 2, 4, 3, 8];
+    const defaultSprites = [0, 1, 2, 3, 4, 8];
     battleSpriteVal = defaultSprites[selectedRoleId] !== undefined ? defaultSprites[selectedRoleId] : 0;
   }
 
