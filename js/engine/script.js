@@ -38,15 +38,15 @@ export const Script = {
   // 4. 规范化的逻辑帧嘀嗒（负责原本单次游戏循环中的全部逻辑更新与统一渲染）
   async tick() {
     // 步骤 1.8：如果当前正处于对话模式，根据是否等待按键挂起更新闪烁箭头，并直接挂起逻辑帧
-    if (state.currentMode === 'talk') {
+    if (state.uiMode === 'talk') {
       if (window.Talk && window.Talk.isWaiting) {
         window.Talk.tickArrow();
       }
       return;
     }
 
-    // 步骤 1.5：其他非常规探索模式（如 esc, startup, confirm 等）一律挂起逻辑帧
-    if (state.currentMode !== 'game') {
+    // 步骤 1.5：其他非常规探索模式一律挂起逻辑帧
+    if (state.currentMode !== 'game' || state.uiMode !== 'operate') {
       return;
     }
 

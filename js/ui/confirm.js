@@ -3,6 +3,8 @@ import { loadPal } from '../resources/pal.js';
 import { UI } from './panel.js';
 import { update } from './draw.js';
 
+let previousUiMode = 'operate';
+
 export const Confirm = {
   confirmValue: 0, // 0: 否, 1: 是
   resolve: null,
@@ -14,8 +16,9 @@ export const Confirm = {
     // 步骤 1：同步重绘底图以生成静态底图，防止画面变黑
     update(true);
 
-    // 步骤 2：切换当前运行模式至 'confirm' 并将交互 Canvas 层显示出来
-    state.currentMode = 'confirm';
+    // 步骤 2：切换当前交互状态至 'confirm' 并将交互 Canvas 层显示出来
+    previousUiMode = state.uiMode;
+    state.uiMode = 'confirm';
     const startupCanvas = document.getElementById('startup');
     if (startupCanvas) {
       startupCanvas.style.display = 'block';
@@ -110,8 +113,8 @@ export const Confirm = {
       window.Talk.closeTalk();
     }
 
-    // 步骤 2：切回常规游戏运行模式并 resolve Promise
-    state.currentMode = 'game';
+    // 步骤 2：切回常规交互状态并 resolve Promise
+    state.uiMode = previousUiMode || 'operate';
 
     if (this.resolve) {
       this.resolve(result);

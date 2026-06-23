@@ -43,7 +43,7 @@ export const ESC = {
   clearMenus() {
     this.menuStack = [];
     this.hideMenuCanvas();
-    state.currentMode = 'game'; // 恢复为游戏正常探索行走状态
+    state.uiMode = 'operate'; // 恢复为游戏正常探索行走状态
   },
 
   renderAll() {
@@ -223,12 +223,13 @@ export const ESC = {
     };
 
     ESC.showMenuCanvas();
-    state.currentMode = 'esc';
+    state.uiMode = 'esc';
     ESC.pushMenu('status', null, renderFn, onInputFn);
   },
 
   onStartup() {
     state.currentMode = 'startup';
+    state.uiMode = 'operate';
     ESC.showMenuCanvas();
 
     const startupCtx = state.contexts.startup;
@@ -264,7 +265,7 @@ export const ESC = {
 
   onMenu() {
     ESC.showMenuCanvas();
-    state.currentMode = 'esc';
+    state.uiMode = 'esc';
     ESC.menuStack = [];
 
     const mainPanel = PanelFactory.createList([3, 4, 5, 6]);
@@ -869,6 +870,7 @@ async function startNewStory() {
 
 function newStory() {
   state.currentMode = 'game'; // 激活常规游戏行走模式
+  state.uiMode = 'operate';
   toggleScene(1);
   state.isPaused = false;
 }

@@ -4,13 +4,13 @@ import { loadMsg, loadWord, loadPic, loadRgm } from '../resources/pal.js';
 
 export let isTalking = false;
 
-let previousMode = 'game';
+let previousMode = 'operate';
 
 function enterTalkMode() {
   isTalking = true;
-  if (state.currentMode !== 'talk') {
-    previousMode = state.currentMode;
-    state.currentMode = 'talk';
+  if (state.uiMode !== 'talk') {
+    previousMode = state.uiMode;
+    state.uiMode = 'talk';
   }
 }
 
@@ -368,8 +368,8 @@ export function clearTalk() {
   talkDown = null;
 
   isTalking = false;
-  if (state.currentMode === 'talk') {
-    state.currentMode = previousMode || 'game';
+  if (state.uiMode === 'talk') {
+    state.uiMode = previousMode || 'operate';
   }
 }
 

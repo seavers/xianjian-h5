@@ -46,11 +46,47 @@ if (typeof document !== 'undefined') {
     if (!input) return;
 
     const mode = state.currentMode;
+    const uiMode = state.uiMode;
 
-    // 步骤 0：对话模式下，优先拦截并交由 Talk 模块处理
-    if (mode === 'talk') {
+    // 步骤 0：根据 uiMode 优先进行交互子模块分发
+    if (uiMode === 'talk') {
       ev.preventDefault();
       Talk.onInput(input);
+      return;
+    }
+
+    if (uiMode === 'esc') {
+      ev.preventDefault();
+      ESC.onInput(input);
+      return;
+    }
+
+    if (uiMode === 'shop') {
+      ev.preventDefault();
+      if (window.Shop && window.Shop.onInput) {
+        window.Shop.onInput(input);
+      }
+      return;
+    }
+
+    if (uiMode === 'confirm') {
+      ev.preventDefault();
+      if (window.Confirm && window.Confirm.onInput) {
+        window.Confirm.onInput(input);
+      }
+      return;
+    }
+
+    if (uiMode === 'block') {
+      // 步骤 0.5：在阻断状态（例如动作结算、前置脚本执行等交互未就绪阶段）直接拦截全部输入
+      ev.preventDefault();
+      return;
+    }
+
+    // 步骤 1：在常规可操作状态（operate）下根据宏观运行模式分发
+    if (mode === 'startup') {
+      ev.preventDefault();
+      ESC.onInput(input);
       return;
     }
 
@@ -62,30 +98,7 @@ if (typeof document !== 'undefined') {
       return;
     }
 
-    if (mode === 'shop') {
-      ev.preventDefault();
-      if (window.Shop && window.Shop.onInput) {
-        window.Shop.onInput(input);
-      }
-      return;
-    }
-
-    if (mode === 'confirm') {
-      ev.preventDefault();
-      if (window.Confirm && window.Confirm.onInput) {
-        window.Confirm.onInput(input);
-      }
-      return;
-    }
-
-    // 步骤 1：启动或菜单模式，交由 ESC 模块处理
-    if (mode === 'startup' || mode === 'esc') {
-      ev.preventDefault();
-      ESC.onInput(input);
-      return;
-    }
-
-    // 步骤 3：探索游戏模式，常规按键处理
+    // 步骤 2：主地图探索游戏状态
     if (mode === 'game') {
       handleGameInput(input, ev);
     }
@@ -160,10 +173,15 @@ if (typeof document !== 'undefined') {
     ev.preventDefault();
 
     const mode = state.currentMode;
+    const uiMode = state.uiMode;
 
     // 步骤 1：在剧情对话模式期间，点击屏幕任意区域交由 Talk 模块处理
-    if (mode === 'talk') {
+    if (uiMode === 'talk') {
       Talk.onInput('blank');
+      return;
+    }
+
+    if (uiMode === 'block') {
       return;
     }
 
@@ -185,11 +203,21 @@ if (typeof document !== 'undefined') {
     if (!input) return;
 
     // 步骤 3：分发触屏输入
-    if (mode === 'battle') {
+    if (uiMode === 'esc') {
+      ESC.onInput(input);
+    } else if (uiMode === 'shop') {
+      if (window.Shop && window.Shop.onInput) {
+        window.Shop.onInput(input);
+      }
+    } else if (uiMode === 'confirm') {
+      if (window.Confirm && window.Confirm.onInput) {
+        window.Confirm.onInput(input);
+      }
+    } else if (mode === 'battle') {
       if (window.Battle && window.Battle.onInput) {
         window.Battle.onInput(input);
       }
-    } else if (mode === 'startup' || mode === 'esc') {
+    } else if (mode === 'startup') {
       ESC.onInput(input);
     } else if (mode === 'game') {
       handleGameInput(input, ev);

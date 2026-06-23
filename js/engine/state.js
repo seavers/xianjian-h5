@@ -14,6 +14,8 @@ export const state = {
   
   // 集中式状态分发：游戏当前的运行交互模式
   currentMode: 'startup',
+  // 交互子状态：'block' | 'operate' | 'talk' | 'esc' | 'shop' | 'confirm'
+  uiMode: 'operate',
   
   sceneId: -1,
   nextSceneId: -1,

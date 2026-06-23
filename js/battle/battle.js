@@ -69,6 +69,7 @@ export async function start(id, failId, fleeId) {
 
   // 步骤 1.2：切换为战斗模式，并初始化战斗状态机
   state.currentMode = 'battle';
+  state.uiMode = 'block';
   isBattleRunning = true;
   turn = 1;
   phase = 'select';
@@ -248,6 +249,7 @@ export async function start(id, failId, fleeId) {
   // 战前回合开始脚本执行完毕后，如战斗未结束则显示操作界面
   if (phase === 'select' && !checkBattleEnd()) {
     showCommandUI = true;
+    state.uiMode = 'operate';
     draw();
   }
 
@@ -592,6 +594,7 @@ export function onInput(input) {
 async function runActionPhase() {
   // 结算期间隐藏操作界面与角色状态栏
   showCommandUI = false;
+  state.uiMode = 'block';
   phase = 'action';
   draw();
 
@@ -687,6 +690,7 @@ async function runActionPhase() {
 
     // 新回合指令选择时显示操作界面
     showCommandUI = true;
+    state.uiMode = 'operate';
     draw();
   }
 }
@@ -1012,6 +1016,7 @@ async function endBattle(result) {
 
   isBattleRunning = false;
   state.currentMode = 'game';
+  state.uiMode = 'operate';
 
   // 清空背景层、谈话层与战斗层以露出大地图
   // state.contexts.back.clearRect(0, 0, 320, 200);

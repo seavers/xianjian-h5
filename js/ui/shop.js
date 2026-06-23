@@ -36,8 +36,8 @@ export const Shop = {
     // 步骤 2：在呼出商店前强制进行一次同步的整体重绘，以生成静态底图
     update(true);
 
-    // 步骤 3：切换运行模式至 'shop'，并显示 startup 交互 Canvas 层
-    state.currentMode = 'shop';
+    // 步骤 3：切换交互状态至 'shop'，并显示 startup 交互 Canvas 层
+    state.uiMode = 'shop';
     const startupCanvas = document.getElementById('startup');
     if (startupCanvas) {
       startupCanvas.style.display = 'block';
@@ -62,8 +62,8 @@ export const Shop = {
     // 步骤 1：在呼出卖出菜单前强制进行一次同步的整体重绘，以生成静态底图
     update(true);
 
-    // 步骤 2：切换运行模式至 'shop'，并显示 startup 交互 Canvas 层
-    state.currentMode = 'shop';
+    // 步骤 2：切换交互状态至 'shop'，并显示 startup 交互 Canvas 层
+    state.uiMode = 'shop';
     const startupCanvas = document.getElementById('startup');
     if (startupCanvas) {
       startupCanvas.style.display = 'block';
@@ -530,7 +530,7 @@ export const Shop = {
       startupCanvas.style.display = 'none';
     }
 
-    state.currentMode = 'game';
+    state.uiMode = 'operate';
     this.isSelling = false;
 
     if (this.resolve) {
