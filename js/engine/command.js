@@ -950,6 +950,21 @@ export async function fadeInScene(speed) {
   await fadeIn();
 }
 
+export async function showPlayerPreMagicAnim(playerIndex) {
+  // 步骤 1：输出详细调试日志以供追踪施法动作
+  console.log(`[0x92 showPlayerPreMagicAnim] 播放主角施法前摇发光动画, 玩家索引: ${playerIndex}`);
+
+  // 步骤 2：若当前并非处于战斗中，该指令则为空操作，直接跳过以契合原版行为
+  if (state.currentMode === 'battle') {
+    if (window.Battle && typeof window.Battle.showPlayerPreMagicAnim === 'function') {
+      // 步骤 3：原版参数中，1 代表第一个玩家（即 1-indexed），故此处减 1 转换为 0-indexed 传入
+      if (playerIndex > 0) {
+        await window.Battle.showPlayerPreMagicAnim(playerIndex - 1);
+      }
+    }
+  }
+}
+
 export async function fadeScreen(speed) {
   // 步骤 1：利用 intToShort 将传入 the 无符号短整型 speed 转换为有符号短整型速度 s
   const s = intToShort(speed);
@@ -1914,6 +1929,7 @@ scriptCodes[0x5A] = { func: halvePlayerHp, desc: '角色HP减半' };
 scriptCodes[0x5F] = { func: killPlayerImmediately, desc: '使角色立即垂死' };
 scriptCodes[0x62] = { func: pauseEnemyChase, desc: '暂停敌人的追击' };
 scriptCodes[0x63] = { func: speedUpEnemyChase, desc: '加速敌人的追击' };
+scriptCodes[0x92] = { func: showPlayerPreMagicAnim, desc: '播放主角施法前摇发光动画' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
 scriptCodes[0x95] = { func: jumpIfCurrentSceneEquals, desc: '若当前场景ID等于特定值则跳转' };

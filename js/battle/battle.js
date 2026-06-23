@@ -336,6 +336,8 @@ function draw() {
         } else {
           mainCtx.filter = 'none';
         }
+      } else if (actor.filter) {
+        mainCtx.filter = actor.filter;
       } else {
         mainCtx.filter = 'none';
       }
@@ -1159,4 +1161,58 @@ export async function setBattleResult(result) {
   if (isBattleRunning && phase !== 'end') {
     await endBattle(result);
   }
+}
+
+// 步骤 14：播放主角施法前摇与发光效果 (完全还原自 sdlpal 中的 0x92 指令)
+export async function showPlayerPreMagicAnim(playerIndex) {
+  if (!isBattleRunning) return;
+  const player = players[playerIndex];
+  if (!player) return;
+
+  const origX = player.x;
+  const origY = player.y;
+
+  // 1. 角色向左上方移动 4 步以体现施法前倾动作
+  const offsets = [
+    { dx: -4, dy: -2 },
+    { dx: -3, dy: -1 },
+    { dx: -2, dy: -1 },
+    { dx: -1, dy: 0 }
+  ];
+
+  for (let i = 0; i < 4; i++) {
+    player.x += offsets[i].dx;
+    player.y += offsets[i].dy;
+    draw();
+    await sleep(80);
+  }
+
+  await sleep(160);
+
+  // 2. 播放施法前摇音效，并将帧姿势设定为施法预备(5)
+  player.currentFrame = 5;
+  if (player.magicSound > 0) {
+    playSound(player.magicSound);
+  }
+  draw();
+
+  // 3. 循环 5 次闪烁（亮度/饱和度滤镜渐变），模拟原版 iColorShift 发光
+  for (let i = 0; i < 5; i++) {
+    players.forEach(p => {
+      if (p.hp > 0) {
+        // 使用 CSS canvas 滤镜亮度与饱和度模拟原版队员彩色变幻
+        p.filter = `brightness(${1.0 + i * 0.25}) saturate(${1.0 + i * 0.15})`;
+      }
+    });
+    draw();
+    await sleep(80);
+  }
+
+  // 4. 清理滤镜，并将施法主角状态设置为施法出手姿势(6)
+  players.forEach(p => {
+    delete p.filter;
+  });
+  player.currentFrame = 6;
+  draw();
+  await sleep(80);
 }
