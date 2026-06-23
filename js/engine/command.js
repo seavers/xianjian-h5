@@ -234,6 +234,19 @@ export function jumpIfCurrentSceneEquals(sceneId, failScriptId) {
   console.log(`[0x95 jumpIfCurrentSceneEquals] 当前场景为 ${state.sceneId}，不等于 ${sceneId}，不跳转`);
 }
 
+export function jumpIfPlayerInParty(nameId, targetScriptId) {
+  // 步骤 1：遍历当前队伍成员列表，匹配其 nameId 是否等于参数中的 nameId
+  const inParty = state.party.some(r => r.nameId === nameId);
+
+  // 步骤 2：若匹配成功，输出日志并返回跳转目标的脚本 ID
+  if (inParty) {
+    console.log(`[0x79 jumpIfPlayerInParty] 角色 nameId: ${nameId} 在队伍中，跳转至脚本: ${targetScriptId}`);
+    return targetScriptId;
+  }
+
+  console.log(`[0x79 jumpIfPlayerInParty] 角色 nameId: ${nameId} 不在队伍中，不跳转`);
+}
+
 export function setFollower(r1, r2) {
   state.party = state.party.filter(r => !r.isFollower);
 
@@ -1880,6 +1893,7 @@ scriptCodes[0x75] = { func: setRoleGroup, desc: '设置组队伙伴' };
 scriptCodes[0x76] = { func: showFbp, desc: '展示全屏剧情背景图' };
 scriptCodes[0x77] = { func: stopMusic, desc: '停止当前背景音乐并淡出' };
 scriptCodes[0x78] = { func: playEndingSceneAnimation, desc: '结局/过场场景动画占位桩' };
+scriptCodes[0x79] = { func: jumpIfPlayerInParty, desc: '若指定角色在队伍中则跳转' };
 
 scriptCodes[0x36] = { func: setRngAnimation, desc: '设置当前播放剧情动画' };
 scriptCodes[0x37] = { func: playRngAnimation, desc: '播放剧情RNG动画' };
