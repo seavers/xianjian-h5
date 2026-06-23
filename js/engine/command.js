@@ -1431,34 +1431,164 @@ export function equipItem(partId, itemId) {
   console.log(`[0x18 equipItem] 角色 Index: ${roleIndex}, 装备位置: ${partId - 0x0B}, 装备物品 ID: ${itemId}`);
 }
 
+function getRoleAttr(role, key) {
+  if (!key) return undefined;
+
+  // 如果属性是嵌套属性（例如 equipments.0 或 elementalResistance.1）
+  if (key.includes('.')) {
+    const parts = key.split('.');
+    let cur = role;
+
+    for (const part of parts) {
+      if (cur === undefined || cur === null) return undefined;
+      const parsed = isNaN(part) ? part : parseInt(part, 10);
+      cur = cur[parsed];
+    }
+
+    return cur;
+  }
+
+  return role[key];
+}
+
+function setRoleAttr(role, key, value) {
+  if (!key) return;
+
+  // 如果属性是嵌套属性（例如 equipments.0 或 elementalResistance.1）
+  if (key.includes('.')) {
+    const parts = key.split('.');
+    let cur = role;
+
+    for (let i = 0; i < parts.length - 1; i++) {
+      const part = parts[i];
+      const parsed = isNaN(part) ? part : parseInt(part, 10);
+      const nextPart = parts[i + 1];
+
+      if (cur[parsed] === undefined) {
+        cur[parsed] = isNaN(nextPart) ? {} : [];
+      }
+
+      cur = cur[parsed];
+    }
+
+    const lastPart = parts[parts.length - 1];
+    const parsedLast = isNaN(lastPart) ? lastPart : parseInt(lastPart, 10);
+    cur[parsedLast] = value;
+  } else {
+    role[key] = value;
+  }
+}
+
 const STAT_MAP = {
+  0: 'avatar',
+  1: 'spriteNumInBattle',
+  2: 'spriteNum',
+  3: 'nameId',
+  4: 'attackAll',
+  5: 'unknown1',
   6: 'level',
   7: 'maxHp',
   8: 'maxMp',
   9: 'hp',
   10: 'mp',
+  11: 'equipments.0',
+  12: 'equipments.1',
+  13: 'equipments.2',
+  14: 'equipments.3',
+  15: 'equipments.4',
+  16: 'equipments.5',
   17: 'attackStrength',
   18: 'magicStrength',
   19: 'defense',
   20: 'dexterity',
   21: 'fleeRate',
-  22: 'poisonResistance'
+  22: 'poisonResistance',
+  23: 'elementalResistance.0',
+  24: 'elementalResistance.1',
+  25: 'elementalResistance.2',
+  26: 'elementalResistance.3',
+  27: 'elementalResistance.4',
+  28: 'unknown2',
+  29: 'unknown3',
+  30: 'unknown4',
+  31: 'coveredBy',
+  32: 'magics.0',
+  33: 'magics.1',
+  34: 'magics.2',
+  35: 'magics.3',
+  36: 'magics.4',
+  37: 'magics.5',
+  38: 'magics.6',
+  39: 'magics.7',
+  40: 'magics.8',
+  41: 'magics.9',
+  42: 'magics.10',
+  43: 'magics.11',
+  44: 'magics.12',
+  45: 'magics.13',
+  46: 'magics.14',
+  47: 'magics.15',
+  48: 'magics.16',
+  49: 'magics.17',
+  50: 'magics.18',
+  51: 'magics.19',
+  52: 'magics.20',
+  53: 'magics.21',
+  54: 'magics.22',
+  55: 'magics.23',
+  56: 'magics.24',
+  57: 'magics.25',
+  58: 'magics.26',
+  59: 'magics.27',
+  60: 'magics.28',
+  61: 'magics.29',
+  62: 'magics.30',
+  63: 'magics.31',
+  64: 'walkFrames',
+  65: 'cooperativeMagic',
+  66: 'unknown5',
+  67: 'unknown6',
+  68: 'deathSound',
+  69: 'attackSound',
+  70: 'weaponSound',
+  71: 'criticalSound',
+  72: 'magicSound',
+  73: 'coverSound',
+  74: 'dyingSound'
 };
 
 export function increasePlayerAttribute(statId, value, roleId) {
   const roleIndex = roleId === 0 ? getRoleIndex(this) : roleId - 1;
   const role = state.roles[roleIndex];
+
   if (role) {
     const key = STAT_MAP[statId];
+
     if (key) {
-      if (role[key] === undefined) {
-        role[key] = (key === 'hp' || key === 'mp') ? 100 : 10;
+      // 步骤 1：获取属性当前值，不存在时赋予默认底码
+      let curVal = getRoleAttr(role, key);
+      if (curVal === undefined) {
+        curVal = (key === 'hp' || key === 'mp') ? 100 : 10;
       }
-      role[key] += intToShort(value);
-      if (key === 'hp' && role.hp > (role.maxHp || 100)) role.hp = role.maxHp || 100;
-      if (key === 'mp' && role.mp > (role.maxMp || 100)) role.mp = role.maxMp || 100;
-      if (role[key] < 0) role[key] = 0;
-      console.log(`[0x19 increasePlayerAttribute] 角色 Index: ${roleIndex}, 属性: ${key}, 变动量: ${intToShort(value)}, 新值: ${role[key]}`);
+
+      // 步骤 2：应用数值增减变动，并截断为短整型
+      curVal += intToShort(value);
+
+      // 步骤 3：进行边界溢出修正
+      if (key === 'hp') {
+        const maxHp = role.maxHp || 100;
+        if (curVal > maxHp) curVal = maxHp;
+      }
+      if (key === 'mp') {
+        const maxMp = role.maxMp || 100;
+        if (curVal > maxMp) curVal = maxMp;
+      }
+      if (curVal < 0) curVal = 0;
+
+      // 步骤 4：将更新后的属性写回角色对象
+      setRoleAttr(role, key, curVal);
+
+      console.log(`[0x19 increasePlayerAttribute] 角色 Index: ${roleIndex}, 属性: ${key}, 变动量: ${intToShort(value)}, 新值: ${curVal}`);
     }
   }
 }
@@ -1466,12 +1596,19 @@ export function increasePlayerAttribute(statId, value, roleId) {
 export function setPlayerStat(statId, value, roleId) {
   const roleIndex = roleId === 0 ? getRoleIndex(this) : roleId - 1;
   const role = state.roles[roleIndex];
+
   if (role) {
     const key = STAT_MAP[statId];
+
     if (key) {
-      role[key] = intToShort(value);
-      if (role[key] < 0) role[key] = 0;
-      console.log(`[0x1A setPlayerStat] 角色 Index: ${roleIndex}, 属性: ${key}, 设定值: ${role[key]}`);
+      // 步骤 1：设定属性值，对负数边界进行修正
+      let val = intToShort(value);
+      if (val < 0) val = 0;
+
+      // 步骤 2：写回角色对象
+      setRoleAttr(role, key, val);
+
+      console.log(`[0x1A setPlayerStat] 角色 Index: ${roleIndex}, 属性: ${key}, 设定值: ${val}`);
     }
   }
 }
