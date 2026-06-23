@@ -7,6 +7,7 @@ import { loadMgoCount } from '../resources/pal.js';
 import { update, canWalk, clearDrawToBlack, checkNeedDraw } from '../ui/draw.js';
 import { fadeEffect, fadeIn, fadeOut, fadeScreenToRed } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
+import { getRoleAttr, setRoleAttr } from './role.js';
 import { loadArchive } from '../esc/archive.js';
 import { playRng } from './rng.js';
 import { playMusic, stopMusic as stopBgMusic } from '../resources/music.js';
@@ -1429,54 +1430,6 @@ export function equipItem(partId, itemId) {
     }
   }
   console.log(`[0x18 equipItem] 角色 Index: ${roleIndex}, 装备位置: ${partId - 0x0B}, 装备物品 ID: ${itemId}`);
-}
-
-function getRoleAttr(role, key) {
-  if (!key) return undefined;
-
-  // 如果属性是嵌套属性（例如 equipments.0 或 elementalResistance.1）
-  if (key.includes('.')) {
-    const parts = key.split('.');
-    let cur = role;
-
-    for (const part of parts) {
-      if (cur === undefined || cur === null) return undefined;
-      const parsed = isNaN(part) ? part : parseInt(part, 10);
-      cur = cur[parsed];
-    }
-
-    return cur;
-  }
-
-  return role[key];
-}
-
-function setRoleAttr(role, key, value) {
-  if (!key) return;
-
-  // 如果属性是嵌套属性（例如 equipments.0 或 elementalResistance.1）
-  if (key.includes('.')) {
-    const parts = key.split('.');
-    let cur = role;
-
-    for (let i = 0; i < parts.length - 1; i++) {
-      const part = parts[i];
-      const parsed = isNaN(part) ? part : parseInt(part, 10);
-      const nextPart = parts[i + 1];
-
-      if (cur[parsed] === undefined) {
-        cur[parsed] = isNaN(nextPart) ? {} : [];
-      }
-
-      cur = cur[parsed];
-    }
-
-    const lastPart = parts[parts.length - 1];
-    const parsedLast = isNaN(lastPart) ? lastPart : parseInt(lastPart, 10);
-    cur[parsedLast] = value;
-  } else {
-    role[key] = value;
-  }
 }
 
 const STAT_MAP = {
