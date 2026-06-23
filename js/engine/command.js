@@ -1450,7 +1450,7 @@ export function equipItem(partId, itemId) {
 const STAT_MAP = {
   0: 'avatar',
   1: 'spriteNumInBattle',
-  2: 'spriteNum',
+  2: 'tileId',    // 也叫 'spriteNum'
   3: 'nameId',
   4: 'attackAll',
   5: 'unknown1',
