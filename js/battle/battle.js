@@ -290,6 +290,65 @@ function startBattleClock() {
 export let activeEffects = [];
 export let currentMagicEffect = null;
 export let selectedMagicIndex = 0;
+export let magicScrollRow = 0;
+export let targetPlayerIndex = 0;
+
+// 步骤 2.95：辅助点阵描述渲染器与调色板数字渲染器
+function drawSpellDesc(ctx, magicId, startX, startY, color) {
+  const descBytes = state.desc[magicId];
+  if (!descBytes) return;
+  let dx = startX;
+  let dy = startY;
+  let idx = 0;
+  while (idx < descBytes.length) {
+    const b = descBytes.getByte(idx);
+    if (b === 42) {
+      dx = startX;
+      dy += 16;
+      idx++;
+    } else if (b === 32) {
+      dx += 8;
+      idx++;
+    } else if (b < 128) {
+      const img = loadWord(b, color);
+      if (img) {
+        ctx.drawImage(img, dx, dy + 1);
+      }
+      dx += 8;
+      idx++;
+    } else {
+      if (idx + 1 < descBytes.length) {
+        const charCode = descBytes.getShort(idx);
+        const img = loadWord(charCode, color);
+        if (img) {
+          ctx.drawImage(img, dx, dy);
+        }
+        dx += 16;
+        idx += 2;
+      } else {
+        idx++;
+      }
+    }
+  }
+}
+
+function drawNumberToBattleCtx(num, x, y, type = 'cyan') {
+  const baseId = type === 'hp' || type === 'yellow' ? 20 : 57;
+  const numStr = num.toString();
+  const digitW = 6;
+  const battleCtx = state.contexts.battle;
+  if (!battleCtx) return x;
+  let currX = x;
+  for (let i = 0; i < numStr.length; i++) {
+    const digit = parseInt(numStr.charAt(i));
+    const digitImg = loadPic(baseId + digit);
+    if (digitImg) {
+      battleCtx.drawImage(digitImg, currX, y);
+    }
+    currX += digitW;
+  }
+  return currX;
+}
 
 function drawWordToCtx(ctx, wordId, x, y, color) {
   const word = state.words[wordId];
@@ -351,6 +410,13 @@ function draw() {
       // 选中敌人目标时高亮闪烁（对应 sdlpal PAL_RLEBlitWithColorShift(sprite, ..., colorShift=7)）
       if (phase === 'select' && (menuState === 'target' || menuState === 'target_magic') && item.type === 'enemy') {
         const isTarget = enemies.indexOf(actor) === targetEnemyIndex;
+        if (isTarget && Math.floor(Date.now() / 250) % 2 === 1) {
+          mainCtx.filter = 'brightness(2.5) saturate(0.2)';
+        } else {
+          mainCtx.filter = 'none';
+        }
+      } else if (phase === 'select' && menuState === 'target_player_magic' && item.type === 'player') {
+        const isTarget = actor.index === targetPlayerIndex;
         if (isTarget && Math.floor(Date.now() / 250) % 2 === 1) {
           mainCtx.filter = 'brightness(2.5) saturate(0.2)';
         } else {
@@ -424,69 +490,107 @@ function draw() {
     }
 
     // 绘制法术选择面板
-    if (menuState === 'magic' || menuState === 'target_magic') {
+    if (menuState === 'magic' || menuState === 'target_magic' || menuState === 'target_player_magic') {
       const activePlayer = players[activePlayerIndex];
       if (activePlayer && activePlayer.magics && activePlayer.magics.length > 0) {
-        // 绘制半透明紫色外发光控制底盒 (x: 140, y: 15, w: 170, h: 120)
+        // 1. 绘制左上角使用MP/当前主角MP框 (x: 10, y: 8, w: 80, h: 22)
         battleCtx.fillStyle = 'rgba(10, 13, 20, 0.88)';
-        battleCtx.fillRect(140, 15, 170, 120);
+        battleCtx.fillRect(10, 8, 80, 22);
         battleCtx.strokeStyle = 'rgba(167, 139, 250, 0.8)';
         battleCtx.lineWidth = 1.5;
-        battleCtx.strokeRect(140, 15, 170, 120);
+        battleCtx.strokeRect(10, 8, 80, 22);
 
-        // 绘制标题
-        battleCtx.fillStyle = '#a78bfa';
-        battleCtx.font = 'bold 9px sans-serif';
-        battleCtx.fillText('🔮 选择法术 (Select Spell)', 146, 28);
-        battleCtx.strokeStyle = 'rgba(167, 139, 250, 0.2)';
-        battleCtx.beginPath();
-        battleCtx.moveTo(140, 32);
-        battleCtx.lineTo(310, 32);
-        battleCtx.stroke();
-
-        const pageSize = 5;
-        const startIdx = Math.max(0, Math.min(activePlayer.magics.length - pageSize, selectedMagicIndex - 2));
-
-        for (let i = 0; i < pageSize; i++) {
-          const idx = startIdx + i;
-          if (idx >= activePlayer.magics.length) break;
-
-          const magicId = activePlayer.magics[idx];
-          const itemObj = state.items[magicId];
-          if (!itemObj) continue;
-
-          const wordId = itemObj.roleId;
-          const magicNumber = itemObj.gold;
-          const magic = state.magics[magicNumber];
-          if (!magic) continue;
-
-          const isSelected = idx === selectedMagicIndex;
-          const yPos = 36 + i * 16;
-
-          // 高亮选中的法术行
-          if (isSelected) {
-            battleCtx.fillStyle = 'rgba(167, 139, 250, 0.25)';
-            battleCtx.fillRect(142, yPos, 166, 15);
-            battleCtx.fillStyle = '#a78bfa';
-            battleCtx.fillRect(143, yPos + 4, 2, 7);
+        const currentMagicId = activePlayer.magics[selectedMagicIndex];
+        const currentItemObj = state.items[currentMagicId];
+        let currentCostMP = 0;
+        if (currentItemObj) {
+          const currentMagicNumber = currentItemObj.gold;
+          const currentMagic = state.magics[currentMagicNumber];
+          if (currentMagic) {
+            currentCostMP = currentMagic.wCostMP;
           }
+        }
 
-          // 判定字体色调：MP不足显示深灰，选中白色，否则淡灰
-          let wordColor = undefined;
-          if (activePlayer.mp < magic.wCostMP) {
-            wordColor = 0x00555555;
-          } else if (isSelected) {
-            wordColor = 0x00FFFFFF;
-          } else {
-            wordColor = 0x00C0C0C0;
+        // 用调色板数字图片绘制 (青色: 57)
+        let startX = 18;
+        startX = drawNumberToBattleCtx(currentCostMP, startX, 15, 'cyan');
+        const slashImg = loadPic(40);
+        if (slashImg) {
+          battleCtx.drawImage(slashImg, startX + 1, 15);
+          startX += slashImg.width + 3;
+        } else {
+          startX += 6;
+        }
+        drawNumberToBattleCtx(activePlayer.mp, startX, 15, 'cyan');
+
+        // 2. 绘制选中法术的上方描述文字 (中偏上位置：x: 100, y: 8)
+        if (currentItemObj) {
+          drawSpellDesc(battleCtx, currentMagicId, 100, 8, 0x00FCDC84); // 0x00FCDC84 仙剑米黄色
+        }
+
+        // 3. 绘制锦缎美感大控制盒 (x: 10, y: 40, w: 300, h: 110)
+        battleCtx.fillStyle = 'rgba(10, 13, 20, 0.95)';
+        battleCtx.fillRect(10, 40, 300, 110);
+        battleCtx.strokeStyle = 'rgba(167, 139, 250, 0.8)';
+        battleCtx.lineWidth = 1.5;
+        battleCtx.strokeRect(10, 40, 300, 110);
+
+        // 4. 绘制法术三列列表网格
+        const colW = 95;
+        const rowH = 18;
+        const startY = 48;
+
+        const maxRows = 3;
+        const totalSpells = activePlayer.magics.length;
+
+        // 根据光标自动滚动页面行
+        const currentCursorRow = Math.floor(selectedMagicIndex / 3);
+        if (currentCursorRow < magicScrollRow) {
+          magicScrollRow = currentCursorRow;
+        } else if (currentCursorRow >= magicScrollRow + maxRows) {
+          magicScrollRow = currentCursorRow - (maxRows - 1);
+        }
+
+        for (let r = 0; r < maxRows; r++) {
+          const rowIdx = magicScrollRow + r;
+          const yPos = startY + r * rowH;
+
+          for (let c = 0; c < 3; c++) {
+            const idx = rowIdx * 3 + c;
+            if (idx >= totalSpells) break;
+
+            const magicId = activePlayer.magics[idx];
+            const itemObj = state.items[magicId];
+            if (!itemObj) continue;
+
+            const wordId = itemObj.roleId;
+            const magicNumber = itemObj.gold;
+            const magic = state.magics[magicNumber];
+            if (!magic) continue;
+
+            const isSelected = idx === selectedMagicIndex;
+            const xPos = 15 + c * colW;
+
+            // 绘制选中高亮底色与游标
+            if (isSelected) {
+              battleCtx.fillStyle = 'rgba(167, 139, 250, 0.25)';
+              battleCtx.fillRect(xPos, yPos, 90, 15);
+              battleCtx.fillStyle = '#a78bfa';
+              battleCtx.fillRect(xPos + 1, yPos + 4, 2, 7);
+            }
+
+            // 判定字体色调：MP不足深灰，选中白色，否则淡灰
+            let wordColor = undefined;
+            if (activePlayer.mp < magic.wCostMP) {
+              wordColor = 0x00555555;
+            } else if (isSelected) {
+              wordColor = 0x00FFFFFF;
+            } else {
+              wordColor = 0x00C0C0C0;
+            }
+
+            drawWordToCtx(battleCtx, wordId, xPos + 5, yPos, wordColor);
           }
-
-          drawWordToCtx(battleCtx, wordId, 148, yPos, wordColor);
-
-          // 绘制法术消耗
-          battleCtx.font = '8px monospace';
-          battleCtx.fillStyle = activePlayer.mp >= magic.wCostMP ? '#00e1ff' : '#555';
-          battleCtx.fillText(`${magic.wCostMP}消耗`, 265, yPos + 11);
         }
       }
     }
@@ -640,6 +744,7 @@ export function onInput(input) {
           const player = players[activePlayerIndex];
           if (player.magics && player.magics.length > 0) {
             selectedMagicIndex = 0;
+            magicScrollRow = 0;
             menuState = 'magic';
             playSound(29);
           } else {
@@ -697,18 +802,30 @@ export function onInput(input) {
         break;
     }
   } else if (menuState === 'magic') {
-    // 队员法术列表翻滚选择
+    // 队员法术网格 (3列) 翻滚选择
     const player = players[activePlayerIndex];
     switch (input) {
-      case 'up':
+      case 'left':
         if (selectedMagicIndex > 0) {
           selectedMagicIndex--;
           playSound(29);
         }
         break;
-      case 'down':
+      case 'right':
         if (selectedMagicIndex < player.magics.length - 1) {
           selectedMagicIndex++;
+          playSound(29);
+        }
+        break;
+      case 'up':
+        if (selectedMagicIndex >= 3) {
+          selectedMagicIndex -= 3;
+          playSound(29);
+        }
+        break;
+      case 'down':
+        if (selectedMagicIndex + 3 < player.magics.length) {
+          selectedMagicIndex += 3;
           playSound(29);
         }
         break;
@@ -733,30 +850,40 @@ export function onInput(input) {
 
         playSound(29);
 
-        // flags & 8 对应可否针对敌方 (kMagicFlagUsableToEnemy)
-        const isToEnemy = (itemObj.flags & 8) !== 0;
+        // 判定目标类型：
+        // wType: 
+        // 0: 攻击单体敌方, 1: 攻击全体敌方, 2: 攻击全体敌方全屏, 3: 攻击全体敌方战场, 4: 治疗单体我方, 5: 治疗全体我方, 8: 治疗单体我方, 9: 攻击全体敌方召唤
+        const isToEnemy = [0, 1, 2, 3, 9].includes(magic.wType);
+        const isTargetAll = [1, 2, 3, 5, 9].includes(magic.wType);
 
-        if (isToEnemy) {
-          targetEnemyIndex = enemies.findIndex(e => e.hp > 0);
-          if (targetEnemyIndex !== -1) {
-            player.pendingMagic = magicId;
-            menuState = 'target_magic';
-          }
-        } else {
-          // 辅助或自身加血等，直接施法确认
-          player.pendingMagic = magicId;
+        player.pendingMagic = magicId;
+
+        if (isTargetAll) {
+          // 全体法术 (攻击敌全体或治疗我全体)：无需手动选目标，直接确认施法
           player.action = {
             type: 'magic',
             magicId: magicId,
-            target: activePlayerIndex
+            target: isToEnemy ? 0 : activePlayerIndex // 用默认索引填充，结算时会自动指向全体
           };
           advanceToNextPlayer();
+        } else {
+          // 单体法术：分为单体对敌和单体对我
+          if (isToEnemy) {
+            targetEnemyIndex = enemies.findIndex(e => e.hp > 0);
+            if (targetEnemyIndex !== -1) {
+              menuState = 'target_magic';
+            }
+          } else {
+            // 对我单体：进入我方单体选择状态，初始化为施法者自己
+            targetPlayerIndex = activePlayerIndex;
+            menuState = 'target_player_magic';
+          }
         }
         break;
       }
     }
   } else if (menuState === 'target_magic') {
-    // 法术释放时的目标选定
+    // 攻击性单体法术选择目标敌人
     switch (input) {
       case 'left':
       case 'up': {
@@ -781,6 +908,39 @@ export function onInput(input) {
           type: 'magic',
           magicId: players[activePlayerIndex].pendingMagic,
           target: targetEnemyIndex
+        };
+        advanceToNextPlayer();
+        break;
+      case 'ESC':
+        menuState = 'magic';
+        break;
+    }
+  } else if (menuState === 'target_player_magic') {
+    // 治疗/状态类单体法术选择我方队员
+    switch (input) {
+      case 'left':
+      case 'up': {
+        let idx = targetPlayerIndex;
+        do {
+          idx = (idx - 1 + players.length) % players.length;
+        } while (players[idx].hp <= 0 && idx !== targetPlayerIndex);
+        targetPlayerIndex = idx;
+        break;
+      }
+      case 'right':
+      case 'down': {
+        let idx = targetPlayerIndex;
+        do {
+          idx = (idx + 1) % players.length;
+        } while (players[idx].hp <= 0 && idx !== targetPlayerIndex);
+        targetPlayerIndex = idx;
+        break;
+      }
+      case 'blank':
+        players[activePlayerIndex].action = {
+          type: 'magic',
+          magicId: players[activePlayerIndex].pendingMagic,
+          target: targetPlayerIndex
         };
         advanceToNextPlayer();
         break;
@@ -854,55 +1014,101 @@ async function runActionPhase() {
             // 2. 播放施法前摇发光特效
             await showPlayerPreMagicAnim(actor.index);
 
-            // 3. 播放法术攻击的特效动画
+            // 3. 播放法术特效与伤害/回复结算
+            const isToEnemy = [0, 1, 2, 3, 9].includes(magic.wType);
             let targetIdx = act.target;
-            if (enemies[targetIdx].hp <= 0) {
-              targetIdx = enemies.findIndex(e => e.hp > 0);
-            }
-            if (targetIdx !== -1) {
-              // 绑定当前的法术 ID 供特效的名字寻找
-              magic.id = magicId;
-              await playMagicEffect(magic, player, enemies[targetIdx]);
-              
-              // 4. 结算伤害 (单体伤害或群体伤害)
-              let targets = [];
-              if (magic.wType === 1 || magic.wType === 6 || magic.wType === 2) {
-                enemies.forEach((e, eIdx) => { if (e.hp > 0) targets.push(eIdx); });
-              } else {
-                if (enemies[targetIdx].hp > 0) targets = [targetIdx];
+
+            // 绑定当前的法术 ID 供特效的名字寻找
+            magic.id = magicId;
+
+            if (isToEnemy) {
+              if (enemies[targetIdx].hp <= 0) {
+                targetIdx = enemies.findIndex(e => e.hp > 0);
               }
-
-              for (const eIdx of targets) {
-                const enemy = enemies[eIdx];
-                // 灵力换算
-                let str = player.magicStrength;
-                // 基础伤害计算
-                let baseDmg = calcBaseDamage(str, enemy.defense);
-                let dmg = Math.floor(baseDmg / 2 + magic.wBaseDamage);
+              if (targetIdx !== -1) {
+                await playMagicEffect(magic, player, enemies[targetIdx]);
                 
-                // 根据五灵抗性修正
-                if (magic.wElemental > 0 && magic.wElemental <= 5) {
-                  const resist = enemy.wElemResistance ? enemy.wElemResistance[magic.wElemental - 1] : 0;
-                  dmg = Math.floor(dmg * (100 - resist) / 100);
+                // 结算伤害 (单体伤害或群体伤害)
+                let targets = [];
+                if (magic.wType === 1 || magic.wType === 6 || magic.wType === 2) {
+                  enemies.forEach((e, eIdx) => { if (e.hp > 0) targets.push(eIdx); });
+                } else {
+                  if (enemies[targetIdx].hp > 0) targets = [targetIdx];
                 }
-                
-                if (dmg < 1) dmg = 1;
-                enemy.hp = Math.max(0, enemy.hp - dmg);
 
-                // 弹出伤害飘字
-                damagePopups.push({
-                  actor: enemy,
-                  value: dmg,
-                  isPlayer: false,
-                  startTime: Date.now()
-                });
+                for (const eIdx of targets) {
+                  const enemy = enemies[eIdx];
+                  // 灵力换算
+                  let str = player.magicStrength;
+                  // 基础伤害计算
+                  let baseDmg = calcBaseDamage(str, enemy.defense);
+                  let dmg = Math.floor(baseDmg / 2 + magic.wBaseDamage);
+                  
+                  // 根据五灵抗性修正
+                  if (magic.wElemental > 0 && magic.wElemental <= 5) {
+                    const resist = enemy.wElemResistance ? enemy.wElemResistance[magic.wElemental - 1] : 0;
+                    dmg = Math.floor(dmg * (100 - resist) / 100);
+                  }
+                  
+                  if (dmg < 1) dmg = 1;
+                  enemy.hp = Math.max(0, enemy.hp - dmg);
 
-                if (enemy.hp <= 0 && enemy.wDeathSound > 0) {
-                  playSound(enemy.wDeathSound);
+                  // 弹出伤害飘字
+                  damagePopups.push({
+                    actor: enemy,
+                    value: dmg,
+                    isPlayer: false,
+                    startTime: Date.now()
+                  });
+
+                  if (enemy.hp <= 0 && enemy.wDeathSound > 0) {
+                    playSound(enemy.wDeathSound);
+                  }
                 }
+                draw();
+                await sleep(400); // 飘字稍作停留
               }
-              draw();
-              await sleep(400); // 飘字稍作停留
+            } else {
+              // 针对我方 (治疗回复等法术)
+              if (players[targetIdx].hp <= 0 && magic.wType !== 5) {
+                // 单体治疗且目标阵亡，顺延至第一个活着的主角
+                targetIdx = players.findIndex(p => p.hp > 0);
+              }
+              if (targetIdx !== -1) {
+                await playMagicEffect(magic, player, players[targetIdx]);
+
+                // 结算恢复 (单体或全体)
+                let targets = [];
+                if (magic.wType === 5) {
+                  players.forEach((p, pIdx) => { if (p.hp > 0) targets.push(pIdx); });
+                } else {
+                  if (players[targetIdx].hp > 0) targets = [targetIdx];
+                }
+
+                let recover = Math.floor(player.magicStrength * 1.5 + magic.wBaseDamage);
+                if (recover < 1) recover = 1;
+
+                for (const pIdx of targets) {
+                  const targetPlayer = players[pIdx];
+                  
+                  // 恢复 HP (不超过最大 HP)
+                  targetPlayer.hp = Math.min(targetPlayer.maxHp, targetPlayer.hp + recover);
+                  const roleStats = state.roles[targetPlayer.index];
+                  if (roleStats) {
+                    roleStats.hp = targetPlayer.hp;
+                  }
+
+                  // 飘白色加血字 (isPlayer 为 true)
+                  damagePopups.push({
+                    actor: targetPlayer,
+                    value: recover,
+                    isPlayer: true,
+                    startTime: Date.now()
+                  });
+                }
+                draw();
+                await sleep(400); // 飘字稍作停留
+              }
             }
           }
         }
