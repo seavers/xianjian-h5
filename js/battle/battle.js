@@ -1036,6 +1036,29 @@ async function runActionPhase() {
                   if (enemies[targetIdx].hp > 0) targets = [targetIdx];
                 }
 
+                // 记录每一个受击怪物的原位置
+                const enemyOrigPositions = targets.map(eIdx => ({
+                  enemy: enemies[eIdx],
+                  x: enemies[eIdx].x,
+                  y: enemies[eIdx].y
+                }));
+
+                // 全体受击怪物第一阶段向左上移动
+                enemyOrigPositions.forEach(item => {
+                  item.enemy.x -= 8;
+                  item.enemy.y -= 4;
+                });
+                draw();
+                await sleep(80);
+
+                // 全体受击怪物第二阶段向左上移动
+                enemyOrigPositions.forEach(item => {
+                  item.enemy.x -= 2;
+                  item.enemy.y -= 1;
+                });
+                draw();
+                await sleep(150);
+
                 for (const eIdx of targets) {
                   const enemy = enemies[eIdx];
                   // 灵力换算
@@ -1065,6 +1088,13 @@ async function runActionPhase() {
                     playSound(enemy.wDeathSound);
                   }
                 }
+
+                // 全体受击怪物还原位置
+                enemyOrigPositions.forEach(item => {
+                  item.enemy.x = item.x;
+                  item.enemy.y = item.y;
+                });
+
                 draw();
                 await sleep(400); // 飘字稍作停留
               }
@@ -1110,6 +1140,10 @@ async function runActionPhase() {
                 await sleep(400); // 飘字稍作停留
               }
             }
+
+            // 步骤 17：还原施法者的动作帧姿势
+            restorePlayerFrame(player);
+            draw();
           }
         }
       }
@@ -1333,6 +1367,22 @@ async function playPlayerAttack(playerIdx, enemyIdx) {
 
   // 步骤 6.8：兜底伤害至最小 1 点，并对敌人扣减对应 HP
   if (dmg < 1) dmg = 1;
+
+  // 记录受击怪物原位置
+  const enemyOrigX = enemy.x;
+  const enemyOrigY = enemy.y;
+
+  // 怪物被攻击，执行击退退后一格动画(分两阶段左上移动，共 x-=10, y-=5)
+  enemy.x -= 8;
+  enemy.y -= 4;
+  draw();
+  await sleep(80);
+
+  enemy.x -= 2;
+  enemy.y -= 1;
+  draw();
+  await sleep(150);
+
   enemy.hp = Math.max(0, enemy.hp - dmg);
 
   // 触发伤害数额浮动字样
@@ -1347,6 +1397,10 @@ async function playPlayerAttack(playerIdx, enemyIdx) {
   if (enemy.hp <= 0 && enemy.deathSound > 0) {
     playSound(enemy.deathSound);
   }
+
+  // 怪物弹回原位置
+  enemy.x = enemyOrigX;
+  enemy.y = enemyOrigY;
 
   draw();
   await sleep(250);
@@ -1414,6 +1468,30 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
           if (player.hp > 0) targets = [playerIdx];
         }
 
+        // 记录每一个受击主角的原位置
+        const origPositions = targets.map(pIdx => ({
+          player: players[pIdx],
+          x: players[pIdx].x,
+          y: players[pIdx].y
+        }));
+
+        // 全体受击者第一阶段向右下移动并设置防御动作帧(3)
+        origPositions.forEach(item => {
+          item.player.currentFrame = 3;
+          item.player.x += 8;
+          item.player.y += 4;
+        });
+        draw();
+        await sleep(80);
+
+        // 全体受击者第二阶段向右下移动
+        origPositions.forEach(item => {
+          item.player.x += 2;
+          item.player.y += 1;
+        });
+        draw();
+        await sleep(150);
+
         for (const pIdx of targets) {
           const targetPlayer = players[pIdx];
           let def = targetPlayer.defense;
@@ -1445,6 +1523,14 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
             playSound(targetPlayer.deathSound);
           }
         }
+
+        // 全体受击者弹回原位置并还原动作帧姿势
+        origPositions.forEach(item => {
+          item.player.x = item.x;
+          item.player.y = item.y;
+          restorePlayerFrame(item.player);
+        });
+
         draw();
         await sleep(400); // 伤害飘字停留
         return;
@@ -1492,6 +1578,23 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
   // 步骤 7.7：兜底伤害至最小 1 点，并对玩家角色扣减对应 HP
   if (dmg < 1) dmg = 1;
   const originalHp = player.hp;
+
+  // 记录玩家受击前原位置
+  const playerOrigX = player.x;
+  const playerOrigY = player.y;
+
+  // 播放防御姿势(3)并执行击退退后一格(分两阶段右下移动，共 x+=10, y+=5)
+  player.currentFrame = 3;
+  player.x += 8;
+  player.y += 4;
+  draw();
+  await sleep(80);
+
+  player.x += 2;
+  player.y += 1;
+  draw();
+  await sleep(150);
+
   player.hp = Math.max(0, player.hp - dmg);
 
   // 同步削减全局角色状态中的 HP，以便大地图和存档顺利响应
@@ -1511,6 +1614,11 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
     isPlayer: true,
     startTime: Date.now()
   });
+
+  // 主角弹回原位置并还原正常/虚弱/死亡状态帧
+  player.x = playerOrigX;
+  player.y = playerOrigY;
+  restorePlayerFrame(player);
 
   draw();
   await sleep(250);
@@ -1816,3 +1924,15 @@ export async function showPlayerPreMagicAnim(playerIndex) {
   draw();
   await sleep(80);
 }
+
+// 步骤 16：还原玩家在战斗中的正常姿势帧 (死者为 2，虚弱为 1，正常为 0)
+function restorePlayerFrame(player) {
+  if (player.hp <= 0) {
+    player.currentFrame = 2;
+  } else if (player.hp < player.maxHp * 0.2) {
+    player.currentFrame = 1;
+  } else {
+    player.currentFrame = 0;
+  }
+}
+
