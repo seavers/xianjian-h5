@@ -122,9 +122,6 @@ export const Shop = {
     const startupCtx = state.contexts.startup;
     if (!startupCtx) return;
 
-    // 步骤 0.5：在每次重绘菜单组件前，强行将底层大地图和角色再次同步重绘，防止底图变黑或被清空
-    update(true);
-
     // 步骤 1：清空当前交互层 Canvas 以准备重绘
     startupCtx.clearRect(0, 0, startupCtx.canvas.width, startupCtx.canvas.height);
 
