@@ -1,5 +1,5 @@
 import { state } from '../engine/state.js';
-import { loadFbp, loadPic } from '../resources/pal.js';
+import { loadFbp, loadPic, loadWord } from '../resources/pal.js';
 import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame } from './battleData.js';
 import { loadMkf } from '../resources/loader.js';
 import { deyj } from '../utils/deyj.js';
@@ -286,6 +286,24 @@ function startBattleClock() {
   draw();
 }
 
+// 步骤 2.9：法术特效与名字渲染的辅助状态
+export let activeEffects = [];
+export let currentMagicEffect = null;
+export let selectedMagicIndex = 0;
+
+function drawWordToCtx(ctx, wordId, x, y, color) {
+  const word = state.words[wordId];
+  if (!word) return;
+  for (let i = 0; i < word.length / 2; i++) {
+    const charCode = word.getShort(i * 2);
+    if (charCode === 0x2020) continue;
+    const img = loadWord(charCode, color);
+    if (img) {
+      ctx.drawImage(img, x + i * 16, y);
+    }
+  }
+}
+
 // 步骤 3：战斗系统界面统一渲染绘制核心
 function draw() {
   const backCtx = state.contexts.back;
@@ -331,7 +349,7 @@ function draw() {
       const dy = actor.y - frameImg.height;
 
       // 选中敌人目标时高亮闪烁（对应 sdlpal PAL_RLEBlitWithColorShift(sprite, ..., colorShift=7)）
-      if (phase === 'select' && menuState === 'target' && item.type === 'enemy') {
+      if (phase === 'select' && (menuState === 'target' || menuState === 'target_magic') && item.type === 'enemy') {
         const isTarget = enemies.indexOf(actor) === targetEnemyIndex;
         if (isTarget && Math.floor(Date.now() / 250) % 2 === 1) {
           mainCtx.filter = 'brightness(2.5) saturate(0.2)';
@@ -351,48 +369,127 @@ function draw() {
     }
   });
 
+  // 3.5. 绘制当前活跃的法术特效 (渲染于背景和人物上方)
+  activeEffects.forEach(effect => {
+    const frameImg = loadSpriteFrame(effect.spriteData, effect.frameIndex);
+    if (frameImg) {
+      const dx = effect.x - frameImg.width / 2;
+      const dy = effect.y - frameImg.height / 2;
+      mainCtx.drawImage(frameImg, dx, dy);
+    }
+  });
+
   // 4. 指令选择阶段 UI 绘制
   if (showCommandUI && phase === 'select') {
-    // 绘制菱形指令选择菜单
-    const iconCoords = [
-      { img: attackIcon, x: 27, y: 140 }, // 攻击 (0)
-      { img: magicIcon, x: 0, y: 155 },  // 法术 (1)
-      { img: coopIcon, x: 54, y: 155 },   // 合击 (2)
-      { img: moreIcon, x: 27, y: 170 }    // 更多 (3)
-    ];
+    // 只有在 main 菜单状态下才绘制菱形指令选择菜单
+    if (menuState === 'main') {
+      const iconCoords = [
+        { img: attackIcon, x: 27, y: 140 }, // 攻击 (0)
+        { img: magicIcon, x: 0, y: 155 },  // 法术 (1)
+        { img: coopIcon, x: 54, y: 155 },   // 合击 (2)
+        { img: moreIcon, x: 27, y: 170 }    // 更多 (3)
+      ];
 
-    iconCoords.forEach((icon, idx) => {
-      if (!icon.img) {
-        return;
-      }
-      if (selectedAction === idx && menuState === 'main') {
-        // 选中图标：正常彩色显示（对应 sdlpal PAL_RLEBlitToSurface 正常渲染）
-        battleCtx.filter = 'none';
-        battleCtx.drawImage(icon.img, icon.x, icon.y);
-      } else {
-        // 未选中图标：灰度暗化（对应 sdlpal PAL_RLEBlitMonoColor bColor=0, iColorShift=-4）
-        battleCtx.filter = 'grayscale(1) brightness(0.55)';
-        battleCtx.drawImage(icon.img, icon.x, icon.y);
-      }
-    });
-    // 恢复默认滤镜，防止影响后续绘制
-    battleCtx.filter = 'none';
+      iconCoords.forEach((icon, idx) => {
+        if (!icon.img) {
+          return;
+        }
+        if (selectedAction === idx) {
+          // 选中图标：正常彩色显示（对应 sdlpal PAL_RLEBlitToSurface 正常渲染）
+          battleCtx.filter = 'none';
+          battleCtx.drawImage(icon.img, icon.x, icon.y);
+        } else {
+          // 未选中图标：灰度暗化（对应 sdlpal PAL_RLEBlitMonoColor bColor=0, iColorShift=-4）
+          battleCtx.filter = 'grayscale(1) brightness(0.55)';
+          battleCtx.drawImage(icon.img, icon.x, icon.y);
+        }
+      });
+      // 恢复默认滤镜，防止影响后续绘制
+      battleCtx.filter = 'none';
 
-    // 绘制指示当前正在选择的队员箭头
-    // 参考 sdlpal: x = pos.x - 8, y = pos.y - 74（pos 是角色脚底中心，74 是固定头顶偏移）
-    const activePlayer = players[activePlayerIndex];
-    if (activePlayer && activePlayer.hp > 0) {
-      // 交替显示红色(68号)和普通(69号)箭头，对应 sdlpal s_iFrame & 1 的帧交替
-      const arrowPicId = Math.floor(Date.now() / 250) % 2 === 0 ? 69 : 70;
-      const arrowImg = loadPic(arrowPicId);
-      if (arrowImg) {
-        // sdlpal: x = playerPos.x - 8, y = playerPos.y - 74
-        const ax = activePlayer.x - 8;
-        const ay = activePlayer.y - 74;
-        battleCtx.drawImage(arrowImg, ax, ay);
+      // 绘制指示当前正在选择的队员箭头
+      // 参考 sdlpal: x = pos.x - 8, y = pos.y - 74（pos 是角色脚底中心，74 是固定头顶偏移）
+      const activePlayer = players[activePlayerIndex];
+      if (activePlayer && activePlayer.hp > 0) {
+        // 交替显示红色(68号)和普通(69号)箭头，对应 sdlpal s_iFrame & 1 的帧交替
+        const arrowPicId = Math.floor(Date.now() / 250) % 2 === 0 ? 69 : 70;
+        const arrowImg = loadPic(arrowPicId);
+        if (arrowImg) {
+          // sdlpal: x = playerPos.x - 8, y = playerPos.y - 74
+          const ax = activePlayer.x - 8;
+          const ay = activePlayer.y - 74;
+          battleCtx.drawImage(arrowImg, ax, ay);
+        }
       }
     }
-    // 敌人目标选中使用高亮闪烁（已在角色绘制阶段处理），此处不再重复绘制箭头
+
+    // 绘制法术选择面板
+    if (menuState === 'magic' || menuState === 'target_magic') {
+      const activePlayer = players[activePlayerIndex];
+      if (activePlayer && activePlayer.magics && activePlayer.magics.length > 0) {
+        // 绘制半透明紫色外发光控制底盒 (x: 140, y: 15, w: 170, h: 120)
+        battleCtx.fillStyle = 'rgba(10, 13, 20, 0.88)';
+        battleCtx.fillRect(140, 15, 170, 120);
+        battleCtx.strokeStyle = 'rgba(167, 139, 250, 0.8)';
+        battleCtx.lineWidth = 1.5;
+        battleCtx.strokeRect(140, 15, 170, 120);
+
+        // 绘制标题
+        battleCtx.fillStyle = '#a78bfa';
+        battleCtx.font = 'bold 9px sans-serif';
+        battleCtx.fillText('🔮 选择法术 (Select Spell)', 146, 28);
+        battleCtx.strokeStyle = 'rgba(167, 139, 250, 0.2)';
+        battleCtx.beginPath();
+        battleCtx.moveTo(140, 32);
+        battleCtx.lineTo(310, 32);
+        battleCtx.stroke();
+
+        const pageSize = 5;
+        const startIdx = Math.max(0, Math.min(activePlayer.magics.length - pageSize, selectedMagicIndex - 2));
+
+        for (let i = 0; i < pageSize; i++) {
+          const idx = startIdx + i;
+          if (idx >= activePlayer.magics.length) break;
+
+          const magicId = activePlayer.magics[idx];
+          const itemObj = state.items[magicId];
+          if (!itemObj) continue;
+
+          const wordId = itemObj.roleId;
+          const magicNumber = itemObj.gold;
+          const magic = state.magics[magicNumber];
+          if (!magic) continue;
+
+          const isSelected = idx === selectedMagicIndex;
+          const yPos = 36 + i * 16;
+
+          // 高亮选中的法术行
+          if (isSelected) {
+            battleCtx.fillStyle = 'rgba(167, 139, 250, 0.25)';
+            battleCtx.fillRect(142, yPos, 166, 15);
+            battleCtx.fillStyle = '#a78bfa';
+            battleCtx.fillRect(143, yPos + 4, 2, 7);
+          }
+
+          // 判定字体色调：MP不足显示深灰，选中白色，否则淡灰
+          let wordColor = undefined;
+          if (activePlayer.mp < magic.wCostMP) {
+            wordColor = 0x00555555;
+          } else if (isSelected) {
+            wordColor = 0x00FFFFFF;
+          } else {
+            wordColor = 0x00C0C0C0;
+          }
+
+          drawWordToCtx(battleCtx, wordId, 148, yPos, wordColor);
+
+          // 绘制法术消耗
+          battleCtx.font = '8px monospace';
+          battleCtx.fillStyle = activePlayer.mp >= magic.wCostMP ? '#00e1ff' : '#555';
+          battleCtx.fillText(`${magic.wCostMP}消耗`, 265, yPos + 11);
+        }
+      }
+    }
   }
 
   // 5. 绘制右侧状态栏面板 (头像与 HP/MP)
@@ -492,6 +589,23 @@ function drawHpMpLine(ctx, cur, max, type, startX, startY) {
   }
 }
 
+// 推进到下一活着的队员指令选择
+function advanceToNextPlayer() {
+  let nextIdx = activePlayerIndex + 1;
+  while (nextIdx < players.length && players[nextIdx].hp <= 0) {
+    nextIdx++;
+  }
+
+  if (nextIdx < players.length) {
+    activePlayerIndex = nextIdx;
+    menuState = 'main';
+    selectedAction = 0;
+  } else {
+    // 所有活着的队员动作都选择完毕，开始回合结算
+    runActionPhase();
+  }
+}
+
 // 步骤 4：处理战斗指令输入事件，对接 input.js
 export function onInput(input) {
   if (phase !== 'select') {
@@ -519,6 +633,17 @@ export function onInput(input) {
           targetEnemyIndex = enemies.findIndex(e => e.hp > 0);
           if (targetEnemyIndex !== -1) {
             menuState = 'target';
+            playSound(29);
+          }
+        } else if (selectedAction === 1) {
+          // 确认进入法术选择：如果有已学会的法术则切换状态，否则报错
+          const player = players[activePlayerIndex];
+          if (player.magics && player.magics.length > 0) {
+            selectedMagicIndex = 0;
+            menuState = 'magic';
+            playSound(29);
+          } else {
+            playSound(31);
           }
         }
         break;
@@ -565,24 +690,102 @@ export function onInput(input) {
           type: 'attack',
           target: targetEnemyIndex
         };
-        
-        // 推进到下一活着的队员指令选择
-        let nextIdx = activePlayerIndex + 1;
-        while (nextIdx < players.length && players[nextIdx].hp <= 0) {
-          nextIdx++;
-        }
-
-        if (nextIdx < players.length) {
-          activePlayerIndex = nextIdx;
-          menuState = 'main';
-          selectedAction = 0;
-        } else {
-          // 所有活着的队员动作都选择完毕，开始回合结算
-          runActionPhase();
-        }
+        advanceToNextPlayer();
         break;
       case 'ESC': // 取消选择，返回指令菜单
         menuState = 'main';
+        break;
+    }
+  } else if (menuState === 'magic') {
+    // 队员法术列表翻滚选择
+    const player = players[activePlayerIndex];
+    switch (input) {
+      case 'up':
+        if (selectedMagicIndex > 0) {
+          selectedMagicIndex--;
+          playSound(29);
+        }
+        break;
+      case 'down':
+        if (selectedMagicIndex < player.magics.length - 1) {
+          selectedMagicIndex++;
+          playSound(29);
+        }
+        break;
+      case 'ESC':
+        menuState = 'main';
+        playSound(30);
+        break;
+      case 'blank': {
+        const magicId = player.magics[selectedMagicIndex];
+        const itemObj = state.items[magicId];
+        if (!itemObj) break;
+
+        const magicNumber = itemObj.gold;
+        const magic = state.magics[magicNumber];
+        if (!magic) break;
+
+        // MP 判定，不够时播放错误音
+        if (player.mp < magic.wCostMP) {
+          playSound(31);
+          break;
+        }
+
+        playSound(29);
+
+        // flags & 8 对应可否针对敌方 (kMagicFlagUsableToEnemy)
+        const isToEnemy = (itemObj.flags & 8) !== 0;
+
+        if (isToEnemy) {
+          targetEnemyIndex = enemies.findIndex(e => e.hp > 0);
+          if (targetEnemyIndex !== -1) {
+            player.pendingMagic = magicId;
+            menuState = 'target_magic';
+          }
+        } else {
+          // 辅助或自身加血等，直接施法确认
+          player.pendingMagic = magicId;
+          player.action = {
+            type: 'magic',
+            magicId: magicId,
+            target: activePlayerIndex
+          };
+          advanceToNextPlayer();
+        }
+        break;
+      }
+    }
+  } else if (menuState === 'target_magic') {
+    // 法术释放时的目标选定
+    switch (input) {
+      case 'left':
+      case 'up': {
+        let idx = targetEnemyIndex;
+        do {
+          idx = (idx - 1 + enemies.length) % enemies.length;
+        } while (enemies[idx].hp <= 0 && idx !== targetEnemyIndex);
+        targetEnemyIndex = idx;
+        break;
+      }
+      case 'right':
+      case 'down': {
+        let idx = targetEnemyIndex;
+        do {
+          idx = (idx + 1) % enemies.length;
+        } while (enemies[idx].hp <= 0 && idx !== targetEnemyIndex);
+        targetEnemyIndex = idx;
+        break;
+      }
+      case 'blank':
+        players[activePlayerIndex].action = {
+          type: 'magic',
+          magicId: players[activePlayerIndex].pendingMagic,
+          target: targetEnemyIndex
+        };
+        advanceToNextPlayer();
+        break;
+      case 'ESC':
+        menuState = 'magic';
         break;
     }
   }
@@ -633,6 +836,75 @@ async function runActionPhase() {
         }
         if (targetIdx !== -1) {
           await playPlayerAttack(actor.index, targetIdx);
+        }
+      } else if (act && act.type === 'magic') {
+        const magicId = act.magicId;
+        const itemObj = state.items[magicId];
+        if (itemObj) {
+          const magicNumber = itemObj.gold;
+          const magic = state.magics[magicNumber];
+          if (magic) {
+            // 1. 扣除 MP
+            player.mp = Math.max(0, player.mp - magic.wCostMP);
+            const globalRole = state.roles[player.index];
+            if (globalRole) {
+              globalRole.mp = player.mp;
+            }
+
+            // 2. 播放施法前摇发光特效
+            await showPlayerPreMagicAnim(actor.index);
+
+            // 3. 播放法术攻击的特效动画
+            let targetIdx = act.target;
+            if (enemies[targetIdx].hp <= 0) {
+              targetIdx = enemies.findIndex(e => e.hp > 0);
+            }
+            if (targetIdx !== -1) {
+              // 绑定当前的法术 ID 供特效的名字寻找
+              magic.id = magicId;
+              await playMagicEffect(magic, player, enemies[targetIdx]);
+              
+              // 4. 结算伤害 (单体伤害或群体伤害)
+              let targets = [];
+              if (magic.wType === 1 || magic.wType === 6 || magic.wType === 2) {
+                enemies.forEach((e, eIdx) => { if (e.hp > 0) targets.push(eIdx); });
+              } else {
+                if (enemies[targetIdx].hp > 0) targets = [targetIdx];
+              }
+
+              for (const eIdx of targets) {
+                const enemy = enemies[eIdx];
+                // 灵力换算
+                let str = player.magicStrength;
+                // 基础伤害计算
+                let baseDmg = calcBaseDamage(str, enemy.defense);
+                let dmg = Math.floor(baseDmg / 2 + magic.wBaseDamage);
+                
+                // 根据五灵抗性修正
+                if (magic.wElemental > 0 && magic.wElemental <= 5) {
+                  const resist = enemy.wElemResistance ? enemy.wElemResistance[magic.wElemental - 1] : 0;
+                  dmg = Math.floor(dmg * (100 - resist) / 100);
+                }
+                
+                if (dmg < 1) dmg = 1;
+                enemy.hp = Math.max(0, enemy.hp - dmg);
+
+                // 弹出伤害飘字
+                damagePopups.push({
+                  actor: enemy,
+                  value: dmg,
+                  isPlayer: false,
+                  startTime: Date.now()
+                });
+
+                if (enemy.hp <= 0 && enemy.wDeathSound > 0) {
+                  playSound(enemy.wDeathSound);
+                }
+              }
+              draw();
+              await sleep(400); // 飘字稍作停留
+            }
+          }
         }
       }
     } else {
@@ -696,6 +968,97 @@ async function runActionPhase() {
 }
 
 // 步骤 6：播放物理攻击出手动画
+// 步骤 15：播放法术动画特效
+export async function playMagicEffect(magic, actor, target) {
+  if (!isBattleRunning) return;
+
+  let spriteData = null;
+  try {
+    const mkfData = loadMkf('fire.mkf', magic.wEffect);
+    if (mkfData) {
+      spriteData = deyj(mkfData);
+    }
+  } catch (e) {
+    console.error(`[playMagicEffect] 加载 fire.mkf 特效包 #${magic.wEffect} 失败:`, e);
+  }
+
+  if (!spriteData) {
+    return;
+  }
+
+  const totalFrames = spriteData.getShort(0);
+  if (totalFrames <= 0) return;
+
+  let targets = [];
+  const isPlayerActor = actor.equipments !== undefined;
+  
+  if (magic.wType === 1 || magic.wType === 6) {
+    if (isPlayerActor) {
+      enemies.forEach(e => { if (e.hp > 0) targets.push(e); });
+    } else {
+      players.forEach(p => { if (p.hp > 0) targets.push(p); });
+    }
+  } else if (magic.wType !== 2) {
+    targets = [target];
+  }
+
+  const effectTimes = magic.wEffectTimes || 1;
+  const loopCount = totalFrames * effectTimes;
+  const speed = (magic.wSpeed + 5) * 10 || 100;
+
+  for (let step = 0; step < loopCount; step++) {
+    if (!isBattleRunning) break;
+
+    const frameIndex = step % totalFrames;
+
+    if (frameIndex === magic.wFireDelay && magic.wSound > 0) {
+      playSound(magic.wSound);
+    }
+
+    activeEffects = [];
+    if (magic.wType === 2) {
+      activeEffects.push({
+        spriteData,
+        frameIndex,
+        x: 160 + (magic.wXOffset || 0),
+        y: 100 + (magic.wYOffset || 0)
+      });
+    } else {
+      targets.forEach(t => {
+        activeEffects.push({
+          spriteData,
+          frameIndex,
+          x: t.x + (magic.wXOffset || 0),
+          y: (t.y - (t.height || 30) / 2) + (magic.wYOffset || 0)
+        });
+      });
+    }
+
+    currentMagicEffect = {
+      actorName: actor.name,
+      wordId: state.items[magic.id]?.roleId || 0,
+      frameIndex,
+      totalFrames
+    };
+
+    if (magic.wShake > 0) {
+      const shakeX = (Math.random() - 0.5) * magic.wShake * 2;
+      const shakeY = (Math.random() - 0.5) * magic.wShake * 2;
+      state.contexts.main.canvas.style.transform = `translate(${shakeX}px, ${shakeY}px)`;
+    }
+
+    draw();
+    await sleep(speed);
+  }
+
+  if (magic.wShake > 0) {
+    state.contexts.main.canvas.style.transform = 'none';
+  }
+  activeEffects = [];
+  currentMagicEffect = null;
+  draw();
+}
+
 async function playPlayerAttack(playerIdx, enemyIdx) {
   const player = players[playerIdx];
   const enemy = enemies[enemyIdx];
@@ -818,44 +1181,69 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
   // 步骤 0.5：判定是否触发法术攻击 (wMagic 不为 0 且随机数小于 wMagicRate)
   const useMagic = enemy.wMagic !== undefined && enemy.wMagic !== 0 && (Math.floor(Math.random() * 10) < (enemy.wMagicRate || 10));
   if (useMagic) {
-    // 播放法术音效
-    if (enemy.wMagicSound > 0) {
-      playSound(enemy.wMagicSound);
+    const itemObj = state.items[enemy.wMagic];
+    if (itemObj) {
+      const magicNumber = itemObj.gold;
+      const magic = state.magics[magicNumber];
+      if (magic) {
+        // 绑定法术 ID 供特效系统解析其描述
+        magic.id = enemy.wMagic;
+
+        // 1. 播放怪物的法术特效
+        await playMagicEffect(magic, enemy, player);
+
+        // 获取敌方等级并对其法术攻击力进行战场等级修正
+        const enemyLevel = enemy.level || 1;
+        let str = enemy.wMagicStrength || 10;
+        str += (enemyLevel + 6) * 6;
+        if (str < 0) {
+          str = 0;
+        }
+
+        // 2. 获取目标伤害结算 (单体或全体)
+        let targets = [];
+        if (magic.wType === 1 || magic.wType === 6 || magic.wType === 2) {
+          players.forEach((p, pIdx) => { if (p.hp > 0) targets.push(pIdx); });
+        } else {
+          if (player.hp > 0) targets = [playerIdx];
+        }
+
+        for (const pIdx of targets) {
+          const targetPlayer = players[pIdx];
+          let def = targetPlayer.defense;
+
+          // 计算法术基础伤害并折减
+          let baseDmg = calcBaseDamage(str, def);
+          let dmg = Math.floor(baseDmg / 2 + magic.wBaseDamage / 2);
+          dmg += Math.floor(Math.random() * 2);
+
+          if (dmg < 1) dmg = 1;
+          targetPlayer.hp = Math.max(0, targetPlayer.hp - dmg);
+
+          // 同步削减全局角色状态中的 HP
+          const roleStats = state.roles[targetPlayer.index];
+          if (roleStats) {
+            roleStats.hp = targetPlayer.hp;
+          }
+
+          // 弹出玩家受伤飘字
+          damagePopups.push({
+            actor: targetPlayer,
+            value: dmg,
+            isPlayer: true,
+            startTime: Date.now()
+          });
+
+          // 如果主角/队友死亡，则播放死亡音效
+          if (targetPlayer.hp <= 0 && targetPlayer.deathSound > 0) {
+            playSound(targetPlayer.deathSound);
+          }
+        }
+        draw();
+        await sleep(400); // 伤害飘字停留
+        return;
+      }
     }
-
-    // 播放法术施法蓄力延时
-    await sleep(200);
-
-    // 获取敌方等级并对其法术攻击力进行战场等级修正
-    const enemyLevel = enemy.level || 1;
-    let str = enemy.wMagicStrength || 10;
-    str += (enemyLevel + 6) * 6;
-    if (str < 0) {
-      str = 0;
-    }
-
-    // 获取玩家的防御力
-    let def = player.defense;
-
-    // 计算法术基础伤害并折减
-    let baseDmg = calcBaseDamage(str, def);
-    let dmg = Math.floor(baseDmg / 2);
-    dmg += Math.floor(Math.random() * 2);
-
-    if (dmg < 1) dmg = 1;
-    player.hp = Math.max(0, player.hp - dmg);
-
-    // 同步削减全局角色状态中的 HP
-    const roleStats = state.roles[player.index];
-    if (roleStats) {
-      roleStats.hp = player.hp;
-    }
-
-    // 如果主角/队友死亡，则播放死亡音效
-    if (player.hp <= 0 && player.deathSound > 0) {
-      playSound(player.deathSound);
-    }
-    return;
   }
 
   const origX = enemy.x;
@@ -1063,6 +1451,7 @@ export function getBattleState() {
     isBattleRunning: true,
     battleId: battleId,
     battlefieldId: state.battlefieldId,
+    currentMagicEffect: currentMagicEffect,
     turn: turn,
     phase: phase,
     activePlayerIndex: activePlayerIndex,

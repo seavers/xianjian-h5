@@ -160,6 +160,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
   const [battlePhase, setBattlePhase] = useState('-');
   const [battlePlayers, setBattlePlayers] = useState([]);
   const [battleEnemies, setBattleEnemies] = useState([]);
+  const [activeMagicEffect, setActiveMagicEffect] = useState(null);
 
   // --- 背包行囊状态 ---
   const [ownItems, setOwnItems] = useState([]);
@@ -367,6 +368,15 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
     };
   }, [loadMgoFn, loadBallFn]);
 
+  // 监听并实时渲染法术特效在仪表盘 Canvas 上
+  useEffect(() => {
+    if (!activeMagicEffect) return;
+    const canvas = document.getElementById('dashboard-magic-canvas');
+    if (canvas) {
+      drawBattleSprite(canvas, activeMagicEffect.spriteData, activeMagicEffect.frameIndex);
+    }
+  }, [activeMagicEffect]);
+
   // 高频状态轮询同步逻辑 (200ms 刷新)
   const syncStateData = () => {
     if (!state) return;
@@ -385,8 +395,10 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
       setBattlePhase(battleState.phase);
       setBattlePlayers(battleState.players);
       setBattleEnemies(battleState.enemies);
+      setActiveMagicEffect(battleState.currentMagicEffect || null);
     } else {
       // 3. 同步场景地图等常规数据
+      setActiveMagicEffect(null);
       setSceneId(state.sceneId);
       setMapIdText(`0x${state.mapId.toString(16).toUpperCase()} (${state.mapId})`);
       setTilePosText(`(${state.mx}, ${state.my})${state.mhalf ? ' +0.5' : ''}`);
@@ -842,6 +854,19 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
       <!-- ⚔️ 游戏战斗实时数据面板 -->
       ${isBattleRunning ? html`
         <div id="battle-panels" style=${{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px' }}>
+          ${activeMagicEffect ? html`
+            <div class="panel-row" style=${{ display: 'block' }}>
+              <div class="panel-col" style=${{ background: 'rgba(179,102,255,0.08)', border: '1px solid rgba(179,102,255,0.2)', borderRadius: '2px', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style=${{ color: '#dfb3ff', fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  🔮 正在施法: <span style=${{ color: '#fff' }}>${activeMagicEffect.actorName}</span> 释放 ➔ <${WordImage} wordId=${activeMagicEffect.wordId} />
+                </span>
+                <div style=${{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <canvas id="dashboard-magic-canvas" width="40" height="40" style=${{ imageRendering: 'pixelated', width: '40px', height: '40px', background: 'rgba(0,0,0,0.5)', borderRadius: '2px' }}></canvas>
+                  <span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>${activeMagicEffect.frameIndex + 1}/${activeMagicEffect.totalFrames} 帧</span>
+                </div>
+              </div>
+            </div>
+          ` : ''}
           <div class="panel-row" style=${{ display: 'block' }}>
             <div class="panel-col" style=${{ border: `1px solid rgba(${BATTLE_COLOR_RGB}, 0.15)`, background: `rgba(${BATTLE_COLOR_RGB}, 0.02)`, borderRadius: '2px', padding: '6px 8px' }}>
               <div class="section-header" style=${{ color: BATTLE_COLOR, fontWeight: 'bold', borderBottom: `1px dotted rgba(${BATTLE_COLOR_RGB}, 0.15)`, paddingBottom: '4px', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

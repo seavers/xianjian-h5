@@ -153,3 +153,52 @@ export function loadSpriteFrame(spriteData, frameIndex) {
   
   return createRleImage(frameData);
 }
+
+// 步骤 5：解析法术属性表（data.mkf #4）
+// 每个 MAGIC 记录在 DOS 版本中为 32 字节 (16 个 WORD/SHORT)
+let cachedMagics = null;
+
+export function loadMagics() {
+  if (cachedMagics) {
+    return cachedMagics;
+  }
+
+  const magicData = loadMkf('data.mkf', 4);
+  if (!magicData) {
+    console.error('无法加载 data.mkf #4 法术数据块');
+    return [];
+  }
+
+  const list = [];
+  const numMagics = Math.floor(magicData.length / 32);
+
+  for (let i = 0; i < numMagics; i++) {
+    const offset = i * 32;
+    const m = {
+      wEffect: magicData.getShort(offset + 0),
+      wType: magicData.getShort(offset + 2),
+      wXOffset: toShort(magicData.getShort(offset + 4)),
+      wYOffset: toShort(magicData.getShort(offset + 6)),
+      sLayerOffset: toShort(magicData.getShort(offset + 8)), // union: wSummonEffect / sLayerOffset
+      wSpeed: toShort(magicData.getShort(offset + 10)),
+      wKeepEffect: magicData.getShort(offset + 12),
+      wFireDelay: magicData.getShort(offset + 14),
+      wEffectTimes: magicData.getShort(offset + 16),
+      wShake: magicData.getShort(offset + 18),
+      wWave: magicData.getShort(offset + 20),
+      wUnknown: magicData.getShort(offset + 22),
+      wCostMP: magicData.getShort(offset + 24),
+      wBaseDamage: magicData.getShort(offset + 26),
+      wElemental: magicData.getShort(offset + 28),
+      wSound: toShort(magicData.getShort(offset + 30))
+    };
+    list.push(m);
+  }
+
+  cachedMagics = list;
+  console.log(`成功加载并解析 ${list.length} 个法术配置数据`);
+
+  state.magics = list;
+  return list;
+}
+
