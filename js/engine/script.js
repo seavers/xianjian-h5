@@ -12,6 +12,7 @@ export const GOTO_SCRIPT = 'GOTO_SCRIPT';    //将当前的入口替换为下一
 export const Script = {
 
   activeThread: null,
+  nextThreads: [],
 
   startScene(scene) {
     Script.start(scene.enterScriptId, scene, 'scene');
@@ -27,7 +28,7 @@ export const Script = {
 
   // 启动并注册脚本线程状态
   start(scriptId, obj, type) {
-    Script.activeThread = {scriptId, obj, type}
+    Script.nextThreads.push({scriptId, obj, type})
   },
 
   // 1. 「TICK_TIME」ms 周期性调用的游戏主循环入口
@@ -47,6 +48,12 @@ export const Script = {
 
     // 步骤 1.5：其他非常规探索模式一律挂起逻辑帧
     if (state.currentMode !== 'game' || state.uiMode !== 'operate') {
+      return;
+    }
+
+    if (Script.nextThreads?.length) {
+      const thread = Script.nextThreads.shift();
+      await this.executeScript(thread);
       return;
     }
 
@@ -78,8 +85,17 @@ export const Script = {
       }
     }
 
+    // 步骤 6：步进 auto NPC 漫游并统一重绘刷新
+    await this.stepAutoAndUpdate();
+
+    if(window.onSceneUpdate) {
+      window.onSceneUpdate();
+    }
+  },
+
+  async executeScript(thread) {
     // 步骤 5：步进当前活跃的非 auto 类主线程（进入场景脚本、交互触发脚本等）
-    const t = Script.activeThread;
+    const t = Script.activeThread = thread;
     if (t) {
       const nextId = await this.runTriggerScript(t.scriptId, t.obj, t.type);
       if (t.type === 'scene') {
@@ -96,16 +112,9 @@ export const Script = {
       // 跳过这里，不update，不然切换场景ID+setRolePos后的update会丢失背景，见鬼阴山场景69切换脚本16975
       return;
     }
-    
-    // 步骤 6：步进 auto NPC 漫游并统一重绘刷新
-    await this.stepAutoAndUpdate();
-
-    if(window.onSceneUpdate) {
-      window.onSceneUpdate();
-    }
   },
 
-  async handleSceneSwitch() {
+  handleSceneSwitch() {
     const targetSceneId = state.nextSceneId;
     
     // 1. 重置挂起的切换标志，避免重复执行
