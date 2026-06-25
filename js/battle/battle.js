@@ -38,8 +38,8 @@ let magicIcon = null;
 let coopIcon = null;
 let moreIcon = null;
 
-let players = [];
-let enemies = [];
+export let players = [];
+export let enemies = [];
 let damagePopups = [];
 let isBattleRunning = false;
 let battleResult = 1000;
@@ -292,6 +292,74 @@ export let currentMagicEffect = null;
 export let selectedMagicIndex = 0;
 export let magicScrollRow = 0;
 export let targetPlayerIndex = 0;
+
+// 基于 data.mkf #9 中的 PIC #1 ~ #9 拼接绘制自适应九宫格 UI 框
+function drawUIBox(ctx, x, y, width, height, style = 0) {
+  const pics = [];
+  for (let i = 1; i <= 9; i++) {
+    pics.push(loadPic(i + style * 9));
+  }
+
+  if (pics.some(p => !p)) {
+    ctx.fillStyle = 'rgba(10, 13, 20, 0.9)';
+    ctx.fillRect(x, y, width, height);
+    ctx.strokeStyle = 'rgba(167, 139, 250, 0.8)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x, y, width, height);
+    return;
+  }
+
+  const [pic1, pic2, pic3, pic4, pic5, pic6, pic7, pic8, pic9] = pics;
+
+  const wLeft = pic1.width;
+  const wRight = pic3.width;
+  const hTop = pic1.height;
+  const hBottom = pic7.height;
+
+  // 先绘制右下角半透明黑色投影 (阴影偏置 4px)
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(x + 4, y + 4, width, height);
+  ctx.restore();
+
+  // 1. 绘制九宫格的中心填充区域 (平铺)
+  for (let tx = x + wLeft; tx < x + width - wRight; tx += pic5.width) {
+    const drawW = Math.min(pic5.width, x + width - wRight - tx);
+    for (let ty = y + hTop; ty < y + height - hBottom; ty += pic5.height) {
+      const drawH = Math.min(pic5.height, y + height - hBottom - ty);
+      ctx.drawImage(pic5, 0, 0, drawW, drawH, tx, ty, drawW, drawH);
+    }
+  }
+
+  // 2. 绘制九宫格的四个边框 (平铺)
+  // 上边框
+  for (let tx = x + wLeft; tx < x + width - wRight; tx += pic2.width) {
+    const drawW = Math.min(pic2.width, x + width - wRight - tx);
+    ctx.drawImage(pic2, 0, 0, drawW, pic2.height, tx, y, drawW, pic2.height);
+  }
+  // 下边框
+  for (let tx = x + wLeft; tx < x + width - wRight; tx += pic8.width) {
+    const drawW = Math.min(pic8.width, x + width - wRight - tx);
+    ctx.drawImage(pic8, 0, 0, drawW, pic8.height, tx, y + height - hBottom, drawW, pic8.height);
+  }
+  // 左边框
+  for (let ty = y + hTop; ty < y + height - hBottom; ty += pic4.height) {
+    const drawH = Math.min(pic4.height, y + height - hBottom - ty);
+    ctx.drawImage(pic4, 0, 0, pic4.width, drawH, x, ty, pic4.width, drawH);
+  }
+  // 右边框
+  for (let ty = y + hTop; ty < y + height - hBottom; ty += pic6.height) {
+    const drawH = Math.min(pic6.height, y + height - hBottom - ty);
+    ctx.drawImage(pic6, 0, 0, pic6.width, drawH, x + width - wRight, ty, pic6.width, drawH);
+  }
+
+  // 3. 绘制九宫格的四个角块
+  ctx.drawImage(pic1, x, y);
+  ctx.drawImage(pic3, x + width - wRight, y);
+  ctx.drawImage(pic7, x, y + height - hBottom);
+  ctx.drawImage(pic9, x + width - wRight, y + height - hBottom);
+}
 
 // 步骤 2.95：辅助点阵描述渲染器与调色板数字渲染器
 function drawSpellDesc(ctx, magicId, startX, startY, color) {

@@ -14,6 +14,7 @@ import { playMusic, stopMusic as stopBgMusic } from '../resources/music.js';
 import { playSound } from '../resources/sound.js';
 import { TICK_TIME } from '../app.js';
 import { clearWithEffect } from '../ui/clearWithEffect.js';
+import { enemies } from '../battle/battle.js';
 
 export function setRolePos(sx, sy, shalf) {
   state.mx = sx;
@@ -1677,6 +1678,35 @@ export async function sellMenu() {
   await Shop.openSellMenu();
 }
 
+export function applyPoisonToEnemy(toAll, poisonId) {
+  const target = toAll ? '全体敌人' : `当前敌人 (ID: ${this?.id || '未知'})`;
+  console.log(`[0x28 applyPoisonToEnemy] 附加毒素给敌人. 范围: ${target}, 毒素ID: ${poisonId}`);
+
+  if (state.currentMode === 'battle') {
+    if (toAll) {
+      if (enemies && enemies.length > 0) {
+        enemies.forEach(enemy => {
+          if (!enemy.poisons) {
+            enemy.poisons = [];
+          }
+          if (!enemy.poisons.includes(poisonId)) {
+            enemy.poisons.push(poisonId);
+          }
+        });
+      }
+    } else {
+      if (this) {
+        if (!this.poisons) {
+          this.poisons = [];
+        }
+        if (!this.poisons.includes(poisonId)) {
+          this.poisons.push(poisonId);
+        }
+      }
+    }
+  }
+}
+
 export function curePoisonByKind(toAll, poisonId) {
   const targetRoles = toAll ? state.party : [state.party[0] || state.roles[0]];
   for (let i = 0; i < targetRoles.length; i++) {
@@ -1865,6 +1895,7 @@ scriptCodes[0x22] = { func: revivePlayer, desc: '复活濒死玩家角色' };
 scriptCodes[0x23] = { func: removeEquipment, desc: '卸除主角/队员装备' };
 scriptCodes[0x26] = { func: buyMenu, desc: '商店买入菜单' };
 scriptCodes[0x27] = { func: sellMenu, desc: '商店卖出菜单' };
+scriptCodes[0x28] = { func: applyPoisonToEnemy, desc: '给敌人施加毒素' };
 scriptCodes[0x2B] = { func: curePoisonByKind, desc: '根据毒物ID解玩家毒' };
 scriptCodes[0x2C] = { func: curePoisonByLevel, desc: '根据级别解玩家毒' };
 scriptCodes[0x2D] = { func: setPlayerStatus, desc: '附加异常状态给角色' };
