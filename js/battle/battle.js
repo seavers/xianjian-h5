@@ -515,8 +515,17 @@ function draw() {
 
   // 4. 指令选择阶段 UI 绘制
   if (showCommandUI && phase === 'select') {
-    // 只有在 main 菜单状态下才绘制菱形指令选择菜单
+    // 当正处于主菜单、法术菜单、或选择法术目标阶段时均展示左下角动作指令菱形菜单
+    let isDrawingMenu = false;
+    let highlightIdx = selectedAction;
     if (menuState === 'main') {
+      isDrawingMenu = true;
+    } else if (menuState === 'magic' || menuState === 'target_magic' || menuState === 'target_player_magic') {
+      isDrawingMenu = true;
+      highlightIdx = 1; // 处于法术子操作阶段时，高亮“法术”图标 (1)
+    }
+
+    if (isDrawingMenu) {
       const iconCoords = [
         { img: attackIcon, x: 27, y: 140 }, // 攻击 (0)
         { img: magicIcon, x: 0, y: 155 },  // 法术 (1)
@@ -528,7 +537,7 @@ function draw() {
         if (!icon.img) {
           return;
         }
-        if (selectedAction === idx) {
+        if (highlightIdx === idx) {
           // 选中图标：正常彩色显示（对应 sdlpal PAL_RLEBlitToSurface 正常渲染）
           battleCtx.filter = 'none';
           battleCtx.drawImage(icon.img, icon.x, icon.y);
@@ -561,18 +570,14 @@ function draw() {
     if (menuState === 'magic' || menuState === 'target_magic' || menuState === 'target_player_magic') {
       const activePlayer = players[activePlayerIndex];
       if (activePlayer && activePlayer.magics && activePlayer.magics.length > 0) {
-        // 1. 绘制左上角使用MP/当前主角MP框 (x: 10, y: 8, w: 80, h: 22)
-        battleCtx.fillStyle = 'rgba(10, 13, 20, 0.88)';
-        battleCtx.fillRect(10, 8, 80, 22);
-        battleCtx.strokeStyle = 'rgba(167, 139, 250, 0.8)';
-        battleCtx.lineWidth = 1.5;
-        battleCtx.strokeRect(10, 8, 80, 22);
+        // 1. 绘制左上角使用MP/当前主角MP框 (x: 10, y: 8, w: 80, h: 22)，完全使用九宫格贴图拼框
+        drawUIBox(battleCtx, 10, 8, 80, 22);
 
         const currentMagicId = activePlayer.magics[selectedMagicIndex];
         const currentItemObj = state.items[currentMagicId];
         let currentCostMP = 0;
         if (currentItemObj) {
-          const currentMagicNumber = currentItemObj.gold;
+          const currentMagicNumber = currentItemObj.roleId; // 仙术编号对应 rgwData[0] (roleId)
           const currentMagic = state.magics[currentMagicNumber];
           if (currentMagic) {
             currentCostMP = currentMagic.wCostMP;
@@ -596,12 +601,8 @@ function draw() {
           drawSpellDesc(battleCtx, currentMagicId, 100, 8, 0x00FCDC84); // 0x00FCDC84 仙剑米黄色
         }
 
-        // 3. 绘制锦缎美感大控制盒 (x: 10, y: 40, w: 300, h: 110)
-        battleCtx.fillStyle = 'rgba(10, 13, 20, 0.95)';
-        battleCtx.fillRect(10, 40, 300, 110);
-        battleCtx.strokeStyle = 'rgba(167, 139, 250, 0.8)';
-        battleCtx.lineWidth = 1.5;
-        battleCtx.strokeRect(10, 40, 300, 110);
+        // 3. 绘制锦缎美感大控制盒 (x: 10, y: 40, w: 300, h: 110)，完全使用九宫格贴图拼框
+        drawUIBox(battleCtx, 10, 40, 300, 110);
 
         // 4. 绘制法术三列列表网格
         const colW = 95;
@@ -631,8 +632,8 @@ function draw() {
             const itemObj = state.items[magicId];
             if (!itemObj) continue;
 
-            const wordId = itemObj.roleId;
-            const magicNumber = itemObj.gold;
+            const wordId = magicId; // 仙术在 word.dat 中的短语 ID 就是其 Object ID 本身 (magicId)
+            const magicNumber = itemObj.roleId; // 仙术的真实编号为其 rgwData[0] (roleId)
             const magic = state.magics[magicNumber];
             if (!magic) continue;
 
@@ -906,7 +907,7 @@ export function onInput(input) {
         const itemObj = state.items[magicId];
         if (!itemObj) break;
 
-        const magicNumber = itemObj.gold;
+        const magicNumber = itemObj.roleId; // 仙术编号对应 rgwData[0] (roleId)
         const magic = state.magics[magicNumber];
         if (!magic) break;
 
@@ -1069,7 +1070,7 @@ async function runActionPhase() {
         const magicId = act.magicId;
         const itemObj = state.items[magicId];
         if (itemObj) {
-          const magicNumber = itemObj.gold;
+          const magicNumber = itemObj.roleId; // 仙术编号对应 rgwData[0] (roleId)
           const magic = state.magics[magicNumber];
           if (magic) {
             // 1. 扣除 MP
@@ -1344,7 +1345,7 @@ export async function playMagicEffect(magic, actor, target) {
 
     currentMagicEffect = {
       actorName: actor.name,
-      wordId: state.items[magic.id]?.roleId || 0,
+      wordId: magic.id || 0, // 仙术名字短语 ID 即为其 Object ID (magic.id)
       frameIndex,
       totalFrames
     };
@@ -1511,7 +1512,7 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
   if (useMagic) {
     const itemObj = state.items[enemy.wMagic];
     if (itemObj) {
-      const magicNumber = itemObj.gold;
+      const magicNumber = itemObj.roleId; // 仙术编号对应 rgwData[0] (roleId)
       const magic = state.magics[magicNumber];
       if (magic) {
         // 绑定法术 ID 供特效系统解析其描述
