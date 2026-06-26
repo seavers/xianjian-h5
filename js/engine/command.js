@@ -2037,6 +2037,25 @@ export function setPartyStatus(statusId, rounds) {
   console.log(`[0x6A setPartyStatus] 给全队伙伴附加了属性状态 ID: ${statusId}, 持续回合: ${rounds}`);
 }
 
+export function jumpIfPlayerHasStatus(roleId, statusId, targetScriptId) {
+  // 步骤 1：确定检查的角色。若为 0 或 0xFFFF，使用选中的角色或当前主角
+  let roleIndex = roleId;
+  if (roleId === 0 || roleId === 0xFFFF) {
+    roleIndex = state.selectedRoleIndex !== undefined ? state.selectedRoleIndex : getRoleIndex(this);
+  } else {
+    roleIndex = roleId - 1; // 1-based 转 0-based
+  }
+
+  const role = state.roles[roleIndex];
+  // 步骤 2：检查该角色身上是否存在 statusId 属性状态且持续回合数大于 0
+  if (role && role.status && role.status[statusId] !== undefined) {
+    console.log(`[0x6B jumpIfPlayerHasStatus] 角色 Index: ${roleIndex} 拥有状态 ID: ${statusId}，跳转至脚本: ${targetScriptId}`);
+    return targetScriptId;
+  }
+
+  console.log(`[0x6B jumpIfPlayerHasStatus] 角色 Index: ${roleIndex} 没有状态 ID: ${statusId}，不跳转`);
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2245,5 +2264,6 @@ scriptCodes[0x8B] = { func: setPalette, desc: '切换使用指定调色板' };
 scriptCodes[0x8F] = { func: halveMoney, desc: '金钱数值减半' };
 scriptCodes[0x90] = { func: setObjectScript, desc: '设置事件物体脚本或属性数据' };
 scriptCodes[0x6A] = { func: setPartyStatus, desc: '给全队伙伴附加仙术/属性状态' };
+scriptCodes[0x6B] = { func: jumpIfPlayerHasStatus, desc: '若角色有指定属性异常则跳转' };
 
 scriptCodes[0xFFFF] = { func: talk, desc: '展示剧情人物对话框' };
