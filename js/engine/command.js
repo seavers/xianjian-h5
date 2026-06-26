@@ -2535,6 +2535,11 @@ export function fadeFromToColor(colorIndex, duration) {
   console.log(`[0x8C fadeFromToColor] (免做) 调色板颜色索引: ${colorIndex}, 持续帧数: ${duration}`);
 }
 
+export function showEndingAnimation() {
+  // 步骤 1：结局动画播放，由于结局动画与全屏资源播放相关，在 H5 简易 Mock 做 No-op 流程处理
+  console.log('[0x96 showEndingAnimation] (免做) 播放结局动画');
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2725,6 +2730,7 @@ scriptCodes[0x92] = { func: showPlayerPreMagicAnim, desc: '播放主角施法前
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
 scriptCodes[0x95] = { func: jumpIfCurrentSceneEquals, desc: '若当前场景ID等于特定值则跳转' };
+scriptCodes[0x96] = { func: showEndingAnimation, desc: '播放结局动画' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
 scriptCodes[0x9C] = { func: enemyDivision, desc: '敌方分身' };
 scriptCodes[0x9E] = { func: enemySummon, desc: '敌方召唤' };
