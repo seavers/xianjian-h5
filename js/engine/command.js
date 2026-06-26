@@ -2358,6 +2358,23 @@ export function killEnemyImmediately() {
   }
 }
 
+export function jumpIfEnemyHpRatioGreaterThan(ratio, targetScriptId) {
+  // 步骤 1：寻找当前战斗中第一个存活的敌人
+  if (enemies && enemies.length > 0) {
+    const enemy = enemies.find(e => e && e.hp > 0);
+    if (enemy) {
+      // 步骤 2：对当前敌人的 HP 百分比与预设值 ratio 进行比较，如果当前比值大，返回跳转目标脚本 ID
+      const maxHp = enemy.maxHp || 100;
+      if (enemy.hp * 100 > maxHp * ratio) {
+        console.log(`[0x64 jumpIfEnemyHpRatioGreaterThan] 敌人 HP: ${enemy.hp}/${maxHp} (${Math.round(enemy.hp / maxHp * 100)}%) 大于预设比值 ${ratio}%，跳转至脚本: ${targetScriptId}`);
+        return targetScriptId;
+      }
+    }
+  } else {
+    console.log('[0x64 jumpIfEnemyHpRatioGreaterThan] 敌人 HP 比例跳转，当前不在战斗或无存活敌人，默认不跳转');
+  }
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2539,6 +2556,7 @@ scriptCodes[0x60] = { func: killEnemyImmediately, desc: '即死敌人' };
 scriptCodes[0x61] = { func: jumpIfPlayerNotPoisoned, desc: '玩家未中毒跳转' };
 scriptCodes[0x62] = { func: pauseEnemyChase, desc: '暂停敌人的追击' };
 scriptCodes[0x63] = { func: speedUpEnemyChase, desc: '加速敌人的追击' };
+scriptCodes[0x64] = { func: jumpIfEnemyHpRatioGreaterThan, desc: '敌人HP比例跳转' };
 scriptCodes[0x92] = { func: showPlayerPreMagicAnim, desc: '播放主角施法前摇发光动画' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
