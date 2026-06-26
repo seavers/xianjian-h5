@@ -1984,6 +1984,16 @@ export function jumpIfEquipmentEquippedOnPlayer(itemId, roleId, targetScriptId) 
   console.log(`[0x88 jumpIfEquipmentEquippedOnPlayer] 装备 ID: ${itemId} 未穿戴在角色 Index: ${roleIndex} 身上，不跳转`);
 }
 
+export async function resetPaletteWithFade() {
+  console.log('[0x8A resetPaletteWithFade] 执行调色板重置并渐变淡入');
+  // 步骤 1：将调色板 ID 重置为默认的 0
+  state.paletteId = 0;
+
+  // 步骤 2：执行渐变淡入当前场景，恢复亮度和渲染
+  await fadeIn();
+  await update();
+}
+
 export function shakeScreen(delay, level) {
   const shakeLevel = level === 0 ? 4 : level;
   const shakeCount = delay === 0 ? 10 : delay; // 默认抖动 10 次
@@ -2356,6 +2366,7 @@ scriptCodes[0x80] = { func: toggleDayNight, desc: '切换昼夜调色板' };
 scriptCodes[0x81] = { func: faceNpcTrig, desc: '面朝NPC触发脚本' };
 scriptCodes[0x88] = { func: jumpIfEquipmentEquippedOnPlayer, desc: '若指定装备穿在指定人身上则跳转' };
 scriptCodes[0x89] = { func: setBattleResult, desc: '设定战斗胜负结果并退出' };
+scriptCodes[0x8A] = { func: resetPaletteWithFade, desc: '调色板重置渐变' };
 scriptCodes[0x8B] = { func: setPalette, desc: '切换使用指定调色板' };
 scriptCodes[0x8F] = { func: halveMoney, desc: '金钱数值减半' };
 scriptCodes[0x90] = { func: setObjectScript, desc: '设置事件物体脚本或属性数据' };
