@@ -1936,6 +1936,31 @@ export function jumpByExitScriptId(failScriptId) {
   }
 }
 
+export function jumpIfEquipmentNotEquipped(itemId, amount, targetScriptId) {
+  let count = 0;
+  // 步骤 1：遍历队伍中所有队员
+  for (let i = 0; i < state.party.length; i++) {
+    const pRole = state.party[i];
+    const role = state.roles[pRole.index];
+    if (role && role.equipments) {
+      // 步骤 2：遍历该角色的 6 个装备部位，查找该 itemId
+      for (let part = 0; part < 6; part++) {
+        if (role.equipments[part] === itemId) {
+          count++;
+        }
+      }
+    }
+  }
+
+  // 步骤 3：如果穿戴数量小于 amount，则跳转
+  if (count < amount) {
+    console.log(`[0x86 jumpIfEquipmentNotEquipped] 装备 ID: ${itemId} 穿戴数量为 ${count}，小于要求的数量 ${amount}，跳转至脚本: ${targetScriptId}`);
+    return targetScriptId;
+  }
+
+  console.log(`[0x86 jumpIfEquipmentNotEquipped] 装备 ID: ${itemId} 穿戴数量为 ${count}，已满足要求的数量 ${amount}，不跳转`);
+}
+
 export function shakeScreen(delay, level) {
   const shakeLevel = level === 0 ? 4 : level;
   const shakeCount = delay === 0 ? 10 : delay; // 默认抖动 10 次
@@ -2285,6 +2310,7 @@ scriptCodes[0x42] = { func: jumpIfPartyCannotWalk, desc: '若不可行走则跳�
 scriptCodes[0x83] = { func: jumpIfNotInZone, desc: '若事件物体不在当前事件物体特定区域则跳转' };
 scriptCodes[0x84] = { func: placeItemUsedAsObject, desc: '放置当前使用道具为事件物体于场景' };
 scriptCodes[0x85] = { func: delayPeriod, desc: '非阻塞时序延迟' };
+scriptCodes[0x86] = { func: jumpIfEquipmentNotEquipped, desc: '若装备未穿戴则跳转' };
 scriptCodes[0x4C] = { func: sleepFrame, desc: '阻塞等待特定帧数' };
 
 scriptCodes[0x6D] = { func: setSceneEnterScr, desc: '设置场景进入脚本' };
