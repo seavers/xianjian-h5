@@ -738,6 +738,7 @@ export async function useNightPalette() {
 
   // 步骤 2：输出详细的黑夜调色板生效调试日志，供以后转场特效滤镜渲染使用
   console.log('[0x54 useNightPalette] 强制开启黑夜调色板模式');
+  update();
 }
 
 export function setPalette(paletteId) {
@@ -2052,6 +2053,8 @@ scriptCodes[0x2E] = { func: jumpIfPlayerHasPoison, desc: '若角色有指定毒�
 scriptCodes[0x2F] = { func: removePlayerStatus, desc: '消除角色异常状态' };
 scriptCodes[0x30] = { func: jumpIfPlayerHasPoisonLevel, desc: '若角色有指定级别毒素则跳转' };
 scriptCodes[0x31] = { func: clearPlayerPoisons, desc: '清除角色的全部毒素' };
+scriptCodes[0x33] = { func: useDayPalette, desc: '白天调色板设置' };
+scriptCodes[0x34] = { func: useNightPalette, desc: '黑夜调色板设置' };
 scriptCodes[0x38] = { func: teleportOut, desc: '传送出当前迷宫场景' };
 scriptCodes[0x4B] = { func: nullifyObject, desc: '暂时隐蔽事件物体15帧' };
 scriptCodes[0x4D] = { func: waitForKey, desc: '等待按键' };
