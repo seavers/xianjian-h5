@@ -1817,6 +1817,27 @@ export function applyPoisonToPlayer(toAll, poisonId) {
   });
 }
 
+export function curePoisonForEnemy(toAll, poisonId) {
+  const target = toAll ? '全体敌人' : `当前敌人 (ID: ${this?.id || '未知'})`;
+  console.log(`[0x2A curePoisonForEnemy] 为敌人清除特定毒素. 范围: ${target}, 毒素ID: ${poisonId}`);
+
+  if (state.currentMode === 'battle') {
+    if (toAll) {
+      if (enemies && enemies.length > 0) {
+        enemies.forEach(enemy => {
+          if (enemy.poisons) {
+            enemy.poisons = enemy.poisons.filter(id => id !== poisonId);
+          }
+        });
+      }
+    } else {
+      if (this && this.poisons) {
+        this.poisons = this.poisons.filter(id => id !== poisonId);
+      }
+    }
+  }
+}
+
 export function curePoisonByKind(toAll, poisonId) {
   const targetRoles = toAll ? state.party : [state.party[0] || state.roles[0]];
   for (let i = 0; i < targetRoles.length; i++) {
@@ -2268,8 +2289,8 @@ scriptCodes[0x23] = { func: removeEquipment, desc: '卸除主角/队员装备' }
 scriptCodes[0x26] = { func: buyMenu, desc: '商店买入菜单' };
 scriptCodes[0x27] = { func: sellMenu, desc: '商店卖出菜单' };
 scriptCodes[0x28] = { func: applyPoisonToEnemy, desc: '给敌人施加毒素' };
-scriptCodes[0x29] = { func: selectPlayerRoleMenu, desc: '选择玩家角色菜单' };
-scriptCodes[0x2A] = { func: useItemMenu, desc: '使用药品/道具菜单' };
+scriptCodes[0x29] = { func: applyPoisonToPlayer, desc: '给玩家施加毒素' };
+scriptCodes[0x2A] = { func: curePoisonForEnemy, desc: '为敌人清除特定毒素' };
 scriptCodes[0x2B] = { func: curePoisonByKind, desc: '根据毒物ID解玩家毒' };
 scriptCodes[0x2C] = { func: curePoisonByLevel, desc: '根据级别解玩家毒' };
 scriptCodes[0x2D] = { func: setPlayerStatus, desc: '附加异常状态给角色' };
