@@ -2530,6 +2530,11 @@ export function enemyTransform(targetObjectId) {
   }
 }
 
+export function fadeFromToColor(colorIndex, duration) {
+  // 步骤 1：全屏调色板颜色闪烁过渡，由于 H5 采用 Canvas 渲染，调色板变换在此做 No-op 免做 Mock
+  console.log(`[0x8C fadeFromToColor] (免做) 调色板颜色索引: ${colorIndex}, 持续帧数: ${duration}`);
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2757,6 +2762,7 @@ scriptCodes[0x88] = { func: jumpIfEquipmentEquippedOnPlayer, desc: '若指定装
 scriptCodes[0x89] = { func: setBattleResult, desc: '设定战斗胜负结果并退出' };
 scriptCodes[0x8A] = { func: resetPaletteWithFade, desc: '调色板重置渐变' };
 scriptCodes[0x8B] = { func: setPalette, desc: '切换使用指定调色板' };
+scriptCodes[0x8C] = { func: fadeFromToColor, desc: '调色板闪烁过渡' };
 scriptCodes[0x8D] = { func: increasePlayerLevel, desc: '直升角色等级' };
 scriptCodes[0x8F] = { func: halveMoney, desc: '金钱数值减半' };
 scriptCodes[0x90] = { func: setObjectScript, desc: '设置事件物体脚本或属性数据' };
