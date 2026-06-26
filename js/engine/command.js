@@ -2306,6 +2306,23 @@ export function drainHpFromEnemy(amount) {
   console.log(`[0x39 drainHpFromEnemy] 吸取敌人 HP: ${amount}，角色 Index: ${roleIndex} 当前 HP: ${role?.hp}`);
 }
 
+export function halveEnemyHp(limit) {
+  // 步骤 1：确定最大削减伤害量上限，默认 9999
+  limit = limit || 9999;
+
+  // 步骤 2：对当前存活的第一个敌人应用 HP 减半削减公式
+  if (enemies && enemies.length > 0) {
+    const enemy = enemies.find(e => e && e.hp > 0);
+    if (enemy) {
+      const damage = Math.min(Math.floor(enemy.hp / 2) + 1, limit);
+      enemy.hp = Math.max(0, enemy.hp - damage);
+      console.log(`[0x5B halveEnemyHp] 敌人 HP 减半伤害量: ${damage}，当前敌人 HP: ${enemy.hp}`);
+    }
+  } else {
+    console.log('[0x5B halveEnemyHp] 敌人 HP 减半，当前不在战斗或无存活敌人');
+  }
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2479,6 +2496,7 @@ scriptCodes[0x57] = { func: setMagicBaseDamageByMp, desc: '根据当前MP设定�
 scriptCodes[0x58] = { func: jumpIfItemAmountLessThan, desc: '若道具持有数量少于特定值则跳转' };
 scriptCodes[0x5C] = { func: jumpIfMagicLearned, desc: '若已学得指定仙术则跳转' };
 scriptCodes[0x5D] = { func: jumpIfMagicNotLearned, desc: '若未学得指定仙术则跳转' };
+scriptCodes[0x5B] = { func: halveEnemyHp, desc: '敌人HP减半' };
 scriptCodes[0x5A] = { func: halvePlayerHp, desc: '角色HP减半' };
 scriptCodes[0x5F] = { func: killPlayerImmediately, desc: '使角色立即垂死' };
 scriptCodes[0x61] = { func: jumpIfPlayerNotPoisoned, desc: '玩家未中毒跳转' };
