@@ -2344,6 +2344,20 @@ export function jumpIfEnemyNotPoisoned(poisonId, targetScriptId) {
   console.log(`[0x5E jumpIfEnemyNotPoisoned] 敌人已被施加毒素 ID: ${poisonId}，不跳转`);
 }
 
+export function killEnemyImmediately() {
+  // 步骤 1：寻找当前战斗中第一个存活的敌人
+  if (enemies && enemies.length > 0) {
+    const enemy = enemies.find(e => e && e.hp > 0);
+    if (enemy) {
+      // 步骤 2：直接将该敌人 HP 归零实现即死效果
+      enemy.hp = 0;
+      console.log('[0x60 killEnemyImmediately] 即死敌人，其 HP 被设为 0');
+    }
+  } else {
+    console.log('[0x60 killEnemyImmediately] 即死敌人，当前不在战斗或无存活敌人');
+  }
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2521,6 +2535,7 @@ scriptCodes[0x5B] = { func: halveEnemyHp, desc: '敌人HP减半' };
 scriptCodes[0x5A] = { func: halvePlayerHp, desc: '角色HP减半' };
 scriptCodes[0x5E] = { func: jumpIfEnemyNotPoisoned, desc: '敌人无毒跳转' };
 scriptCodes[0x5F] = { func: killPlayerImmediately, desc: '使角色立即垂死' };
+scriptCodes[0x60] = { func: killEnemyImmediately, desc: '即死敌人' };
 scriptCodes[0x61] = { func: jumpIfPlayerNotPoisoned, desc: '玩家未中毒跳转' };
 scriptCodes[0x62] = { func: pauseEnemyChase, desc: '暂停敌人的追击' };
 scriptCodes[0x63] = { func: speedUpEnemyChase, desc: '加速敌人的追击' };
