@@ -1994,6 +1994,32 @@ export async function resetPaletteWithFade() {
   await update();
 }
 
+export function jumpIfPartyFull(param1, param2) {
+  let limit = 3;
+  let targetScriptId = param1;
+
+  if (param1 > 0 && param1 < 10) {
+    limit = param1;
+    targetScriptId = param2;
+  }
+
+  if (state.party.length >= limit) {
+    console.log(`[0xA5 jumpIfPartyFull] 当前队伍人数为 ${state.party.length}，已满 ${limit} 人，跳转至脚本: ${targetScriptId}`);
+    return targetScriptId;
+  }
+
+  console.log(`[0xA5 jumpIfPartyFull] 当前队伍人数为 ${state.party.length}，未满 ${limit} 人，不跳转`);
+}
+
+export function removePlayerFromParty(roleId) {
+  const roleIndex = roleId - 1;
+  const originalLen = state.party.length;
+
+  state.party = state.party.filter(r => r.index !== roleIndex);
+
+  console.log(`[0xA6 removePlayerFromParty] 将角色 Index: ${roleIndex} 踢出队伍，队伍人数由 ${originalLen} 变为 ${state.party.length}`);
+}
+
 export function shakeScreen(delay, level) {
   const shakeLevel = level === 0 ? 4 : level;
   const shakeCount = delay === 0 ? 10 : delay; // 默认抖动 10 次
@@ -2313,6 +2339,8 @@ scriptCodes[0x99] = { func: changeSceneMap, desc: '切换指定场景所用地�
 scriptCodes[0x9B] = { func: fadeToCurrentScene, desc: '屏幕渐变淡入当前场景' };
 scriptCodes[0xA1] = { func: setPartySamePosition, desc: '使队伍全员位置和主角李逍遥重合' };
 scriptCodes[0xA3] = { func: playCdMusic, desc: '播放CD音乐并以RIX音乐回退' };
+scriptCodes[0xA5] = { func: jumpIfPartyFull, desc: '队伍满人跳转' };
+scriptCodes[0xA6] = { func: removePlayerFromParty, desc: '踢出队伍成员' };
 scriptCodes[0xA7] = { func: skipAutoScript, desc: '空指令直接跳过' };
 scriptCodes[0x7A] = { func: teamWalk2, desc: '队伍快速行走至坐标' };
 scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
