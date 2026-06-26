@@ -791,6 +791,30 @@ export async function removeMagic(magicId, roleId) {
   console.log(`[0x56 removeMagic] 角色 (Index: ${roleIndex}) 成功遗忘/移除仙术 (仙术 ID: ${magicId})`);
 }
 
+export function jumpIfMagicLearned(magicId, roleId, targetScriptId) {
+  const roleIndex = roleId === 0 ? 0 : roleId - 1;
+  const role = state.roles[roleIndex];
+  const hasLearned = role && role.magics && role.magics.includes(magicId);
+
+  if (hasLearned) {
+    console.log(`[0x5C jumpIfMagicLearned] 角色 (Index: ${roleIndex}) 已学得仙术 ${magicId}，跳转至脚本: ${targetScriptId}`);
+    return targetScriptId;
+  }
+  console.log(`[0x5C jumpIfMagicLearned] 角色 (Index: ${roleIndex}) 未学得仙术 ${magicId}，不跳转`);
+}
+
+export function jumpIfMagicNotLearned(magicId, roleId, targetScriptId) {
+  const roleIndex = roleId === 0 ? 0 : roleId - 1;
+  const role = state.roles[roleIndex];
+  const hasLearned = role && role.magics && role.magics.includes(magicId);
+
+  if (!hasLearned) {
+    console.log(`[0x5D jumpIfMagicNotLearned] 角色 (Index: ${roleIndex}) 未学得仙术 ${magicId}，跳转至脚本: ${targetScriptId}`);
+    return targetScriptId;
+  }
+  console.log(`[0x5D jumpIfMagicNotLearned] 角色 (Index: ${roleIndex}) 已学得仙术 ${magicId}，不跳转`);
+}
+
 export function setMagicBaseDamageByMp(magicId, multiplier) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2165,6 +2189,8 @@ scriptCodes[0x55] = { func: addMagic, desc: '使主角/伙伴习得新仙术' };
 scriptCodes[0x56] = { func: removeMagic, desc: '移除主角/伙伴的仙术' };
 scriptCodes[0x57] = { func: setMagicBaseDamageByMp, desc: '根据当前MP设定仙术基础伤害' };
 scriptCodes[0x58] = { func: jumpIfItemAmountLessThan, desc: '若道具持有数量少于特定值则跳转' };
+scriptCodes[0x5C] = { func: jumpIfMagicLearned, desc: '若已学得指定仙术则跳转' };
+scriptCodes[0x5D] = { func: jumpIfMagicNotLearned, desc: '若未学得指定仙术则跳转' };
 scriptCodes[0x5A] = { func: halvePlayerHp, desc: '角色HP减半' };
 scriptCodes[0x5F] = { func: killPlayerImmediately, desc: '使角色立即垂死' };
 scriptCodes[0x62] = { func: pauseEnemyChase, desc: '暂停敌人的追击' };
