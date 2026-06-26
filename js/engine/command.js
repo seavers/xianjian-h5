@@ -2267,6 +2267,26 @@ export function quitGame() {
   return { endFlag: true };
 }
 
+export function jumpRandomly(branchesCount, param2, param3, context) {
+  // 步骤 1：根据当前是 auto 自动脚本还是常规阻塞脚本，获取当前正执行的脚本 ID
+  let currentScriptId = 0;
+  if (context && context.type === 'auto') {
+    currentScriptId = this.autoScr;
+  } else if (Script.activeThread) {
+    currentScriptId = Script.activeThread.scriptId;
+  }
+
+  // 步骤 2：生成随机的跳转分支偏移量 [0, branchesCount - 1]
+  const count = branchesCount > 0 ? branchesCount : 1;
+  const offset = Math.floor(Math.random() * count);
+  const targetScriptId = currentScriptId + 1 + offset;
+
+  console.log(`[0xA2 jumpRandomly] 分支数: ${branchesCount}, 当前指令 ID: ${currentScriptId}, 随机偏移量: ${offset}, 跳转至: ${targetScriptId}`);
+
+  // 步骤 3：返回计算后的目标跳转脚本 ID
+  return targetScriptId;
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2450,6 +2470,7 @@ scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件�
 scriptCodes[0x95] = { func: jumpIfCurrentSceneEquals, desc: '若当前场景ID等于特定值则跳转' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
 scriptCodes[0xA0] = { func: quitGame, desc: '退出游戏' };
+scriptCodes[0xA2] = { func: jumpRandomly, desc: '随机概率多分支跳转' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
 scriptCodes[0x41] = { func: setPartyWalkStatus, desc: '设置队伍行走状态' };
 scriptCodes[0x42] = { func: jumpIfPartyCannotWalk, desc: '若不可行走则跳转' };
