@@ -2428,6 +2428,26 @@ export function enemyEscape() {
   }
 }
 
+export function jumpIfEnemyNotFirstOfSameKind(targetScriptId) {
+  // 步骤 1：判断当前是否在战斗中且有存活敌人
+  if (enemies && enemies.length > 0) {
+    // 步骤 2：比对当前敌人在 enemies 同类（相同 id）列表中的位置
+    const currentEnemy = this;
+    if (currentEnemy && typeof currentEnemy.id === 'number') {
+      const sameKindEnemies = enemies.filter(e => e && e.id === currentEnemy.id);
+      const index = sameKindEnemies.indexOf(currentEnemy);
+
+      // index 为 0 表示是同类中的第一个，若 > 0 表示不是同类中的第一个
+      if (index > 0) {
+        console.log(`[0x91 jumpIfEnemyNotFirstOfSameKind] 当前敌人 ID: ${currentEnemy.id} 在同类中位置为 ${index + 1}，执行跳转至脚本: ${targetScriptId}`);
+        return targetScriptId;
+      }
+    }
+  } else {
+    console.log('[0x91 jumpIfEnemyNotFirstOfSameKind] 敌人非同类中首位跳转，当前不在战斗或无敌人，默认不跳转');
+  }
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2613,6 +2633,7 @@ scriptCodes[0x64] = { func: jumpIfEnemyHpRatioGreaterThan, desc: '敌人HP比例
 scriptCodes[0x66] = { func: throwWeaponToEnemy, desc: '投掷武器伤害' };
 scriptCodes[0x68] = { func: jumpIfEnemyTurn, desc: '敌方回合跳转' };
 scriptCodes[0x69] = { func: enemyEscape, desc: '敌方逃跑' };
+scriptCodes[0x91] = { func: jumpIfEnemyNotFirstOfSameKind, desc: '同类非首位敌人跳转' };
 scriptCodes[0x92] = { func: showPlayerPreMagicAnim, desc: '播放主角施法前摇发光动画' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
