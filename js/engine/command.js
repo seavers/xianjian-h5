@@ -1856,6 +1856,26 @@ export function jumpIfPlayerHasPoisonLevel(roleId, poisonLevel, targetScriptId) 
   console.log(`[0x30 jumpIfPlayerHasPoisonLevel] 角色 Index: ${roleIndex} 没有级别为 ${poisonLevel} 的毒素，不跳转`);
 }
 
+export function clearPlayerPoisons(roleId) {
+  // 如果 roleId 是 0 或 0xFFFF，说明可能是清除当前全队队友的毒素
+  if (roleId === 0 || roleId === 0xFFFF) {
+    state.party.forEach(role => {
+      if (role) {
+        role.poisons = [];
+      }
+    });
+    console.log(`[0x31 clearPlayerPoisons] 清除了全队队友的全部毒素`);
+  } else {
+    // 否则清除指定角色的毒素 (1-based roleId)
+    const roleIndex = roleId - 1;
+    const role = state.roles[roleIndex];
+    if (role) {
+      role.poisons = [];
+    }
+    console.log(`[0x31 clearPlayerPoisons] 清除了角色 Index: ${roleIndex} 的全部毒素`);
+  }
+}
+
 export function teleportOut(failScriptId) {
   const scene = state.scenes[state.sceneId];
   if (scene && scene.exitScriptId) {
@@ -2031,6 +2051,7 @@ scriptCodes[0x2D] = { func: setPlayerStatus, desc: '附加异常状态给角色'
 scriptCodes[0x2E] = { func: jumpIfPlayerHasPoison, desc: '若角色有指定毒素则跳转' };
 scriptCodes[0x2F] = { func: removePlayerStatus, desc: '消除角色异常状态' };
 scriptCodes[0x30] = { func: jumpIfPlayerHasPoisonLevel, desc: '若角色有指定级别毒素则跳转' };
+scriptCodes[0x31] = { func: clearPlayerPoisons, desc: '清除角色的全部毒素' };
 scriptCodes[0x38] = { func: teleportOut, desc: '传送出当前迷宫场景' };
 scriptCodes[0x4B] = { func: nullifyObject, desc: '暂时隐蔽事件物体15帧' };
 scriptCodes[0x4D] = { func: waitForKey, desc: '等待按键' };
