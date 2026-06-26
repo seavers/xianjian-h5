@@ -2413,6 +2413,21 @@ export function jumpIfEnemyTurn(targetScriptId) {
   console.log(`[0x68 jumpIfEnemyTurn] 非敌方行动回合，不跳转`);
 }
 
+export function enemyEscape() {
+  // 步骤 1：寻找当前战斗中第一个存活的敌人
+  if (enemies && enemies.length > 0) {
+    const enemy = enemies.find(e => e && e.hp > 0);
+    if (enemy) {
+      // 步骤 2：直接将该敌人 HP 归零并设置逃跑标记已离场
+      enemy.hp = 0;
+      enemy.escaped = true;
+      console.log('[0x69 enemyEscape] 战斗中敌方逃跑，其 HP 被设为 0，并标记 escaped = true');
+    }
+  } else {
+    console.log('[0x69 enemyEscape] 敌方逃跑，当前不在战斗或无存活敌人');
+  }
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2597,6 +2612,7 @@ scriptCodes[0x63] = { func: speedUpEnemyChase, desc: '加速敌人的追击' };
 scriptCodes[0x64] = { func: jumpIfEnemyHpRatioGreaterThan, desc: '敌人HP比例跳转' };
 scriptCodes[0x66] = { func: throwWeaponToEnemy, desc: '投掷武器伤害' };
 scriptCodes[0x68] = { func: jumpIfEnemyTurn, desc: '敌方回合跳转' };
+scriptCodes[0x69] = { func: enemyEscape, desc: '敌方逃跑' };
 scriptCodes[0x92] = { func: showPlayerPreMagicAnim, desc: '播放主角施法前摇发光动画' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
