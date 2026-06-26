@@ -2512,6 +2512,24 @@ export function enemySummon(summonId, summonCount, targetScriptId) {
   }
 }
 
+export function enemyTransform(targetObjectId) {
+  // 步骤 1：判断当前是否在战斗中且有存活敌人
+  if (enemies && enemies.length > 0) {
+    // 步骤 2：寻找当前存活的需要进行变身的敌人
+    const enemy = this && this.hp > 0 ? this : enemies.find(e => e && e.hp > 0);
+    if (enemy) {
+      // 步骤 3：变身覆盖新敌人 ObjectID，重置部分状态且还原当前 HP 
+      const prevHp = enemy.hp;
+      enemy.id = targetObjectId;
+      enemy.maxHp = (enemy.maxHp || 100) + 100;
+      enemy.hp = prevHp; 
+      console.log(`[0x9F enemyTransform] 敌方变身完成，新目标 Object ID: ${targetObjectId}，保持 HP: ${enemy.hp}/${enemy.maxHp}`);
+    }
+  } else {
+    console.log(`[0x9F enemyTransform] 敌方变身失败，当前非战斗状态或无敌人，目标 ID: ${targetObjectId}`);
+  }
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2705,6 +2723,7 @@ scriptCodes[0x95] = { func: jumpIfCurrentSceneEquals, desc: '若当前场景ID�
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
 scriptCodes[0x9C] = { func: enemyDivision, desc: '敌方分身' };
 scriptCodes[0x9E] = { func: enemySummon, desc: '敌方召唤' };
+scriptCodes[0x9F] = { func: enemyTransform, desc: '敌方变身' };
 scriptCodes[0xA0] = { func: quitGame, desc: '退出游戏' };
 scriptCodes[0xA2] = { func: jumpRandomly, desc: '随机概率多分支跳转' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
