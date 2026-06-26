@@ -1936,6 +1936,31 @@ export function jumpByExitScriptId(failScriptId) {
   }
 }
 
+export function shakeScreen(delay, level) {
+  const shakeLevel = level === 0 ? 4 : level;
+  const shakeCount = delay === 0 ? 10 : delay; // 默认抖动 10 次
+  
+  let count = 0;
+  const mainCanvas = state.contexts.main?.canvas;
+  if (!mainCanvas) return;
+
+  const timer = setInterval(() => {
+    if (count >= shakeCount) {
+      clearInterval(timer);
+      mainCanvas.style.transform = 'none'; // 复位
+      return;
+    }
+
+    const shakeX = (Math.random() - 0.5) * shakeLevel * 2;
+    const shakeY = (Math.random() - 0.5) * shakeLevel * 2;
+    mainCanvas.style.transform = `translate(${shakeX}px, ${shakeY}px)`;
+
+    count++;
+  }, 50); // 每 50ms 抖动一次
+  
+  console.log(`[0x71 shakeScreen] 开始视口抖动, 持续次数: ${shakeCount}, 强度: ${shakeLevel}`);
+}
+
 export function setPartyWalkStatus(canWalk) {
   // 1 为可以走，0 为不可以走
   state.canPartyWalk = (canWalk !== 0);
@@ -2257,6 +2282,7 @@ scriptCodes[0x14] = { func: setNpcFrame, desc: '设置NPC活动动作帧' };
 scriptCodes[0x87] = { func: walkAtPlace, desc: '原地徘徊漫步' };
 scriptCodes[0x6F] = { func: replaceObject, desc: '替换并终结脚本实体' };
 scriptCodes[0x7F] = { func: moveViewport, desc: '平移或定位镜头视口' };
+scriptCodes[0x71] = { func: shakeScreen, desc: '设置视口抖动' };
 scriptCodes[0x80] = { func: toggleDayNight, desc: '切换昼夜调色板' };
 scriptCodes[0x81] = { func: faceNpcTrig, desc: '面朝NPC触发脚本' };
 scriptCodes[0x89] = { func: setBattleResult, desc: '设定战斗胜负结果并退出' };
