@@ -1899,6 +1899,19 @@ export function teleportOut(failScriptId) {
   console.log(`[0x38 teleportOut] 执行传送出当前迷宫场景指令, 传送脚本: ${scene?.exitScriptId || '无'}`);
 }
 
+export function jumpByExitScriptId(failScriptId) {
+  const scene = state.scenes[state.sceneId];
+  if (scene && scene.exitScriptId) {
+    console.log(`[0x3A jumpByExitScriptId] 当前场景有传送脚本 ID: ${scene.exitScriptId}，跳转至该脚本`);
+    return scene.exitScriptId;
+  }
+
+  console.log(`[0x3A jumpByExitScriptId] 当前场景无传送脚本，跳转至失败脚本: ${failScriptId}`);
+  if (failScriptId) {
+    return failScriptId;
+  }
+}
+
 export function nullifyObject() {
   const obj = this;
   if (obj) {
@@ -2067,6 +2080,7 @@ scriptCodes[0x33] = { func: useDayPalette, desc: '白天调色板设置' };
 scriptCodes[0x34] = { func: useNightPalette, desc: '黑夜调色板设置' };
 scriptCodes[0x35] = { func: fadeToPalette, desc: '淡入到指定调色板' };
 scriptCodes[0x38] = { func: teleportOut, desc: '传送出当前迷宫场景' };
+scriptCodes[0x3A] = { func: jumpByExitScriptId, desc: '根据传送脚本 ID 跳转' };
 scriptCodes[0x4B] = { func: nullifyObject, desc: '暂时隐蔽事件物体15帧' };
 scriptCodes[0x4D] = { func: waitForKey, desc: '等待按键' };
 scriptCodes[0x4E] = { func: loadLastSavedGame, desc: '重载上一个存档游戏' };
