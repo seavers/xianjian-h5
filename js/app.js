@@ -5,6 +5,7 @@ import { setRolePos, setRoleTile, setRoleIndex, setRoleGroup, toggleScene, calcM
 import { ESC } from './esc/esc.js';
 import { Shop } from './ui/shop.js';
 import { Confirm } from './ui/confirm.js';
+import { SelectRole } from './ui/selectRole.js';
 import { Hex } from './utils/hex.js';
 import { Talk } from './ui/talk.js';
 import { Script } from './engine/script.js';
@@ -381,6 +382,7 @@ ready(() => {
   window.Battle = Battle;
   window.Shop = Shop;
   window.Confirm = Confirm;
+  window.SelectRole = SelectRole;
 
   if (!DEBUG) {
     state.currentMode = 'startup';

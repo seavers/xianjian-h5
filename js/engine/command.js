@@ -1,6 +1,7 @@
 import { state } from './state.js';
 import { Shop } from '../ui/shop.js';
 import { Confirm } from '../ui/confirm.js';
+import { SelectRole } from '../ui/selectRole.js';
 import { CIRCLE_SCRIPT, GOTO_SCRIPT, REPLACE_ENTRY, RESET_SCRIPT, Script } from './script.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
@@ -1422,6 +1423,27 @@ export async function confirmMenu(failScriptId) {
   }
 }
 
+export async function selectPlayerRoleMenu(failScriptId) {
+  // 步骤 1：调用 SelectRole.open 开启选择人菜单，并等待其返回
+  const selectedIndexInParty = await SelectRole.open();
+
+  // 步骤 2：如果玩家取消了选择 (返回 -1)，并且存在失败跳转脚本，则跳转
+  if (selectedIndexInParty === -1) {
+    console.log(`[0x29 selectPlayerRoleMenu] 玩家取消了角色选择，跳转至脚本: ${failScriptId}`);
+    if (failScriptId) {
+      return failScriptId;
+    }
+    return;
+  }
+
+  // 步骤 3：保存选中的角色在队伍中的索引 (即真正的角色 ID，也就是 state.party[selectedIndex].index) 到全局状态中
+  const selectedRole = state.party[selectedIndexInParty];
+  if (selectedRole) {
+    state.selectedRoleIndex = selectedRole.index;
+    console.log(`[0x29 selectPlayerRoleMenu] 玩家选择了角色 ${selectedRole.index}，保存在全局状态`);
+  }
+}
+
 export function setPlayerExtraAttribute(partId, statId, value) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -1930,7 +1952,7 @@ scriptCodes[0x23] = { func: removeEquipment, desc: '卸除主角/队员装备' }
 scriptCodes[0x26] = { func: buyMenu, desc: '商店买入菜单' };
 scriptCodes[0x27] = { func: sellMenu, desc: '商店卖出菜单' };
 scriptCodes[0x28] = { func: applyPoisonToEnemy, desc: '给敌人施加毒素' };
-scriptCodes[0x29] = { func: applyPoisonToPlayer, desc: '给玩家施加毒素' };
+scriptCodes[0x29] = { func: selectPlayerRoleMenu, desc: '选择玩家角色菜单' };
 scriptCodes[0x2B] = { func: curePoisonByKind, desc: '根据毒物ID解玩家毒' };
 scriptCodes[0x2C] = { func: curePoisonByLevel, desc: '根据级别解玩家毒' };
 scriptCodes[0x2D] = { func: setPlayerStatus, desc: '附加异常状态给角色' };

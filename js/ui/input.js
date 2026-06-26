@@ -77,6 +77,14 @@ if (typeof document !== 'undefined') {
       return;
     }
 
+    if (uiMode === 'selectRole') {
+      ev.preventDefault();
+      if (window.SelectRole && window.SelectRole.onInput) {
+        window.SelectRole.onInput(input);
+      }
+      return;
+    }
+
     if (uiMode === 'block') {
       // 步骤 0.5：在阻断状态（例如动作结算、前置脚本执行等交互未就绪阶段）直接拦截全部输入
       ev.preventDefault();
@@ -212,6 +220,10 @@ if (typeof document !== 'undefined') {
     } else if (uiMode === 'confirm') {
       if (window.Confirm && window.Confirm.onInput) {
         window.Confirm.onInput(input);
+      }
+    } else if (uiMode === 'selectRole') {
+      if (window.SelectRole && window.SelectRole.onInput) {
+        window.SelectRole.onInput(input);
       }
     } else if (mode === 'battle') {
       if (window.Battle && window.Battle.onInput) {
