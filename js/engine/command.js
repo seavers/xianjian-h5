@@ -2397,6 +2397,22 @@ export function throwWeaponToEnemy(animId, baseDamage) {
   }
 }
 
+export function jumpIfEnemyTurn(targetScriptId) {
+  // 步骤 1：获取当前游戏是否在战斗模式下运行
+  const isBattle = state.currentMode === 'battle';
+
+  // 步骤 2：如果处于战斗中，通过 50% 概率简易 Mock 敌方行动回合判定，并执行跳转
+  if (isBattle) {
+    const isEnemyAction = Math.random() < 0.5;
+    if (isEnemyAction) {
+      console.log(`[0x68 jumpIfEnemyTurn] 处于敌方行动回合，跳转至脚本: ${targetScriptId}`);
+      return targetScriptId;
+    }
+  }
+
+  console.log(`[0x68 jumpIfEnemyTurn] 非敌方行动回合，不跳转`);
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2580,6 +2596,7 @@ scriptCodes[0x62] = { func: pauseEnemyChase, desc: '暂停敌人的追击' };
 scriptCodes[0x63] = { func: speedUpEnemyChase, desc: '加速敌人的追击' };
 scriptCodes[0x64] = { func: jumpIfEnemyHpRatioGreaterThan, desc: '敌人HP比例跳转' };
 scriptCodes[0x66] = { func: throwWeaponToEnemy, desc: '投掷武器伤害' };
+scriptCodes[0x68] = { func: jumpIfEnemyTurn, desc: '敌方回合跳转' };
 scriptCodes[0x92] = { func: showPlayerPreMagicAnim, desc: '播放主角施法前摇发光动画' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
