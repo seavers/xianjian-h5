@@ -2022,6 +2022,21 @@ export function setPlayerStatus(statusId, rounds) {
   console.log(`[0x2D setPlayerStatus] 角色 Index: ${roleIndex}, 状态ID: ${statusId}, 持续回合: ${rounds}`);
 }
 
+export function setPartyStatus(statusId, rounds) {
+  // 步骤 1：遍历当前队伍成员
+  state.party.forEach(pRole => {
+    const role = state.roles[pRole.index];
+    if (role) {
+      if (!role.status) {
+        role.status = {};
+      }
+      role.status[statusId] = rounds;
+    }
+  });
+
+  console.log(`[0x6A setPartyStatus] 给全队伙伴附加了属性状态 ID: ${statusId}, 持续回合: ${rounds}`);
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2229,5 +2244,6 @@ scriptCodes[0x89] = { func: setBattleResult, desc: '设定战斗胜负结果并�
 scriptCodes[0x8B] = { func: setPalette, desc: '切换使用指定调色板' };
 scriptCodes[0x8F] = { func: halveMoney, desc: '金钱数值减半' };
 scriptCodes[0x90] = { func: setObjectScript, desc: '设置事件物体脚本或属性数据' };
+scriptCodes[0x6A] = { func: setPartyStatus, desc: '给全队伙伴附加仙术/属性状态' };
 
 scriptCodes[0xFFFF] = { func: talk, desc: '展示剧情人物对话框' };
