@@ -1912,6 +1912,21 @@ export function jumpByExitScriptId(failScriptId) {
   }
 }
 
+export function setPartyWalkStatus(canWalk) {
+  // 1 为可以走，0 为不可以走
+  state.canPartyWalk = (canWalk !== 0);
+  console.log(`[0x41 setPartyWalkStatus] 设置队伍行走状态为: ${state.canPartyWalk}`);
+}
+
+export function jumpIfPartyCannotWalk(targetScriptId) {
+  // 如果当前是不可行走状态 (state.canPartyWalk === false)，则跳转至 targetScriptId
+  if (state.canPartyWalk === false) {
+    console.log(`[0x42 jumpIfPartyCannotWalk] 队伍当前不可行走，跳转至脚本: ${targetScriptId}`);
+    return targetScriptId;
+  }
+  console.log(`[0x42 jumpIfPartyCannotWalk] 队伍当前可行走，不跳转`);
+}
+
 export function nullifyObject() {
   const obj = this;
   if (obj) {
@@ -2160,6 +2175,8 @@ scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件�
 scriptCodes[0x95] = { func: jumpIfCurrentSceneEquals, desc: '若当前场景ID等于特定值则跳转' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
+scriptCodes[0x41] = { func: setPartyWalkStatus, desc: '设置队伍行走状态' };
+scriptCodes[0x42] = { func: jumpIfPartyCannotWalk, desc: '若不可行走则跳转' };
 scriptCodes[0x83] = { func: jumpIfNotInZone, desc: '若事件物体不在当前事件物体特定区域则跳转' };
 scriptCodes[0x84] = { func: placeItemUsedAsObject, desc: '放置当前使用道具为事件物体于场景' };
 scriptCodes[0x85] = { func: delayPeriod, desc: '非阻塞时序延迟' };

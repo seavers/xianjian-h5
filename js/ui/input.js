@@ -133,6 +133,14 @@ function handleGameInput(input, ev) {
     return;
   }
 
+  // 步骤 3.5：如果当前禁用了队伍行走，除了交互外不响应方向键
+  if (state.canPartyWalk === false) {
+    if (['up', 'down', 'left', 'right'].includes(input)) {
+      ev.preventDefault();
+      return;
+    }
+  }
+
   
   // 步骤 4：常规移动和按键交互分发
   switch (input) {
