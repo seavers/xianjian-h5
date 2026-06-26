@@ -1707,6 +1707,40 @@ export function applyPoisonToEnemy(toAll, poisonId) {
   }
 }
 
+export function applyPoisonToPlayer(toAll, poisonId) {
+  const target = toAll ? '全体队友' : `单体队友 (ID: ${this?.id || '未知'})`;
+  console.log(`[0x29 applyPoisonToPlayer] 给玩家附加毒素. 范围: ${target}, 毒素ID: ${poisonId}`);
+
+  let targets = [];
+  if (toAll) {
+    targets = state.party;
+  } else {
+    if (this && this.type === 'role') {
+      targets = [this];
+    } else {
+      targets = [state.party[0]];
+    }
+  }
+
+  targets.forEach(role => {
+    if (role) {
+      const resistance = role.poisonResistance || 0;
+      const rand = Math.floor(Math.random() * 100) + 1;
+      if (rand > resistance) {
+        if (!role.poisons) {
+          role.poisons = [];
+        }
+        if (!role.poisons.includes(poisonId)) {
+          role.poisons.push(poisonId);
+          console.log(`[0x29 applyPoisonToPlayer] 角色 ${role.name} 中毒成功 (随机数: ${rand} > 抗性: ${resistance})`);
+        }
+      } else {
+        console.log(`[0x29 applyPoisonToPlayer] 角色 ${role.name} 免疫该毒素 (随机数: ${rand} <= 抗性: ${resistance})`);
+      }
+    }
+  });
+}
+
 export function curePoisonByKind(toAll, poisonId) {
   const targetRoles = toAll ? state.party : [state.party[0] || state.roles[0]];
   for (let i = 0; i < targetRoles.length; i++) {
@@ -1896,6 +1930,7 @@ scriptCodes[0x23] = { func: removeEquipment, desc: '卸除主角/队员装备' }
 scriptCodes[0x26] = { func: buyMenu, desc: '商店买入菜单' };
 scriptCodes[0x27] = { func: sellMenu, desc: '商店卖出菜单' };
 scriptCodes[0x28] = { func: applyPoisonToEnemy, desc: '给敌人施加毒素' };
+scriptCodes[0x29] = { func: applyPoisonToPlayer, desc: '给玩家施加毒素' };
 scriptCodes[0x2B] = { func: curePoisonByKind, desc: '根据毒物ID解玩家毒' };
 scriptCodes[0x2C] = { func: curePoisonByLevel, desc: '根据级别解玩家毒' };
 scriptCodes[0x2D] = { func: setPlayerStatus, desc: '附加异常状态给角色' };
