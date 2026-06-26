@@ -1814,6 +1814,24 @@ export function curePoisonByLevel(toAll, maxLevel) {
   console.log(`[0x2C curePoisonByLevel] 解毒范围: ${toAll ? '全队' : '主角'}, 最大毒素级别: ${maxLevel}`);
 }
 
+export function jumpIfPlayerHasPoison(roleId, poisonId, targetScriptId) {
+  // 步骤 1：确定要检查的角色。如果 roleId 为 0 (或 0xFFFF)，则使用选中的角色 state.selectedRoleIndex 或当前主角
+  let roleIndex = roleId;
+  if (roleId === 0 || roleId === 0xFFFF) {
+    roleIndex = state.selectedRoleIndex !== undefined ? state.selectedRoleIndex : getRoleIndex(this);
+  } else {
+    roleIndex = roleId - 1; // 1-based 转 0-based
+  }
+
+  const role = state.roles[roleIndex];
+  if (role && role.poisons && role.poisons.includes(poisonId)) {
+    console.log(`[0x2E jumpIfPlayerHasPoison] 角色 Index: ${roleIndex} 拥有毒素 ID: ${poisonId}，跳转至脚本: ${targetScriptId}`);
+    return targetScriptId;
+  }
+
+  console.log(`[0x2E jumpIfPlayerHasPoison] 角色 Index: ${roleIndex} 没有毒素 ID: ${poisonId}，不跳转`);
+}
+
 export function teleportOut(failScriptId) {
   const scene = state.scenes[state.sceneId];
   if (scene && scene.exitScriptId) {
@@ -1986,6 +2004,7 @@ scriptCodes[0x2A] = { func: useItemMenu, desc: '使用药品/道具菜单' };
 scriptCodes[0x2B] = { func: curePoisonByKind, desc: '根据毒物ID解玩家毒' };
 scriptCodes[0x2C] = { func: curePoisonByLevel, desc: '根据级别解玩家毒' };
 scriptCodes[0x2D] = { func: setPlayerStatus, desc: '附加异常状态给角色' };
+scriptCodes[0x2E] = { func: jumpIfPlayerHasPoison, desc: '若角色有指定毒素则跳转' };
 scriptCodes[0x2F] = { func: removePlayerStatus, desc: '消除角色异常状态' };
 scriptCodes[0x38] = { func: teleportOut, desc: '传送出当前迷宫场景' };
 scriptCodes[0x4B] = { func: nullifyObject, desc: '暂时隐蔽事件物体15帧' };
