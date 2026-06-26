@@ -2375,6 +2375,28 @@ export function jumpIfEnemyHpRatioGreaterThan(ratio, targetScriptId) {
   }
 }
 
+export function throwWeaponToEnemy(animId, baseDamage) {
+  // 步骤 1：确定当前行动角色的攻击力
+  const roleIndex = getRoleIndex(this);
+  const role = state.roles[roleIndex];
+  const attack = role ? (role.attackStrength || 10) : 10;
+
+  // 步骤 2：应用公式：基础伤害 * 5 + 攻击力 * 随机系数 [0, 3]
+  let damage = baseDamage * 5;
+  damage += attack * Math.floor(Math.random() * 4);
+
+  // 步骤 3：扣减战斗中第一个存活敌人的 HP
+  if (enemies && enemies.length > 0) {
+    const enemy = enemies.find(e => e && e.hp > 0);
+    if (enemy) {
+      enemy.hp = Math.max(0, enemy.hp - damage);
+      console.log(`[0x66 throwWeaponToEnemy] 投掷特效动画 ID: ${animId}，造成的伤害值: ${damage}，当前敌人 HP: ${enemy.hp}`);
+    }
+  } else {
+    console.log(`[0x66 throwWeaponToEnemy] 投掷特效动画 ID: ${animId}，无战斗目标敌人`);
+  }
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2557,6 +2579,7 @@ scriptCodes[0x61] = { func: jumpIfPlayerNotPoisoned, desc: '玩家未中毒跳�
 scriptCodes[0x62] = { func: pauseEnemyChase, desc: '暂停敌人的追击' };
 scriptCodes[0x63] = { func: speedUpEnemyChase, desc: '加速敌人的追击' };
 scriptCodes[0x64] = { func: jumpIfEnemyHpRatioGreaterThan, desc: '敌人HP比例跳转' };
+scriptCodes[0x66] = { func: throwWeaponToEnemy, desc: '投掷武器伤害' };
 scriptCodes[0x92] = { func: showPlayerPreMagicAnim, desc: '播放主角施法前摇发光动画' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
