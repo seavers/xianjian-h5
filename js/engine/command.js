@@ -1860,6 +1860,19 @@ export function curePoisonByLevel(toAll, maxLevel) {
   console.log(`[0x2C curePoisonByLevel] 解毒范围: ${toAll ? '全队' : '主角'}, 最大毒素级别: ${maxLevel}`);
 }
 
+export function jumpIfPlayerNotPoisoned(targetScriptId) {
+  const roleIndex = getRoleIndex(this);
+  const role = state.roles[roleIndex];
+  const isPoisoned = role && role.poisons && role.poisons.length > 0;
+
+  if (!isPoisoned) {
+    console.log(`[0x61 jumpIfPlayerNotPoisoned] 角色 Index: ${roleIndex} 未中毒，跳转至脚本: ${targetScriptId}`);
+    return targetScriptId;
+  }
+
+  console.log(`[0x61 jumpIfPlayerNotPoisoned] 角色 Index: ${roleIndex} 已中毒，不跳转`);
+}
+
 export function jumpIfPlayerHasPoison(roleId, poisonId, targetScriptId) {
   // 步骤 1：确定要检查的角色。如果 roleId 为 0 (或 0xFFFF)，则使用选中的角色 state.selectedRoleIndex 或当前主角
   let roleIndex = roleId;
@@ -2379,6 +2392,7 @@ scriptCodes[0x5C] = { func: jumpIfMagicLearned, desc: '若已学得指定仙术�
 scriptCodes[0x5D] = { func: jumpIfMagicNotLearned, desc: '若未学得指定仙术则跳转' };
 scriptCodes[0x5A] = { func: halvePlayerHp, desc: '角色HP减半' };
 scriptCodes[0x5F] = { func: killPlayerImmediately, desc: '使角色立即垂死' };
+scriptCodes[0x61] = { func: jumpIfPlayerNotPoisoned, desc: '玩家未中毒跳转' };
 scriptCodes[0x62] = { func: pauseEnemyChase, desc: '暂停敌人的追击' };
 scriptCodes[0x63] = { func: speedUpEnemyChase, desc: '加速敌人的追击' };
 scriptCodes[0x92] = { func: showPlayerPreMagicAnim, desc: '播放主角施法前摇发光动画' };
