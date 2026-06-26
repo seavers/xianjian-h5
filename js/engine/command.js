@@ -2323,6 +2323,27 @@ export function halveEnemyHp(limit) {
   }
 }
 
+export function jumpIfEnemyNotPoisoned(poisonId, targetScriptId) {
+  // 步骤 1：判断当前是否在战斗中且有存活敌人
+  if (enemies && enemies.length > 0) {
+    const enemy = enemies.find(e => e && e.hp > 0);
+    if (enemy) {
+      // 步骤 2：检查该敌人是否具有指定的毒素
+      const hasPoison = enemy.poisons && enemy.poisons.includes(poisonId);
+      if (!hasPoison) {
+        console.log(`[0x5E jumpIfEnemyNotPoisoned] 敌人未被施加毒素 ID: ${poisonId}，跳转至脚本: ${targetScriptId}`);
+        return targetScriptId;
+      }
+    }
+  } else {
+    // 步骤 3：默认视为无毒，执行跳转
+    console.log(`[0x5E jumpIfEnemyNotPoisoned] 当前非战斗或无敌人，默认执行跳转至脚本: ${targetScriptId}`);
+    return targetScriptId;
+  }
+
+  console.log(`[0x5E jumpIfEnemyNotPoisoned] 敌人已被施加毒素 ID: ${poisonId}，不跳转`);
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2498,6 +2519,7 @@ scriptCodes[0x5C] = { func: jumpIfMagicLearned, desc: '若已学得指定仙术�
 scriptCodes[0x5D] = { func: jumpIfMagicNotLearned, desc: '若未学得指定仙术则跳转' };
 scriptCodes[0x5B] = { func: halveEnemyHp, desc: '敌人HP减半' };
 scriptCodes[0x5A] = { func: halvePlayerHp, desc: '角色HP减半' };
+scriptCodes[0x5E] = { func: jumpIfEnemyNotPoisoned, desc: '敌人无毒跳转' };
 scriptCodes[0x5F] = { func: killPlayerImmediately, desc: '使角色立即垂死' };
 scriptCodes[0x61] = { func: jumpIfPlayerNotPoisoned, desc: '玩家未中毒跳转' };
 scriptCodes[0x62] = { func: pauseEnemyChase, desc: '暂停敌人的追击' };
