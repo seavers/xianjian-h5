@@ -1961,6 +1961,29 @@ export function jumpIfEquipmentNotEquipped(itemId, amount, targetScriptId) {
   console.log(`[0x86 jumpIfEquipmentNotEquipped] 装备 ID: ${itemId} 穿戴数量为 ${count}，已满足要求的数量 ${amount}，不跳转`);
 }
 
+export function jumpIfEquipmentEquippedOnPlayer(itemId, roleId, targetScriptId) {
+  // 步骤 1：确定要检查的角色。若为 0 或 0xFFFF，使用选中的角色或当前主角
+  let roleIndex = roleId;
+  if (roleId === 0 || roleId === 0xFFFF) {
+    roleIndex = state.selectedRoleIndex !== undefined ? state.selectedRoleIndex : getRoleIndex(this);
+  } else {
+    roleIndex = roleId - 1; // 1-based 转 0-based
+  }
+
+  const role = state.roles[roleIndex];
+  if (role && role.equipments) {
+    // 步骤 2：遍历该角色的 6 个装备部位，查找该 itemId
+    for (let part = 0; part < 6; part++) {
+      if (role.equipments[part] === itemId) {
+        console.log(`[0x88 jumpIfEquipmentEquippedOnPlayer] 装备 ID: ${itemId} 穿戴在角色 Index: ${roleIndex} 身上，跳转至脚本: ${targetScriptId}`);
+        return targetScriptId;
+      }
+    }
+  }
+
+  console.log(`[0x88 jumpIfEquipmentEquippedOnPlayer] 装备 ID: ${itemId} 未穿戴在角色 Index: ${roleIndex} 身上，不跳转`);
+}
+
 export function shakeScreen(delay, level) {
   const shakeLevel = level === 0 ? 4 : level;
   const shakeCount = delay === 0 ? 10 : delay; // 默认抖动 10 次
@@ -2331,6 +2354,7 @@ scriptCodes[0x7F] = { func: moveViewport, desc: '平移或定位镜头视口' };
 scriptCodes[0x71] = { func: shakeScreen, desc: '设置视口抖动' };
 scriptCodes[0x80] = { func: toggleDayNight, desc: '切换昼夜调色板' };
 scriptCodes[0x81] = { func: faceNpcTrig, desc: '面朝NPC触发脚本' };
+scriptCodes[0x88] = { func: jumpIfEquipmentEquippedOnPlayer, desc: '若指定装备穿在指定人身上则跳转' };
 scriptCodes[0x89] = { func: setBattleResult, desc: '设定战斗胜负结果并退出' };
 scriptCodes[0x8B] = { func: setPalette, desc: '切换使用指定调色板' };
 scriptCodes[0x8F] = { func: halveMoney, desc: '金钱数值减半' };
