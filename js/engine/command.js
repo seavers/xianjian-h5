@@ -1877,6 +1877,16 @@ export function clearPlayerPoisons(roleId) {
   }
 }
 
+export async function fadeToPalette(paletteId) {
+  console.log(`[0x35 fadeToPalette] 设置调色板 ID: ${paletteId} 并执行淡入画面`);
+  // 步骤 1：设置全局调色板 ID
+  state.paletteId = paletteId;
+
+  // 步骤 2：执行渐变淡入当前场景
+  await fadeIn();
+  await update();
+}
+
 export function teleportOut(failScriptId) {
   const scene = state.scenes[state.sceneId];
   if (scene && scene.exitScriptId) {
@@ -2055,6 +2065,7 @@ scriptCodes[0x30] = { func: jumpIfPlayerHasPoisonLevel, desc: '若角色有指�
 scriptCodes[0x31] = { func: clearPlayerPoisons, desc: '清除角色的全部毒素' };
 scriptCodes[0x33] = { func: useDayPalette, desc: '白天调色板设置' };
 scriptCodes[0x34] = { func: useNightPalette, desc: '黑夜调色板设置' };
+scriptCodes[0x35] = { func: fadeToPalette, desc: '淡入到指定调色板' };
 scriptCodes[0x38] = { func: teleportOut, desc: '传送出当前迷宫场景' };
 scriptCodes[0x4B] = { func: nullifyObject, desc: '暂时隐蔽事件物体15帧' };
 scriptCodes[0x4D] = { func: waitForKey, desc: '等待按键' };
