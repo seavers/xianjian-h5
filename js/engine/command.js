@@ -2255,6 +2255,18 @@ export function increasePlayerLevel(levelCount) {
   }
 }
 
+export function quitGame() {
+  console.log('[0xA0 quitGame] 退出游戏，正在重载页面返回主菜单...');
+
+  // 步骤 1：如果有 window 对象，直接重载整个页面，实现最彻底的游戏内存重置和返回主菜单
+  if (typeof window !== 'undefined') {
+    window.location.reload();
+  }
+
+  // 步骤 2：返回 endFlag 终止当前的脚本流程
+  return { endFlag: true };
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2437,6 +2449,7 @@ scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
 scriptCodes[0x95] = { func: jumpIfCurrentSceneEquals, desc: '若当前场景ID等于特定值则跳转' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
+scriptCodes[0xA0] = { func: quitGame, desc: '退出游戏' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
 scriptCodes[0x41] = { func: setPartyWalkStatus, desc: '设置队伍行走状态' };
 scriptCodes[0x42] = { func: jumpIfPartyCannotWalk, desc: '若不可行走则跳转' };
