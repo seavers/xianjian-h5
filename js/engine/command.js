@@ -2448,6 +2448,37 @@ export function jumpIfEnemyNotFirstOfSameKind(targetScriptId) {
   }
 }
 
+export function enemyDivision(count, targetScriptId) {
+  // 步骤 1：统计当前存活的敌人数量
+  const aliveEnemies = enemies.filter(e => e && e.hp > 0);
+
+  // 步骤 2：若存活敌人不唯一，或者唯一的敌人 HP 过低 (<= 1)，则无法分身，跳转至 targetScriptId
+  if (aliveEnemies.length !== 1 || aliveEnemies[0].hp <= 1) {
+    if (targetScriptId) {
+      console.log(`[0x9C enemyDivision] 无法分身（敌人不唯一或 HP 过低），跳转至脚本: ${targetScriptId}`);
+      return targetScriptId;
+    }
+    console.log('[0x9C enemyDivision] 无法分身且未指定跳转脚本，不跳转');
+    return;
+  }
+
+  // 步骤 3：进行分身复制动作，将克隆的分身添加至战场上并平分 HP
+  const original = aliveEnemies[0];
+  count = count || 1; 
+
+  const newHp = Math.floor((original.hp + count) / (count + 1));
+  original.hp = newHp;
+
+  for (let i = 0; i < count; i++) {
+    const clone = JSON.parse(JSON.stringify(original));
+    clone.hp = newHp;
+    clone.index = enemies.length;
+    enemies.push(clone);
+  }
+
+  console.log(`[0x9C enemyDivision] 成功分身，分身数量: ${count}，平分后的 HP: ${newHp}，当前战场敌人总数: ${enemies.length}`);
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2639,6 +2670,7 @@ scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
 scriptCodes[0x95] = { func: jumpIfCurrentSceneEquals, desc: '若当前场景ID等于特定值则跳转' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
+scriptCodes[0x9C] = { func: enemyDivision, desc: '敌方分身' };
 scriptCodes[0xA0] = { func: quitGame, desc: '退出游戏' };
 scriptCodes[0xA2] = { func: jumpRandomly, desc: '随机概率多分支跳转' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
