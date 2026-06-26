@@ -2081,6 +2081,25 @@ export function jumpIfPlayerHasStatus(roleId, statusId, targetScriptId) {
   console.log(`[0x6B jumpIfPlayerHasStatus] 角色 Index: ${roleIndex} 没有状态 ID: ${statusId}，不跳转`);
 }
 
+export function jumpIfNotAllPlayersFullHp(targetScriptId) {
+  // 步骤 1：遍历队伍成员
+  for (let i = 0; i < state.party.length; i++) {
+    const pRole = state.party[i];
+    const role = state.roles[pRole.index];
+    if (role) {
+      const curHp = role.hp === undefined ? 100 : role.hp;
+      const maxHp = role.maxHp === undefined ? 100 : role.maxHp;
+      // 步骤 2：如果有人未满 HP，跳转至目标脚本
+      if (curHp < maxHp) {
+        console.log(`[0x74 jumpIfNotAllPlayersFullHp] 角色 Index: ${pRole.index} HP 未满 (${curHp}/${maxHp})，跳转至脚本: ${targetScriptId}`);
+        return targetScriptId;
+      }
+    }
+  }
+
+  console.log(`[0x74 jumpIfNotAllPlayersFullHp] 全员皆为满 HP，不跳转`);
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2198,6 +2217,7 @@ scriptCodes[0x46] = { func: setRolePos, desc: '设置主角/队员瓦片位置' 
 scriptCodes[0x65] = { func: setRoleTile, desc: '设置主角/队员形象' };
 scriptCodes[0x67] = { func: enemyUseMagic, desc: '设置敌方使用的法术与概率' };
 scriptCodes[0x15] = { func: setRoleIndex, desc: '设置队员动作方向/帧' };
+scriptCodes[0x74] = { func: jumpIfNotAllPlayersFullHp, desc: '若非全员满 HP 则跳转' };
 scriptCodes[0x75] = { func: setRoleGroup, desc: '设置组队伙伴' };
 scriptCodes[0x76] = { func: showFbp, desc: '展示全屏剧情背景图' };
 scriptCodes[0x77] = { func: stopMusic, desc: '停止当前背景音乐并淡出' };
