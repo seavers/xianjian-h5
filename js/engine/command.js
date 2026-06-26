@@ -2479,6 +2479,39 @@ export function enemyDivision(count, targetScriptId) {
   console.log(`[0x9C enemyDivision] 成功分身，分身数量: ${count}，平分后的 HP: ${newHp}，当前战场敌人总数: ${enemies.length}`);
 }
 
+export function enemySummon(summonId, summonCount, targetScriptId) {
+  // 步骤 1：统计当前在场的敌人数量（假设战场上限 5 个敌人）
+  const aliveEnemies = enemies.filter(e => e && e.hp > 0);
+  const emptySlots = 5 - aliveEnemies.length;
+
+  // 默认召唤数量
+  summonCount = summonCount <= 0 ? 1 : summonCount;
+
+  // 步骤 2：如果空位不足以容纳召唤数量，说明召唤失败，跳转至目标脚本
+  if (emptySlots < summonCount) {
+    if (targetScriptId) {
+      console.log(`[0x9E enemySummon] 战场空位不足 (${emptySlots} < ${summonCount})，召唤失败，跳转至脚本: ${targetScriptId}`);
+      return targetScriptId;
+    }
+    console.log('[0x9E enemySummon] 战场空位不足，召唤失败且未指定跳转脚本');
+    return;
+  }
+
+  // 步骤 3：进行召唤克隆加入战斗，若无召唤模板，克隆施法者 (this) 或者是当前第一个存活的敌人
+  const template = this && this.hp > 0 ? this : aliveEnemies[0];
+  if (template) {
+    for (let i = 0; i < summonCount; i++) {
+      const clone = JSON.parse(JSON.stringify(template));
+      clone.hp = clone.maxHp || 100;
+      clone.index = enemies.length;
+      enemies.push(clone);
+    }
+    console.log(`[0x9E enemySummon] 成功召唤了 ${summonCount} 个同类敌人，当前在场敌人总数: ${enemies.length}`);
+  } else {
+    console.log('[0x9E enemySummon] 找不到召唤模板，召唤失败');
+  }
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2671,6 +2704,7 @@ scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件�
 scriptCodes[0x95] = { func: jumpIfCurrentSceneEquals, desc: '若当前场景ID等于特定值则跳转' };
 scriptCodes[0x9A] = { func: setMultipleObjectStatus, desc: '批量改变NPC活动生命状态' };
 scriptCodes[0x9C] = { func: enemyDivision, desc: '敌方分身' };
+scriptCodes[0x9E] = { func: enemySummon, desc: '敌方召唤' };
 scriptCodes[0xA0] = { func: quitGame, desc: '退出游戏' };
 scriptCodes[0xA2] = { func: jumpRandomly, desc: '随机概率多分支跳转' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
