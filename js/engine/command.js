@@ -2287,6 +2287,25 @@ export function jumpRandomly(branchesCount, param2, param3, context) {
   return targetScriptId;
 }
 
+export function drainHpFromEnemy(amount) {
+  // 步骤 1：确定要恢复 HP 的主角角色，优先选择当前行动角色
+  const roleIndex = getRoleIndex(this);
+  const role = state.roles[roleIndex];
+  if (role) {
+    role.hp = Math.min(role.maxHp || 100, (role.hp || 0) + amount);
+  }
+
+  // 步骤 2：对当前被选中的敌人（若存在）进行 HP 扣减
+  if (enemies && enemies.length > 0) {
+    const enemy = enemies.find(e => e && e.hp > 0);
+    if (enemy) {
+      enemy.hp = Math.max(0, enemy.hp - amount);
+    }
+  }
+
+  console.log(`[0x39 drainHpFromEnemy] 吸取敌人 HP: ${amount}，角色 Index: ${roleIndex} 当前 HP: ${role?.hp}`);
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2384,6 +2403,7 @@ scriptCodes[0x33] = { func: useDayPalette, desc: '白天调色板设置' };
 scriptCodes[0x34] = { func: useNightPalette, desc: '黑夜调色板设置' };
 scriptCodes[0x35] = { func: fadeToPalette, desc: '淡入到指定调色板' };
 scriptCodes[0x38] = { func: teleportOut, desc: '传送出当前迷宫场景' };
+scriptCodes[0x39] = { func: drainHpFromEnemy, desc: '战斗吸血' };
 scriptCodes[0x3A] = { func: jumpByExitScriptId, desc: '根据传送脚本 ID 跳转' };
 scriptCodes[0x4B] = { func: nullifyObject, desc: '暂时隐蔽事件物体15帧' };
 scriptCodes[0x4D] = { func: waitForKey, desc: '等待按键' };
