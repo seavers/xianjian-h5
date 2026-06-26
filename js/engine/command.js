@@ -2218,6 +2218,43 @@ export function jumpIfNotAllPlayersFullHp(targetScriptId) {
   console.log(`[0x74 jumpIfNotAllPlayersFullHp] 全员皆为满 HP，不跳转`);
 }
 
+export function increasePlayerLevel(levelCount) {
+  const roleIndex = getRoleIndex(this);
+  const role = state.roles[roleIndex];
+
+  if (role) {
+    // 步骤 1：确定要直升的等级数量，并累加到角色当前等级上，最高上限为 99
+    levelCount = levelCount || 1;
+    role.level += levelCount;
+    if (role.level > 99) {
+      role.level = 99;
+    }
+
+    // 步骤 2：按照循环次数，为每一级生成随机的属性增幅，并累加到角色基础属性上
+    for (let i = 0; i < levelCount; i++) {
+      role.maxHp += 10 + Math.floor(Math.random() * 8);
+      role.maxMp += 8 + Math.floor(Math.random() * 6);
+      role.attackStrength += 4 + Math.floor(Math.random() * 2);
+      role.magicStrength += 4 + Math.floor(Math.random() * 2);
+      role.defense += 2 + Math.floor(Math.random() * 2);
+      role.dexterity += 2 + Math.floor(Math.random() * 2);
+      role.fleeRate += 2;
+    }
+
+    // 步骤 3：属性边界上限控制，防止数值溢出，统一截断为 999 限制
+    const limit = (val) => (val > 999 ? 999 : val);
+    role.maxHp = limit(role.maxHp);
+    role.maxMp = limit(role.maxMp);
+    role.attackStrength = limit(role.attackStrength);
+    role.magicStrength = limit(role.magicStrength);
+    role.defense = limit(role.defense);
+    role.dexterity = limit(role.dexterity);
+    role.fleeRate = limit(role.fleeRate);
+
+    console.log(`[0x8D increasePlayerLevel] 角色 Index: ${roleIndex} 直升等级: ${levelCount}，当前等级: ${role.level}`);
+  }
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2431,6 +2468,7 @@ scriptCodes[0x88] = { func: jumpIfEquipmentEquippedOnPlayer, desc: '若指定装
 scriptCodes[0x89] = { func: setBattleResult, desc: '设定战斗胜负结果并退出' };
 scriptCodes[0x8A] = { func: resetPaletteWithFade, desc: '调色板重置渐变' };
 scriptCodes[0x8B] = { func: setPalette, desc: '切换使用指定调色板' };
+scriptCodes[0x8D] = { func: increasePlayerLevel, desc: '直升角色等级' };
 scriptCodes[0x8F] = { func: halveMoney, desc: '金钱数值减半' };
 scriptCodes[0x90] = { func: setObjectScript, desc: '设置事件物体脚本或属性数据' };
 scriptCodes[0x6A] = { func: setPartyStatus, desc: '给全队伙伴附加仙术/属性状态' };
