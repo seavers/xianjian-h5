@@ -2540,6 +2540,11 @@ export function showEndingAnimation() {
   console.log('[0x96 showEndingAnimation] (免做) 播放结局动画');
 }
 
+export function scrollFbpToScreen(param1, param2) {
+  // 步骤 1：屏幕滚动背景特效，调色板和图像水平/垂直滚动，由于采用 Canvas 静态场景，在此做 No-op 免做 Mock
+  console.log(`[0xA4 scrollFbpToScreen] (免做) 参数 1: ${param1}, 参数 2: ${param2}`);
+}
+
 export function removePlayerStatus(statusId) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -2737,6 +2742,7 @@ scriptCodes[0x9E] = { func: enemySummon, desc: '敌方召唤' };
 scriptCodes[0x9F] = { func: enemyTransform, desc: '敌方变身' };
 scriptCodes[0xA0] = { func: quitGame, desc: '退出游戏' };
 scriptCodes[0xA2] = { func: jumpRandomly, desc: '随机概率多分支跳转' };
+scriptCodes[0xA4] = { func: scrollFbpToScreen, desc: '屏幕滚动背景' };
 scriptCodes[0x40] = { func: setTrigMode, desc: '设置NPC触发模式' };
 scriptCodes[0x41] = { func: setPartyWalkStatus, desc: '设置队伍行走状态' };
 scriptCodes[0x42] = { func: jumpIfPartyCannotWalk, desc: '若不可行走则跳转' };
