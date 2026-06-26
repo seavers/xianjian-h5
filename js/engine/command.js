@@ -2,6 +2,7 @@ import { state } from './state.js';
 import { Shop } from '../ui/shop.js';
 import { Confirm } from '../ui/confirm.js';
 import { SelectRole } from '../ui/selectRole.js';
+import { UseItemMenu } from '../ui/useItemMenu.js';
 import { CIRCLE_SCRIPT, GOTO_SCRIPT, REPLACE_ENTRY, RESET_SCRIPT, Script } from './script.js';
 import { Npc } from './anim.js';
 import { loadMgoCount } from '../resources/pal.js';
@@ -1444,6 +1445,34 @@ export async function selectPlayerRoleMenu(failScriptId) {
   }
 }
 
+export async function useItemMenu(failScriptId) {
+  // 步骤 1：调用 UseItemMenu.open() 开启药品/道具菜单选择并等待其返回
+  const itemId = await UseItemMenu.open();
+
+  // 步骤 2：如果返回 -1，说明玩家取消了选择，若存在失败跳转脚本，则跳转
+  if (itemId === -1) {
+    console.log(`[0x2A useItemMenu] 玩家取消了道具选择，跳转至脚本: ${failScriptId}`);
+    if (failScriptId) {
+      return failScriptId;
+    }
+    return;
+  }
+
+  // 步骤 3：扣除背囊里的该物品 (数量减一)
+  const idx = state.ownItems.indexOf(itemId);
+  if (idx > -1) {
+    state.ownItems.splice(idx, 1);
+  }
+
+  // 步骤 4：启动该道具的属性特效 and 使用脚本，默认将绑定主体设置为景天/队长
+  const itemToUse = state.items[itemId];
+  if (itemToUse) {
+    itemToUse.index = (state.party && state.party.length > 0 && state.party[0]) ? state.party[0].index : 0;
+    console.log(`[0x2A useItemMenu] 玩家使用了道具 ${itemId}，执行对应物品脚本`);
+    Script.startItemScript(itemToUse);
+  }
+}
+
 export function setPlayerExtraAttribute(partId, statId, value) {
   const roleIndex = getRoleIndex(this);
   const role = state.roles[roleIndex];
@@ -1953,6 +1982,7 @@ scriptCodes[0x26] = { func: buyMenu, desc: '商店买入菜单' };
 scriptCodes[0x27] = { func: sellMenu, desc: '商店卖出菜单' };
 scriptCodes[0x28] = { func: applyPoisonToEnemy, desc: '给敌人施加毒素' };
 scriptCodes[0x29] = { func: selectPlayerRoleMenu, desc: '选择玩家角色菜单' };
+scriptCodes[0x2A] = { func: useItemMenu, desc: '使用药品/道具菜单' };
 scriptCodes[0x2B] = { func: curePoisonByKind, desc: '根据毒物ID解玩家毒' };
 scriptCodes[0x2C] = { func: curePoisonByLevel, desc: '根据级别解玩家毒' };
 scriptCodes[0x2D] = { func: setPlayerStatus, desc: '附加异常状态给角色' };

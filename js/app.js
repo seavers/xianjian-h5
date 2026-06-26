@@ -6,6 +6,7 @@ import { ESC } from './esc/esc.js';
 import { Shop } from './ui/shop.js';
 import { Confirm } from './ui/confirm.js';
 import { SelectRole } from './ui/selectRole.js';
+import { UseItemMenu } from './ui/useItemMenu.js';
 import { Hex } from './utils/hex.js';
 import { Talk } from './ui/talk.js';
 import { Script } from './engine/script.js';
@@ -383,6 +384,7 @@ ready(() => {
   window.Shop = Shop;
   window.Confirm = Confirm;
   window.SelectRole = SelectRole;
+  window.UseItemMenu = UseItemMenu;
 
   if (!DEBUG) {
     state.currentMode = 'startup';
