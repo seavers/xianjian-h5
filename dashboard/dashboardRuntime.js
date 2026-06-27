@@ -237,7 +237,11 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
   // --- 坐标管理面板与存档Slot ---
   const [showCoordsPanel, setShowCoordsPanel] = useState(false);
   const [coordsJsonText, setCoordsJsonText] = useState('');
-  const [saveSlotId, setSaveSlotId] = useState(1);
+  // 存档控制，输入的默认值，改为 URL中debug的数值
+  const [saveSlotId, setSaveSlotId] = useState(() => {
+    const debugParam = new URLSearchParams(window.location.search).get('debug');
+    return parseInt(debugParam, 10) || 1;
+  });
   const [gameSpeed, setGameSpeed] = useState(6);
 
   // --- 页面输入缓存字段 (防止被 State 轮询高频擦除) ---
@@ -282,8 +286,9 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
     setQuickScenes(presets);
     setSelectedTeleportScene(presets[0].value);
 
-    // 载入存档 Slot X
-    setSaveSlotId(1);
+    // 载入存档 Slot X，默认值取 URL 中的 debug 数值
+    const debugParam = new URLSearchParams(window.location.search).get('debug');
+    setSaveSlotId(parseInt(debugParam, 10) || 1);
   }, []);
 
   // 绑定全局广播挂钩（方便外界修改局部状态）
@@ -1361,7 +1366,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
             placeholder="ID" 
             value=${inputTeleportId} 
             onInput=${(e) => setInputTeleportId(e.target.value)} 
-            style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', fontSize: '8.5px', padding: '2px 4px', width: '40px', outline: 'none', textAlign: 'center', borderRadius: '2px' }}
+            style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', fontSize: '8.5px', padding: '2px 4px', width: '60px', outline: 'none', textAlign: 'center', borderRadius: '2px' }}
           />
           <button class="btn-dbg" onClick=${handleTeleport} style=${{ color: 'var(--glow-blue)', borderColor: 'rgba(0,225,255,0.25)', background: 'rgba(0,225,255,0.05)', padding: '2px 5px', fontSize: '8.5px' }}>传送</button>
 
@@ -1371,7 +1376,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
             placeholder="ID" 
             value=${inputCheatItemId} 
             onInput=${(e) => setInputCheatItemId(e.target.value)} 
-            style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#ff3b6f', fontSize: '8.5px', padding: '2px 4px', width: '40px', outline: 'none', textAlign: 'center', borderRadius: '2px' }}
+            style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#ff3b6f', fontSize: '8.5px', padding: '2px 4px', width: '60px', outline: 'none', textAlign: 'center', borderRadius: '2px' }}
           />
           <button class="btn-dbg" onClick=${handleCheatItem} style=${{ color: '#ff3b6f', borderColor: 'rgba(255,59,111,0.25)', background: 'rgba(255,59,111,0.05)', padding: '2px 5px', fontSize: '8.5px' }}>获得</button>
 
@@ -1396,7 +1401,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
             placeholder="场景" 
             value=${inputSceneSwitchId} 
             onInput=${(e) => setInputSceneSwitchId(e.target.value)} 
-            style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#93c5fd', fontSize: '8.5px', padding: '2px 4px', width: '40px', outline: 'none', textAlign: 'center', borderRadius: '2px' }}
+            style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#93c5fd', fontSize: '8.5px', padding: '2px 4px', width: '60px', outline: 'none', textAlign: 'center', borderRadius: '2px' }}
           />
           <button class="btn-dbg" onClick=${handleSceneSwitch} style=${{ color: '#93c5fd', borderColor: 'rgba(147,197,253,0.25)', background: 'rgba(147,197,253,0.05)', padding: '2px 5px', fontSize: '8.5px' }}>切换</button>
 
@@ -1410,7 +1415,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
             placeholder="X" 
             value=${inputCoordX} 
             onInput=${(e) => setInputCoordX(e.target.value)} 
-            style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#00ff9d', fontSize: '8.5px', padding: '2px 4px', width: '30px', outline: 'none', textAlign: 'center', borderRadius: '2px' }}
+            style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#00ff9d', fontSize: '8.5px', padding: '2px 4px', width: '60px', outline: 'none', textAlign: 'center', borderRadius: '2px' }}
           />
           <input 
             type="number" 
@@ -1418,13 +1423,13 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
             placeholder="Y" 
             value=${inputCoordY} 
             onInput=${(e) => setInputCoordY(e.target.value)} 
-            style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#00ff9d', fontSize: '8.5px', padding: '2px 4px', width: '30px', outline: 'none', textAlign: 'center', borderRadius: '2px' }}
+            style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#00ff9d', fontSize: '8.5px', padding: '2px 4px', width: '60px', outline: 'none', textAlign: 'center', borderRadius: '2px' }}
           />
           <select 
             id="select-coord-half"
             value=${inputCoordHalf} 
             onChange=${(e) => setInputCoordHalf(parseInt(e.target.value, 10))} 
-            style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', fontSize: '8.5px', padding: '2px 2px', outline: 'none', width: '36px', cursor: 'pointer', borderRadius: '2px' }}
+            style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', fontSize: '8.5px', padding: '2px 2px', outline: 'none', width: '50px', cursor: 'pointer', borderRadius: '2px' }}
           >
             <option value="0">全</option>
             <option value="1">半</option>
