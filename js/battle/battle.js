@@ -1920,9 +1920,20 @@ async function endBattle(result) {
         drawSingleLineBox(talkCtx, 72, 0, 11);
 
         // 2. 绘制标题文案：“角色名” + “修行”(#48) + “提升”(#32)
+        let nameLen = 0;
+        const nameWord = state.words[up.nameId];
+        if (nameWord) {
+          for (let k = 0; k < nameWord.length / 2; k++) {
+            if (nameWord.getShort(k * 2) !== 0x2020) {
+              nameLen++;
+            }
+          }
+        }
+        nameLen = nameLen || 2;
+
         drawWordToCtx(talkCtx, up.nameId, 110, 10);
-        drawWordToCtx(talkCtx, 48, 142, 10);
-        drawWordToCtx(talkCtx, 32, 174, 10);
+        drawWordToCtx(talkCtx, 48, 110 + nameLen * 16, 10);
+        drawWordToCtx(talkCtx, 32, 110 + nameLen * 16 + 32, 10);
 
         // 3. 绘制具体数值大面板背景框：x=74, y=32, 宽=9, 高=7
         drawWinArea(talkCtx, 74, 32, 9, 7, 10);
@@ -1931,8 +1942,8 @@ async function endBattle(result) {
         for (let j = 0; j < 8; j++) {
           drawWordToCtx(talkCtx, 48 + j, 92, 44 + 18 * j);
 
-          // 绘制指向箭头 (48号 pic 对应 loadPic(49))，x=188
-          const arrowImg = loadPic(49);
+          // 绘制指向箭头 (48号 pic 对应 loadPic(48))，x=188
+          const arrowImg = loadPic(48);
           if (arrowImg) {
             talkCtx.drawImage(arrowImg, 188, 48 + 18 * j);
           }
@@ -2339,8 +2350,7 @@ function drawWinArea(ctx, x, y, width, height, style = 10) {
 
   currY += drawWinPic3(ctx, style + 0, x, currY, w);
   for (let i = 0; i < h; i++) {
-    ctx.drawImage(loadPic(style + 3), x, currY); // 修复中间九宫格中两端的绘制对齐
-    drawWinPic3(ctx, style + 3, x, currY, w);
+    currY += drawWinPic3(ctx, style + 3, x, currY, w);
   }
   drawWinPic3(ctx, style + 6, x, currY, w);
 }
