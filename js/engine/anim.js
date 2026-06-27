@@ -18,18 +18,26 @@ export function calcNpcDir(o, x, y) {
 }
 
 export const Npc = {
-  anim(o, x, y, half, speed) {
-    const cx = o.x;
-    const cy = o.y;
+  anim(o, x, y, half, speed, isOddEvenAlg) {
     const zx = x * 32 + half * 16;
     const zy = y * 16 + half * 8;
 
-    const dx = zx - cx;
-    const dy = zy - cy;
-    const absDy = Math.abs(dy);
+    // npcWalk增加奇偶帧逻辑，参考巫后在地牢中的运动，NPC4272
+    if(isOddEvenAlg) {
+      o.walkCount = o.walkCount || 0;
+      if(o.walkCount++ % 2 == 1) {
+        return Math.abs(zy - o.y);
+      }
+    }
 
     // 计算移动时的朝向，并更新步态动画帧
     calcNpcDir(o, zx, zy);
+
+    const cx = o.x;
+    const cy = o.y;
+    const dx = zx - cx;
+    const dy = zy - cy;
+    const absDy = Math.abs(dy);
 
     if (absDy > speed) {
       o.x = cx + Math.sign(dx) * speed * 2;

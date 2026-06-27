@@ -571,14 +571,12 @@ export function setNpcMove(objId, dx, dy) {
 
 // 慢速移动是奇偶帧移动，平均speed=1，参考巫后在地牢中的运动，NPC4272
 export async function npcWalk2(x, y, half, context) {
-  let count = 0;
-  return await stepAction(context, () => count++ % 2 == 0 && Npc.anim(this, x, y, half, 2));
+  return await stepAction(context, () => Npc.anim(this, x, y, half, 2, true));
 }
 
 // 中速移动是奇偶帧移动，平均speed=2
 export async function npcWalk3(x, y, half, context) {
-  let count = 0;
-  return await stepAction(context, () => count++ % 2 == 0 && Npc.anim(this, x, y, half, 4));
+  return await stepAction(context, () => Npc.anim(this, x, y, half, 4, true));
 }
 
 // 快速移动是正常帧移动，平均speed=3
