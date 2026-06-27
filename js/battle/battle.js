@@ -2004,6 +2004,17 @@ async function endBattle(result) {
         talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
       }
 
+      // 步骤 6：战斗结束后自动恢复部分 HP 与 MP（恢复损失值的一半，死者复活）
+      for (let i = 0; i < state.party.length; i++) {
+        const role = state.party[i];
+        const roleStats = state.roles[role.index];
+
+        if (roleStats) {
+          roleStats.hp += Math.floor((roleStats.maxHp - roleStats.hp) / 2);
+          roleStats.mp += Math.floor((roleStats.maxMp - roleStats.mp) / 2);
+        }
+      }
+
       state.uiMode = prevUiMode; // 还原 UI Mode
     } else if (result === 1 || result === false) {
       resultText = '全 员 战 败';
