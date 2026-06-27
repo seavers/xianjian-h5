@@ -2103,14 +2103,8 @@ export function jumpIfPlayerNotPoisoned(targetScriptId) {
 }
 
 
-export async function fadeToPalette(paletteId) {
-  console.log(`[0x35 fadeToPalette] 设置调色板 ID: ${paletteId} 并执行淡入画面`);
-  // 步骤 1：设置全局调色板 ID
-  state.paletteId = paletteId;
-
-  // 步骤 2：执行渐变淡入当前场景
-  await fadeIn();
-  await update();
+export function waveScreen(waveStrength, progression) {
+  console.log(`[0x71 waveScreen] (免做) 水波纹特效, 强度: ${waveStrength}, 进度: ${progression}`);
 }
 
 export function teleportOut(failScriptId) {
@@ -2245,7 +2239,7 @@ export function shakeScreen(delay, level) {
     count++;
   }, 50); // 每 50ms 抖动一次
   
-  console.log(`[0x71 shakeScreen] 开始视口抖动, 持续次数: ${shakeCount}, 强度: ${shakeLevel}`);
+  console.log(`[0x35 shakeScreen] 开始视口抖动, 持续次数: ${shakeCount}, 强度: ${shakeLevel}`);
 }
 
 export function setPartyWalkStatus(canWalk) {
@@ -2808,7 +2802,7 @@ scriptCodes[0x53] = { func: useDayPalette, desc: '切换使用白天调色板' }
 scriptCodes[0x54] = { func: useNightPalette, desc: '切换使用黑夜调色板' };
 scriptCodes[0x59] = { func: setSceneId, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x6D] = { func: setSceneEnterScr, desc: '设置场景进入脚本' };
-scriptCodes[0x71] = { func: shakeScreen, desc: '设置视口抖动' };
+scriptCodes[0x71] = { func: waveScreen, desc: '水波纹效果' };
 scriptCodes[0x73] = { func: clearWithEffect, desc: '动画淡出清除' };
 scriptCodes[0x76] = { func: showFbp, desc: '展示全屏剧情背景图' };
 scriptCodes[0x7F] = { func: moveViewport, desc: '平移或定位镜头视口' };
@@ -2898,7 +2892,7 @@ scriptCodes[0x30] = { func: increasePlayerStatTemp, desc: '临时百分比提升
 scriptCodes[0x31] = { func: changeBattleSpriteTemp, desc: '战中临时改变角色贴图' };
 scriptCodes[0x33] = { func: collectEnemy, desc: '炼妖壶战中收妖' };
 scriptCodes[0x34] = { func: transformEnemy, desc: '炼化妖物为道具' };
-scriptCodes[0x35] = { func: fadeToPalette, desc: '淡入到指定调色板' };
+scriptCodes[0x35] = { func: shakeScreen, desc: '设置视口抖动' };
 scriptCodes[0x38] = { func: teleportOut, desc: '传送出当前迷宫场景' };
 scriptCodes[0x39] = { func: drainHpFromEnemy, desc: '战斗吸血' };
 scriptCodes[0x3A] = { func: jumpByExitScriptId, desc: '根据传送脚本 ID 跳转' };
