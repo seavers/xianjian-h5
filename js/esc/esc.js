@@ -915,6 +915,11 @@ function getEquipItemAttributes(itemId) {
   for (let i = 0; i < 10; i++) {
     const scr = state.scripts[scriptId + i];
     if (!scr) break;
+
+    // 当遇到脚本终止指令，或遇到非当前道具的装备指令时跳出，防止越界读取下一个道具的脚本属性
+    if (scr.code === 0) break;
+    if (scr.code === 0x18 && scr.param2 !== itemId) break;
+
     // 输出装备脚本诊断日志，协助校验属性偏移是否成功
     console.log(`[getEquipItemAttributes] itemId: ${itemId}, nameId: ${item.nameId}, equScr: ${item.equScr}, i: ${i}, code: 0x${scr.code.toString(16)}, param1: ${scr.param1}, param2: ${scr.param2}, param3: ${scr.param3}`);
     if (scr.code === 0x17) {

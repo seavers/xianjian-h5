@@ -2143,6 +2143,11 @@ function getEquipItemAttributes(itemId) {
   for (let i = 0; i < 10; i++) {
     const scr = state.scripts[scriptId + i];
     if (!scr) break;
+
+    // 当遇到脚本终止指令，或遇到非当前道具的装备指令时跳出，防止越界读取下一个道具的脚本属性
+    if (scr.code === 0) break;
+    if (scr.code === 0x18 && scr.param2 !== itemId) break;
+
     if (scr.code === 0x17) {
       const key = STAT_MAP[scr.param2];
       if (key) {
