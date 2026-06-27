@@ -698,8 +698,13 @@ function loadFrameCount(obj) {
   }
 }
 
-export function replaceObject() {
-  // 步骤 1：替换并终结脚本实体，不返回任何值以正常推进指令流
+export function replaceObject(stateVal) {
+  const obj = this;
+  if (obj) {
+    obj.state = stateVal;
+    console.log(`[0x6F replaceObject] 替换当前脚本实体状态为: ${stateVal}，并终结当前脚本线程`);
+  }
+  return 0xFFFF;
 }
 
 export async function moveViewport(dx, dy, frameCount, context) {
