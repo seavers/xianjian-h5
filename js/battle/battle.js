@@ -706,7 +706,7 @@ function draw() {
   damagePopups = damagePopups.filter(p => time - p.startTime < 750);
   damagePopups.forEach(p => {
     const elapsed = time - p.startTime;
-    const yOffset = (elapsed / 750) * 18;
+    const yOffset = (elapsed / 750) * 10;
     const alpha = 1.0 - (elapsed / 750);
 
     battleCtx.save();
@@ -717,7 +717,14 @@ function draw() {
     battleCtx.font = 'bold 12px sans-serif';
     battleCtx.textAlign = 'center';
     
-    const ty = p.actor.y - (p.actor.height || 40) - yOffset;
+    // 依据 sdlpal 规则，我方 HP 飘字 y 轴起始偏移 -75，敌方偏移 -115，并设置最小 y 轴边界值 10 防止溢出屏幕
+    let yBase = p.isPlayer ? p.actor.y - 75 : p.actor.y - 115;
+    if (yBase < 10) {
+      yBase = 10;
+    }
+
+    const ty = yBase - yOffset;
+    
     battleCtx.strokeText(p.value.toString(), p.actor.x, ty);
     battleCtx.fillText(p.value.toString(), p.actor.x, ty);
     battleCtx.restore();
