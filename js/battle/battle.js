@@ -134,7 +134,9 @@ export async function start(id, failId, fleeId) {
       wMagicSound: cfg.wMagicSound || 0,
       wScriptOnTurnStart: state.items[objId]?.useScr || 0,
       wScriptOnBattleEnd: state.items[objId]?.equScr || 0,
-      wScriptOnReady: state.items[objId]?.dropScr || 0
+      wScriptOnReady: state.items[objId]?.dropScr || 0,
+      exp: cfg.wExp || 0,
+      cash: cfg.wCash || 0
     });
   }
 
@@ -1755,9 +1757,106 @@ async function endBattle(result) {
   if (talkCtx) {
     let resultText = '';
     let textColor = '';
+
     if (result === 3 || result === true) {
-      resultText = '战 斗 胜 利';
-      textColor = '#00ffaa';
+      // 步骤 1：统计所有已被击败敌人的经验与金钱
+      let totalExp = 0;
+      let totalCash = 0;
+
+      for (let i = 0; i < enemies.length; i++) {
+        totalExp += enemies[i].exp || 0;
+        totalCash += enemies[i].cash || 0;
+      }
+
+      // 步骤 2：更新全局金钱数据
+      state.money = (state.money || 0) + totalCash;
+
+      // 步骤 3：为活着的队员分配经验，并执行升级属性提升
+      for (let i = 0; i < players.length; i++) {
+        const p = players[i];
+
+        if (p.hp > 0) {
+          const roleStats = state.roles[p.index];
+
+          if (roleStats) {
+            // 初始化经验值结构（如不存在）
+            if (!state.exp) {
+              state.exp = { rgPrimaryExp: [] };
+            }
+            if (!state.exp.rgPrimaryExp[p.index]) {
+              state.exp.rgPrimaryExp[p.index] = {
+                wExp: 0,
+                wReserved: 0,
+                wLevel: roleStats.level || 1,
+                wCount: 0
+              };
+            }
+
+            let dwExp = state.exp.rgPrimaryExp[p.index].wExp || 0;
+            dwExp += totalExp;
+
+            let fLevelUp = false;
+            const MAX_LEVELS = 99;
+
+            // 循环处理多次升级的可能
+            while (state.levelUpExp && dwExp >= (state.levelUpExp[roleStats.level] || 0) && roleStats.level < MAX_LEVELS) {
+              dwExp -= state.levelUpExp[roleStats.level] || 0;
+              roleStats.level += 1;
+              fLevelUp = true;
+
+              // 属性随机增加（原版数值算法）
+              roleStats.maxHp += 10 + Math.floor(Math.random() * 8);
+              roleStats.maxMp += 8 + Math.floor(Math.random() * 6);
+              roleStats.attackStrength += 4 + Math.floor(Math.random() * 2);
+              roleStats.magicStrength += 4 + Math.floor(Math.random() * 2);
+              roleStats.defense += 2 + Math.floor(Math.random() * 2);
+              roleStats.dexterity += 2 + Math.floor(Math.random() * 2);
+              roleStats.fleeRate += 2;
+
+              // 升级时自动恢复全部生命值与魔法值
+              roleStats.hp = roleStats.maxHp;
+              roleStats.mp = roleStats.maxMp;
+            }
+
+            // 属性最高上限控制在 999 限制
+            const limit = (val) => (val > 999 ? 999 : val);
+            roleStats.maxHp = limit(roleStats.maxHp);
+            roleStats.maxMp = limit(roleStats.maxMp);
+            roleStats.attackStrength = limit(roleStats.attackStrength);
+            roleStats.magicStrength = limit(roleStats.magicStrength);
+            roleStats.defense = limit(roleStats.defense);
+            roleStats.dexterity = limit(roleStats.dexterity);
+            roleStats.fleeRate = limit(roleStats.fleeRate);
+
+            if (fLevelUp) {
+              roleStats.hp = limit(roleStats.hp);
+              roleStats.mp = limit(roleStats.mp);
+            }
+
+            // 保持数据一致性
+            state.exp.rgPrimaryExp[p.index].wExp = dwExp;
+            state.exp.rgPrimaryExp[p.index].wLevel = roleStats.level;
+          }
+        }
+      }
+
+      // 步骤 4：在 talk 渲染层上绘制胜利奖励画卷框
+      if (totalExp > 0) {
+        // 绘制获得的经验值面板框（宽为 8 个中文字，x=83, y=60）
+        drawSingleLineBox(talkCtx, 83, 60, 8);
+
+        // 绘制打败怪物获得文钱面板框（宽为 10 个中文字，x=65, y=105）
+        drawSingleLineBox(talkCtx, 65, 105, 10);
+
+        // 绘制文案：获得经验值(#30), 打败敌人得(#9), 文钱(#10)
+        drawWordToCtx(talkCtx, 30, 95, 70);
+        drawWordToCtx(talkCtx, 9, 77, 115);
+        drawWordToCtx(talkCtx, 10, 197, 115);
+
+        // 绘制具体数值：数字取 data.mkf #9 中的 20~29 号黄色小数字
+        drawWinNumber(talkCtx, totalExp, 182, 74, 5, 'right');
+        drawWinNumber(talkCtx, totalCash, 162, 119, 5, 'mid');
+      }
     } else if (result === 1 || result === false) {
       resultText = '全 员 战 败';
       textColor = '#ff3333';
@@ -2002,6 +2101,63 @@ function restorePlayerFrame(player) {
     player.currentFrame = 1;
   } else {
     player.currentFrame = 0;
+  }
+}
+
+// 绘制单行面板框，使用 data.mkf #9 45, 46, 47 号元素作为边框
+function drawSingleLineBox(ctx, x, y, length) {
+  const picLeft = loadPic(45);
+  if (picLeft) {
+    ctx.drawImage(picLeft, x, y);
+  }
+
+  const picMiddle = loadPic(46);
+  if (picMiddle) {
+    for (let i = 0; i < length; i++) {
+      ctx.drawImage(picMiddle, x + 8 + i * 16, y);
+    }
+  }
+
+  const picRight = loadPic(47);
+  if (picRight) {
+    ctx.drawImage(picRight, x + 8 + length * 16, y);
+  }
+}
+
+// 绘制结算黄色小数字，利用 data.mkf #9 中的 20~29 号数字元素
+function drawWinNumber(ctx, num, x, y, length, align = 'right') {
+  const baseId = 20;
+  let numStr = Math.floor(num).toString();
+  let nActualLength = numStr.length;
+
+  if (nActualLength > length) {
+    nActualLength = length;
+    numStr = numStr.slice(-length);
+  }
+
+  let startX = x - 6;
+
+  if (align === 'left') {
+    startX += 6 * nActualLength;
+  } else if (align === 'right') {
+    startX += 6 * length;
+  } else if (align === 'mid') {
+    startX += 3 * (length + nActualLength);
+  }
+
+  let currX = startX;
+  let remainingNum = num;
+
+  for (let i = 0; i < nActualLength; i++) {
+    const digit = remainingNum % 10;
+    const digitImg = loadPic(baseId + digit);
+
+    if (digitImg) {
+      ctx.drawImage(digitImg, currX, y);
+    }
+
+    currX -= 6;
+    remainingNum = Math.floor(remainingNum / 10);
   }
 }
 
