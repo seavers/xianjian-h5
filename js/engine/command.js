@@ -93,7 +93,8 @@ function refreshRoleFrame(role) {
   }
 
   // 巫后娘娘(npc.id==4272)的动作竟然只有11帧，这里hack掉吧
-  if(role.mgoId == 575) {
+  // 还有阿奴抱孩子的动作也是11帧
+  if(role.mgoId == 575 || role.mgoId == 552) {
     if (frame >= 11) {
       frame = 9;
     }
