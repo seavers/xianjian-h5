@@ -2244,19 +2244,22 @@ export function shakeScreen(delay, level) {
   console.log(`[0x35 shakeScreen] 开始视口抖动, 持续次数: ${shakeCount}, 强度: ${shakeLevel}`);
 }
 
-export function setPartyWalkStatus(canWalk) {
-  // 1 为可以走，0 为不可以走
-  state.canPartyWalk = (canWalk !== 0);
-  console.log(`[0x41 setPartyWalkStatus] 设置队伍行走状态为: ${state.canPartyWalk}`);
+export function setScriptSuccess() {
+  state.scriptSuccess = false;
+  console.log(`[0x41 setScriptSuccess] 标记脚本执行为失败状态 (g_fScriptSuccess = FALSE)`);
 }
 
-export function jumpIfPartyCannotWalk(targetScriptId) {
-  // 如果当前是不可行走状态 (state.canPartyWalk === false)，则跳转至 targetScriptId
-  if (state.canPartyWalk === false) {
-    console.log(`[0x42 jumpIfPartyCannotWalk] 队伍当前不可行走，跳转至脚本: ${targetScriptId}`);
-    return targetScriptId;
+export function simulateMagic(magicId, value, roleId) {
+  let roleIndex = roleId;
+  if (roleId === 0 || roleId === 0xFFFF) {
+    roleIndex = getRoleIndex(this);
+  } else {
+    roleIndex = roleId - 1;
   }
-  console.log(`[0x42 jumpIfPartyCannotWalk] 队伍当前可行走，不跳转`);
+  console.log(`[0x42 simulateMagic] 模拟仙术 ID: ${magicId}, 数值: ${value}, 角色 Index: ${roleIndex}`);
+  if (window.Battle && typeof window.Battle.simulateMagic === 'function') {
+    window.Battle.simulateMagic(roleIndex, magicId, value);
+  }
 }
 
 export function nullifyObject() {
@@ -2819,8 +2822,8 @@ scriptCodes[0x9B] = { func: fadeToCurrentScene, desc: '屏幕渐变淡入当前�
 scriptCodes[0x46] = { func: setRolePos, desc: '设置主角/队员瓦片位置' };
 scriptCodes[0x65] = { func: setRoleTile, desc: '设置主角/队员形象' };
 scriptCodes[0x15] = { func: setRoleIndex, desc: '设置队员动作方向/帧' };
-scriptCodes[0x41] = { func: setPartyWalkStatus, desc: '设置队伍行走状态' };
-scriptCodes[0x42] = { func: jumpIfPartyCannotWalk, desc: '若不可行走则跳转' };
+scriptCodes[0x41] = { func: setScriptSuccess, desc: '标记脚本执行为失败状态' };
+scriptCodes[0x42] = { func: simulateMagic, desc: '在战斗/剧情中模拟仙术' };
 scriptCodes[0x75] = { func: setRoleGroup, desc: '设置组队伙伴' };
 scriptCodes[0x79] = { func: jumpIfPlayerInParty, desc: '若指定角色在队伍中则跳转' };
 scriptCodes[0x81] = { func: faceNpcTrig, desc: '面朝NPC触发脚本' };
