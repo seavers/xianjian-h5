@@ -1886,6 +1886,10 @@ async function endBattle(result) {
         }
       }
 
+      // 临时允许键盘输入，用于结算框与升级框的空格确认交互
+      const prevUiMode = state.uiMode;
+      state.uiMode = 'operate';
+
       // 步骤 4：在 talk 渲染层上绘制胜利奖励画卷框
       if (totalExp > 0) {
         // 绘制获得的经验值面板框（宽为 8 个中文字，x=83, y=60）
@@ -1909,9 +1913,6 @@ async function endBattle(result) {
       }
 
       // 步骤 5：如果有角色升级，逐人展示修行提升对比大面板
-      const prevUiMode = state.uiMode;
-      state.uiMode = 'operate'; // 临时允许键盘输入
-
       for (let i = 0; i < upgradedPlayers.length; i++) {
         const up = upgradedPlayers[i];
 
