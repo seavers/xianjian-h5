@@ -85,8 +85,9 @@ export function loadMkf2(data, index) {
   const start = data.getShort(index * 2) * 2; // 地址要乘以 2 的
   const end = data.getShort(index * 2 + 2) * 2;
   if (start >= end && end !== 0) {
-    console.warn('[warning]: loadMkf2 ' + start + ' ' + end);
-    return;
+    // console.warn('[warning]: loadMkf2 ' + start + ' ' + end);
+    // 有一些精灵图数据不合法，比如mgoId：575(巫后行走图），552（阿奴抱孩图)，兼容一下
+    return data.slice(start, 0);
   }
   return data.slice(start, end);
 }
