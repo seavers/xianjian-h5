@@ -2701,7 +2701,6 @@ scriptCodes[0x16] = { func: setNpcTile, desc: '设置NPC特定形象与朝向' }
 scriptCodes[0x8E] = { func: clearTalk, desc: '清空/关闭对话框' };
 scriptCodes[0x49] = { func: setObjectStatus, desc: '改变NPC活动生命状态' };
 scriptCodes[0x4A] = { func: setBattlefield, desc: '设置当前战斗背景 ID' };
-scriptCodes[0x70] = { func: roleWalk, desc: '插值移动主角位置' };
 scriptCodes[0x73] = { func: clearWithEffect, desc: '动画淡出清除' };
 
 scriptCodes[0x6C] = { func: npcWalk, desc: 'NPC平移偏移距离' };
@@ -2709,13 +2708,17 @@ scriptCodes[0x11] = { func: npcWalk2, desc: 'NPC慢速移动至坐标' };
 scriptCodes[0x7C] = { func: npcWalk3, desc: 'NPC中速移动至坐标' };
 scriptCodes[0x10] = { func: npcWalk4, desc: 'NPC快速移动至坐标' };
 scriptCodes[0x82] = { func: npcWalk5, desc: 'NPC极速移动至坐标' };
+scriptCodes[0x3F] = { func: teamRide, desc: '队伍慢速骑乘到坐标' };
+scriptCodes[0x44] = { func: teamRide2, desc: '队伍常速骑乘到坐标' };
+scriptCodes[0x97] = { func: teamRide4, desc: '队伍极速骑乘到坐标' };
+scriptCodes[0x70] = { func: teamWalk, desc: '队伍慢速行走至坐标' };
+scriptCodes[0x7A] = { func: teamWalk2, desc: '队伍快速行走至坐标' };
+scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
+
 scriptCodes[0x12] = { func: setNpcPos, desc: '设置NPC位置' };
 scriptCodes[0x13] = { func: setNpcPosAbsolute, desc: '设置NPC绝对像素位置' };
 scriptCodes[0x7D] = { func: setNpcMove, desc: 'NPC偏移位置' };
 scriptCodes[0x7E] = { func: setObjectLayer, desc: '设置事件物体高度层级' };
-scriptCodes[0x3F] = { func: teamRide, desc: '队伍慢速骑乘到坐标' };
-scriptCodes[0x44] = { func: teamRide2, desc: '队伍常速骑乘到坐标' };
-scriptCodes[0x97] = { func: teamRide3, desc: '队伍快速骑乘到坐标' };
 scriptCodes[0x98] = { func: setFollower, desc: '设置队伍随行临时跟随者' };
 scriptCodes[0x99] = { func: changeSceneMap, desc: '切换指定场景所用地图' };
 scriptCodes[0x9B] = { func: fadeToCurrentScene, desc: '屏幕渐变淡入当前场景' };
@@ -2724,8 +2727,6 @@ scriptCodes[0xA3] = { func: playCdMusic, desc: '播放CD音乐并以RIX音乐回
 scriptCodes[0xA5] = { func: jumpIfPartyFull, desc: '队伍满人跳转' };
 scriptCodes[0xA6] = { func: removePlayerFromParty, desc: '踢出队伍成员' };
 scriptCodes[0xA7] = { func: skipAutoScript, desc: '空指令直接跳过' };
-scriptCodes[0x7A] = { func: teamWalk2, desc: '队伍快速行走至坐标' };
-scriptCodes[0x7B] = { func: teamWalk4, desc: '队伍极速行走至坐标' };
 
 scriptCodes[0x59] = { func: setSceneId, desc: '修改切换目的地场景 ID' };
 scriptCodes[0x50] = { func: fadeOutScene, desc: '场景淡出' };
