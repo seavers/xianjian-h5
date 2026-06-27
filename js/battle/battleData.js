@@ -202,3 +202,40 @@ export function loadMagics() {
   return list;
 }
 
+// 步骤 6：解析各级学会法术配置（data.mkf #6）
+// 每次记录大小为 24 字节，包含 6 个可用主角的 LEVELUPMAGIC 结构（各 4 字节：wLevel 2B, wMagic 2B）
+let cachedLevelUpMagics = null;
+
+export function loadLevelUpMagics() {
+  if (cachedLevelUpMagics) {
+    return cachedLevelUpMagics;
+  }
+
+  const data = loadMkf('data.mkf', 6);
+  if (!data) {
+    console.error('无法加载 data.mkf #6 升级法术数据块');
+    return [];
+  }
+
+  const list = [];
+  const numRecords = Math.floor(data.length / 24);
+
+  for (let i = 0; i < numRecords; i++) {
+    const offset = i * 24;
+    const record = [];
+    for (let p = 0; p < 6; p++) {
+      record.push({
+        wLevel: data.getShort(offset + p * 4 + 0),
+        wMagic: data.getShort(offset + p * 4 + 2)
+      });
+    }
+    list.push(record);
+  }
+
+  cachedLevelUpMagics = list;
+  console.log(`成功加载并解析 ${list.length} 条升级法术配置数据`);
+
+  state.levelUpMagic = list;
+  return list;
+}
+

@@ -1,6 +1,6 @@
 import { state } from '../engine/state.js';
 import { loadFbp, loadPic, loadWord } from '../resources/pal.js';
-import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame } from './battleData.js';
+import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame, loadLevelUpMagics } from './battleData.js';
 import { loadMkf } from '../resources/loader.js';
 import { deyj } from '../utils/deyj.js';
 import { playMusic, stopMusic } from '../resources/music.js';
@@ -2002,6 +2002,65 @@ async function endBattle(result) {
         // 等待玩家按下空格键切换
         await waitWinSpace();
         talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
+      }
+
+      // 步骤 5.5：遍历队伍中的每位角色，检查并学习达到等级门槛的新法术
+      if (!state.levelUpMagic) {
+        loadLevelUpMagics();
+      }
+
+      const getWordLen = (wordId) => {
+        const word = state.words[wordId];
+        let len = 0;
+        if (word) {
+          for (let k = 0; k < word.length / 2; k++) {
+            if (word.getShort(k * 2) !== 0x2020) {
+              len++;
+            }
+          }
+        }
+        return len || 2;
+      };
+
+      for (let i = 0; i < state.party.length; i++) {
+        const role = state.party[i];
+        const roleStats = state.roles[role.index];
+        if (roleStats) {
+          const learned = [];
+          for (let j = 0; j < state.levelUpMagic.length; j++) {
+            const magicItem = state.levelUpMagic[j][role.index];
+            if (magicItem && magicItem.wMagic !== 0 && magicItem.wLevel <= (roleStats.level || 1)) {
+              if (!roleStats.magics.includes(magicItem.wMagic)) {
+                roleStats.magics.push(magicItem.wMagic);
+                learned.push(magicItem.wMagic);
+              }
+            }
+          }
+
+          // 逐个展示该角色学到的新法术提示框
+          for (let m = 0; m < learned.length; m++) {
+            const magicId = learned[m];
+            const w1 = getWordLen(roleStats.nameId);
+            const w2 = getWordLen(31); // 31 为“练成”
+            const w3 = getWordLen(magicId);
+            const totalLen = w1 + w2 + w3;
+
+            const boxX = 65 - (totalLen - 10) * 8;
+            const textX = 75 - (totalLen - 10) * 8;
+
+            // 绘制新法术单行画卷提示框
+            drawSingleLineBox(talkCtx, boxX, 105, totalLen);
+
+            // 绘制文字：“角色名” + “练成” + “红字法术名”
+            drawWordToCtx(talkCtx, roleStats.nameId, textX, 115);
+            drawWordToCtx(talkCtx, 31, textX + w1 * 16, 115);
+            drawWordToCtx(talkCtx, magicId, textX + (w1 + w2) * 16, 115, 'red');
+
+            // 等待玩家按下空格确认
+            await waitWinSpace();
+            talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
+          }
+        }
       }
 
       // 步骤 6：战斗结束后自动恢复部分 HP 与 MP（恢复损失值的一半，死者复活）
