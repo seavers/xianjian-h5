@@ -2186,13 +2186,8 @@ export function showFbpWithSpriteEffects(fbpId, effectId, param3) {
   console.log(`[0xA5 showFbpWithSpriteEffects] (免做) 结局精灵动画特效, FBP ID: ${fbpId}, 特效精灵 ID: ${effectId}`);
 }
 
-export function removePlayerFromParty(roleId) {
-  const roleIndex = roleId - 1;
-  const originalLen = state.party.length;
-
-  state.party = state.party.filter(r => r.index !== roleIndex);
-
-  console.log(`[0xA6 removePlayerFromParty] 将角色 Index: ${roleIndex} 踢出队伍，队伍人数由 ${originalLen} 变为 ${state.party.length}`);
+export function backupScreen() {
+  console.log('[0xA6 backupScreen] 备份当前屏幕 Canvas 图像 (No-op)');
 }
 
 export function shakeScreen(delay, level) {
@@ -2806,7 +2801,7 @@ scriptCodes[0x79] = { func: jumpIfPlayerInParty, desc: '若指定角色在队伍
 scriptCodes[0x81] = { func: faceNpcTrig, desc: '面朝NPC触发脚本' };
 scriptCodes[0xA1] = { func: setPartySamePosition, desc: '使队伍全员位置和主角李逍遥重合' };
 scriptCodes[0xA5] = { func: showFbpWithSpriteEffects, desc: '结局全屏图精灵粒子特效' };
-scriptCodes[0xA6] = { func: removePlayerFromParty, desc: '踢出队伍成员' };
+scriptCodes[0xA6] = { func: backupScreen, desc: '备份当前屏幕 Canvas 图像' };
 
 scriptCodes[0x12] = { func: setNpcPos, desc: '设置NPC位置' };
 scriptCodes[0x13] = { func: setNpcPosAbsolute, desc: '设置NPC绝对像素位置' };
