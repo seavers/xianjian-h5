@@ -2454,7 +2454,8 @@ export function halveEnemyHp(limit) {
 
   // 步骤 2：对当前存活的第一个敌人应用 HP 减半削减公式
   if (enemies && enemies.length > 0) {
-    const enemy = enemies.find(e => e && e.hp > 0);
+    const enemyIndex = (this && typeof this.index === 'number') ? this.index : 0;
+    const enemy = enemies[enemyIndex] || enemies.find(e => e && e.hp > 0);
     if (enemy) {
       const damage = Math.min(Math.floor(enemy.hp / 2) + 1, limit);
       enemy.hp = Math.max(0, enemy.hp - damage);
@@ -2468,7 +2469,8 @@ export function halveEnemyHp(limit) {
 export function jumpIfEnemyNotPoisoned(poisonId, targetScriptId) {
   // 步骤 1：判断当前是否在战斗中且有存活敌人
   if (enemies && enemies.length > 0) {
-    const enemy = enemies.find(e => e && e.hp > 0);
+    const enemyIndex = (this && typeof this.index === 'number') ? this.index : 0;
+    const enemy = enemies[enemyIndex] || enemies.find(e => e && e.hp > 0);
     if (enemy) {
       // 步骤 2：检查该敌人是否具有指定的毒素
       const hasPoison = enemy.poisons && enemy.poisons.includes(poisonId);
@@ -2489,7 +2491,8 @@ export function jumpIfEnemyNotPoisoned(poisonId, targetScriptId) {
 export function killEnemyImmediately() {
   // 步骤 1：寻找当前战斗中第一个存活的敌人
   if (enemies && enemies.length > 0) {
-    const enemy = enemies.find(e => e && e.hp > 0);
+    const enemyIndex = (this && typeof this.index === 'number') ? this.index : 0;
+    const enemy = enemies[enemyIndex] || enemies.find(e => e && e.hp > 0);
     if (enemy) {
       // 步骤 2：直接将该敌人 HP 归零实现即死效果
       enemy.hp = 0;
@@ -2503,7 +2506,8 @@ export function killEnemyImmediately() {
 export function jumpIfEnemyHpRatioGreaterThan(ratio, targetScriptId) {
   // 步骤 1：寻找当前战斗中第一个存活的敌人
   if (enemies && enemies.length > 0) {
-    const enemy = enemies.find(e => e && e.hp > 0);
+    const enemyIndex = (this && typeof this.index === 'number') ? this.index : 0;
+    const enemy = enemies[enemyIndex] || enemies.find(e => e && e.hp > 0);
     if (enemy) {
       // 步骤 2：对当前敌人的 HP 百分比与预设值 ratio 进行比较，如果当前比值大，返回跳转目标脚本 ID
       const maxHp = enemy.maxHp || 100;
@@ -2657,8 +2661,8 @@ export function enemySummon(summonId, summonCount, targetScriptId) {
 export function enemyTransform(targetObjectId) {
   // 步骤 1：判断当前是否在战斗中且有存活敌人
   if (enemies && enemies.length > 0) {
-    // 步骤 2：寻找当前存活的需要进行变身的敌人
-    const enemy = this && this.hp > 0 ? this : enemies.find(e => e && e.hp > 0);
+    const enemyIndex = (this && typeof this.index === 'number') ? this.index : 0;
+    const enemy = enemies[enemyIndex] || enemies.find(e => e && e.hp > 0);
     if (enemy) {
       // 步骤 3：变身覆盖新敌人 ObjectID，重置部分状态且还原当前 HP 
       const prevHp = enemy.hp;
