@@ -2082,11 +2082,15 @@ export function curePoisonByLevel(toAll, maxLevel) {
   const targetRoles = toAll ? state.party : [state.roles[getRoleIndex(this)] || state.party[0]];
   for (let i = 0; i < targetRoles.length; i++) {
     const role = targetRoles[i];
-    if (role) {
-      role.poisons = [];
+    if (role && role.poisons) {
+      role.poisons = role.poisons.filter(poisonId => {
+        const poisonObj = state.items[poisonId];
+        const level = poisonObj ? poisonObj.roleId : 1;
+        return level > maxLevel;
+      });
     }
   }
-  console.log(`[0x2C curePoisonByLevel] 解毒范围: ${toAll ? '全队' : '主角'}, 最大毒素级别: ${maxLevel}`);
+  console.log(`[0x2C curePoisonByLevel] 解毒范围: ${toAll ? '全队' : '单体'}, 最大毒素级别限制: ${maxLevel}`);
 }
 
 export function jumpIfPlayerNotPoisoned(targetScriptId) {
