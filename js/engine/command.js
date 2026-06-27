@@ -1652,20 +1652,22 @@ export function setEnemyStatus(statusId, value, failScriptId) {
 }
 
 export function increasePlayerStatTemp(statId, percent, roleId) {
-  // 步骤 1：确定要临时调整属性的角色。若为 0 或 0xFFFF，使用选中的角色或当前主角
   let roleIndex = roleId;
   if (roleId === 0 || roleId === 0xFFFF) {
     roleIndex = state.selectedRoleIndex !== undefined ? state.selectedRoleIndex : getRoleIndex(this);
   } else {
-    roleIndex = roleId - 1; // 1-based 转 0-based
+    roleIndex = roleId - 1;
   }
 
   const role = state.roles[roleIndex];
   if (role) {
-    // 步骤 2：对角色的指定属性临时按百分比进行提升，并记录在 tempStats 属性中
-    role.tempStats = role.tempStats || {};
-    role.tempStats[statId] = Math.round((role[statId] || 100) * percent / 100);
-    console.log(`[0x30 increasePlayerStatTemp] 临时按百分比 ${percent}% 提升角色 (Index: ${roleIndex}) 的属性 ID ${statId}`);
+    const key = STAT_MAP[statId];
+    if (key) {
+      role.tempStats = role.tempStats || {};
+      const baseVal = role[key] || 0;
+      role.tempStats[statId] = (role.tempStats[statId] || 0) + Math.round(baseVal * percent / 100);
+      console.log(`[0x30 increasePlayerStatTemp] 临时按百分比 ${percent}% 提升角色 (Index: ${roleIndex}) 的属性 ${key} (属性ID: ${statId})，当前临时增量值: ${role.tempStats[statId]}`);
+    }
   }
 }
 
