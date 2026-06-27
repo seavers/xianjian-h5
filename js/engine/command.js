@@ -5,7 +5,7 @@ import { SelectRole } from '../ui/selectRole.js';
 import { UseItemMenu } from '../ui/useItemMenu.js';
 import { CIRCLE_SCRIPT, GOTO_SCRIPT, REPLACE_ENTRY, RESET_SCRIPT, Script } from './script.js';
 import { Npc } from './anim.js';
-import { loadMgoCount, loadMap, loadMkf } from '../resources/pal.js';
+import { loadMgoCount, loadMap } from '../resources/pal.js';
 import { deyj } from '../utils/deyj.js';
 import { loadEnemies, loadEnemyPos } from '../battle/battleData.js';
 import { update, canWalk, clearDrawToBlack, checkNeedDraw } from '../ui/draw.js';
@@ -19,6 +19,7 @@ import { playSound } from '../resources/sound.js';
 import { TICK_TIME } from '../app.js';
 import { clearWithEffect } from '../ui/clearWithEffect.js';
 import { enemies } from '../battle/battle.js';
+import { loadMkf } from '../resources/loader.js';
 
 export function setRolePos(sx, sy, shalf) {
   state.mx = sx;
