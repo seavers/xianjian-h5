@@ -51,31 +51,8 @@ export const Script = {
       return;
     }
 
-    if (Script.nextThreads?.length) {
-      const thread = Script.nextThreads.shift();
-      await this.executeScript(thread);
-      return;
-    }
-
-    // 步骤 1：检测是否需要进行场景切换（一律在主循环头部做同步判定）
-    // 这里不能判定 state.nextSceneId !== state.sceneId 因为有些场景会切换到同一个sceneId，比如水井下的地图切换脚本17454
-    if (state.nextSceneId !== -1) {
-      await this.handleSceneSwitch();
-      state.nextSceneId = -1;
-      return;
-    }
-
-    // 步骤 4：检测是否有延迟触发的 trigger 交互脚本需要激活
-    if (state.nextTriggerScriptObject != null) {
-      const obj = state.nextTriggerScriptObject;
-      const scriptId = obj.trigScr;
-      
-      // 重置延迟触发器状态
-      state.nextTriggerScriptObject = null;
-      
-      Script.start(scriptId, obj, 'trig');
-      // 激活后继续向下运行，以便在同一个 tick 中直接步进该脚本，保持高响应性
-    }
+    // 步骤3：一直遍历加载执行所有的主动式脚本
+    await Script.checkAndExecuteScript();
 
     // 步骤 4.5：更新所有事件物体的 sVanishTime (即 nouse)
     for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
@@ -90,6 +67,38 @@ export const Script = {
 
     if(window.onSceneUpdate) {
       window.onSceneUpdate();
+    }
+  },
+
+  async checkAndExecuteScript() {
+    while(true) {
+      if (Script.nextThreads?.length) {
+        const thread = Script.nextThreads.shift();
+        await this.executeScript(thread);
+        continue;
+      }
+
+      // 步骤 1：检测是否需要进行场景切换（一律在主循环头部做同步判定）
+      // 这里不能判定 state.nextSceneId !== state.sceneId 因为有些场景会切换到同一个sceneId，比如水井下的地图切换脚本17454
+      if (state.nextSceneId !== -1) {
+        await this.handleSceneSwitch();
+        state.nextSceneId = -1;
+        continue;
+      }
+
+      // 步骤 4：检测是否有延迟触发的 trigger 交互脚本需要激活
+      if (state.nextTriggerScriptObject != null) {
+        const obj = state.nextTriggerScriptObject;
+        const scriptId = obj.trigScr;
+        
+        // 重置延迟触发器状态
+        state.nextTriggerScriptObject = null;
+        
+        Script.start(scriptId, obj, 'trig');
+        // 激活后继续向下运行，以便在同一个 tick 中直接步进该脚本，保持高响应性
+        continue;
+      }
+      break;
     }
   },
 
