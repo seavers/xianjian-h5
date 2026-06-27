@@ -12,7 +12,7 @@ const BATTLE_COLOR = '#a78bfa';
 const BATTLE_COLOR_RGB = '167, 139, 250';
 
 const DEFAULT_ROLE_NAMES = ['李逍遥', '赵灵儿', '林月如', '巫后', '阿奴', '盖罗娇'];
-const DEFAULT_ROLE_TILE_IDS = [2, 3, 7, 5, 4, 8];
+const DEFAULT_ROLE_TILE_IDS = [2, 3, 7, 525, 5, 26];
 const big5Decoder = new TextDecoder('big5');
 
 function getRoleName(role) {

@@ -23,7 +23,7 @@ const DEFAULT_ROLE_SOUNDS = [
   { attack: 39, weapon: 3, critical: 7, magic: 11, death: 25, dying: 21 }, // 林月如
   { attack: 38, weapon: 2, critical: 6, magic: 10, death: 24, dying: 20 }, // 巫后
   { attack: 40, weapon: 4, critical: 8, magic: 12, death: 26, dying: 22 }, // 阿奴
-  { attack: 39, weapon: 3, critical: 7, magic: 11, death: 25, dying: 21 }  // 其它
+  { attack: 39, weapon: 3, critical: 7, magic: 11, death: 25, dying: 21 }  // 盖罗娇
 ];
 
 // 核心状态变量

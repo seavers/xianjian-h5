@@ -1348,16 +1348,12 @@ function ImageExplorerApp() {
             <div id="filter-mgo-container" style=${{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style=${{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>👤 形象:</span>
               <select value=${mgoRoleId} onChange=${(e) => window.onImageRoleSelect(e.target.value)} style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', fontSize: '8.5px', padding: '2px 4px', outline: 'none', width: '140px', cursor: 'pointer' }}>
-                <option value="0">Role 0 (李逍遥)</option>
-                <option value="1">Role 1 (赵灵儿 - 披发)</option>
-                <option value="2">Role 2 (林月如)</option>
-                <option value="3">Role 3 (阿奴)</option>
-                <option value="4">Role 4 (赵灵儿 - 蛇身)</option>
-                <option value="10">Role 10 (李大娘)</option>
-                <option value="11">Role 11 (苗人首领)</option>
-                <option value="12">Role 12 (苗人手下)</option>
-                <option value="21">Role 21 (村口黄狗)</option>
-                <option value="53">Role 53 (集市商贩)</option>
+                <option value="2">Role 0 (李逍遥)</option>
+                <option value="3">Role 1 (赵灵儿)</option>
+                <option value="7">Role 2 (林月如)</option>
+                <option value="525">Role 3 (巫后)</option>
+                <option value="5">Role 4 (阿奴)</option>
+                <option value="26">Role 5 (盖罗娇)</option>
               </select>
               <span style=${{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>或输入动作包 ID:</span>
               <input type="number" id="input-image-role-id" value=${mgoRoleId} min="0" max="636" onInput=${(e) => {
