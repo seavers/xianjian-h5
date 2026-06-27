@@ -309,13 +309,16 @@ function initPlayerRoles() {
     state.exp.rgFleeExp.push(emptyExp());
   }
 
-  // 步骤 2：从 data.mkf 第 5 个 chunk 中加载 100 个元素的升级经验表
-  const levelUpData = loadMkf('data.mkf', 5);
-  if (levelUpData) {
-    const view = levelUpData.toDataView();
-    state.levelUpExp = [];
-    for (let i = 0; i <= 99; i++) {
-      state.levelUpExp[i] = view.nextShort();
+  // 步骤 2：根据仙剑原版升级经验公式动态计算升级经验表，防止版本及块错位问题
+  state.levelUpExp = [];
+  state.levelUpExp[0] = 0;
+  state.levelUpExp[1] = 15; // 1 级升 2 级需要 15 经验
+  
+  for (let i = 2; i <= 99; i++) {
+    if (i < 51) {
+      state.levelUpExp[i] = state.levelUpExp[i - 1] + 25 * (i - 1);
+    } else {
+      state.levelUpExp[i] = 32000; // 51 级及以上封顶为 32000 点
     }
   }
 }
