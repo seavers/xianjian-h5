@@ -1528,8 +1528,13 @@ export function halveMoney() {
   state.money = Math.floor(state.money / 2);
 }
 
-export function obtain(ballId) {
-  state.ownItems.push(ballId);
+export function obtain(itemId, amount) {
+  const count = amount || 1;
+  for (let i = 0; i < count; i++) {
+    state.ownItems.push(itemId);
+  }
+  state.scriptSuccess = true;
+  console.log(`[0x1F obtain] 获得物品 ID: ${itemId}, 数量: ${count}`);
 }
 
 export async function removeItem(itemId, count, failScriptId) {
