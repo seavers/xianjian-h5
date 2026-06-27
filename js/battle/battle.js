@@ -42,6 +42,7 @@ export let players = [];
 export let enemies = [];
 let damagePopups = [];
 let isBattleRunning = false;
+let winSpaceResolve = null;
 let battleResult = 1000;
 
 // 控制是否渲染操作界面（左下角选择区和右下/中间角色HP/MP区）
@@ -783,6 +784,14 @@ function advanceToNextPlayer() {
 
 // 步骤 4：处理战斗指令输入事件，对接 input.js
 export function onInput(input) {
+  // 步骤 4.0：如果是战斗结算期间等待玩家空格确认，则在此进行优先拦截
+  if (winSpaceResolve && input === 'blank') {
+    const resolve = winSpaceResolve;
+    winSpaceResolve = null;
+    resolve();
+    return;
+  }
+
   if (phase !== 'select') {
     return;
   }
@@ -1772,6 +1781,8 @@ async function endBattle(result) {
       state.money = (state.money || 0) + totalCash;
 
       // 步骤 3：为活着的队员分配经验，并执行升级属性提升
+      const upgradedPlayers = [];
+
       for (let i = 0; i < players.length; i++) {
         const p = players[i];
 
@@ -1779,6 +1790,20 @@ async function endBattle(result) {
           const roleStats = state.roles[p.index];
 
           if (roleStats) {
+            // 备份升级前的原始属性
+            const origStats = {
+              level: roleStats.level || 1,
+              hp: p.hp,
+              maxHp: roleStats.maxHp || 100,
+              mp: p.mp,
+              maxMp: roleStats.maxMp || 100,
+              attackStrength: roleStats.attackStrength || 10,
+              magicStrength: roleStats.magicStrength || 10,
+              defense: roleStats.defense || 10,
+              dexterity: roleStats.dexterity || 10,
+              fleeRate: roleStats.fleeRate || 10
+            };
+
             // 初始化经验值结构（如不存在）
             if (!state.exp) {
               state.exp = { rgPrimaryExp: [] };
@@ -1836,6 +1861,27 @@ async function endBattle(result) {
             // 保持数据一致性
             state.exp.rgPrimaryExp[p.index].wExp = dwExp;
             state.exp.rgPrimaryExp[p.index].wLevel = roleStats.level;
+
+            // 如果升级了，记录信息供后面大面板逐个展示
+            if (fLevelUp) {
+              upgradedPlayers.push({
+                index: p.index,
+                nameId: roleStats.nameId,
+                orig: origStats,
+                curr: {
+                  level: roleStats.level,
+                  hp: roleStats.hp,
+                  maxHp: roleStats.maxHp,
+                  mp: roleStats.mp,
+                  maxMp: roleStats.maxMp,
+                  attackStrength: roleStats.attackStrength,
+                  magicStrength: roleStats.magicStrength,
+                  defense: roleStats.defense,
+                  dexterity: roleStats.dexterity,
+                  fleeRate: roleStats.fleeRate
+                }
+              });
+            }
           }
         }
       }
@@ -1856,7 +1902,97 @@ async function endBattle(result) {
         // 绘制具体数值：数字取 data.mkf #9 中的 20~29 号黄色小数字
         drawWinNumber(talkCtx, totalExp, 182, 74, 5, 'right');
         drawWinNumber(talkCtx, totalCash, 162, 119, 5, 'mid');
+
+        // 等待玩家按下空格键确认
+        await waitWinSpace();
+        talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
       }
+
+      // 步骤 5：如果有角色升级，逐人展示修行提升对比大面板
+      const prevUiMode = state.uiMode;
+      state.uiMode = 'operate'; // 临时允许键盘输入
+
+      for (let i = 0; i < upgradedPlayers.length; i++) {
+        const up = upgradedPlayers[i];
+
+        // 1. 绘制修行提升单行标题画卷框：x=72, y=0, 长度=11
+        drawSingleLineBox(talkCtx, 72, 0, 11);
+
+        // 2. 绘制标题文案：“角色名” + “修行”(#48) + “提升”(#32)
+        drawWordToCtx(talkCtx, up.nameId, 110, 10);
+        drawWordToCtx(talkCtx, 48, 142, 10);
+        drawWordToCtx(talkCtx, 32, 174, 10);
+
+        // 3. 绘制具体数值大面板背景框：x=74, y=32, 宽=9, 高=7
+        drawWinArea(talkCtx, 74, 32, 9, 7, 10);
+
+        // 4. 绘制 8 项属性的文字标签 (修行、体力、真气、武术、灵力、防御、身法、吉运)
+        for (let j = 0; j < 8; j++) {
+          drawWordToCtx(talkCtx, 48 + j, 92, 44 + 18 * j);
+
+          // 绘制指向箭头 (48号 pic 对应 loadPic(49))，x=188
+          const arrowImg = loadPic(49);
+          if (arrowImg) {
+            talkCtx.drawImage(arrowImg, 188, 48 + 18 * j);
+          }
+        }
+
+        // 5. 绘制升级前后的数值属性变化
+        // 行 0：修行
+        drawWinNumber(talkCtx, up.orig.level, 141, 47, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.level, 203, 47, 4, 'right', 'yellow');
+
+        // 行 1：体力（当前/最大，最大值为蓝色小数字，带斜杠）
+        drawWinNumber(talkCtx, up.orig.hp, 141, 64, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.orig.maxHp, 162, 68, 4, 'right', 'blue');
+        const slashImg1 = loadPic(40);
+        if (slashImg1) {
+          talkCtx.drawImage(slashImg1, 164, 66);
+        }
+        drawWinNumber(talkCtx, up.curr.hp, 203, 64, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.maxHp, 224, 68, 4, 'right', 'blue');
+        if (slashImg1) {
+          talkCtx.drawImage(slashImg1, 226, 66);
+        }
+
+        // 行 2：真气
+        drawWinNumber(talkCtx, up.orig.mp, 141, 82, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.orig.maxMp, 162, 86, 4, 'right', 'blue');
+        if (slashImg1) {
+          talkCtx.drawImage(slashImg1, 164, 84);
+        }
+        drawWinNumber(talkCtx, up.curr.mp, 203, 82, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.maxMp, 224, 86, 4, 'right', 'blue');
+        if (slashImg1) {
+          talkCtx.drawImage(slashImg1, 226, 84);
+        }
+
+        // 行 3：武术
+        drawWinNumber(talkCtx, up.orig.attackStrength, 141, 101, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.attackStrength, 203, 101, 4, 'right', 'yellow');
+
+        // 行 4：灵力
+        drawWinNumber(talkCtx, up.orig.magicStrength, 141, 119, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.magicStrength, 203, 119, 4, 'right', 'yellow');
+
+        // 行 5：防御
+        drawWinNumber(talkCtx, up.orig.defense, 141, 137, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.defense, 203, 137, 4, 'right', 'yellow');
+
+        // 行 6：身法
+        drawWinNumber(talkCtx, up.orig.dexterity, 141, 155, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.dexterity, 203, 155, 4, 'right', 'yellow');
+
+        // 行 7：吉运
+        drawWinNumber(talkCtx, up.orig.fleeRate, 141, 173, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.fleeRate, 203, 173, 4, 'right', 'yellow');
+
+        // 等待玩家按下空格键切换
+        await waitWinSpace();
+        talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
+      }
+
+      state.uiMode = prevUiMode; // 还原 UI Mode
     } else if (result === 1 || result === false) {
       resultText = '全 员 战 败';
       textColor = '#ff3333';
@@ -1878,8 +2014,10 @@ async function endBattle(result) {
     }
   }
 
-  // 步骤 9.2：等待 1.5 秒以展示结果框
-  await sleep(1500);
+  // 步骤 9.2：对于非胜利结算（全员战败、逃跑等），仍等待 1.5 秒展示普通框
+  if (result !== 3 && result !== true) {
+    await sleep(1500);
+  }
 
   // 步骤 9.3：渐变淡出当前战斗画面至黑色
   // await fadeOut();
@@ -2124,9 +2262,9 @@ function drawSingleLineBox(ctx, x, y, length) {
   }
 }
 
-// 绘制结算黄色小数字，利用 data.mkf #9 中的 20~29 号数字元素
-function drawWinNumber(ctx, num, x, y, length, align = 'right') {
-  const baseId = 20;
+// 绘制结算小数字，利用 data.mkf #9 中的 20~29 (黄色) 或 30~39 (蓝色) 号数字元素
+function drawWinNumber(ctx, num, x, y, length, align = 'right', type = 'yellow') {
+  const baseId = type === 'blue' ? 30 : 20;
   let numStr = Math.floor(num).toString();
   let nActualLength = numStr.length;
 
@@ -2159,5 +2297,52 @@ function drawWinNumber(ctx, num, x, y, length, align = 'right') {
     currX -= 6;
     remainingNum = Math.floor(remainingNum / 10);
   }
+}
+
+// 绘制三段式九宫格单行边框块的辅助函数，支持指定绘制上下文
+function drawWinPic3(ctx, picId, x, y, n) {
+  let dx = 0;
+  let pic = loadPic(picId);
+
+  if (pic) {
+    ctx.drawImage(pic, x, y);
+    dx += pic.width;
+  }
+
+  for (let i = 0; i < n; i++) {
+    pic = loadPic(picId + 1);
+    if (pic) {
+      ctx.drawImage(pic, x + dx, y);
+      dx += pic.width;
+    }
+  }
+
+  pic = loadPic(picId + 2);
+  if (pic) {
+    ctx.drawImage(pic, x + dx, y);
+  }
+
+  return pic ? pic.height : 0;
+}
+
+// 绘制九宫格大面板背景边框，使用 data.mkf #9 10~18 元素，支持指定绘制上下文
+function drawWinArea(ctx, x, y, width, height, style = 10) {
+  const w = width - 1;
+  const h = height - 1;
+  let currY = y;
+
+  currY += drawWinPic3(ctx, style + 0, x, currY, w);
+  for (let i = 0; i < h; i++) {
+    ctx.drawImage(loadPic(style + 3), x, currY); // 修复中间九宫格中两端的绘制对齐
+    drawWinPic3(ctx, style + 3, x, currY, w);
+  }
+  drawWinPic3(ctx, style + 6, x, currY, w);
+}
+
+// 封装阻塞式按键/空格等待逻辑
+function waitWinSpace() {
+  return new Promise((resolve) => {
+    winSpaceResolve = resolve;
+  });
 }
 
