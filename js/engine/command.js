@@ -569,19 +569,25 @@ export function setNpcMove(objId, dx, dy) {
   Script.sleep(1)
 }
 
+// 慢速移动是奇偶帧移动，平均speed=1，参考巫后在地牢中的运动，NPC4272
 export async function npcWalk2(x, y, half, context) {
-  return await stepAction(context, () => Npc.anim(this, x, y, half, 2));
+  let count = 0;
+  return await stepAction(context, () => count++ % 2 == 0 && Npc.anim(this, x, y, half, 2));
 }
 
+// 中速移动是奇偶帧移动，平均speed=2
 export async function npcWalk3(x, y, half, context) {
-  return await stepAction(context, () => Npc.anim(this, x, y, half, 4));
+  let count = 0;
+  return await stepAction(context, () => count++ % 2 == 0 && Npc.anim(this, x, y, half, 4));
 }
 
+// 快速移动是正常帧移动，平均speed=3
 export async function npcWalk4(x, y, half, context) {
-  // 步骤 1：调用 Npc.anim 使得当前 NPC 移动到指定的目标瓦片坐标，折算实际移动步长为中速 (2)
-  return await stepAction(context, () => Npc.anim(this, x, y, half, 6));
+  // 步骤 1：调用 Npc.anim 使得当前 NPC 移动到指定的目标瓦片坐标，折算实际移动步长为中速 (3)
+  return await stepAction(context, () => Npc.anim(this, x, y, half, 3));
 }
 
+// 慢速移动是正常帧移动，平均speed=8
 export async function npcWalk5(x, y, half, context) {
   // 步骤 1：调用 Npc.anim 使得当前 NPC 移动到指定的目标瓦片坐标，折算实际移动步长为极速 (8)
   return await stepAction(context, () => Npc.anim(this, x, y, half, 8));
