@@ -5,7 +5,9 @@ import { SelectRole } from '../ui/selectRole.js';
 import { UseItemMenu } from '../ui/useItemMenu.js';
 import { CIRCLE_SCRIPT, GOTO_SCRIPT, REPLACE_ENTRY, RESET_SCRIPT, Script } from './script.js';
 import { Npc } from './anim.js';
-import { loadMgoCount, loadMap } from '../resources/pal.js';
+import { loadMgoCount, loadMap, loadMkf } from '../resources/pal.js';
+import { deyj } from '../utils/deyj.js';
+import { loadEnemies, loadEnemyPos } from '../battle/battleData.js';
 import { update, canWalk, clearDrawToBlack, checkNeedDraw } from '../ui/draw.js';
 import { fadeEffect, fadeIn, fadeOut, fadeScreenToRed } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
@@ -2642,14 +2644,11 @@ export function enemyDivision(count, targetScriptId) {
 }
 
 export function enemySummon(summonId, summonCount, targetScriptId) {
-  // 步骤 1：统计当前在场的敌人数量（假设战场上限 5 个敌人）
   const aliveEnemies = enemies.filter(e => e && e.hp > 0);
   const emptySlots = 5 - aliveEnemies.length;
 
-  // 默认召唤数量
   summonCount = summonCount <= 0 ? 1 : summonCount;
 
-  // 步骤 2：如果空位不足以容纳召唤数量，说明召唤失败，跳转至目标脚本
   if (emptySlots < summonCount) {
     if (targetScriptId) {
       console.log(`[0x9E enemySummon] 战场空位不足 (${emptySlots} < ${summonCount})，召唤失败，跳转至脚本: ${targetScriptId}`);
@@ -2659,16 +2658,50 @@ export function enemySummon(summonId, summonCount, targetScriptId) {
     return;
   }
 
-  // 步骤 3：进行召唤克隆加入战斗，若无召唤模板，克隆施法者 (this) 或者是当前第一个存活的敌人
-  const template = this && this.hp > 0 ? this : aliveEnemies[0];
+  let template = null;
+  const enemyConfigId = state.items[summonId]?.roleId;
+  if (enemyConfigId !== undefined && enemyConfigId !== null && enemyConfigId !== 0) {
+    const allEnemyConfigs = loadEnemies();
+    const cfg = allEnemyConfigs[enemyConfigId];
+    if (cfg) {
+      const spriteData = deyj(loadMkf('abc.mkf', enemyConfigId));
+      template = {
+        id: enemyConfigId,
+        objId: summonId,
+        name: `敌人 #${enemyConfigId}`,
+        maxHp: cfg.wHealth || 100,
+        hp: cfg.wHealth || 100,
+        defense: cfg.wDefense || 10,
+        dexterity: cfg.wDexterity || 10,
+        attackStrength: cfg.wAttackStrength || 10,
+        level: cfg.wLevel || 1,
+        physicalResistance: cfg.wPhysicalResistance || 0,
+        spriteData: spriteData,
+        currentFrame: 0,
+        poisons: [],
+        status: {}
+      };
+    }
+  }
+
+  if (!template) {
+    template = this && this.hp > 0 ? this : aliveEnemies[0];
+  }
+
   if (template) {
+    const posTable = loadEnemyPos();
     for (let i = 0; i < summonCount; i++) {
       const clone = JSON.parse(JSON.stringify(template));
       clone.hp = clone.maxHp || 100;
       clone.index = enemies.length;
+      
+      const pos = posTable[clone.index]?.[enemies.length] || { x: 50, y: 100 };
+      clone.x = pos.x;
+      clone.y = pos.y;
+      
       enemies.push(clone);
     }
-    console.log(`[0x9E enemySummon] 成功召唤了 ${summonCount} 个同类敌人，当前在场敌人总数: ${enemies.length}`);
+    console.log(`[0x9E enemySummon] 成功召唤了 ${summonCount} 个同类敌人，模板来源: ${enemyConfigId ? '指定配置' : '克隆施法者'}, 当前在场敌人总数: ${enemies.length}`);
   } else {
     console.log('[0x9E enemySummon] 找不到召唤模板，召唤失败');
   }
