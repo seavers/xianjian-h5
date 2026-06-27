@@ -2177,14 +2177,9 @@ export function moneySetMagicDamage(magicId) {
   console.log(`[0x88 moneySetMagicDamage] 乾坤一掷！扣除金钱: ${cost} 文，设定法术 ID ${magicId} 的基础伤害为: ${baseDamage}`);
 }
 
-export async function resetPaletteWithFade() {
-  console.log('[0x8A resetPaletteWithFade] 执行调色板重置并渐变淡入');
-  // 步骤 1：将调色板 ID 重置为默认的 0
-  state.paletteId = 0;
-
-  // 步骤 2：执行渐变淡入当前场景，恢复亮度和渲染
-  await fadeIn();
-  await update();
+export function enableAutoBattle() {
+  state.fAutoBattle = true;
+  console.log('[0x8A enableAutoBattle] 开启下一次战斗的自动战斗模式');
 }
 
 export function jumpIfPartyFull(param1, param2) {
@@ -2807,7 +2802,7 @@ scriptCodes[0x73] = { func: clearWithEffect, desc: '动画淡出清除' };
 scriptCodes[0x76] = { func: showFbp, desc: '展示全屏剧情背景图' };
 scriptCodes[0x7F] = { func: moveViewport, desc: '平移或定位镜头视口' };
 scriptCodes[0x80] = { func: toggleDayNight, desc: '切换昼夜调色板' };
-scriptCodes[0x8A] = { func: resetPaletteWithFade, desc: '调色板重置渐变' };
+scriptCodes[0x8A] = { func: enableAutoBattle, desc: '自动战斗开启' };
 scriptCodes[0x8B] = { func: setPalette, desc: '切换使用指定调色板' };
 scriptCodes[0x8C] = { func: fadeFromToColor, desc: '调色板闪烁过渡' };
 scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
