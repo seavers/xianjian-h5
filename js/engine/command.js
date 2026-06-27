@@ -2346,6 +2346,32 @@ export function setPartyStatus(statusId, rounds) {
   console.log(`[0x6A setPartyStatus] 给全队伙伴附加了属性状态 ID: ${statusId}, 持续回合: ${rounds}`);
 }
 
+export function stealFromEnemy(stealRate) {
+  // 步骤 1：寻找当前战斗中第一个存活的敌人
+  if (enemies && enemies.length > 0) {
+    const enemy = enemies.find(e => e && e.hp > 0);
+    if (enemy) {
+      console.log(`[0x6A stealFromEnemy] 战斗中尝试从敌方 (ID: ${enemy.id}) 窃取物品，成功率系数: ${stealRate}`);
+    }
+  } else {
+    console.log(`[0x6A stealFromEnemy] 尝试从敌方窃取物品，成功率系数: ${stealRate}，但当前没有敌人`);
+  }
+}
+
+export function blowAwayEnemy(value) {
+  // 步骤 1：寻找当前战斗中第一个存活的敌人并标记吹飞状态以使其离场
+  if (enemies && enemies.length > 0) {
+    const enemy = enemies.find(e => e && e.hp > 0);
+    if (enemy) {
+      enemy.hp = 0;
+      enemy.escaped = true;
+      console.log(`[0x6B blowAwayEnemy] 战斗中吹飞驱散敌人 (ID: ${enemy.id})，设定吹飞值: ${value}`);
+    }
+  } else {
+    console.log(`[0x6B blowAwayEnemy] 尝试吹飞敌人，设定吹飞值: ${value}，但当前没有敌人`);
+  }
+}
+
 export function jumpIfPlayerHasStatus(roleId, statusId, targetScriptId) {
   // 步骤 1：确定检查的角色。若为 0 或 0xFFFF，使用选中的角色或当前主角
   let roleIndex = roleId;
@@ -2958,8 +2984,8 @@ scriptCodes[0x66] = { func: throwWeaponToEnemy, desc: '投掷武器伤害' };
 scriptCodes[0x67] = { func: enemyUseMagic, desc: '设置敌方使用的法术与概率' };
 scriptCodes[0x68] = { func: jumpIfEnemyTurn, desc: '敌方回合跳转' };
 scriptCodes[0x69] = { func: enemyEscape, desc: '敌方逃跑' };
-scriptCodes[0x6A] = { func: setPartyStatus, desc: '给全队伙伴附加仙术/属性状态' };
-scriptCodes[0x6B] = { func: jumpIfPlayerHasStatus, desc: '若角色有指定属性异常则跳转' };
+scriptCodes[0x6A] = { func: stealFromEnemy, desc: '战斗中尝试从敌方窃取物品' };
+scriptCodes[0x6B] = { func: blowAwayEnemy, desc: '吹飞/驱散场上敌人' };
 scriptCodes[0x74] = { func: jumpIfNotAllPlayersFullHp, desc: '若非全员满 HP 则跳转' };
 scriptCodes[0x88] = { func: moneySetMagicDamage, desc: '乾坤一掷设定伤害' };
 scriptCodes[0x89] = { func: setBattleResult, desc: '设定战斗胜负结果并退出' };
