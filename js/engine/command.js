@@ -994,26 +994,39 @@ export async function showPlayerPreMagicAnim(playerIndex) {
 }
 
 export async function fadeScreen(speed) {
-  // 步骤 1：利用 intToShort 将传入 the 无符号短整型 speed 转换为有符号短整型速度 s
+  // 步骤 1：利用 intToShort 将传入的无符号短整型 speed 转换为有符号短整型速度 s
   const s = intToShort(speed);
-  state.fadeOutSpeed = Math.abs(s);
+  const absS = Math.abs(s) || 1;
+  const h5Speed = 10.6667 / absS;
 
-  // 步骤 2：如果是在非脚本线程环境，只更新渐变标记不进行硬挂起
+  // 步骤 2：如果是在非脚本线程环境，仅更新对应的需要淡入标记并安全返回
   if (!Script.isExec()) {
+    state.needToFadeIn = (s < 0);
     return;
   }
 
-  // 步骤 3：依次 await 播放淡出、淡入的流畅渐变过渡
+  // 步骤 3：定义场景逻辑更新函数，在渐变过渡的每一帧睡眠后执行
+  const updateSceneFn = async () => {
+    // 步进事件物体的 nouse 属性（消失计时器）
+    for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
+      const o = state.eventObjects[i];
+      if (o && o.nouse !== 0) {
+        o.nouse += (o.nouse < 0 ? 1 : -1);
+      }
+    }
+
+    // 步进所有 auto 漫游 NPC 并重新渲染常规大地图底图
+    await Script.stepAutoAndUpdate();
+  };
+
+  // 步骤 4：根据 speed 参数的符号执行对应的单向渐变过渡逻辑
   if (s < 0) {
-    // 负数：淡出完后，触发淡入，最后解除挂起以恢复游戏推进
-    await fadeOut();
-    await fadeIn();
+    // 负数：只执行单向淡出场景，使得屏幕变黑，状态保持 needToFadeIn = true，待后续指令（如0x9B）淡入
+    await fadeOut(h5Speed, updateSceneFn);
   } else {
-    // 正数：直接单向执行淡入，并在结束后解除挂起
-    
-    // 这里得先执行一次更新，比如见灵儿姥姥切到到床上那段脚本9030有问题 
-    update();
-    await fadeIn();
+    // 正数：只执行单向淡入场景，使屏幕重新变亮，状态重置 needToFadeIn = false
+    await updateSceneFn();
+    await fadeIn(h5Speed, updateSceneFn);
   }
 }
 
@@ -2641,6 +2654,7 @@ scriptCodes[0x80] = { func: toggleDayNight, desc: '切换昼夜调色板' };
 scriptCodes[0x8A] = { func: resetPaletteWithFade, desc: '调色板重置渐变' };
 scriptCodes[0x8B] = { func: setPalette, desc: '切换使用指定调色板' };
 scriptCodes[0x8C] = { func: fadeFromToColor, desc: '调色板闪烁过渡' };
+scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x99] = { func: changeSceneMap, desc: '切换指定场景所用地图' };
 scriptCodes[0x9B] = { func: fadeToCurrentScene, desc: '屏幕渐变淡入当前场景' };
 
@@ -2760,7 +2774,6 @@ scriptCodes[0x8F] = { func: halveMoney, desc: '金钱数值减半' };
 scriptCodes[0x90] = { func: setObjectScript, desc: '设置事件物体脚本或属性数据' };
 scriptCodes[0x91] = { func: jumpIfEnemyNotFirstOfSameKind, desc: '同类非首位敌人跳转' };
 scriptCodes[0x92] = { func: showPlayerPreMagicAnim, desc: '播放主角施法前摇发光动画' };
-scriptCodes[0x93] = { func: fadeScreen, desc: '屏幕渐变过渡效果' };
 scriptCodes[0x94] = { func: jumpIfObjectState, desc: '若NPC状态满足条件则跳转' };
 scriptCodes[0x95] = { func: jumpIfCurrentSceneEquals, desc: '若当前场景ID等于特定值则跳转' };
 scriptCodes[0x96] = { func: showEndingAnimation, desc: '播放结局动画' };
