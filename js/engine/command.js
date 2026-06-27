@@ -195,7 +195,7 @@ export function jumpIfNotInZone(targetObjectId, zone, failScriptId) {
 }
 
 export function placeItemUsedAsObject(targetObjectId, stateVal, failScriptId) {
-  const pCurrent = targetObjectId === 0xFFFF ? this : state.eventObjects[targetObjectId];
+  const pCurrent = getEventObject(targetObjectId, this);
   if (!pCurrent) return;
 
   if (targetObjectId <= state.startEventId || targetObjectId > state.endEventId) {
@@ -367,7 +367,7 @@ export function walkHeroByOffset(dx, dy, layer) {
 }
 
 export function setNpcTile(objId, dir, frame) {
-  const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
+  const obj = getEventObject(objId, this);
   if (!obj) return;
 
   obj.dir = dir;
@@ -381,7 +381,7 @@ export function setNpcTile(objId, dir, frame) {
 }
 
 export function setObjectStatus(objId, stateVal) {
-  const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
+  const obj = getEventObject(objId, this);
   if (!obj) return;
 
   obj.state = stateVal;
@@ -413,13 +413,13 @@ export function startEventTrig(obj) {
 }
 
 export function setTrigMode(objId, trigMode) {
-  const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
+  const obj = getEventObject(objId, this);
   if (!obj) return;
   obj.trigMode = trigMode;
 }
 
 export function npcWalk(objId, dx, dy) {
-  const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
+  const obj = getEventObject(objId, this);
   if (!obj) return;
 
   
@@ -539,7 +539,7 @@ export function adjustDirectionsForTouchTrigger(leader, npc) {
 
 
 export function setNpcPos(objId, dx, dy) {
-  const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
+  const obj = getEventObject(objId, this);
   if (!obj) return;
 
   const leader = state.party[0] || state.roles[0];
@@ -549,7 +549,7 @@ export function setNpcPos(objId, dx, dy) {
 
 export function setNpcPosAbsolute(objId, x, y) {
   // 步骤 1：若指定实体 ID 为 0 或者是 0xFFFF，代表当前触发此脚本的实体自身，否则指向指定事件对象
-  const obj = (objId === 0 || objId === 0xFFFF) ? this : state.eventObjects[objId];
+  const obj = getEventObject(objId, this);
   if (!obj) return;
 
   // 步骤 2：直接将该实体的坐标设定为指定的 x 和 y 绝对像素坐标
@@ -558,7 +558,7 @@ export function setNpcPosAbsolute(objId, x, y) {
 }
 
 export function setNpcMove(objId, dx, dy) {
-  const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
+  const obj = getEventObject(objId, this);
   if (!obj) return;
 
   obj.x = obj.x + intToShort(dx);
@@ -649,7 +649,7 @@ export async function teamRide4(x, y, half, context) {
 }
 
 export function faceNpcTrig(objId, dist, targetScriptId) {
-  const o = objId === 0xFFFF ? this : state.eventObjects[objId];
+  const o = getEventObject(objId, this);
   if (!o) return;
 
   const player = state.party[0] || state.roles[0];
@@ -897,13 +897,13 @@ export function setSceneEnterScr(sceneId, enterScriptId, teleportScriptId) {
 }
 
 export function setNpcAutoScr(objId, autoScr) {
-  const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
+  const obj = getEventObject(objId, this);
   if (!obj) return;
   obj.autoScr = autoScr;
 }
 
 export function setNpcTrigScr(objId, trigScr) {
-  const obj = objId === 0xFFFF ? this : state.eventObjects[objId];
+  const obj = getEventObject(objId, this);
   if (!obj) return;
   obj.trigScr = trigScr;
 }
@@ -1130,7 +1130,7 @@ export async function subScript(scriptId, objId) {
   // 步骤 1：分析第二个参数 objId，若为 0 或者是 0xFFFF 则说明子脚本沿用父线程当前主体 this
   // 否则从全局状态机 state.eventObjects 中获取对应的目标事件实体对象
   // 这里要判断 0，比如黑水镇开箱子，就是用的 objId=0，见objId=1220，脚本 2415
-  const obj = objId == 0 || objId === 0xFFFF ? this : state.eventObjects[objId];
+  const obj = getEventObject(objId, this);
 
   // 步骤 2：直接调用 runTriggerScript
   await Script.runTriggerScript(scriptId, obj, 'sub');
@@ -1144,7 +1144,7 @@ export function randomScript(base, scriptId) {
 
 export function jumpIfObjectState(objId, stateVal, targetScriptId) {
   // 步骤 1：分析第一个参数 objId，若为 0 或者是 0xFFFF 则说明当前操作主体为 this，否则从全局状态机中获取对应的 NPC 事件实体
-  const obj = (objId === 0 || objId === 0xFFFF) ? this : state.eventObjects[objId];
+  const obj = getEventObject(objId, this);
   if (!obj) {
     return;
   }
@@ -2732,6 +2732,14 @@ function getRoleIndex(obj) {
     return state.party[0].index;
   }
   return 0;
+}
+
+// 获取事件物体，若 objId 为 0 或 0xFFFF，则代表当前自身对象 (self)
+function getEventObject(objId, self) {
+  if (objId === 0 || objId === 0xFFFF) {
+    return self;
+  }
+  return state.eventObjects[objId];
 }
 
 // 统一包装单步动作指令调度，自动识别并分发 auto 漫游和 trigger/scene 阻塞式执行流
