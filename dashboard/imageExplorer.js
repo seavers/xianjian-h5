@@ -157,30 +157,12 @@ function PaletteItemCard({ index, colorInt }) {
 // 2. 原生点阵短语卡片懒加载子组件
 function LazyWordItemCard({ wordId, labelText, loaderModule, palResources }) {
   const containerRef = useRef(null);
-  const [isIntersecting, setIsIntersecting] = useState(false);
   const canvasRef = useRef(null);
   const [emptyText, setEmptyText] = useState('');
 
-  // 初始化视口观察器
-  useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      setIsIntersecting(entry.isIntersecting);
-    }, {
-      rootMargin: '120px',
-    });
-
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
   // 渲染短语字符点阵拼接
   useEffect(() => {
-    if (!isIntersecting || !canvasRef.current || !loaderModule || !palResources) return;
+    if (!canvasRef.current || !loaderModule || !palResources) return;
 
     try {
       const data = loaderModule.load('word.dat');
@@ -221,7 +203,7 @@ function LazyWordItemCard({ wordId, labelText, loaderModule, palResources }) {
       console.error(`绘制短语 WORD #${wordId} 失败:`, e);
       setEmptyText('[绘制失败]');
     }
-  }, [isIntersecting, wordId, loaderModule, palResources]);
+  }, [wordId, loaderModule, palResources]);
 
   return html`
     <div 
@@ -248,7 +230,7 @@ function LazyWordItemCard({ wordId, labelText, loaderModule, palResources }) {
         minHeight: '40px'
       }}
     >
-      ${!isIntersecting ? html`<span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.1)' }}>加载中...</span>` : 
+      ${ 
         (emptyText ? html`<span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.15)' }}>${labelText}\n${emptyText}</span>` : html`
           <canvas ref=${canvasRef} />
           <span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', fontWeight: 'bold', marginTop: '4px' }}>${labelText}</span>
