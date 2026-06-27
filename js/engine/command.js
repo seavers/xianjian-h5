@@ -766,10 +766,8 @@ export function setBattleResult(result) {
     window.Battle.setBattleResult(result);
   }
 }
-
 export async function addMagic(magicId, roleId) {
-  // 步骤 1：分析主角索引位置，若 roleId 为 0 代表当前触发脚本的主角 (下标 0)，否则对应 roleId - 1
-  const roleIndex = roleId === 0 ? 0 : roleId - 1;
+  const roleIndex = roleId === 0 ? getRoleIndex(this) : roleId - 1;
   const role = state.roles[roleIndex];
 
   // 步骤 2：在目标角色的状态数据中惰性初始化仙术列表，并将新增的仙术 ID 追加习得
@@ -787,7 +785,7 @@ export async function addMagic(magicId, roleId) {
 }
 
 export async function removeMagic(magicId, roleId) {
-  const roleIndex = roleId === 0 ? 0 : roleId - 1;
+  const roleIndex = roleId === 0 ? getRoleIndex(this) : roleId - 1;
   const role = state.roles[roleIndex];
 
   if (role && role.magics) {
