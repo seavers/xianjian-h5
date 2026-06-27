@@ -2182,21 +2182,8 @@ export function enableAutoBattle() {
   console.log('[0x8A enableAutoBattle] 开启下一次战斗的自动战斗模式');
 }
 
-export function jumpIfPartyFull(param1, param2) {
-  let limit = 3;
-  let targetScriptId = param1;
-
-  if (param1 > 0 && param1 < 10) {
-    limit = param1;
-    targetScriptId = param2;
-  }
-
-  if (state.party.length >= limit) {
-    console.log(`[0xA5 jumpIfPartyFull] 当前队伍人数为 ${state.party.length}，已满 ${limit} 人，跳转至脚本: ${targetScriptId}`);
-    return targetScriptId;
-  }
-
-  console.log(`[0xA5 jumpIfPartyFull] 当前队伍人数为 ${state.party.length}，未满 ${limit} 人，不跳转`);
+export function showFbpWithSpriteEffects(fbpId, effectId, param3) {
+  console.log(`[0xA5 showFbpWithSpriteEffects] (免做) 结局精灵动画特效, FBP ID: ${fbpId}, 特效精灵 ID: ${effectId}`);
 }
 
 export function removePlayerFromParty(roleId) {
@@ -2818,7 +2805,7 @@ scriptCodes[0x75] = { func: setRoleGroup, desc: '设置组队伙伴' };
 scriptCodes[0x79] = { func: jumpIfPlayerInParty, desc: '若指定角色在队伍中则跳转' };
 scriptCodes[0x81] = { func: faceNpcTrig, desc: '面朝NPC触发脚本' };
 scriptCodes[0xA1] = { func: setPartySamePosition, desc: '使队伍全员位置和主角李逍遥重合' };
-scriptCodes[0xA5] = { func: jumpIfPartyFull, desc: '队伍满人跳转' };
+scriptCodes[0xA5] = { func: showFbpWithSpriteEffects, desc: '结局全屏图精灵粒子特效' };
 scriptCodes[0xA6] = { func: removePlayerFromParty, desc: '踢出队伍成员' };
 
 scriptCodes[0x12] = { func: setNpcPos, desc: '设置NPC位置' };
