@@ -2119,16 +2119,18 @@ export function teleportOut(failScriptId) {
   console.log(`[0x38 teleportOut] 执行传送出当前迷宫场景指令, 传送脚本: ${scene?.exitScriptId || '无'}`);
 }
 
-export function jumpByExitScriptId(failScriptId) {
-  const scene = state.scenes[state.sceneId];
-  if (scene && scene.exitScriptId) {
-    console.log(`[0x3A jumpByExitScriptId] 当前场景有传送脚本 ID: ${scene.exitScriptId}，跳转至该脚本`);
-    return scene.exitScriptId;
-  }
-
-  console.log(`[0x3A jumpByExitScriptId] 当前场景无传送脚本，跳转至失败脚本: ${failScriptId}`);
-  if (failScriptId) {
-    return failScriptId;
+export function playerEscape(failScriptId) {
+  const isBoss = state.currentBattle?.isBoss || state.isBossBattle;
+  if (isBoss) {
+    console.log(`[0x3A playerEscape] 属于 BOSS 战，不能逃跑，跳转至失败脚本: ${failScriptId}`);
+    if (failScriptId) {
+      return failScriptId;
+    }
+  } else {
+    console.log(`[0x3A playerEscape] 执行主角战斗逃跑`);
+    if (window.Battle && typeof window.Battle.escape === 'function') {
+      window.Battle.escape();
+    }
   }
 }
 
@@ -2895,7 +2897,7 @@ scriptCodes[0x34] = { func: transformEnemy, desc: '炼化妖物为道具' };
 scriptCodes[0x35] = { func: shakeScreen, desc: '设置视口抖动' };
 scriptCodes[0x38] = { func: teleportOut, desc: '传送出当前迷宫场景' };
 scriptCodes[0x39] = { func: drainHpFromEnemy, desc: '战斗吸血' };
-scriptCodes[0x3A] = { func: jumpByExitScriptId, desc: '根据传送脚本 ID 跳转' };
+scriptCodes[0x3A] = { func: playerEscape, desc: '战斗中主角逃跑' };
 scriptCodes[0x4B] = { func: nullifyObject, desc: '暂时隐蔽事件物体15帧' };
 scriptCodes[0x4D] = { func: waitForKey, desc: '等待按键' };
 scriptCodes[0x4E] = { func: loadLastSavedGame, desc: '重载上一个存档游戏' };
