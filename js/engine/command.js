@@ -392,7 +392,11 @@ export function setObjectStatus(objId, stateVal) {
   if (!obj) return;
 
   obj.state = stateVal;
-  // 步骤 1：仅设置活动生命状态，不在此处进行任何同步的指令或异步循环触发，统一交由 mainLoop 调度
+
+  // 这里得刷新角色占位，比如灵月宫主到山神庙的脚本37571
+  if(obj.state > 0) {
+    refreshRoleFrame(obj);
+  }
 }
 
 export function setMultipleObjectStatus(startObjId, endObjId, stateVal) {
@@ -695,7 +699,8 @@ export function replaceObject() {
 }
 
 export async function moveViewport(dx, dy, frameCount, context) {
-  await checkNeedDraw();
+  // 这里的update看是不是必须得执行，比如灵月宫主现身后的脚本37574
+  update(true);
 
   // 步骤 1：若首参数和次参数均为 0，代表需要恢复视口对焦中心为主角位置，使其正常对焦
   if (dx === 0 && dy === 0) {
@@ -976,6 +981,7 @@ export async function fadeInScene(speed) {
   console.log(`[0x51 fadeInScene] 开始淡入当前屏幕，速度: ${state.fadeOutSpeed}`);
   
   // 步骤 2：使用 await 异步等待淡入效果播放完毕，随后同步进行屏幕绘制更新
+  update(true);
   await fadeIn();
 }
 
@@ -1076,7 +1082,8 @@ export async function finishCode() {
   return {endFlag: true, nextScriptId: RESET_SCRIPT};
 }
 
-export function stopCode() {
+export async function stopCode() {
+  await checkNeedDraw();
   return {endFlag: true, nextScriptId: null};
 }
 
