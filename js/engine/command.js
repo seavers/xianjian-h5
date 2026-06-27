@@ -867,7 +867,7 @@ export async function changeHpMp(toAll, value) {
   const changeValue = intToShort(value);
 
   // 步骤 2：分析影响范围，若 toAll 为真则批量修改全队，否则仅修改当前绑定的角色（默认为 roles[0]）
-  const targetRoles = toAll ? state.party : [state.party[0] || state.roles[0]];
+  const targetRoles = toAll ? state.party : [state.roles[getRoleIndex(this)] || state.party[0]];
 
   // 步骤 3：遍历目标角色列表，惰性初始化其 HP 与 MP 属性，并进行数值增减
   for (let i = 0; i < targetRoles.length; i++) {
@@ -1902,7 +1902,7 @@ export function setPlayerStat(statId, value, roleId) {
 
 export function changeHp(toAll, value) {
   const changeValue = intToShort(value);
-  const targetRoles = toAll ? state.party : [state.party[0] || state.roles[0]];
+  const targetRoles = toAll ? state.party : [state.roles[getRoleIndex(this)] || state.party[0]];
   for (let i = 0; i < targetRoles.length; i++) {
     const role = targetRoles[i];
     if (role) {
@@ -1918,7 +1918,7 @@ export function changeHp(toAll, value) {
 
 export function changeMp(toAll, value) {
   const changeValue = intToShort(value);
-  const targetRoles = toAll ? state.party : [state.party[0] || state.roles[0]];
+  const targetRoles = toAll ? state.party : [state.roles[getRoleIndex(this)] || state.party[0]];
   for (let i = 0; i < targetRoles.length; i++) {
     const role = targetRoles[i];
     if (role) {
@@ -1934,7 +1934,7 @@ export function changeMp(toAll, value) {
 
 export function revivePlayer(toAll, hpPercent) {
   const ratio = hpPercent / 10;
-  const targetRoles = toAll ? state.party : [state.party[0] || state.roles[0]];
+  const targetRoles = toAll ? state.party : [state.roles[getRoleIndex(this)] || state.party[0]];
   let success = false;
   for (let i = 0; i < targetRoles.length; i++) {
     const role = targetRoles[i];
@@ -2068,7 +2068,7 @@ export function curePoisonForEnemy(toAll, poisonId) {
 }
 
 export function curePoisonByKind(toAll, poisonId) {
-  const targetRoles = toAll ? state.party : [state.party[0] || state.roles[0]];
+  const targetRoles = toAll ? state.party : [state.roles[getRoleIndex(this)] || state.party[0]];
   for (let i = 0; i < targetRoles.length; i++) {
     const role = targetRoles[i];
     if (role && role.poisons) {
@@ -2079,7 +2079,7 @@ export function curePoisonByKind(toAll, poisonId) {
 }
 
 export function curePoisonByLevel(toAll, maxLevel) {
-  const targetRoles = toAll ? state.party : [state.party[0] || state.roles[0]];
+  const targetRoles = toAll ? state.party : [state.roles[getRoleIndex(this)] || state.party[0]];
   for (let i = 0; i < targetRoles.length; i++) {
     const role = targetRoles[i];
     if (role) {
