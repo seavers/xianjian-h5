@@ -693,7 +693,7 @@ export function replaceObject() {
 
 export async function moveViewport(dx, dy, frameCount, context) {
   // 这里的update看是不是必须得执行，比如灵月宫主现身后的脚本37574
-  update(true);
+  await checkNeedDraw();
 
   // 步骤 1：若首参数和次参数均为 0，代表需要恢复视口对焦中心为主角位置，使其正常对焦
   if (dx === 0 && dy === 0) {

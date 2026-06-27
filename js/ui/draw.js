@@ -555,6 +555,8 @@ export async function checkNeedDraw() {
   if (state.needToFadeIn) {
     await clearFade();
     updateFadeInOut();
+  } else {
+    update(true);
   }
 }
 
