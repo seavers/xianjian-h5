@@ -1115,7 +1115,13 @@ export function changeScript(scriptId, counter, param3, { type }) {
   }
 }
 
-export function gotoScript(scriptId) {
+export function gotoScript(scriptId, times) {
+  if(times > 0) {
+    state.gotoScriptTime = state.gotoScriptTime || 0;
+    if (++state.gotoScriptTime > times) {
+      return;
+    }
+  }
   return {gotoFlag: GOTO_SCRIPT, nextScriptId: scriptId};
 }
 
@@ -2055,11 +2061,12 @@ export function removePlayerFromParty(roleId) {
 }
 
 export function shakeScreen(delay, level) {
+  level = intToShort(level);
   const shakeLevel = level === 0 ? 4 : level;
   const shakeCount = delay === 0 ? 10 : delay; // 默认抖动 10 次
   
   let count = 0;
-  const mainCanvas = state.contexts.main?.canvas;
+  const mainCanvas = state.contexts.main?.back;
   if (!mainCanvas) return;
 
   const timer = setInterval(() => {
