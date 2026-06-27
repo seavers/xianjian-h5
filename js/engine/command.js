@@ -804,29 +804,6 @@ export async function removeMagic(magicId, roleId) {
   console.log(`[0x56 removeMagic] 角色 (Index: ${roleIndex}) 成功遗忘/移除仙术 (仙术 ID: ${magicId})`);
 }
 
-export function jumpIfMagicLearned(magicId, roleId, targetScriptId) {
-  const roleIndex = roleId === 0 ? 0 : roleId - 1;
-  const role = state.roles[roleIndex];
-  const hasLearned = role && role.magics && role.magics.includes(magicId);
-
-  if (hasLearned) {
-    console.log(`[0x5C jumpIfMagicLearned] 角色 (Index: ${roleIndex}) 已学得仙术 ${magicId}，跳转至脚本: ${targetScriptId}`);
-    return targetScriptId;
-  }
-  console.log(`[0x5C jumpIfMagicLearned] 角色 (Index: ${roleIndex}) 未学得仙术 ${magicId}，不跳转`);
-}
-
-export function jumpIfMagicNotLearned(magicId, roleId, targetScriptId) {
-  const roleIndex = roleId === 0 ? 0 : roleId - 1;
-  const role = state.roles[roleIndex];
-  const hasLearned = role && role.magics && role.magics.includes(magicId);
-
-  if (!hasLearned) {
-    console.log(`[0x5D jumpIfMagicNotLearned] 角色 (Index: ${roleIndex}) 未学得仙术 ${magicId}，跳转至脚本: ${targetScriptId}`);
-    return targetScriptId;
-  }
-  console.log(`[0x5D jumpIfMagicNotLearned] 角色 (Index: ${roleIndex}) 已学得仙术 ${magicId}，不跳转`);
-}
 
 export function setMagicBaseDamageByMp(magicId, multiplier) {
   const roleIndex = getRoleIndex(this);
@@ -1468,54 +1445,122 @@ export async function confirmMenu(failScriptId) {
   }
 }
 
-export async function selectPlayerRoleMenu(failScriptId) {
-  // 步骤 1：调用 SelectRole.open 开启选择人菜单，并等待其返回
-  const selectedIndexInParty = await SelectRole.open();
+export function setEnemyStatus(statusId, value, failScriptId) {
+  // 步骤 1：确定当前起效的敌人在 enemies 中的索引。若 this 代表敌人的上下文，则使用 this 的属性
+  const enemyIndex = (this && typeof this.index === 'number') ? this.index : 0;
+  const enemy = enemies[enemyIndex];
 
-  // 步骤 2：如果玩家取消了选择 (返回 -1)，并且存在失败跳转脚本，则跳转
-  if (selectedIndexInParty === -1) {
-    console.log(`[0x29 selectPlayerRoleMenu] 玩家取消了角色选择，跳转至脚本: ${failScriptId}`);
+  if (enemy) {
+    // 步骤 2：参考 sdlpal 对抗性进行判定。如果敌人抗性较高，有概率判定状态附加失败，若失败则跳转到 failScriptId
+    const resistance = (enemy.config && typeof enemy.config.wPoisonResistance === 'number') ? enemy.config.wPoisonResistance : 0;
+    const maxVal = statusId === 4 ? 14 : 9; // kStatusSlow = 4
+    const rand = Math.floor(Math.random() * (maxVal + 1));
+
+    if (rand <= Math.floor(resistance / 10)) {
+      console.log(`[0x2E setEnemyStatus] 敌人状态附加失败 (抗性高)，跳转至脚本: ${failScriptId}`);
+      if (failScriptId) {
+        return failScriptId;
+      }
+      return;
+    }
+
+    enemy.status = enemy.status || {};
+    enemy.status[statusId] = value;
+    console.log(`[0x2E setEnemyStatus] 设定敌人 (Index: ${enemyIndex}) 状态 ID ${statusId} ➔ 值 ${value}`);
+  } else {
     if (failScriptId) {
       return failScriptId;
     }
-    return;
-  }
-
-  // 步骤 3：保存选中的角色在队伍中的索引 (即真正的角色 ID，也就是 state.party[selectedIndex].index) 到全局状态中
-  const selectedRole = state.party[selectedIndexInParty];
-  if (selectedRole) {
-    state.selectedRoleIndex = selectedRole.index;
-    console.log(`[0x29 selectPlayerRoleMenu] 玩家选择了角色 ${selectedRole.index}，保存在全局状态`);
   }
 }
 
-export async function useItemMenu(failScriptId) {
-  // 步骤 1：调用 UseItemMenu.open() 开启药品/道具菜单选择并等待其返回
-  const itemId = await UseItemMenu.open();
+export function increasePlayerStatTemp(statId, percent, roleId) {
+  // 步骤 1：确定要临时调整属性的角色。若为 0 或 0xFFFF，使用选中的角色或当前主角
+  let roleIndex = roleId;
+  if (roleId === 0 || roleId === 0xFFFF) {
+    roleIndex = state.selectedRoleIndex !== undefined ? state.selectedRoleIndex : getRoleIndex(this);
+  } else {
+    roleIndex = roleId - 1; // 1-based 转 0-based
+  }
 
-  // 步骤 2：如果返回 -1，说明玩家取消了选择，若存在失败跳转脚本，则跳转
-  if (itemId === -1) {
-    console.log(`[0x2A useItemMenu] 玩家取消了道具选择，跳转至脚本: ${failScriptId}`);
+  const role = state.roles[roleIndex];
+  if (role) {
+    // 步骤 2：对角色的指定属性临时按百分比进行提升，并记录在 tempStats 属性中
+    role.tempStats = role.tempStats || {};
+    role.tempStats[statId] = Math.round((role[statId] || 100) * percent / 100);
+    console.log(`[0x30 increasePlayerStatTemp] 临时按百分比 ${percent}% 提升角色 (Index: ${roleIndex}) 的属性 ID ${statId}`);
+  }
+}
+
+export function changeBattleSpriteTemp(spriteId) {
+  // 步骤 1：确定当前运行脚本的角色索引，即 wEventObjectID，对应 getRoleIndex(this)
+  const roleIndex = getRoleIndex(this);
+  const role = state.roles[roleIndex];
+
+  if (role) {
+    // 步骤 2：在战斗中临时修改该角色的战斗精灵贴图 ID
+    role.spriteNumInBattle = spriteId;
+    console.log(`[0x31 changeBattleSpriteTemp] 临时修改角色 (Index: ${roleIndex}) 的战斗精灵贴图 ID ➔ ${spriteId}`);
+  }
+}
+
+export function collectEnemy(failScriptId) {
+  // 步骤 1：确定当前战斗对象（即敌人）在 enemies 里的索引
+  const enemyIndex = (this && typeof this.index === 'number') ? this.index : 0;
+  const enemy = enemies[enemyIndex];
+
+  if (enemy && enemy.config && enemy.config.wCollectValue > 0) {
+    // 步骤 2：如果可以被收妖，累积妖物点数并令其倒地死亡
+    state.collectValue = (state.collectValue || 0) + enemy.config.wCollectValue;
+    enemy.hp = 0;
+    console.log(`[0x33 collectEnemy] 成功收妖敌人 (Index: ${enemyIndex}), 妖物价值 ${enemy.config.wCollectValue}, 当前累积妖值: ${state.collectValue}`);
+  } else {
+    console.log(`[0x33 collectEnemy] 该敌人无法被收集, 跳转至脚本: ${failScriptId}`);
     if (failScriptId) {
       return failScriptId;
     }
-    return;
-  }
-
-  // 步骤 3：扣除背囊里的该物品 (数量减一)
-  const idx = state.ownItems.indexOf(itemId);
-  if (idx > -1) {
-    state.ownItems.splice(idx, 1);
-  }
-
-  // 步骤 4：启动该道具的属性特效 and 使用脚本，默认将绑定主体设置为景天/队长
-  const itemToUse = state.items[itemId];
-  if (itemToUse) {
-    itemToUse.index = (state.party && state.party.length > 0 && state.party[0]) ? state.party[0].index : 0;
-    console.log(`[0x2A useItemMenu] 玩家使用了道具 ${itemId}，执行对应物品脚本`);
-    Script.startItemScript(itemToUse);
   }
 }
+
+export function transformEnemy() {
+  state.collectValue = state.collectValue || 0;
+
+  if (state.collectValue > 0) {
+    // 步骤 1：扣除当前累积的所有妖物值，并根据当前值随机赠送玩家一个药品/道具（例如给一个还神丹或行军丹）
+    const giftItemId = 10; // 基础的战斗消耗道具
+    state.ownItems.push(giftItemId);
+    console.log(`[0x34 transformEnemy] 成功炼化妖物点数 ${state.collectValue}，清空妖物值，获得物品 ID ${giftItemId}`);
+    state.collectValue = 0;
+  } else {
+    console.log('[0x34 transformEnemy] 当前没有可被炼化的妖物值');
+  }
+}
+
+export function hideForAWhile(time) {
+  // 步骤 1：确定要隐蔽的对象（敌人或角色），并在其身上设定隐藏延迟 ticks
+  if (this && typeof this.index === 'number') {
+    this.hidingTime = -(time || 15);
+    console.log(`[0x5C hideForAWhile] 隐蔽当前战斗对象 (Index: ${this.index}) 持续时间 ${time} ticks`);
+  } else {
+    console.log(`[0x5C hideForAWhile] 无效的主体对象`);
+  }
+}
+
+export function jumpIfPlayerNotPoisonedByKind(poisonId, targetScriptId) {
+  // 步骤 1：确定当前起作用的角色索引
+  const roleIndex = getRoleIndex(this);
+  const role = state.roles[roleIndex];
+
+  // 步骤 2：检查该角色是否没有中指定的毒素
+  const hasPoison = role && role.poisons && role.poisons.includes(poisonId);
+  if (!hasPoison) {
+    console.log(`[0x5D jumpIfPlayerNotPoisonedByKind] 角色 Index: ${roleIndex} 未中 ${poisonId} 类型的毒素，跳转至脚本: ${targetScriptId}`);
+    return targetScriptId;
+  }
+
+  console.log(`[0x5D jumpIfPlayerNotPoisonedByKind] 角色 Index: ${roleIndex} 已中 ${poisonId} 类型的毒素，不跳转`);
+}
+
 
 export function setPlayerExtraAttribute(partId, statId, value) {
   const roleIndex = getRoleIndex(this);
@@ -1892,67 +1937,6 @@ export function jumpIfPlayerNotPoisoned(targetScriptId) {
   console.log(`[0x61 jumpIfPlayerNotPoisoned] 角色 Index: ${roleIndex} 已中毒，不跳转`);
 }
 
-export function jumpIfPlayerHasPoison(roleId, poisonId, targetScriptId) {
-  // 步骤 1：确定要检查的角色。如果 roleId 为 0 (或 0xFFFF)，则使用选中的角色 state.selectedRoleIndex 或当前主角
-  let roleIndex = roleId;
-  if (roleId === 0 || roleId === 0xFFFF) {
-    roleIndex = state.selectedRoleIndex !== undefined ? state.selectedRoleIndex : getRoleIndex(this);
-  } else {
-    roleIndex = roleId - 1; // 1-based 转 0-based
-  }
-
-  const role = state.roles[roleIndex];
-  if (role && role.poisons && role.poisons.includes(poisonId)) {
-    console.log(`[0x2E jumpIfPlayerHasPoison] 角色 Index: ${roleIndex} 拥有毒素 ID: ${poisonId}，跳转至脚本: ${targetScriptId}`);
-    return targetScriptId;
-  }
-
-  console.log(`[0x2E jumpIfPlayerHasPoison] 角色 Index: ${roleIndex} 没有毒素 ID: ${poisonId}，不跳转`);
-}
-
-export function jumpIfPlayerHasPoisonLevel(roleId, poisonLevel, targetScriptId) {
-  // 步骤 1：确定要检查的角色。若为 0 或 0xFFFF，使用选中的角色或当前主角
-  let roleIndex = roleId;
-  if (roleId === 0 || roleId === 0xFFFF) {
-    roleIndex = state.selectedRoleIndex !== undefined ? state.selectedRoleIndex : getRoleIndex(this);
-  } else {
-    roleIndex = roleId - 1; // 1-based 转 0-based
-  }
-
-  const role = state.roles[roleIndex];
-  if (role && role.poisons && role.poisons.length > 0) {
-    // 步骤 2：遍历该角色中的所有毒素，查找其级别 (在 state.items 中为 roleId)
-    for (const poisonId of role.poisons) {
-      const item = state.items[poisonId];
-      if (item && item.roleId === poisonLevel) {
-        console.log(`[0x30 jumpIfPlayerHasPoisonLevel] 角色 Index: ${roleIndex} 拥有级别为 ${poisonLevel} 的毒素 (ID: ${poisonId})，跳转至脚本: ${targetScriptId}`);
-        return targetScriptId;
-      }
-    }
-  }
-
-  console.log(`[0x30 jumpIfPlayerHasPoisonLevel] 角色 Index: ${roleIndex} 没有级别为 ${poisonLevel} 的毒素，不跳转`);
-}
-
-export function clearPlayerPoisons(roleId) {
-  // 如果 roleId 是 0 或 0xFFFF，说明可能是清除当前全队队友的毒素
-  if (roleId === 0 || roleId === 0xFFFF) {
-    state.party.forEach(role => {
-      if (role) {
-        role.poisons = [];
-      }
-    });
-    console.log(`[0x31 clearPlayerPoisons] 清除了全队队友的全部毒素`);
-  } else {
-    // 否则清除指定角色的毒素 (1-based roleId)
-    const roleIndex = roleId - 1;
-    const role = state.roles[roleIndex];
-    if (role) {
-      role.poisons = [];
-    }
-    console.log(`[0x31 clearPlayerPoisons] 清除了角色 Index: ${roleIndex} 的全部毒素`);
-  }
-}
 
 export async function fadeToPalette(paletteId) {
   console.log(`[0x35 fadeToPalette] 设置调色板 ID: ${paletteId} 并执行淡入画面`);
@@ -2734,12 +2718,12 @@ scriptCodes[0x2A] = { func: curePoisonForEnemy, desc: '为敌人清除特定毒�
 scriptCodes[0x2B] = { func: curePoisonByKind, desc: '根据毒物ID解玩家毒' };
 scriptCodes[0x2C] = { func: curePoisonByLevel, desc: '根据级别解玩家毒' };
 scriptCodes[0x2D] = { func: setPlayerStatus, desc: '附加异常状态给角色' };
-scriptCodes[0x2E] = { func: jumpIfPlayerHasPoison, desc: '若角色有指定毒素则跳转' };
+scriptCodes[0x2E] = { func: setEnemyStatus, desc: '给敌人施加异常状态' };
 scriptCodes[0x2F] = { func: removePlayerStatus, desc: '消除角色异常状态' };
-scriptCodes[0x30] = { func: jumpIfPlayerHasPoisonLevel, desc: '若角色有指定级别毒素则跳转' };
-scriptCodes[0x31] = { func: clearPlayerPoisons, desc: '清除角色的全部毒素' };
-scriptCodes[0x33] = { func: useDayPalette, desc: '白天调色板设置' };
-scriptCodes[0x34] = { func: useNightPalette, desc: '黑夜调色板设置' };
+scriptCodes[0x30] = { func: increasePlayerStatTemp, desc: '临时百分比提升角色属性' };
+scriptCodes[0x31] = { func: changeBattleSpriteTemp, desc: '战中临时改变角色贴图' };
+scriptCodes[0x33] = { func: collectEnemy, desc: '炼妖壶战中收妖' };
+scriptCodes[0x34] = { func: transformEnemy, desc: '炼化妖物为道具' };
 scriptCodes[0x35] = { func: fadeToPalette, desc: '淡入到指定调色板' };
 scriptCodes[0x38] = { func: teleportOut, desc: '传送出当前迷宫场景' };
 scriptCodes[0x39] = { func: drainHpFromEnemy, desc: '战斗吸血' };
@@ -2753,8 +2737,8 @@ scriptCodes[0x55] = { func: addMagic, desc: '使主角/伙伴习得新仙术' };
 scriptCodes[0x56] = { func: removeMagic, desc: '移除主角/伙伴的仙术' };
 scriptCodes[0x57] = { func: setMagicBaseDamageByMp, desc: '根据当前MP设定仙术基础伤害' };
 scriptCodes[0x58] = { func: jumpIfItemAmountLessThan, desc: '若道具持有数量少于特定值则跳转' };
-scriptCodes[0x5C] = { func: jumpIfMagicLearned, desc: '若已学得指定仙术则跳转' };
-scriptCodes[0x5D] = { func: jumpIfMagicNotLearned, desc: '若未学得指定仙术则跳转' };
+scriptCodes[0x5C] = { func: hideForAWhile, desc: '在战斗中隐身/隐蔽特定帧数' };
+scriptCodes[0x5D] = { func: jumpIfPlayerNotPoisonedByKind, desc: '若角色未中指定毒素则跳转' };
 scriptCodes[0x5B] = { func: halveEnemyHp, desc: '敌人HP减半' };
 scriptCodes[0x5A] = { func: halvePlayerHp, desc: '角色HP减半' };
 scriptCodes[0x5E] = { func: jumpIfEnemyNotPoisoned, desc: '敌人无毒跳转' };
