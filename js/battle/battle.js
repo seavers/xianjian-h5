@@ -1917,7 +1917,7 @@ async function endBattle(result) {
         const up = upgradedPlayers[i];
 
         // 1. 绘制修行提升单行标题画卷框：x=72, y=0, 长度=11
-        drawSingleLineBox(talkCtx, 72, 0, 11);
+        drawSingleLineBox(talkCtx, 72, 1, 11);
 
         // 2. 绘制标题文案：“角色名” + “修行”(#48) + “提升”(#32)
         let nameLen = 0;
@@ -1935,69 +1935,69 @@ async function endBattle(result) {
         drawWordToCtx(talkCtx, 48, 110 + nameLen * 16, 10);
         drawWordToCtx(talkCtx, 32, 110 + nameLen * 16 + 32, 10);
 
-        // 3. 绘制具体数值大面板背景框：x=74, y=32, 宽=9, 高=7
-        drawWinArea(talkCtx, 74, 32, 9, 7, 10);
+        // 3. 绘制具体数值大面板背景框：x=74, y=32, 宽=9, 高=8
+        drawWinArea(talkCtx, 66, 34, 11, 8, 10);
 
         // 4. 绘制 8 项属性的文字标签 (修行、体力、真气、武术、灵力、防御、身法、吉运)
         for (let j = 0; j < 8; j++) {
-          drawWordToCtx(talkCtx, 48 + j, 92, 44 + 18 * j);
+          drawWordToCtx(talkCtx, 48 + j, 84, 44 + 18 * j);
 
           // 绘制指向箭头 (48号 pic 对应 loadPic(48))，x=188
           const arrowImg = loadPic(48);
           if (arrowImg) {
-            talkCtx.drawImage(arrowImg, 188, 48 + 18 * j);
+            talkCtx.drawImage(arrowImg, 192, 48 + 18 * j);
           }
         }
 
         // 5. 绘制升级前后的数值属性变化
         // 行 0：修行
-        drawWinNumber(talkCtx, up.orig.level, 141, 47, 4, 'right', 'yellow');
-        drawWinNumber(talkCtx, up.curr.level, 203, 47, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.orig.level, 133, 47, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.level, 215, 47, 4, 'right', 'yellow');
 
         // 行 1：体力（当前/最大，最大值为蓝色小数字，带斜杠）
-        drawWinNumber(talkCtx, up.orig.hp, 141, 64, 4, 'right', 'yellow');
-        drawWinNumber(talkCtx, up.orig.maxHp, 162, 68, 4, 'right', 'blue');
+        drawWinNumber(talkCtx, up.orig.hp, 133, 64, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.orig.maxHp, 154, 68, 4, 'right', 'blue');
         const slashImg1 = loadPic(40);
         if (slashImg1) {
-          talkCtx.drawImage(slashImg1, 164, 66);
+          talkCtx.drawImage(slashImg1, 156, 66);
         }
-        drawWinNumber(talkCtx, up.curr.hp, 203, 64, 4, 'right', 'yellow');
-        drawWinNumber(talkCtx, up.curr.maxHp, 224, 68, 4, 'right', 'blue');
+        drawWinNumber(talkCtx, up.curr.hp, 215, 64, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.maxHp, 236, 68, 4, 'right', 'blue');
         if (slashImg1) {
-          talkCtx.drawImage(slashImg1, 226, 66);
+          talkCtx.drawImage(slashImg1, 238, 66);
         }
 
         // 行 2：真气
-        drawWinNumber(talkCtx, up.orig.mp, 141, 82, 4, 'right', 'yellow');
-        drawWinNumber(talkCtx, up.orig.maxMp, 162, 86, 4, 'right', 'blue');
+        drawWinNumber(talkCtx, up.orig.mp, 133, 82, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.orig.maxMp, 154, 86, 4, 'right', 'blue');
         if (slashImg1) {
-          talkCtx.drawImage(slashImg1, 164, 84);
+          talkCtx.drawImage(slashImg1, 156, 84);
         }
-        drawWinNumber(talkCtx, up.curr.mp, 203, 82, 4, 'right', 'yellow');
-        drawWinNumber(talkCtx, up.curr.maxMp, 224, 86, 4, 'right', 'blue');
+        drawWinNumber(talkCtx, up.curr.mp, 215, 82, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.maxMp, 236, 86, 4, 'right', 'blue');
         if (slashImg1) {
-          talkCtx.drawImage(slashImg1, 226, 84);
+          talkCtx.drawImage(slashImg1, 238, 84);
         }
 
         // 行 3：武术
-        drawWinNumber(talkCtx, up.orig.attackStrength, 141, 101, 4, 'right', 'yellow');
-        drawWinNumber(talkCtx, up.curr.attackStrength, 203, 101, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.orig.attackStrength, 133, 101, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.attackStrength, 215, 101, 4, 'right', 'yellow');
 
         // 行 4：灵力
-        drawWinNumber(talkCtx, up.orig.magicStrength, 141, 119, 4, 'right', 'yellow');
-        drawWinNumber(talkCtx, up.curr.magicStrength, 203, 119, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.orig.magicStrength, 133, 119, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.magicStrength, 215, 119, 4, 'right', 'yellow');
 
         // 行 5：防御
-        drawWinNumber(talkCtx, up.orig.defense, 141, 137, 4, 'right', 'yellow');
-        drawWinNumber(talkCtx, up.curr.defense, 203, 137, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.orig.defense, 133, 137, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.defense, 215, 137, 4, 'right', 'yellow');
 
         // 行 6：身法
-        drawWinNumber(talkCtx, up.orig.dexterity, 141, 155, 4, 'right', 'yellow');
-        drawWinNumber(talkCtx, up.curr.dexterity, 203, 155, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.orig.dexterity, 133, 155, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.dexterity, 215, 155, 4, 'right', 'yellow');
 
         // 行 7：吉运
-        drawWinNumber(talkCtx, up.orig.fleeRate, 141, 173, 4, 'right', 'yellow');
-        drawWinNumber(talkCtx, up.curr.fleeRate, 203, 173, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.orig.fleeRate, 133, 173, 4, 'right', 'yellow');
+        drawWinNumber(talkCtx, up.curr.fleeRate, 215, 173, 4, 'right', 'yellow');
 
         // 等待玩家按下空格键切换
         await waitWinSpace();
