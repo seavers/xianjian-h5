@@ -51,6 +51,9 @@ export const Script = {
       return;
     }
 
+    // 步骤 2.5：增加全局逻辑帧 tick 计数，用于周期性状态转换
+    state.dwFrameNum = (state.dwFrameNum || 0) + 1;
+
     // 步骤3：一直遍历加载执行所有的主动式脚本
     await Script.checkAndExecuteScript();
 

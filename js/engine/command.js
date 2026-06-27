@@ -5,7 +5,7 @@ import { SelectRole } from '../ui/selectRole.js';
 import { UseItemMenu } from '../ui/useItemMenu.js';
 import { CIRCLE_SCRIPT, GOTO_SCRIPT, REPLACE_ENTRY, RESET_SCRIPT, Script } from './script.js';
 import { Npc } from './anim.js';
-import { loadMgoCount } from '../resources/pal.js';
+import { loadMgoCount, loadMap } from '../resources/pal.js';
 import { update, canWalk, clearDrawToBlack, checkNeedDraw } from '../ui/draw.js';
 import { fadeEffect, fadeIn, fadeOut, fadeScreenToRed } from '../ui/fade.js';
 import { intToShort } from '../utils/number.js';
@@ -1257,6 +1257,160 @@ export async function waitSecond(time, p2, p3, context) {
 export async function sleepFrame(frameCount, speed, p3, context) {
   return await stepAction(context, () => Script.stepProgress(this, frameCount * speed));
 }
+
+function checkObstacle(px, py, fCheckEventObjects, wSelfObject) {
+  // 步骤 1：将绝对像素坐标转换为瓦片网格的 mx, my 坐标及 half 标志
+  let x = Math.floor(px / 32);
+  let y = Math.floor(py / 16);
+  let h = 0;
+  let xr = px % 32;
+  let yr = py % 16;
+  if (xr < 0) xr += 32;
+  if (yr < 0) yr += 16;
+
+  if (xr + yr * 2 >= 16) {
+    if (xr + yr * 2 >= 48) {
+      x++;
+      y++;
+    } else if (32 - xr + yr * 2 < 16) {
+      x++;
+    } else if (32 - xr + yr * 2 < 48) {
+      h = 1;
+    } else {
+      y++;
+    }
+  }
+
+  // 步骤 2：对地图的通行性进行检测。从地图瓦片数据中根据当前地图 ID 读取阻挡属性
+  const data = loadMap(state.mapId);
+  const isMapBlocked = (data.getByte((x * 2 + (h ? 1 : 0) + y * 128) * 4 + 1) & 0x20) !== 0;
+  if (isMapBlocked) {
+    return true;
+  }
+
+  // 步骤 3：对场景中的阻挡型事件物体 (state >= 2) 进行基于距离的范围碰撞判定，以过滤非自身的阻挡物
+  if (fCheckEventObjects) {
+    for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
+      if (i === wSelfObject) {
+        continue;
+      }
+      const p = state.eventObjects[i];
+      if (p && p.state >= 2) {
+        if (Math.abs(p.x - px) + Math.abs(p.y - py) * 2 < 16) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+export function monsterChasePlayer(maxDistance, speed, floating, context) {
+  const obj = this;
+  if (!obj) return;
+
+  // 步骤 1：初始化怪兽追逐范围与速度（缺省值设为 8 和 4），提取怪兽 1-based 事件物体 ID
+  const wEventObjectID = obj.index + 1;
+  maxDistance = maxDistance || 8;
+  speed = speed || 4;
+
+  let wMonsterSpeed = 0;
+  const prevx = obj.x;
+  const prevy = obj.y;
+
+  // 步骤 2：在非驱魔香状态下，若玩家正常处于追逐范围内，则使怪物面朝玩家并尝试向玩家移动
+  if ((state.chaseRange || 1) !== 0) {
+    const leader = state.party[0] || state.roles[0];
+    if (!leader) return;
+
+    let x = leader.x - obj.x;
+    let y = leader.y - obj.y;
+
+    if (x === 0) {
+      x = Math.random() < 0.5 ? -1 : 1;
+    }
+    if (y === 0) {
+      y = Math.random() < 0.5 ? -1 : 1;
+    }
+
+    let i = prevx % 32;
+    let j = prevy % 16;
+    if (i < 0) i += 32;
+    if (j < 0) j += 16;
+
+    let px = Math.floor(prevx / 32);
+    let py = Math.floor(prevy / 16);
+    let l = 0;
+
+    if (i + j * 2 >= 16) {
+      if (i + j * 2 >= 48) {
+        px++;
+        py++;
+      } else if (32 - i + j * 2 < 16) {
+        px++;
+      } else if (32 - i + j * 2 < 48) {
+        l = 1;
+      } else {
+        py++;
+      }
+    }
+
+    const alignedX = px * 32 + l * 16;
+    const alignedY = py * 16 + l * 8;
+
+    const currentChaseRange = state.chaseRange || 1;
+    if (Math.abs(x) + Math.abs(y) * 2 < maxDistance * 32 * currentChaseRange) {
+      if (x < 0) {
+        obj.dir = y < 0 ? 1 : 0;
+      } else {
+        obj.dir = y < 0 ? 2 : 3;
+      }
+
+      const targetX = obj.x + (x !== 0 ? (x / Math.abs(x)) * 16 : 0);
+      const targetY = obj.y + (y !== 0 ? (y / Math.abs(y)) * 8 : 0);
+
+      if (floating) {
+        wMonsterSpeed = speed;
+      } else {
+        if (!checkObstacle(targetX, targetY, true, wEventObjectID)) {
+          wMonsterSpeed = speed;
+        } else {
+          obj.x = alignedX;
+          obj.y = alignedY;
+        }
+
+        const offsets = [
+          { dx: -4, dy: 2 },
+          { dx: -4, dy: -2 },
+          { dx: 4, dy: -2 },
+          { dx: 4, dy: 2 }
+        ];
+        for (let idx = 0; idx < 4; idx++) {
+          obj.x += offsets[idx].dx;
+          obj.y += offsets[idx].dy;
+          if (checkObstacle(obj.x, obj.y, false, 0)) {
+            obj.x = alignedX;
+            obj.y = alignedY;
+          }
+        }
+      }
+    }
+  } else {
+    // 步骤 3：在驱魔香生效状态下，怪兽进行原地旋转，每两帧自增朝向
+    if (state.dwFrameNum & 1) {
+      obj.dir = (obj.dir + 1) % 4;
+    }
+  }
+
+  // 步骤 4：若怪物有实际移动速度，则根据其当前方向更新像素坐标，并刷新对应的行走/动作动画帧
+  if (wMonsterSpeed > 0) {
+    obj.x += ((obj.dir === 1 || obj.dir === 0) ? -2 : 2) * wMonsterSpeed;
+    obj.y += ((obj.dir === 1 || obj.dir === 2) ? -1 : 1) * wMonsterSpeed;
+  }
+  refreshWalkFrame(obj);
+}
+
 
 export function checkTalk() {
   console.log('global checkTalk');
@@ -2789,7 +2943,7 @@ scriptCodes[0x83] = { func: jumpIfNotInZone, desc: '若事件物体不在当前�
 scriptCodes[0x84] = { func: placeItemUsedAsObject, desc: '放置当前使用道具为事件物体于场景' };
 scriptCodes[0x85] = { func: delayPeriod, desc: '非阻塞时序延迟' };
 scriptCodes[0x86] = { func: jumpIfEquipmentNotEquipped, desc: '若装备未穿戴则跳转' };
-scriptCodes[0x4C] = { func: sleepFrame, desc: '阻塞等待特定帧数' };
+scriptCodes[0x4C] = { func: monsterChasePlayer, desc: '怪兽/事件物体追逐玩家' };
 
 scriptCodes[0x3B] = { func: talkTips, desc: '显示系统通知 tips' };
 scriptCodes[0x3C] = { func: talkUp, desc: '在屏幕顶部显示对话' };
