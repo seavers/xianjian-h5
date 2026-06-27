@@ -477,14 +477,23 @@ export function setSouthDir(objId) {
   walkOneStep.call(this, 0);
 }
 
-export function setNpcDir(dir) {
-  if (loadMgoCount(this.mgoId) < 12) {
-    this.frame = dir;
-  } else {
-    this.dir = dir;
+export function setNpcDir(dir, frame) {
+  const obj = this;
+  if (!obj) return;
 
-    // 这里得刷新，不然场景1的9号脚本有问题
-    refreshRoleFrame(this);
+  if (dir !== undefined && dir !== null && dir !== 0xFFFF) {
+    obj.dir = dir;
+  }
+  if (frame !== undefined && frame !== null && frame !== 0xFFFF) {
+    obj.frame = frame;
+  }
+
+  if (loadMgoCount(obj.mgoId) < 12) {
+    if (dir !== undefined && dir !== null && dir !== 0xFFFF) {
+      obj.frame = dir;
+    }
+  } else {
+    refreshRoleFrame(obj);
   }
 }
 
