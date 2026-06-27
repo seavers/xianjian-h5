@@ -169,7 +169,6 @@ function MapModalApp() {
     if (window.setRolePos) {
       window.setRolePos(mx, my, mhalf);
       Promise.all([
-        import('../js/ui/talk.js'),
         import('../js/ui/draw.js')
       ]).then(([{ update }]) => {
         update();
