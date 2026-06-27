@@ -161,7 +161,7 @@ export function setRoleGroup(r1, r2, r3) {
 }
 
 export function setObjectLayer(param1, layer) {
-  const obj = this;
+  const obj = getEventObject(param1, this);
   if (obj) {
     obj.layer = intToShort(layer);
   }
