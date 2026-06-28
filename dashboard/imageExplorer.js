@@ -8,9 +8,10 @@ const { useState, useEffect, useRef, useMemo } = React;
 function LazySingleItemCard({ itemId, itemLabelText, loadFn, scale }) {
   const containerRef = useRef(null);
   const [isIntersecting, setIsIntersecting] = useState(false);
+  const [dimensions, setDimensions] = useState(null);
   const canvasRef = useRef(null);
 
-  // 初始化视口观察器
+  // 步骤 1：初始化视口观察器，用于按需加载/卸载 Canvas 资源
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {
       setIsIntersecting(entry.isIntersecting);
@@ -27,9 +28,23 @@ function LazySingleItemCard({ itemId, itemLabelText, loadFn, scale }) {
     };
   }, []);
 
-  // 当卡片进入视口时执行精灵解包与 Canvas 离网组装
+  // 步骤 2：当 itemId 或 loadFn 发生变化时，必须重置已记录尺寸并清空旧画布，防止复用组件导致错乱或残留
   useEffect(() => {
-    if (!isIntersecting || !canvasRef.current) return;
+    setDimensions(null);
+    if (canvasRef.current) {
+      canvasRef.current.innerHTML = '';
+    }
+  }, [itemId, loadFn]);
+
+  // 步骤 3：当卡片进入视口时加载并渲染精灵；离开视口时清空 DOM 释放内存，但保持 dimensions 样式锁定卡片大小，防止尺寸坍塌引起抖动
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    if (!isIntersecting) {
+      // 离开视口后，安全清空 canvasRef 的内部元素，释放 Canvas backing store 内存，以避免同屏万级 Canvas 导致崩溃
+      canvasRef.current.innerHTML = '';
+      return;
+    }
 
     try {
       const img = loadFn(itemId);
@@ -43,6 +58,11 @@ function LazySingleItemCard({ itemId, itemLabelText, loadFn, scale }) {
         img.style.borderRadius = '1px';
         img.style.display = 'block';
         canvasContainer.appendChild(img);
+
+        // 仅在尺寸未记录或不一致时更新，防止触发不必要的 React 二次渲染
+        if (!dimensions || dimensions.width !== img.width || dimensions.height !== img.height) {
+          setDimensions({ width: img.width, height: img.height });
+        }
       } else {
         canvasContainer.innerHTML = `<span style="font-size:7.5px; color:rgba(255,255,255,0.15);">${itemLabelText}\n[无数据]</span>`;
       }
@@ -50,7 +70,7 @@ function LazySingleItemCard({ itemId, itemLabelText, loadFn, scale }) {
       console.error(`渲染项 #${itemId} 失败:`, e);
       canvasRef.current.innerHTML = `<span style="font-size:7.5px; color:var(--glow-red);">${itemLabelText}\n[解包失败]</span>`;
     }
-  }, [isIntersecting, itemId, loadFn]);
+  }, [isIntersecting, itemId, loadFn, dimensions]);
 
   return html`
     <div 
@@ -79,20 +99,29 @@ function LazySingleItemCard({ itemId, itemLabelText, loadFn, scale }) {
         boxSizing: 'border-box'
       }}
     >
-      <div ref=${canvasRef} style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '40px', minHeight: '40px' }}>
+      <div 
+        ref=${canvasRef} 
+        style=${{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          width: dimensions ? `calc(${dimensions.width}px * var(--image-explorer-scale, ${scale}))` : 'auto',
+          height: dimensions ? `calc(${dimensions.height}px * var(--image-explorer-scale, ${scale}))` : 'auto',
+          minWidth: '40px', 
+          minHeight: '40px' 
+        }}
+      >
         ${!isIntersecting && html`<div style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.1)' }}>加载中...</div>`}
       </div>
-      ${isIntersecting && html`
-        <span style=${{
-          fontSize: '7.5px',
-          color: 'rgba(255,255,255,0.3)',
-          fontWeight: 'bold',
-          marginTop: '4px',
-          textAlign: 'center',
-          whiteSpace: 'pre-line',
-          lineHeight: 1.2
-        }}>${itemLabelText}</span>
-      `}
+      <span style=${{
+        fontSize: '7.5px',
+        color: 'rgba(255,255,255,0.3)',
+        fontWeight: 'bold',
+        marginTop: '4px',
+        textAlign: 'center',
+        whiteSpace: 'pre-line',
+        lineHeight: 1.2
+      }}>${itemLabelText}</span>
     </div>
   `;
 }
