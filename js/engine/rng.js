@@ -197,7 +197,7 @@ export async function playRng(rngId, startFrame, endFrame, speed) {
   const frameBuffer = new Uint8Array(320 * 200);
   let lastTime = performance.now();
 
-  for (let f = start; f < end; f++) {
+  for (let f = 0; f < end; f++) {
     const frameData = getRngFrameData(rngChunk, f);
     if (!frameData) {
       break;
@@ -206,6 +206,11 @@ export async function playRng(rngId, startFrame, endFrame, speed) {
     // YJ_1 解压数据
     const decompressed = deyj(frameData);
     blitRngFrame(decompressed, decompressed.length, frameBuffer);
+
+    // 由于 RNG 帧不是完整帧，而是增量帧 / 差分帧，所以这里需要先静默解码前置帧，多次覆盖frameBuffer
+    if (f < start) {
+      continue;
+    }
 
     // 将颜色索引转换为 RGBA 数据并直接渲染到主 canvas
     const palette = loadPal(state.paletteId);
