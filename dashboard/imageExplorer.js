@@ -28,27 +28,29 @@ function LazySingleItemCard({ itemId, itemLabelText, loadFn, scale }) {
     };
   }, []);
 
-  // 步骤 2：当 itemId 或 loadFn 发生变化时，必须重置已记录尺寸并清空旧画布，防止复用组件导致错乱或残留
+  // 步骤 2：当 itemId 或 loadFn 发生变化时，必须重置已记录尺寸并清空/复原画布内容，防止复用组件导致错乱或残留
   useEffect(() => {
     setDimensions(null);
     if (canvasRef.current) {
-      canvasRef.current.innerHTML = '';
+      canvasRef.current.innerHTML = `<div style="font-size:7.5px; color:rgba(255,255,255,0.1);">加载中...</div>`;
     }
   }, [itemId, loadFn]);
 
   // 步骤 3：当卡片进入视口时加载并渲染精灵；离开视口时清空 DOM 释放内存，但保持 dimensions 样式锁定卡片大小，防止尺寸坍塌引起抖动
+  // 提示：必须通过 canvasRef.current.innerHTML 强行以命令式渲染“加载中”提示，而不能在 React JSX 内部进行混合，以避免 React-DOM 无法找到子节点抛出 NotFoundError 异常。
   useEffect(() => {
     if (!canvasRef.current) return;
 
+    const canvasContainer = canvasRef.current;
+
     if (!isIntersecting) {
-      // 离开视口后，安全清空 canvasRef 的内部元素，释放 Canvas backing store 内存，以避免同屏万级 Canvas 导致崩溃
-      canvasRef.current.innerHTML = '';
+      // 离开视口后，安全清空 canvasRef 的内部元素，释放 Canvas backing store 内存，以避免同屏万级 Canvas 导致崩溃，并展示加载占位符
+      canvasContainer.innerHTML = `<div style="font-size:7.5px; color:rgba(255,255,255,0.1);">加载中...</div>`;
       return;
     }
 
     try {
       const img = loadFn(itemId);
-      const canvasContainer = canvasRef.current;
       canvasContainer.innerHTML = '';
 
       if (img) {
@@ -68,7 +70,7 @@ function LazySingleItemCard({ itemId, itemLabelText, loadFn, scale }) {
       }
     } catch (e) {
       console.error(`渲染项 #${itemId} 失败:`, e);
-      canvasRef.current.innerHTML = `<span style="font-size:7.5px; color:var(--glow-red);">${itemLabelText}\n[解包失败]</span>`;
+      canvasContainer.innerHTML = `<span style="font-size:7.5px; color:var(--glow-red);">${itemLabelText}\n[解包失败]</span>`;
     }
   }, [isIntersecting, itemId, loadFn, dimensions]);
 
@@ -110,9 +112,7 @@ function LazySingleItemCard({ itemId, itemLabelText, loadFn, scale }) {
           minWidth: '40px', 
           minHeight: '40px' 
         }}
-      >
-        ${!isIntersecting && html`<div style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.1)' }}>加载中...</div>`}
-      </div>
+      />
       <span style=${{
         fontSize: '7.5px',
         color: 'rgba(255,255,255,0.3)',
