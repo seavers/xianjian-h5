@@ -1326,7 +1326,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                       >
                         <div class="npc-mc-head" style=${{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: '#fff', fontWeight: 'bold' }}>
                           <span>#${npc.id}</span>
-                          <span style=${{ fontSize: '7.5px', color: npc.state ? 'var(--glow-green)' : 'rgba(255,255,255,0.2)' }}>${npc.state ? `S:${npc.state}` : 'S:0'}</span>
+                          <span style=${{ fontSize: '7.5px', color: npc.state ? 'var(--glow-green)' : 'rgba(255,255,255,0.2)' }}>${npc.state ? `S:${npc.state}` : 'S:0'} ${npc.frame ? `F:${npc.frame}` : 'F:-'}</span>
                         </div>
                         <div class="npc-mc-pos" style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.3)', textAlign: 'right', marginTop: '2px' }}>
                           (${Math.floor(npc.x / 32)}, ${Math.floor(npc.y / 16)})
