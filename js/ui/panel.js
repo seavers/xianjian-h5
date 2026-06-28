@@ -3,7 +3,29 @@ import { loadPic, loadWord } from '../resources/pal.js';
 
 export const UI = {
   drawLabel(x, y, size) {
-    drawPic3(45, x, y, size);
+    this.drawScrollBox(x, y, size);
+  },
+
+  drawScrollBox(x, y, length, ctx) {
+    const drawCtx = ctx || state.contexts.startup;
+    if (!drawCtx) return;
+
+    const picLeft = loadPic(45);
+    if (picLeft) {
+      drawCtx.drawImage(picLeft, x, y);
+    }
+
+    const picMiddle = loadPic(46);
+    if (picMiddle) {
+      for (let i = 0; i < length; i++) {
+        drawCtx.drawImage(picMiddle, x + 8 + i * 16, y);
+      }
+    }
+
+    const picRight = loadPic(47);
+    if (picRight) {
+      drawCtx.drawImage(picRight, x + 8 + length * 16, y);
+    }
   },
 
   drawNum(num, x, y, colorName = 'yellow') {
@@ -36,15 +58,49 @@ export const UI = {
   },
 
   drawArea(x, y, width, height, style = 1) {
+    this.drawNineGridBox(x, y, width, height, style);
+  },
+
+  drawNineGridBox(x, y, width, height, style = 1, ctx) {
+    const drawCtx = ctx || state.contexts.startup;
+    if (!drawCtx) return;
     const w = width - 1; // 减1的意思是: width, height是指交叉的地方, 交叉的地方用来输出汉字
     const h = height - 1;
 
     let currY = y;
-    currY += drawPic3(style + 0, x, currY, w);
+    currY += this.drawWinPic3(style + 0, x, currY, w, drawCtx);
     for (let i = 0; i < h; i++) {
-      currY += drawPic3(style + 3, x, currY, w);
+      currY += this.drawWinPic3(style + 3, x, currY, w, drawCtx);
     }
-    currY += drawPic3(style + 6, x, currY, w);
+    this.drawWinPic3(style + 6, x, currY, w, drawCtx);
+  },
+
+  // 绘制三段式九宫格单行边框块的辅助函数，支持指定绘制上下文
+  drawWinPic3(picId, x, y, n, ctx) {
+    const drawCtx = ctx || state.contexts.startup;
+    if (!drawCtx) return 0;
+    let dx = 0;
+    let pic = loadPic(picId);
+
+    if (pic) {
+      drawCtx.drawImage(pic, x, y);
+      dx += pic.width;
+    }
+
+    for (let i = 0; i < n; i++) {
+      pic = loadPic(picId + 1);
+      if (pic) {
+        drawCtx.drawImage(pic, x + dx, y);
+        dx += pic.width;
+      }
+    }
+
+    pic = loadPic(picId + 2);
+    if (pic) {
+      drawCtx.drawImage(pic, x + dx, y);
+    }
+
+    return pic ? pic.height : 0;
   },
 
   drawWord(wordId, x, y, color) {

@@ -2048,7 +2048,7 @@ async function endBattle(result) {
           for (let m = 0; m < learned.length; m++) {
             const magicId = learned[m];
             const w1 = getWordLen(roleStats.nameId);
-            const w2 = getWordLen(31); // 31 为“练成”
+            const w2 = getWordLen(33); // 33 为“练成”
             const w3 = getWordLen(magicId);
             const totalLen = w1 + w2 + w3;
 
@@ -2060,7 +2060,7 @@ async function endBattle(result) {
 
             // 绘制文字：“角色名” + “练成” + “红字法术名”
             drawWordToCtx(talkCtx, roleStats.nameId, textX, 115);
-            drawWordToCtx(talkCtx, 31, textX + w1 * 16, 115);
+            drawWordToCtx(talkCtx, 33, textX + w1 * 16, 115);
             drawWordToCtx(talkCtx, magicId, textX + (w1 + w2) * 16, 115, 'red');
 
             // 等待玩家按下空格确认
