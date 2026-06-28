@@ -152,6 +152,10 @@ export async function drawTalk(msgId) {
   } else if(!isNextTalk(t)) {
     await waitKey();
     clearTalk();
+
+    if (isNextFinishOrStop(t)) {
+      talkPosition = 'up';
+    }
   }
 }
 
@@ -520,6 +524,15 @@ function isNextConfirm(t) {
   const script = state.scripts[t.scriptId + 1];
   if (!script) return false;
   return script.code === 0x0A;
+}
+
+function isNextFinishOrStop(t) {
+  if (!t) return false;
+
+  // 步骤 3：探测下一条指令是否为确认选择菜单，也使用 scriptId + 1
+  const script = state.scripts[t.scriptId + 1];
+  if (!script) return false;
+  return script.code === 0x00 || script.code === 0x01;
 }
 
 
