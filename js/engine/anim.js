@@ -50,7 +50,7 @@ export const Npc = {
     }
   },
 
-  animTeam(o, x, y, half, speed) {
+  animTeam(o, x, y, half, speed, isStand) {
     const cx = o.x;
     const cy = o.y;
     const zx = x * 32 + half * 16;
@@ -61,7 +61,9 @@ export const Npc = {
     const absDy = Math.abs(dy);
 
     // 1. 计算移动时的朝向，并更新步态动画帧
-    calcNpcDir(o, zx, zy);
+    if (!isStand) {
+      calcNpcDir(o, zx, zy);
+    }
 
     if (absDy > speed) {
       const nx = cx + Math.sign(dx) * speed * 2;

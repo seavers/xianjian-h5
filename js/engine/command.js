@@ -628,35 +628,32 @@ export async function teamWalk4(x, y, half, context) {
   return await stepAction(context, () => Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 8));
 }
 
+// 参考李逍遥第一次坐船去仙灵岛，脚本ID：5932
 export async function teamRide(x, y, half, context) {
   return await stepAction(context, () => {
-    const res1 = Npc.anim(this, x, y, half, 2);
-    const res2 = Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 2);
-    return res1 || res2;
+    Npc.anim(this, x, y, half, 2);
+    return Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 2, true);
   });
 }
 
 export async function teamRide2(x, y, half, context) {
   return await stepAction(context, () => {
-    const res1 = Npc.anim(this, x, y, half, 4);
-    const res2 = Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 4);
-    return res1 || res2;
+    Npc.anim(this, x, y, half, 4);
+    return Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 4, true);
   });
 }
 
 export async function teamRide3(x, y, half, context) {
   return await stepAction(context, () => {
-    const res1 = Npc.anim(this, x, y, half, 6);
-    const res2 = Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 6);
-    return res1 || res2;
+    Npc.anim(this, x, y, half, 6);
+    return Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 6, true);
   });
 }
 
 export async function teamRide4(x, y, half, context) {
   return await stepAction(context, () => {
-    const res1 = Npc.anim(this, x, y, half, 8);
-    const res2 = Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 8);
-    return res1 || res2;
+    Npc.anim(this, x, y, half, 8);
+    return Npc.animTeam(state.party[0] || state.roles[0], x, y, half, 8, true);
   });
 }
 
