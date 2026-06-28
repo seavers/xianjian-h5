@@ -946,6 +946,18 @@ function ImageExplorerApp() {
     }
   }, [isVisible, modules]);
 
+  // 当场景图元（gop.mkf）显示或切换时，自动取当前的场景ID/地图ID作为默认值
+  useEffect(() => {
+    if (isVisible && currentType === 'gop' && window.state) {
+      const currentSceneId = window.state.mapId !== undefined ? window.state.mapId : window.state.sceneId;
+      if (currentSceneId !== undefined && currentSceneId !== null) {
+        setGopMapId(String(currentSceneId));
+        setSubId(currentSceneId);
+        setCurrentPage(0);
+      }
+    }
+  }, [isVisible, currentType]);
+
   // 根据当前大类分类、二级分类、加载状态，精准实时重新计算资源子项总件数
   useEffect(() => {
     // 只有在弹窗可见且底层依赖模块已加载时，才重新计算资源总数，避免在刚进游戏尚未下载完成时触发报错
