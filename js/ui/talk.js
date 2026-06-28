@@ -51,7 +51,7 @@ async function showUp(pRgmId) {
   // 如果当前正在对话且有正文，切换位置前必须先让玩家按键确认
   if (talkUp) {
     await waitKey();
-    clearTalk();
+    resetTalk();
     talkUp = null;
   }
 
@@ -83,7 +83,7 @@ async function showDown(pRgmId) {
   // 同理，如果切换位置时有残留对话，需等待玩家按键确认
   if (talkDown) {
     await waitKey();
-    clearTalk();
+    resetTalk();
     talkDown = null;
   }
 
@@ -152,7 +152,7 @@ export async function drawTalk(msgId) {
     // 步骤 2.5：如果是确认选择菜单，则不在此等待按键且不清空对话框，保留文字在底层
   } else if(!isNextTalk(t)) {
     await waitKey();
-    clearTalk();
+    resetTalk();
 
     if (isNextFinishOrStop(t)) {
       talkPosition = 'up';
@@ -362,7 +362,7 @@ async function forceScrollPage() {
 
 
 // 清除所有对话，是完成一轮对话后的动作
-export function clearTalk() {
+export function resetTalk() {
   const talkCtx = state.contexts.talk;
   if (talkCtx) {
     talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
@@ -462,7 +462,7 @@ async function drawLineSync(texts, x, y) {
   
   await waitKey();
   resetMessageOrTips();
-  clearTalk();
+  resetTalk();
 }
 
 function resetMessageOrTips() {
@@ -480,7 +480,7 @@ async function checkNeedNextTips() {
   tips = false;
   message = false;
   resetMessageOrTips();
-  clearTalk();
+  resetTalk();
 }
 
 function isNextTalk(t) {
@@ -530,7 +530,7 @@ export const Talk = {
   talkMessage: showMessage,
   drawTalk,
   clearTalk: forceScrollPage,
-  closeTalk: clearTalk,
+  resetTalk: resetTalk,
   tickArrow,
   onInput,
   get isTalking() {

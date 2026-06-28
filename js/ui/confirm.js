@@ -107,7 +107,7 @@ export const Confirm = {
     state.uiMode = previousUiMode || 'operate';
 
     // 步骤 1.5：清空底层剧情对话框并重置对话状态，防止后续键盘输入被对话拦截
-    Talk.closeTalk();
+    Talk.resetTalk();
 
     if (this.resolve) {
       this.resolve(result);

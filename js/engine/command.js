@@ -1199,7 +1199,7 @@ export async function clearTalk() {
 
 export async function updateScreen(p1, p2, p3, {type}) {
   if (type === 'enemy') {
-    await Talk.closeTalk();
+    await Talk.resetTalk();
     return;
   }
 
