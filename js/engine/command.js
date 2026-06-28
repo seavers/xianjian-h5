@@ -1173,7 +1173,12 @@ export function jumpIfObjectState(objId, stateVal, targetScriptId) {
   }
 }
 
-export async function talk(msgId) {
+export async function talk(msgId, _1, _2, context) {
+  // 修复盛渔村市集中，进铁剑铺的bug
+  if (context?.type == 'auto') {
+    return;
+  }
+
   await Talk.drawTalk(msgId); // 异步等待对话框弹出并确认推进完成
 }
 

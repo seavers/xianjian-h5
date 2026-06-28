@@ -144,7 +144,9 @@ export async function drawTalk(msgId) {
 
   // 判断后面是不是对话，判断是否暂停等确认
   const t = Script.activeThread;
-  if(isNextTalks(t)) {
+  if(t == null) {
+    return;
+  } else if(isNextTalks(t)) {
     await waitKey();
   } else if (isNextScrollTalks(t)) {
     // await waitKey();
