@@ -2,6 +2,28 @@ export function initStepDebugger() {
   window.STEP_DEBUG = false;
   window.ACTIVE_DEBUG_THREAD = null;
 
+  // 1. 初始化全局调试状态对象，作为 React 组件的数据源
+  window.DEBUGGER_STATE = {
+    enabled: false,
+    status: 'STANDBY',
+    instruction: null
+  };
+
+  let currentResolve = null;
+
+  // 2. 统一的断点状态解决器，负责清空状态并 resolve 拦截 Promise
+  function resolveBreakpoint(action) {
+    if (currentResolve) {
+      const resolve = currentResolve;
+      currentResolve = null;
+      window.ACTIVE_DEBUG_THREAD = null;
+      window.DEBUGGER_STATE.status = 'STANDBY';
+      window.DEBUGGER_STATE.instruction = null;
+      window.onDebuggerStateChange?.();
+      resolve(action);
+    }
+  }
+
   let loadMsgFn = null;
   let toSimplifiedFn = null;
 
@@ -17,15 +39,14 @@ export function initStepDebugger() {
   const big5Decoder = new TextDecoder('big5');
 
   function resetStepDebugUIOnly() {
-    document.getElementById('step-instruction-box').style.display = 'none';
-    document.getElementById('btn-next-step').disabled = true;
-    document.getElementById('btn-resume-run').disabled = true;
+    window.DEBUGGER_STATE.instruction = null;
+    window.onDebuggerStateChange?.();
   }
 
   function resetStepDebugUI() {
-    resetStepDebugUIOnly();
-    document.getElementById('step-dbg-indicator').innerText = '● 待命 (STANDBY)';
-    document.getElementById('step-dbg-indicator').style.color = 'rgba(255,255,255,0.3)';
+    window.DEBUGGER_STATE.status = 'STANDBY';
+    window.DEBUGGER_STATE.instruction = null;
+    window.onDebuggerStateChange?.();
   }
 
   // 步骤 1：对话文本按 Big5 双字节重新对齐解码，避免脚本详情出现乱码。
@@ -140,7 +161,7 @@ export function initStepDebugger() {
     }
   }
 
-  // 步骤 3：当底层线程被单步拦截时，实时填充调试面板并点亮控制按钮。
+  // 步骤 3：当底层线程被单步拦截时，保存 Promise 解决器并更新全局调试状态以通知 UI
   window.onStepDebugPause = async (thread) => {
     window.ACTIVE_DEBUG_THREAD = thread;
 
@@ -160,57 +181,58 @@ export function initStepDebugger() {
     const detailInfo = getInstructionDetail(script.code, script.param1, script.param2, script.param3);
     const displayDesc = detailInfo ? `${desc} ➔ ${detailInfo}` : desc;
 
-    document.getElementById('step-ip').innerText = thread.scriptId;
-    document.getElementById('step-code').innerText = '0x' + script.code.toString(16).toUpperCase();
-    document.getElementById('step-desc').innerText = displayDesc;
-    document.getElementById('step-params').innerText = `${script.param1}, ${script.param2}, ${script.param3}`;
-    document.getElementById('step-instruction-box').style.display = 'block';
-    document.getElementById('step-dbg-indicator').innerText = '● 拦截 (PAUSED)';
-    document.getElementById('step-dbg-indicator').style.color = 'var(--glow-yellow)';
-    document.getElementById('btn-next-step').disabled = false;
-    document.getElementById('btn-resume-run').disabled = false;
+    // 更新全局调试状态
+    window.DEBUGGER_STATE.status = 'PAUSED';
+    window.DEBUGGER_STATE.instruction = {
+      ip: thread.scriptId,
+      code: '0x' + script.code.toString(16).toUpperCase(),
+      desc: displayDesc,
+      params: `${script.param1}, ${script.param2}, ${script.param3}`
+    };
+
+    // 触发 React 状态同步
+    window.onDebuggerStateChange?.();
+
+    // 返回一个等待单步操作解决的 Promise，实现异步挂起
+    return new Promise((resolve) => {
+      currentResolve = resolve;
+    });
   };
 
+  // 步骤 4：定义核心的单步拦截切换、单步步进、恢复运行及停止断点操作
   function toggleStepDebug(enabled) {
     window.STEP_DEBUG = enabled;
+    window.DEBUGGER_STATE.enabled = enabled;
     console.log(`[Debugger]: Step Debug Mode set to ${enabled}`);
 
     if (!enabled) {
-      if (window.ACTIVE_DEBUG_THREAD) {
-        const thread = window.ACTIVE_DEBUG_THREAD;
-        window.ACTIVE_DEBUG_THREAD = null;
-        thread.notify();
-      }
+      resolveBreakpoint();
       resetStepDebugUI();
       return;
     }
 
-    document.getElementById('step-dbg-indicator').innerText = '● 待命 (STANDBY)';
-    document.getElementById('step-dbg-indicator').style.color = 'rgba(255,255,255,0.3)';
+    window.DEBUGGER_STATE.status = 'STANDBY';
+    window.DEBUGGER_STATE.instruction = null;
+    window.onDebuggerStateChange?.();
   }
 
   function executeNextStep() {
-    if (!window.ACTIVE_DEBUG_THREAD) {
-      return;
-    }
-
-    const thread = window.ACTIVE_DEBUG_THREAD;
-    resetStepDebugUIOnly();
-    thread.step();
-
-    if (thread.finish || !window.STEP_DEBUG) {
-      resetStepDebugUI();
-    }
+    resolveBreakpoint();
   }
 
   function resumeRunning() {
-    document.getElementById('check-step-debug').checked = false;
     toggleStepDebug(false);
+  }
+
+  function stopBreakpoint() {
+    resolveBreakpoint('stop');
+    resetStepDebugUI();
   }
 
   window.toggleStepDebug = toggleStepDebug;
   window.executeNextStep = executeNextStep;
   window.resumeRunning = resumeRunning;
+  window.stopBreakpoint = stopBreakpoint;
   window.getInstructionDetail = getInstructionDetail;
 
   return {

@@ -560,24 +560,10 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
     });
 
     // 8. 同步单步调试器指令状态
-    const stepDbgInput = document.getElementById('check-step-debug');
-    if (stepDbgInput) {
-      setStepDebugEnabled(stepDbgInput.checked);
-    }
-    const indicatorEl = document.getElementById('step-dbg-indicator');
-    if (indicatorEl) {
-      setStepIndicator(indicatorEl.innerText);
-    }
-    const instrBox = document.getElementById('step-instruction-box');
-    if (instrBox && instrBox.style.display !== 'none') {
-      setStepInstruction({
-        ip: document.getElementById('step-ip')?.innerText || '-',
-        code: document.getElementById('step-code')?.innerText || '-',
-        desc: document.getElementById('step-desc')?.innerText || '-',
-        params: document.getElementById('step-params')?.innerText || '-'
-      });
-    } else {
-      setStepInstruction(null);
+    if (window.DEBUGGER_STATE) {
+      setStepDebugEnabled(window.DEBUGGER_STATE.enabled);
+      setStepIndicator(window.DEBUGGER_STATE.status === 'PAUSED' ? '● 拦截 (PAUSED)' : '● 待命 (STANDBY)');
+      setStepInstruction(window.DEBUGGER_STATE.instruction);
     }
 
     // 9. 同步控制台终端指令日志流 (查看单个 vs 查看多个)
@@ -626,6 +612,16 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
     const interval = setInterval(syncStateData, 200);
     return () => clearInterval(interval);
   }, [npcs.length, onlyHumanNpc, onlyVisibleNpc, onlyHasTrigNpc, selectedRoleIndex]);
+
+  // 挂载单步调试状态变更事件，实现界面即时反应，降低交互延迟
+  useEffect(() => {
+    window.onDebuggerStateChange = () => {
+      syncStateData();
+    };
+    return () => {
+      window.onDebuggerStateChange = null;
+    };
+  });
 
   // 自动滚动：当日志更新时自动滚动到底部
   useEffect(() => {
@@ -1628,8 +1624,9 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
           启用单步拦截 (Step Mode)
         </label>
         <div style=${{ display: 'flex', gap: '4px' }}>
-          <button class="btn-dbg" id="btn-next-step" onClick=${() => window.executeNextStep?.()} style=${{ color: 'var(--glow-green)', borderColor: 'rgba(0,255,157,0.15)', padding: '2px 5px', fontSize: '8.5px' }}>⬇️ 下一步 (Next)</button>
-          <button class="btn-dbg" id="btn-resume-run" onClick=${() => window.resumeRunning?.()} style=${{ color: 'var(--glow-blue)', borderColor: 'rgba(0,225,255,0.15)', padding: '2px 5px', fontSize: '8.5px' }}>▶️ 恢复 (Resume)</button>
+          <button class="btn-dbg" id="btn-next-step" disabled=${!stepInstruction} onClick=${() => window.executeNextStep?.()} style=${{ color: 'var(--glow-green)', borderColor: 'rgba(0,255,157,0.15)', padding: '2px 5px', fontSize: '8.5px', opacity: stepInstruction ? 1 : 0.4 }}>⬇️ 下一步 (Next)</button>
+          <button class="btn-dbg" id="btn-resume-run" disabled=${!stepInstruction} onClick=${() => window.resumeRunning?.()} style=${{ color: 'var(--glow-blue)', borderColor: 'rgba(0,225,255,0.15)', padding: '2px 5px', fontSize: '8.5px', opacity: stepInstruction ? 1 : 0.4 }}>▶️ 恢复 (Resume)</button>
+          <button class="btn-dbg" id="btn-stop-breakpoint" disabled=${!stepInstruction} onClick=${() => window.stopBreakpoint?.()} style=${{ color: 'var(--glow-red)', borderColor: 'rgba(255,0,0,0.15)', padding: '2px 5px', fontSize: '8.5px', opacity: stepInstruction ? 1 : 0.4 }}>⏹️ 停止 (Stop)</button>
         </div>
       </div>
       <!-- 当前挂起指令详情高亮气泡 -->

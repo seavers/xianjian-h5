@@ -166,14 +166,17 @@ export const Script = {
     
     let endFlag = false;
     while (!endFlag) {
-      // 1. 核心单步调试拦截点
-      if (window.STEP_DEBUG) {
-        if (window.onStepDebugPause) {
-          await window.onStepDebugPause(obj, scriptEntry);
-        }
-      }
-      if(Script.activeThread) {
+      // 1. 更新当前线程的指令指针，确保调试界面展现正确的当前执行 IP
+      if (Script.activeThread) {
         Script.activeThread.scriptId = scriptEntry;
+      }
+
+      // 2. 核心单步调试拦截点：若启用单步调试则通过 Promise 机制挂起主循环，并支持断点停止中断
+      if (window.STEP_DEBUG && window.onStepDebugPause) {
+        const action = await window.onStepDebugPause(Script.activeThread || { scriptId: scriptEntry, obj, type });
+        if (action === 'stop') {
+          break;
+        }
       }
 
       // 2. 读取当前指令
