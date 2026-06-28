@@ -101,12 +101,15 @@ function refreshRoleFrame(role) {
 export function refreshWalkFrame(role) {
   const frameWalkCount = getFrameWalkCount(role);
 
+  // 比如开局移动的地板就是 frameWalkCount = 0
+  if (frameWalkCount <= 1) {
+    role.frame = 0;
+  }
+
   role.count = role.count ?? -1; // 默认为 -1
   role.count++;
   
-  if (frameWalkCount == 1) {
-    role.frame = 0;
-  } else if (frameWalkCount == 2) {
+  if (frameWalkCount == 2) {
     role.frame = role.count % 2;
   } else if (frameWalkCount == 3) {
     role.frame = [0, 1, 0, 2][role.count % 4];
