@@ -38,15 +38,15 @@ export function setRoleTile(roleId, tileId, bool) {
   refreshRoleFrame(state.roles[roleId]);
 }
 
-export function setRoleIndex(dir, frame, roleId) {
-  if (state.roles[roleId]) {
-    state.roles[roleId].dir = dir;
-    state.roles[roleId].frame = frame;
-  }
+export function setTeamDir(dir, frame, partyIndex) {
+  // 1. 优先从当前队伍槽位中获取目标角色，若获取不到，则退化到所有可用角色列表
+  const role = state.party[partyIndex] || state.roles[partyIndex];
 
-  // 这里得刷新站位，不是walkFrame，参看送酒脚本4893，这里的if dir还得有，参考4895
-  if (dir) {
-    refreshRoleFrame(state.roles[roleId]);
+  // 2. 若目标角色存在，更新其方向与动作帧，并刷新该角色的渲染精灵帧
+  if (role) {
+    role.dir = dir;
+    role.frame = frame;
+    refreshRoleFrame(role);
   }
 }
 
@@ -2932,7 +2932,7 @@ scriptCodes[0x9B] = { func: fadeToCurrentScene, desc: '屏幕渐变淡入当前�
 
 scriptCodes[0x46] = { func: setRolePos, desc: '设置主角/队员瓦片位置' };
 scriptCodes[0x65] = { func: setRoleTile, desc: '设置主角/队员形象' };
-scriptCodes[0x15] = { func: setRoleIndex, desc: '设置队员动作方向/帧' };
+scriptCodes[0x15] = { func: setTeamDir, desc: '设置队员动作方向/帧' };
 scriptCodes[0x41] = { func: setScriptSuccess, desc: '标记脚本执行为失败状态' };
 scriptCodes[0x42] = { func: simulateMagic, desc: '在战斗/剧情中模拟仙术' };
 scriptCodes[0x75] = { func: setRoleGroup, desc: '设置组队伙伴' };

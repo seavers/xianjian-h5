@@ -1,7 +1,7 @@
 import { state } from './engine/state.js';
 import { ready, file_caches, loadMkf, load } from './resources/loader.js';
 import { loadSss, loadDat, fromCache, caches } from './resources/pal.js';
-import { setRolePos, setRoleTile, setRoleIndex, setRoleGroup, toggleScene, calcMap } from './engine/command.js';
+import { setRolePos, setRoleTile, setTeamDir, setRoleGroup, toggleScene, calcMap } from './engine/command.js';
 import { ESC } from './esc/esc.js';
 import { Shop } from './ui/shop.js';
 import { Confirm } from './ui/confirm.js';
