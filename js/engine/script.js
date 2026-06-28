@@ -369,7 +369,8 @@ export const Script = {
       const o = state.eventObjects[i];
       if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc' || o.nouse !== 0) continue;
 
-      if (o.autoScr) {
+      // autoScr 必须大于 0，不需要执行停止指令，同时又不是0xFF，比如NPC#135就是个0xFF
+      if (o.autoScr && o.autoScr > 0 && o.autoScr < 65535) {
         const ret = await Script.stepOneInstruction(o);
         o.autoScr = ret;
       }
