@@ -1,6 +1,7 @@
 import { state } from '../engine/state.js';
 import { Script } from '../engine/script.js';
 import { loadMsg, loadWord, loadPic, loadRgm } from '../resources/pal.js';
+import { UI } from './panel.js';
 
 export let isTalking = false;
 
@@ -26,6 +27,7 @@ let tx = 0;
 let ty = 0;
 
 let talkPosition = 'up';
+let color = null;
 
 // 向下闪烁箭头动画坐标与时间状态管理
 let arrowX = 0;
@@ -128,7 +130,6 @@ export async function drawTalk(msgId) {
     await drawMessage(msgId);
     return;
   } else if (tips) {
-    tips = false;
     await drawTips(msgId);
     return;
   }
@@ -185,7 +186,7 @@ async function drawTalk0(text, param) {
 
   // 动态决定 Y 坐标：有说话人时根据 ty 排，无说话人时整体上移到 titleY 排以填补空间
   const x = param.tx;
-  const y = param.who ? (param.ty + param.line * 18) : (param.titleY + param.line * 18);
+  const y = param.ty + param.line * 18;
 
   // 打印一行字
   await drawLine(text, x, y)
@@ -198,10 +199,10 @@ async function drawTalk0(text, param) {
   arrowY = y;
 }
 
-function drawWord(charCode, x, y, color) {
+function drawWord(charCode, x, y, customColor) {
   const talkCtx = state.contexts.talk;
   if (!talkCtx) return;
-  const img = color ? loadWord(charCode, color) : loadWord(charCode);
+  const img = customColor ? loadWord(charCode, customColor) : loadWord(charCode);
   if (img) {
     talkCtx.drawImage(img, x, y);
   }
@@ -242,7 +243,6 @@ async function drawLine(text, x, y) {
 }
 
 function calcText(text) {
-  let color = null;
   let currentDelayTime = 3;
 
   const r = [];
@@ -370,6 +370,7 @@ export function clearTalk() {
 
   talkUp = null;
   talkDown = null;
+  color = null;
 
   isTalking = false;
   if (state.uiMode === 'talk') {
@@ -441,50 +442,22 @@ async function drawMessage(msgId) {
   const x = tx - length * 8;
   const y = ty;
 
-  drawBack(length, x, y);
+  await UI.drawSingleLineBox(x, y, length, state.contexts.talk);
   await drawLineSync(texts, x + 8, y + 10, false); // talkMessage 不需要显示箭头
 }
 
 async function drawTips(msgId) {
   enterTalkMode();
   const text = loadMsg(msgId);
-  const texts = calcText(text);
+  await drawLine(text, tx, ty);
+  ty += 18;
 
-  const x = tx;
-  const y = ty;
-
-  await drawLineSync(texts, x, y, false); // talkTips 不需要显示箭头
+  await checkNeedNextTips();
 }
 
-function drawBack(length, x, y) {
-  const talkCtx = state.contexts.talk;
-  if (!talkCtx) return;
-
-  const picLeft = loadPic(45);
-  if (picLeft) talkCtx.drawImage(picLeft, x, y);
-
-  const picMiddle = loadPic(46);
-  if (picMiddle) {
-    for (let i = 0; i < length; i++) {
-      talkCtx.drawImage(picMiddle, x + 8 + i * 16, y);
-    }
-  }
-
-  const picRight = loadPic(47);
-  if (picRight) talkCtx.drawImage(picRight, x + 8 + length * 16, y);
-}
-
-async function drawLineSync(texts, x, y, showArrow = true) {
+async function drawLineSync(texts, x, y) {
   for (let i = 0; i < texts.length; i++) {
     drawWord(texts[i].charCode, x + i * 16, y, texts[i].color);
-  }
-
-  if (showArrow) {
-    arrowX = x + texts.length * 16;
-    arrowY = y;
-  } else {
-    arrowX = 0;
-    arrowY = 0;
   }
   
   await waitKey();
@@ -494,6 +467,20 @@ async function drawLineSync(texts, x, y, showArrow = true) {
 
 function resetMessageOrTips() {
   isTalking = false;
+}
+
+async function checkNeedNextTips() {
+  const t = Script.activeThread;
+  if(isNextTalk(t)) {
+    return;
+  }
+  
+  await waitKey();
+
+  tips = false;
+  message = false;
+  resetMessageOrTips();
+  clearTalk();
 }
 
 function isNextTalk(t) {
