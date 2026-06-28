@@ -44,14 +44,11 @@ export function initScriptLogPanel({ getInstructionDetail }) {
   		}
 
   		function getScriptLogFilterState() {
-  			const selectedNpcId = getSelectedNpcLogId();
-  			if (window.showAllScriptLogs) {
-  				return { mode: 'all', selectedNpcId };
-  			}
-  			if (selectedNpcId !== null) {
-  				return { mode: 'npc-auto', selectedNpcId };
-  			}
-  			return { mode: 'non-auto', selectedNpcId: null };
+  			const state = window.state;
+  			const mode = state && state.scriptLogMode ? state.scriptLogMode : 'single';
+  			const selectedNpcId = state && Number.isInteger(state.highlightNpcId) ? state.highlightNpcId : null;
+  			const selectedNpcIds = state && Array.isArray(state.selectedNpcIds) ? state.selectedNpcIds : [];
+  			return { mode, selectedNpcId, selectedNpcIds };
   		}
 
   		function isSameScriptLog(a, b) {
@@ -67,40 +64,37 @@ export function initScriptLogPanel({ getInstructionDetail }) {
 
   		function getScriptLogEmptyText() {
   			const filterState = getScriptLogFilterState();
-  			if (filterState.mode === 'all') {
-  				return '等待全部指令执行日志流式输入...';
+  			if (filterState.mode === 'multiple') {
+  				return '当前为“查看多个”模式，暂未捕获到主脚本及选中 NPC 的日志...';
   			}
-  			if (filterState.mode === 'npc-auto') {
-  				return `当前仅展示 NPC #${filterState.selectedNpcId} 的 auto 指令，暂未捕获到执行日志...`;
+  			if (filterState.selectedNpcId !== null) {
+  				return `当前仅展示 NPC #${filterState.selectedNpcId} 的 auto 指令，暂未捕获到日志...`;
   			}
-  			return '当前默认仅展示非 auto 类型指令...';
+  			return '当前仅展示主脚本指令，暂未捕获到日志...';
   		}
 
   		function updateScriptLogFilterUI() {
   			const filterState = getScriptLogFilterState();
   			const label = document.getElementById('label-log-filter-mode');
-  			const btn = document.getElementById('btn-toggle-all-logs');
 
-  			// 1. 同步顶部文案，让当前过滤模式始终可见
+  			// 同步顶部文案，让当前过滤模式和选中的NPC状态始终可见
   			if (label) {
-  				if (filterState.mode === 'all') {
-  					label.innerText = '当前显示全部指令';
+  				if (filterState.mode === 'multiple') {
+  					if (filterState.selectedNpcIds.length > 0) {
+  						label.innerText = `当前显示主脚本 + NPC [${filterState.selectedNpcIds.join(', ')}] 的脚本`;
+  					} else {
+  						label.innerText = '当前仅显示主脚本 (多选未选中NPC)';
+  					}
   					label.style.color = 'var(--glow-yellow)';
-  				} else if (filterState.mode === 'npc-auto') {
-  					label.innerText = `当前仅显示 NPC #${filterState.selectedNpcId} 的 auto 指令`;
-  					label.style.color = 'var(--glow-green)';
   				} else {
-  					label.innerText = '默认仅显示非 auto 指令';
-  					label.style.color = 'rgba(255,255,255,0.5)';
+  					if (filterState.selectedNpcId !== null) {
+  						label.innerText = `当前仅显示 NPC #${filterState.selectedNpcId} 的 auto 指令`;
+  						label.style.color = 'var(--glow-green)';
+  					} else {
+  						label.innerText = '当前显示主脚本 (单选未选中NPC)';
+  						label.style.color = 'rgba(255,255,255,0.5)';
+  					}
   				}
-  			}
-
-  			// 2. 同步按钮状态，支持在“显示全部”和“恢复筛选”之间切换
-  			if (btn) {
-  				btn.innerText = window.showAllScriptLogs ? '恢复筛选' : '显示全部';
-  				btn.style.color = window.showAllScriptLogs ? 'var(--glow-yellow)' : 'var(--glow-blue)';
-  				btn.style.borderColor = window.showAllScriptLogs ? 'rgba(255,208,0,0.22)' : 'rgba(0,225,255,0.08)';
-  				btn.style.background = window.showAllScriptLogs ? 'rgba(255,208,0,0.08)' : 'rgba(0,225,255,0.08)';
   			}
   		}
 
@@ -167,7 +161,7 @@ export function initScriptLogPanel({ getInstructionDetail }) {
   			const filterState = getScriptLogFilterState();
 
   			// 缓存 Signature 避免频繁重绘
-  			const filterSignature = `${filterState.mode}:${selectedNpcId ?? 'none'}:${window.logLimit}:${activeNpcCount}:${window.scriptLogWriteCount || 0}`;
+  			const filterSignature = `${filterState.mode}:${selectedNpcId ?? 'none'}:${filterState.selectedNpcIds.join(',')}:${window.logLimit}:${activeNpcCount}:${window.scriptLogWriteCount || 0}`;
   			if (!force && window.lastLogFilterSignature === filterSignature) {
   				updateScriptLogFilterUI();
   				return;
@@ -178,21 +172,24 @@ export function initScriptLogPanel({ getInstructionDetail }) {
 
   			// 步骤 A: 提取需要渲染的日志数据序列
   			let visibleLogs = [];
-  			if (filterState.mode === 'all') {
-  				// 全部汇总模式：合并主日志与所有 NPC 日志并按时间戳升序排序
+  			if (filterState.mode === 'multiple') {
+  				// 查看多个模式：显示主脚本 + 选中的NPC的脚本
   				const allLogs = [...window.scriptMainLogs];
-  				for (const npcId in window.scriptNpcLogs) {
-  					allLogs.push(...window.scriptNpcLogs[npcId]);
+  				for (const npcId of filterState.selectedNpcIds) {
+  					if (window.scriptNpcLogs[npcId]) {
+  						allLogs.push(...window.scriptNpcLogs[npcId]);
+  					}
   				}
   				visibleLogs = allLogs
   					.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
   					.slice(-window.logLimit);
-  			} else if (filterState.mode === 'npc-auto') {
-  				// NPC 专属过滤模式：只提取选中 NPC 的最新 30 条日志
-  				visibleLogs = (window.scriptNpcLogs[filterState.selectedNpcId] || []).slice(-30);
   			} else {
-  				// 默认模式：只展示非 auto 的主线程日志
-  				visibleLogs = window.scriptMainLogs.slice(-window.logLimit);
+  				// 查看单个模式：选中哪个NPC就查看哪个NPC的脚本；如果没有选中，就查看主脚本（即非auto指令）
+  				if (filterState.selectedNpcId !== null) {
+  					visibleLogs = (window.scriptNpcLogs[filterState.selectedNpcId] || []).slice(-window.logLimit);
+  				} else {
+  					visibleLogs = window.scriptMainLogs.slice(-window.logLimit);
+  				}
   			}
 
   			// 步骤 B: 如果无数据则输出空态提示
@@ -232,7 +229,7 @@ export function initScriptLogPanel({ getInstructionDetail }) {
   			const selectedNpcId = getSelectedNpcLogId();
   			const activeNpcCount = Object.keys(window.scriptNpcLogs).length;
   			const filterState = getScriptLogFilterState();
-  			const filterSignature = `${filterState.mode}:${selectedNpcId ?? 'none'}:${window.logLimit}:${activeNpcCount}:${window.scriptLogWriteCount || 0}`;
+  			const filterSignature = `${filterState.mode}:${selectedNpcId ?? 'none'}:${filterState.selectedNpcIds.join(',')}:${window.logLimit}:${activeNpcCount}:${window.scriptLogWriteCount || 0}`;
 
   			if (!force && window.lastLogFilterSignature === filterSignature) {
   				updateScriptLogFilterUI();
@@ -241,8 +238,10 @@ export function initScriptLogPanel({ getInstructionDetail }) {
   			renderScriptLogs({ force: true });
   		}
 
-  		function toggleShowAllScriptLogs() {
-  			window.showAllScriptLogs = !window.showAllScriptLogs;
+  		function setScriptLogMode(mode) {
+  			if (window.state) {
+  				window.state.scriptLogMode = mode;
+  			}
   			window.lastLogFilterSignature = '';
   			renderScriptLogs({ force: true, stickToBottom: true });
   		}
@@ -269,25 +268,34 @@ export function initScriptLogPanel({ getInstructionDetail }) {
   					window.scriptNpcLogs[npcId] = [];
   				}
   				window.scriptNpcLogs[npcId].push(log);
-  				if (window.scriptNpcLogs[npcId].length > 30) {
+  				if (window.scriptNpcLogs[npcId].length > 100) {
   					window.scriptNpcLogs[npcId].shift();
+  				}
+
+  				// 如果当前正好在显示这个 NPC 的日志，也触发渲染
+  				const filterState = getScriptLogFilterState();
+  				const isVisible = (filterState.mode === 'multiple' && filterState.selectedNpcIds.includes(npcId)) ||
+  				                  (filterState.mode === 'single' && filterState.selectedNpcId === npcId);
+  				if (isVisible) {
+  					renderScriptLogs({ force: true, stickToBottom: true });
   				}
   			}
 
   			window.scriptLogWriteCount = (window.scriptLogWriteCount || 0) + 1;
-  			// renderScriptLogs({ force: true, stickToBottom: true });
   		}
 
-		window.clearScriptLogs = clearScriptLogs;
-		window.changeLogLimit = changeLogLimit;
-		window.toggleShowAllScriptLogs = toggleShowAllScriptLogs;
-		window.renderScriptLogs = renderScriptLogs;
-		window.syncScriptLogFilterView = syncScriptLogFilterView;
-		window.appendScriptLog = appendScriptLog;
+  		window.clearScriptLogs = clearScriptLogs;
+  		window.changeLogLimit = changeLogLimit;
+  		window.setScriptLogMode = setScriptLogMode;
+  		window.renderScriptLogs = renderScriptLogs;
+  		window.syncScriptLogFilterView = syncScriptLogFilterView;
+  		window.appendScriptLog = appendScriptLog;
 
-		return {
-			renderScriptLogs,
-			syncScriptLogFilterView,
-			appendScriptLog
-		};
-}
+  		return {
+  			renderScriptLogs,
+  			syncScriptLogFilterView,
+  			appendScriptLog
+  		};
+  }
+
+

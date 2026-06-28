@@ -221,7 +221,8 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
 
   const [logFilterModeText, setLogFilterModeText] = useState('默认仅显示非 auto 指令');
   const [logLimit, setLogLimit] = useState(200);
-  const [showAllLogs, setShowAllLogs] = useState(false);
+  const [scriptLogMode, setScriptLogMode] = useState('single');
+  const [selectedNpcIds, setSelectedNpcIds] = useState([]);
   const [logs, setLogs] = useState([]);
   const [autoScroll, setAutoScroll] = useState(true);
 
@@ -579,25 +580,41 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
       setStepInstruction(null);
     }
 
-    // 9. 同步控制台终端指令日志流（三种模式：全部 / 选中NPC的auto / 默认非auto）
-    const showAll = window.showAllScriptLogs || false;
-    setShowAllLogs(showAll);
+    // 9. 同步控制台终端指令日志流 (查看单个 vs 查看多个)
+    const currentMode = state.scriptLogMode || 'single';
+    setScriptLogMode(currentMode);
+
+    const activeSelectedNpcIds = state.selectedNpcIds || [];
+    setSelectedNpcIds([...activeSelectedNpcIds]);
 
     let logSource = [];
-    if (showAll) {
-      setLogFilterModeText('已开启全部显示(包含 auto 心跳)');
-      logSource = window.scriptLogStore || [];
-    } else if (highlightNpcId !== null) {
-      setLogFilterModeText(`当前仅显示 NPC #${highlightNpcId} 的 auto 指令`);
-      logSource = window.scriptNpcLogs[highlightNpcId] || [];
+    if (currentMode === 'multiple') {
+      if (activeSelectedNpcIds.length > 0) {
+        setLogFilterModeText(`当前显示主脚本 + NPC [${activeSelectedNpcIds.join(', ')}] 的脚本`);
+      } else {
+        setLogFilterModeText('当前仅显示主脚本 (多选未选中NPC)');
+      }
+
+      const allLogs = [...window.scriptMainLogs];
+      for (const npcId of activeSelectedNpcIds) {
+        if (window.scriptNpcLogs[npcId]) {
+          allLogs.push(...window.scriptNpcLogs[npcId]);
+        }
+      }
+      logSource = allLogs.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
     } else {
-      setLogFilterModeText('默认仅显示非 auto 指令');
-      logSource = window.scriptMainLogs || [];
+      if (highlightNpcId !== null) {
+        setLogFilterModeText(`当前仅显示 NPC #${highlightNpcId} 的 auto 指令`);
+        logSource = window.scriptNpcLogs[highlightNpcId] || [];
+      } else {
+        setLogFilterModeText('当前显示主脚本 (单选未选中NPC)');
+        logSource = window.scriptMainLogs || [];
+      }
     }
 
     const limit = window.logLimit || 200;
     setLogLimit(limit);
-    setLogs([...logSource]);
+    setLogs([...logSource].slice(-limit));
 
     // 触发日志终端的原生 DOM 渲染，以避免 React 虚拟 DOM 冲突导致的 removeChild 报错
     window.renderScriptLogs?.();
@@ -1298,23 +1315,45 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                   ${npcs.length === 0 ? html`
                     <div style=${{ gridColumn: 'span 5', color: 'rgba(255,255,255,0.15)', fontSize: '8.5px', padding: '10px 0', textAlign: 'center' }}>当前场景暂无活跃的事件/NPC实体</div>
                   ` : npcs.map((npc, idx) => {
-                    const isHighlighted = highlightNpcId === npc.id;
+                    const isSelected = scriptLogMode === 'multiple'
+                      ? selectedNpcIds.includes(npc.id)
+                      : highlightNpcId === npc.id;
                     
                     return html`
                       <div 
                         key=${npc.id}
-                        class=${`npc-micro-card ${isHighlighted ? 'highlighted' : ''}`}
+                        class=${`npc-micro-card ${isSelected ? 'highlighted' : ''}`}
                         onMouseEnter=${() => { inspectNpc(npc); setHoveredNpc(npc); }}
                         onMouseLeave=${() => setHoveredNpc(null)}
                         onClick=${() => {
-                          const nextId = highlightNpcId === npc.id ? null : npc.id;
-                          setHighlightNpcId(nextId);
-                          state.highlightNpcId = nextId;
+                          if (scriptLogMode === 'multiple') {
+                            let newSelected = [...selectedNpcIds];
+                            if (newSelected.includes(npc.id)) {
+                              newSelected = newSelected.filter(id => id !== npc.id);
+                            } else {
+                              newSelected.push(npc.id);
+                            }
+                            state.selectedNpcIds = newSelected;
+                            setSelectedNpcIds(newSelected);
+                            
+                            // 更新高亮 NPC ID 以为预览精灵提供选中引用 (取最后一个选中的，若无则为 null)
+                            const lastNpcId = newSelected.length > 0 ? newSelected[newSelected.length - 1] : null;
+                            setHighlightNpcId(lastNpcId);
+                            state.highlightNpcId = lastNpcId;
+                          } else {
+                            const nextId = highlightNpcId === npc.id ? null : npc.id;
+                            setHighlightNpcId(nextId);
+                            state.highlightNpcId = nextId;
+                            state.selectedNpcIds = nextId !== null ? [nextId] : [];
+                            setSelectedNpcIds(state.selectedNpcIds);
+                          }
+                          // 立即触发渲染以刷新 UI 状态
+                          window.renderScriptLogs?.();
                         }}
                         onDoubleClick=${() => teleportToNpc(npc)}
                         style=${{
-                          border: isHighlighted ? '1px solid var(--glow-green)' : '1px solid rgba(255,255,255,0.04)',
-                          background: isHighlighted ? 'rgba(0,255,157,0.06)' : 'rgba(0,0,0,0.2)',
+                          border: isSelected ? '1px solid var(--glow-green)' : '1px solid rgba(255,255,255,0.04)',
+                          background: isSelected ? 'rgba(0,255,157,0.06)' : 'rgba(0,0,0,0.2)',
                           padding: '4px',
                           borderRadius: '2px',
                           cursor: 'pointer',
@@ -1507,8 +1546,43 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
               <option value="1000">1000 条</option>
             </select>
           </label>
-          <button id="btn-toggle-all-logs" onClick=${() => { window.toggleShowAllScriptLogs?.(); }} style=${{ background: showAllLogs ? 'rgba(255,208,0,0.16)' : 'rgba(0, 225, 255, 0.08)', border: '1px solid rgba(0, 225, 255, 0.2)', color: showAllLogs ? 'var(--glow-yellow)' : 'var(--glow-blue)', padding: '1px 6px', fontSize: '8px', fontWeight: 'bold', borderRadius: '2px', cursor: 'pointer', outline: 'none' }}>
-            ${showAllLogs ? '普通日志' : '全部日志'}
+          <button 
+            onClick=${() => { 
+              window.setScriptLogMode?.('single'); 
+              setScriptLogMode('single');
+            }} 
+            style=${{ 
+              background: scriptLogMode === 'single' ? 'rgba(0, 225, 255, 0.16)' : 'rgba(255, 255, 255, 0.04)', 
+              border: scriptLogMode === 'single' ? '1px solid rgba(0, 225, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)', 
+              color: scriptLogMode === 'single' ? 'var(--glow-blue)' : 'rgba(255, 255, 255, 0.5)', 
+              padding: '1px 6px', 
+              fontSize: '8px', 
+              fontWeight: 'bold', 
+              borderRadius: '2px', 
+              cursor: 'pointer', 
+              outline: 'none' 
+            }}
+          >
+            查看单个
+          </button>
+          <button 
+            onClick=${() => { 
+              window.setScriptLogMode?.('multiple'); 
+              setScriptLogMode('multiple');
+            }} 
+            style=${{ 
+              background: scriptLogMode === 'multiple' ? 'rgba(255, 208, 0, 0.16)' : 'rgba(255, 255, 255, 0.04)', 
+              border: scriptLogMode === 'multiple' ? '1px solid rgba(255, 208, 0, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)', 
+              color: scriptLogMode === 'multiple' ? 'var(--glow-yellow)' : 'rgba(255, 255, 255, 0.5)', 
+              padding: '1px 6px', 
+              fontSize: '8px', 
+              fontWeight: 'bold', 
+              borderRadius: '2px', 
+              cursor: 'pointer', 
+              outline: 'none' 
+            }}
+          >
+            查看多个
           </button>
           <button onClick=${() => window.clearScriptLogs?.()} style=${{ background: 'rgba(255, 59, 111, 0.12)', border: '1px solid rgba(255, 59, 111, 0.25)', color: 'var(--glow-red)', padding: '1px 6px', fontSize: '8px', fontWeight: 'bold', borderRadius: '2px', cursor: 'pointer', outline: 'none' }}>🗑️ 清空日志</button>
           <button onClick=${() => setAutoScroll(!autoScroll)} style=${{ background: autoScroll ? 'rgba(0, 255, 157, 0.12)' : 'rgba(255, 255, 255, 0.04)', border: autoScroll ? '1px solid rgba(0, 255, 157, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)', color: autoScroll ? 'var(--glow-green)' : 'rgba(255, 255, 255, 0.35)', padding: '1px 6px', fontSize: '8px', fontWeight: 'bold', borderRadius: '2px', cursor: 'pointer', outline: 'none' }}>

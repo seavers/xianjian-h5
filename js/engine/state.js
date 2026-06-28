@@ -90,6 +90,12 @@ export const state = {
   // 当前被高亮追踪的 NPC ID
   highlightNpcId: null,
 
+  // 查看多个模式下的多选 NPC ID 列表
+  selectedNpcIds: [],
+
+  // 脚本日志查看模式：'single' (查看单个) 或 'multiple' (查看多个)
+  scriptLogMode: 'single',
+
   // 主角移动历史轨迹，用于跟随者平滑跟随
   roleHistory: [],
 
