@@ -20,6 +20,7 @@ import { TICK_TIME } from '../app.js';
 import { clearWithEffect } from '../ui/clearWithEffect.js';
 import { enemies } from '../battle/battle.js';
 import { loadMkf } from '../resources/loader.js';
+import { Talk } from '../ui/talk.js';
 
 export function setRolePos(sx, sy, shalf) {
   state.mx = sx;
@@ -1173,32 +1174,32 @@ export function jumpIfObjectState(objId, stateVal, targetScriptId) {
 }
 
 export async function talk(msgId) {
-  await window.Talk.drawTalk(msgId); // 异步等待对话框弹出并确认推进完成
+  await Talk.drawTalk(msgId); // 异步等待对话框弹出并确认推进完成
 }
 
 export async function talkTips(msgId) {
-  await window.Talk.talkTips(msgId);
+  await Talk.talkTips(msgId);
 }
 
 export async function talkUp(rgmId) {
-  await window.Talk.talkUp(rgmId);
+  await Talk.talkUp(rgmId);
 }
 
 export async function talkDown(rgmId) {
-  await window.Talk.talkDown(rgmId);
+  await Talk.talkDown(rgmId);
 }
 
 export async function talkMessage(msgId) {
-  await window.Talk.talkMessage(msgId);
+  await Talk.talkMessage(msgId);
 }
 
 export async function clearTalk() {
-  await window.Talk.clearTalk();
+  await Talk.clearTalk();
 }
 
 export async function updateScreen(p1, p2, p3, {type}) {
   if (type === 'enemy') {
-    await window.Talk.closeTalk();
+    await Talk.closeTalk();
     return;
   }
 
