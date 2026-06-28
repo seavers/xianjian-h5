@@ -46,7 +46,11 @@ export function setTeamDir(dir, frame, partyIndex) {
   if (role) {
     role.dir = dir;
     role.frame = frame;
-    refreshRoleFrame(role);
+
+    // 这里必须得判断dir > 0，否则很多无方向的NPC，甚至阿奴出现的脚本30777，都有问题
+    if(role.dir > 0) {
+      refreshRoleFrame(role);
+    }
   }
 }
 
@@ -98,6 +102,12 @@ export function refreshWalkFrame(role) {
 
   // 比如开局移动的地板就是 frameWalkCount == 0
   if (frameWalkCount <= 0) {
+    if (role.baseFrame) {
+      role.count = role.count ?? -1; // 默认为 -1
+      role.count++;
+
+      role.frame = role.baseFrame + (role.count % 4);
+    }
     return;
   }
 
@@ -157,6 +167,14 @@ export function setRoleGroup(r1, r2, r3) {
         newParty.push(newRole);
       }
     }
+  }
+
+
+  // 参考阿奴出现后组队的脚本30975
+  const newLeader = newParty[0];
+  if(newLeader.x == 0 || newLeader.y == 0) {
+    newLeader.x = state.mapX;
+    newLeader.y = state.mapY;
   }
   
   state.party = newParty;
@@ -961,6 +979,8 @@ export function enemyUseMagic(magicId, rate, param3, context) {
 export function setNpcFrame(frame) {
   this.frame = frame;
   this.dir = 0;        // 强制指向南方(0)
+
+  this.baseFrame = frame;
 }
 
 export function setSceneId(sceneId) {
