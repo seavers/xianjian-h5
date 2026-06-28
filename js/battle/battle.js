@@ -519,12 +519,12 @@ function draw() {
 
   // 4. 指令选择阶段 UI 绘制
   if (showCommandUI && phase === 'select') {
-    // 当正处于主菜单、法术菜单、或选择法术目标阶段时均展示左下角动作指令菱形菜单
+    // 当正处于主菜单或法术菜单时展示左下角动作指令菱形菜单（选择目标时隐藏）
     let isDrawingMenu = false;
     let highlightIdx = selectedAction;
     if (menuState === 'main') {
       isDrawingMenu = true;
-    } else if (menuState === 'magic' || menuState === 'target_magic' || menuState === 'target_player_magic') {
+    } else if (menuState === 'magic') {
       isDrawingMenu = true;
       highlightIdx = 1; // 处于法术子操作阶段时，高亮“法术”图标 (1)
     }
@@ -570,8 +570,8 @@ function draw() {
       }
     }
 
-    // 绘制法术选择面板
-    if (menuState === 'magic' || menuState === 'target_magic' || menuState === 'target_player_magic') {
+    // 绘制法术选择面板（选择目标时临时隐藏）
+    if (menuState === 'magic') {
       const activePlayer = players[activePlayerIndex];
       if (activePlayer && activePlayer.magics && activePlayer.magics.length > 0) {
         // 1. 绘制左上角使用MP/当前主角MP框 (x: 10, y: 8, w: 80, h: 22)，完全使用九宫格贴图拼框
