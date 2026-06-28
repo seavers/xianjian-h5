@@ -367,7 +367,9 @@ export const Script = {
     // 步骤 1：遍历所有的 NPC 事件物体并单步执行其 auto 脚本 (传参由 o.thread 修正为 o)
     for (let i = state.startEventId + 1; i <= state.endEventId; i++) {
       const o = state.eventObjects[i];
-      if (!o || o.state === 0 || o.mgoId === 0 || o.type !== 'npc' || o.nouse !== 0) continue;
+      
+      // 这里不能添加条件 o.mgoId === 0 ，比如赵灵儿出场NPC212的脚本，是用来控制NPC211的，在主脚本9879处
+      if (!o || o.state === 0 || o.type !== 'npc' || o.nouse !== 0) continue;
 
       // autoScr 必须大于 0，不需要执行停止指令，同时又不是0xFF，比如NPC#135就是个0xFF
       if (o.autoScr && o.autoScr > 0 && o.autoScr < 65535) {
