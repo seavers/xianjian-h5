@@ -61,23 +61,17 @@ export function calcMap() {
 }
 
 export function getFrameWalkCount(role) {
-  if (!role) return 3;
-  const mgoId = role.type === 'role' ? role.tileId : role.mgoId;
-  if (mgoId !== undefined) {
-    try {
-      const count = loadMgoCount(mgoId);
-      if (count > 0) {
-        return Math.floor(count / 4);
-      }
-    } catch (e) {
-      // 容错
-    }
-  }
-  return role.frameWalkCount || (role.type === 'role' ? (role.walkFrames || 3) : 3);
+  return role.frameWalkCount || 0;
 }
 
 function refreshRoleFrame(role) {
   const frameWalkCount = getFrameWalkCount(role);
+  
+  // 比如开局的送酒，这个酒本身就没有walkCount，直接返回
+  if (frameWalkCount <= 0) {
+    return;
+  }
+
   let frame = role.frame % frameWalkCount;
   
   switch (role.dir) {
@@ -101,15 +95,17 @@ function refreshRoleFrame(role) {
 export function refreshWalkFrame(role) {
   const frameWalkCount = getFrameWalkCount(role);
 
-  // 比如开局移动的地板就是 frameWalkCount = 0
-  if (frameWalkCount <= 1) {
-    role.frame = 0;
+  // 比如开局移动的地板就是 frameWalkCount == 0
+  if (frameWalkCount <= 0) {
+    return;
   }
 
   role.count = role.count ?? -1; // 默认为 -1
   role.count++;
   
   if (frameWalkCount == 2) {
+    role.frame = 0;
+  } else if (frameWalkCount == 2) {
     role.frame = role.count % 2;
   } else if (frameWalkCount == 3) {
     role.frame = [0, 1, 0, 2][role.count % 4];
