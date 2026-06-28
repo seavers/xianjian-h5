@@ -13,9 +13,6 @@ export const Confirm = {
   async open() {
     this.confirmValue = 0; // 默认选中 否
 
-    // 步骤 1：同步重绘底图以生成静态底图，防止画面变黑
-    update(true);
-
     // 步骤 2：切换当前交互状态至 'confirm' 并将交互 Canvas 层显示出来
     previousUiMode = state.uiMode;
     state.uiMode = 'confirm';
@@ -53,9 +50,6 @@ export const Confirm = {
   draw() {
     const startupCtx = state.contexts.startup;
     if (!startupCtx) return;
-
-    // 步骤 1：同步重绘底层场景和人物精灵
-    update(true);
 
     // 步骤 2：清空当前交互 Canvas 层的画面
     startupCtx.clearRect(0, 0, startupCtx.canvas.width, startupCtx.canvas.height);
