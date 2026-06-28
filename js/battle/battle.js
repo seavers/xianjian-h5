@@ -1900,10 +1900,10 @@ async function endBattle(result) {
       // 步骤 4：在 talk 渲染层上绘制胜利奖励画卷框
       if (totalExp > 0) {
         // 绘制获得的经验值面板框（宽为 8 个中文字，x=83, y=60）
-        drawScrollBox(talkCtx, 83, 60, 8);
+        UI.drawSingleLineBox(83, 60, 8, talkCtx);
 
         // 绘制打败怪物获得文钱面板框（宽为 10 个中文字，x=65, y=105）
-        drawScrollBox(talkCtx, 65, 105, 10);
+        UI.drawSingleLineBox(65, 105, 10, talkCtx);
 
         // 绘制文案：获得经验值(#30), 打败敌人得(#9), 文钱(#10)
         drawWordToCtx(talkCtx, 30, 95, 70);
@@ -1924,7 +1924,7 @@ async function endBattle(result) {
         const up = upgradedPlayers[i];
 
         // 1. 绘制修行提升单行标题画卷框：x=72, y=0, 长度=11
-        drawScrollBox(talkCtx, 72, 1, 11);
+        UI.drawSingleLineBox(72, 1, 11, talkCtx);
 
         // 2. 绘制标题文案：“角色名” + “修行”(#48) + “提升”(#32)
         let nameLen = 0;
@@ -1943,7 +1943,7 @@ async function endBattle(result) {
         drawWordToCtx(talkCtx, 32, 110 + nameLen * 16 + 32, 10);
 
         // 3. 绘制具体数值大面板背景框：x=74, y=32, 宽=9, 高=8
-        drawNineGridBox(talkCtx, 66, 34, 11, 8, 10);
+        UI.drawMultiLineBox(66, 34, 11, 8, 10, talkCtx);
 
         // 4. 绘制 8 项属性的文字标签 (修行、体力、真气、武术、灵力、防御、身法、吉运)
         for (let j = 0; j < 8; j++) {
@@ -2056,7 +2056,7 @@ async function endBattle(result) {
             const textX = 75 - (totalLen - 10) * 8;
 
             // 绘制新法术单行画卷提示框
-            drawScrollBox(talkCtx, boxX, 105, totalLen);
+            UI.drawSingleLineBox(boxX, 105, totalLen, talkCtx);
 
             // 绘制文字：“角色名” + “练成” + “红字法术名”
             drawWordToCtx(talkCtx, roleStats.nameId, textX, 115);
@@ -2336,26 +2336,6 @@ function restorePlayerFrame(player) {
   }
 }
 
-// 绘制单行面板框，使用 data.mkf #9 45, 46, 47 号元素作为边框
-function drawScrollBox(ctx, x, y, length) {
-  const picLeft = loadPic(45);
-  if (picLeft) {
-    ctx.drawImage(picLeft, x, y);
-  }
-
-  const picMiddle = loadPic(46);
-  if (picMiddle) {
-    for (let i = 0; i < length; i++) {
-      ctx.drawImage(picMiddle, x + 8 + i * 16, y);
-    }
-  }
-
-  const picRight = loadPic(47);
-  if (picRight) {
-    ctx.drawImage(picRight, x + 8 + length * 16, y);
-  }
-}
-
 // 绘制结算小数字，利用 data.mkf #9 中的 20~29 (黄色) 或 30~39 (蓝色) 号数字元素
 function drawWinNumber(ctx, num, x, y, length, align = 'right', type = 'yellow') {
   const baseId = type === 'blue' ? 30 : 20;
@@ -2391,45 +2371,6 @@ function drawWinNumber(ctx, num, x, y, length, align = 'right', type = 'yellow')
     currX -= 6;
     remainingNum = Math.floor(remainingNum / 10);
   }
-}
-
-// 绘制三段式九宫格单行边框块的辅助函数，支持指定绘制上下文
-function drawWinPic3(ctx, picId, x, y, n) {
-  let dx = 0;
-  let pic = loadPic(picId);
-
-  if (pic) {
-    ctx.drawImage(pic, x, y);
-    dx += pic.width;
-  }
-
-  for (let i = 0; i < n; i++) {
-    pic = loadPic(picId + 1);
-    if (pic) {
-      ctx.drawImage(pic, x + dx, y);
-      dx += pic.width;
-    }
-  }
-
-  pic = loadPic(picId + 2);
-  if (pic) {
-    ctx.drawImage(pic, x + dx, y);
-  }
-
-  return pic ? pic.height : 0;
-}
-
-// 绘制九宫格大面板背景边框，使用 data.mkf #9 10~18 元素，支持指定绘制上下文
-function drawNineGridBox(ctx, x, y, width, height, style = 10) {
-  const w = width - 1;
-  const h = height - 1;
-  let currY = y;
-
-  currY += drawWinPic3(ctx, style + 0, x, currY, w);
-  for (let i = 0; i < h; i++) {
-    currY += drawWinPic3(ctx, style + 3, x, currY, w);
-  }
-  drawWinPic3(ctx, style + 6, x, currY, w);
 }
 
 // 封装阻塞式按键/空格等待逻辑

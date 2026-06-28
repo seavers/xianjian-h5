@@ -3,10 +3,10 @@ import { loadPic, loadWord } from '../resources/pal.js';
 
 export const UI = {
   drawLabel(x, y, size) {
-    this.drawScrollBox(x, y, size);
+    this.drawSingleLineBox(x, y, size);
   },
 
-  drawScrollBox(x, y, length, ctx) {
+  drawSingleLineBox(x, y, length, ctx) {
     const drawCtx = ctx || state.contexts.startup;
     if (!drawCtx) return;
 
@@ -58,10 +58,10 @@ export const UI = {
   },
 
   drawArea(x, y, width, height, style = 1) {
-    this.drawNineGridBox(x, y, width, height, style);
+    this.drawMultiLineBox(x, y, width, height, style);
   },
 
-  drawNineGridBox(x, y, width, height, style = 1, ctx) {
+  drawMultiLineBox(x, y, width, height, style = 1, ctx) {
     const drawCtx = ctx || state.contexts.startup;
     if (!drawCtx) return;
     const w = width - 1; // 减1的意思是: width, height是指交叉的地方, 交叉的地方用来输出汉字
