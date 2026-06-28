@@ -239,3 +239,5 @@ export async function playRng(rngId, startFrame, endFrame, speed) {
     lastTime = performance.now();
   }
 }
+
+window.playRng = playRng;
