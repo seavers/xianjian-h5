@@ -8,6 +8,7 @@ import { playSound } from '../resources/sound.js';
 import { checkAndFadeOut, fadeIn, fadeOut } from '../ui/fade.js';
 import { update } from '../ui/draw.js';
 import { Script } from '../engine/script.js';
+import { UI } from '../ui/panel.js';
 
 // 站位坐标配置 (1人, 2人, 3人)
 const PLAYER_POS_PRESETS = [
