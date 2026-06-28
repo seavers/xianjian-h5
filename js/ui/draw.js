@@ -366,7 +366,11 @@ export function drawNpcIdsOnScreen() {
       if (onlyVisible && o.state === 0) continue;
       if (onlyHasTrig && o.trigScr === 0) continue;
       // 绘制于 NPC 坐标稍微上方，使其清晰易读
-      drawText('#' + o.id, o.x, o.y - 12, state.contexts.main, '#ffd700', 7);
+      if (o.tile) {
+        drawText('#' + o.id, o.x - 9, o.y - o.tile.height + 16, state.contexts.main, '#ffd700', 9);
+      } else {
+        drawText('#' + o.id, o.x - 9, o.y - 9, state.contexts.main, '#ffd700', 9);
+      }
     }
   }
 }
