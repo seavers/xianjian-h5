@@ -5,7 +5,7 @@ import { SelectRole } from '../ui/selectRole.js';
 import { UseItemMenu } from '../ui/useItemMenu.js';
 import { CIRCLE_SCRIPT, GOTO_SCRIPT, REPLACE_ENTRY, RESET_SCRIPT, Script } from './script.js';
 import { Npc } from './anim.js';
-import { loadMgoCount, loadMap } from '../resources/pal.js';
+import { loadMgoCount, loadMap, loadFbp } from '../resources/pal.js';
 import { deyj } from '../utils/deyj.js';
 import { loadEnemies, loadEnemyPos } from '../battle/battleData.js';
 import { update, canWalk, clearDrawToBlack, checkNeedDraw } from '../ui/draw.js';
@@ -2282,6 +2282,9 @@ export async function waitForKey() {
   // await new Promise((resolve) => {
   //   window.Talk.registerTalkResolve(resolve);
   // });
+
+  await new Promise(resolve => setTimeout(resolve, 10000));
+
   console.log(`[0x4D waitForKey] 结束等待按键`);
 }
 
@@ -2452,7 +2455,7 @@ export function quitGame() {
 
   // 步骤 1：如果有 window 对象，直接重载整个页面，实现最彻底的游戏内存重置和返回主菜单
   if (typeof window !== 'undefined') {
-    window.location.reload();
+    // window.location.reload();
   }
 
   // 步骤 2：返回 endFlag 终止当前的脚本流程
@@ -2767,9 +2770,56 @@ export function showEndingAnimation() {
   console.log('[0x96 showEndingAnimation] (免做) 播放结局动画');
 }
 
-export function scrollFbpToScreen(param1, param2) {
-  // 步骤 1：屏幕滚动背景特效，调色板和图像水平/垂直滚动，由于采用 Canvas 静态场景，在此做 No-op 免做 Mock
-  console.log(`[0xA4 scrollFbpToScreen] (免做) 参数 1: ${param1}, 参数 2: ${param2}`);
+export async function scrollFbpToScreen(fbpId, param2, scrollSpeed) {
+  // 步骤 1：处理特定 HACK，当 FBP ID 为 68 时，先展示背景图 69 作为前置背景
+  if (fbpId === 68) {
+    showFbp(69, 0);
+  }
+
+  const mainCtx = state.contexts.main;
+  if (!mainCtx) {
+    return;
+  }
+
+  // 步骤 2：对当前屏幕画面进行备份，用于后续滚动动画时的旧画面平移
+  const canvasBak = document.createElement('canvas');
+  canvasBak.width = 320;
+  canvasBak.height = 200;
+  const ctxBak = canvasBak.getContext('2d');
+  ctxBak.drawImage(mainCtx.canvas, 0, 0);
+
+  // 步骤 3：加载目标全屏剧情背景图 (FBP) 并在全局状态中记录其 ID
+  const fbpImg = loadFbp(fbpId);
+  if (!fbpImg) {
+    return;
+  }
+  state.currentFbpId = fbpId;
+
+  // 步骤 4：根据滚动速度计算每步延时时间，进行 220 帧滚动步进
+  const speed = scrollSpeed || 1;
+  const delay = Math.max(1, Math.floor(800 / speed));
+
+  for (let l = 0; l < 220; l++) {
+    const i = Math.min(l, 200);
+
+    mainCtx.clearRect(0, 0, 320, 200);
+
+    // 步骤 5：自上而下滚动拼接图像（旧图像向下平移，新图像自上方滑入）
+    if (200 - i > 0) {
+      mainCtx.drawImage(canvasBak, 0, 0, 320, 200 - i, 0, i, 320, 200 - i);
+    }
+    if (i > 0) {
+      mainCtx.drawImage(fbpImg, 0, 200 - i, 320, i, 0, 0, 320, i);
+    }
+
+    // 步骤 6：等待指定延时时间以控制滚动速度
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+
+  // 步骤 7：动画结束后，确保屏幕绘制完整的最终背景，并刷新屏幕状态
+  mainCtx.clearRect(0, 0, 320, 200);
+  mainCtx.drawImage(fbpImg, 0, 0);
+  update();
 }
 
 export function removePlayerStatus(statusId) {
