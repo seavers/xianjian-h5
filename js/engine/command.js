@@ -1096,7 +1096,7 @@ export async function toggleScene(sceneId) {
 export async function finishCode() {
   // 参考 钓鱼剧情况脚本 14438
   if(state.needToFadeIn && state.nextSceneId == -1) {
-    update();
+    update(true);
     await fadeIn();
   }
 
@@ -3017,3 +3017,6 @@ scriptCodes[0x3D] = { func: talkDown, desc: '在屏幕底部显示对话' };
 scriptCodes[0x3E] = { func: talkMessage, desc: '显示弹出框信息 alert' };
 scriptCodes[0x8E] = { func: clearTalk, desc: '清空/关闭对话框' };
 scriptCodes[0xFFFF] = { func: talk, desc: '展示剧情人物对话框' };
+
+
+window.scriptCodes = scriptCodes;
