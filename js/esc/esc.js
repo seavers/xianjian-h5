@@ -762,7 +762,345 @@ export const ESC = {
     ESC.pushMenu('equipComparison', null, renderFn, onInputFn);
   },
 
-  onMagic() {},
+  onMagic() {
+    // 步骤 1：若队伍只有 1 人，直接跳过选人阶段进入该角色的仙术列表
+    if (state.party.length === 1) {
+      ESC.openMagicSelector(0);
+      return;
+    }
+
+    // 步骤 2：若有多个队员，弹出一个使用人名字选择列表面板
+    const casterPanel = PanelFactory.createList(state.party.map(p => state.roles[p.index].nameId));
+    casterPanel.x = 28;
+    casterPanel.y = 60;
+
+    const renderFn = () => {
+      casterPanel.draw();
+    };
+
+    casterPanel.onchange((value) => {
+      const idx = state.party.findIndex(p => state.roles[p.index].nameId === value);
+      if (idx !== -1) {
+        ESC.openMagicSelector(idx);
+      }
+    }).oncancel(() => {
+      ESC.popMenu();
+    });
+
+    ESC.pushMenu('magicCaster', casterPanel, renderFn);
+  },
+
+  openMagicSelector(casterPartyIndex) {
+    let selectedMagicIndex = 0;
+    let scrollRow = 0;
+    let uiState = 'select_magic'; // 两个子状态: 'select_magic' 或 'select_target'
+    let targetPartyIndex = casterPartyIndex; // 目标人物默认为施法者自己
+
+    // 步骤 3：定义仙术描述文本解析与绘制的本地辅助函数
+    const drawDesc = (magicId, dx, dy, color) => {
+      const descBytes = state.desc[magicId];
+      if (!descBytes) return;
+      let startX = dx;
+      let idx = 0;
+      const startupCtx = state.contexts.startup;
+      if (!startupCtx) return;
+      while (idx < descBytes.length) {
+        const b = descBytes.getByte(idx);
+        if (b === 42) { // 字符 '*'
+          dx = startX;
+          dy += 16;
+          idx++;
+        } else if (b === 32) { // 空格
+          dx += 8;
+          idx++;
+        } else if (b < 128) {
+          const img = loadWord(b, color);
+          if (img) {
+            startupCtx.drawImage(img, dx, dy + 1);
+          }
+          dx += 8;
+          idx++;
+        } else {
+          if (idx + 1 < descBytes.length) {
+            const charCode = descBytes.getShort(idx);
+            const img = loadWord(charCode, color);
+            if (img) {
+              startupCtx.drawImage(img, dx, dy);
+            }
+            dx += 16;
+            idx += 2;
+          } else {
+            idx++;
+          }
+        }
+      }
+    };
+
+    const renderFn = () => {
+      const startupCtx = state.contexts.startup;
+      if (!startupCtx) return;
+
+      // 校验并提取当前施法者数据
+      if (!state.party || casterPartyIndex >= state.party.length) return;
+      const casterPartyRole = state.party[casterPartyIndex];
+      const casterRole = state.roles[casterPartyRole.index];
+      if (!casterRole) return;
+
+      // 步骤 4：构建角色学会的全部仙术信息列表
+      const magicsList = (casterRole.magics || []).map(magicId => {
+        const item = state.items[magicId];
+        if (!item) return null;
+        const magicNumber = item.roleId;
+        const magic = state.magics[magicNumber];
+        if (!magic) return null;
+        // 是否可用：非战斗可用 (gold & 1) 且 MP 足够
+        const isUsable = ((item.gold & 1) !== 0) && (casterRole.mp >= magic.wCostMP);
+        return { magicId, item, magic, isUsable };
+      }).filter(m => m !== null);
+
+      if (selectedMagicIndex >= magicsList.length) {
+        selectedMagicIndex = Math.max(0, magicsList.length - 1);
+      }
+
+      // 步骤 5：绘制大红织锦底框（10号Style，320x136 像素）
+      UI.drawArea(0, 0, 18, 7, 10);
+
+      // 步骤 6：利用 3 列滚动网格绘制当前的仙术项
+      for (let i = 0; i < magicsList.length; i++) {
+        const row = Math.floor(i / 3);
+        const col = i % 3;
+
+        if (row < scrollRow || row >= scrollRow + 7) continue;
+
+        const xText = 28 + col * 88;
+        const yText = 16 + (row - scrollRow) * 18;
+        const isSelected = (i === selectedMagicIndex);
+        const itemInfo = magicsList[i];
+
+        let color = COLOR_GRAY;
+        if (itemInfo.isUsable) {
+          color = isSelected ? COLOR_YELLOW : COLOR_GRAY;
+        } else {
+          color = isSelected ? COLOR_LIGHT_RED : COLOR_DARK_RED;
+        }
+
+        UI.drawWord(itemInfo.magicId, xText, yText, color);
+
+        // 选择法术状态：被选中项下方绘制 Pic #70 白色向上指示器
+        if (isSelected && uiState === 'select_magic') {
+          const arrowImg = loadPic(70);
+          if (arrowImg) {
+            startupCtx.drawImage(arrowImg, xText + 32, yText + 5);
+          }
+        }
+
+        // 选择目标状态：被选中项上方绘制 Y 轴镜像反转的 Pic #69 黄色向下指示器
+        if (isSelected && uiState === 'select_target') {
+          UI.drawPicFlippedY(69, xText + 32, yText - 10);
+        }
+      }
+
+      // 步骤 7：绘制高亮选中法术的消耗 MP 以及描述内容
+      if (magicsList.length > 0 && selectedMagicIndex < magicsList.length) {
+        const curMagic = magicsList[selectedMagicIndex];
+
+        // 绘制右上角 MP 信息单行框：Needed MP / Current MP
+        UI.drawSingleLineBox(215, 0, 5);
+        UI.drawSlash(265, 14);
+        UI.drawNum(curMagic.magic.wCostMP, 261, 14, 'yellow');
+        UI.drawNum(casterRole.mp, 295, 14, 'cyan');
+
+        // 绘制选中的法术文字描述
+        drawDesc(curMagic.magicId, 102, 3, COLOR_YELLOW);
+      }
+
+      // 步骤 8：绘制最底部的队伍成员头像与数值状态
+      for (let i = 0; i < state.party.length; i++) {
+        const pRole = state.party[i];
+        const roleStats = state.roles[pRole.index];
+        if (!roleStats) continue;
+
+        const bx = 45 + 78 * i;
+        const by = 165;
+
+        // 绘制状态小木框背景
+        const borderImg = loadPic(72);
+        if (borderImg) {
+          startupCtx.drawImage(borderImg, bx, by);
+        }
+
+        // 绘制头像
+        const avatarImg = loadPic(49 + pRole.index);
+        if (avatarImg) {
+          startupCtx.drawImage(avatarImg, bx - 3, by);
+        }
+
+        // 绘制 HP / MP 数值属性
+        if (roleStats.hp > 0) {
+          UI.drawNum(roleStats.hp, bx + 50, by + 6, 'yellow');
+          UI.drawSlash(bx + 51, by + 7);
+          UI.drawNum(roleStats.maxHp, bx + 72, by + 10, 'blue');
+
+          UI.drawNum(roleStats.mp, bx + 50, by + 19, 'yellow');
+          UI.drawSlash(bx + 51, by + 20);
+          UI.drawNum(roleStats.maxMp, bx + 72, by + 23, 'blue');
+        } else {
+          // 阵亡状态直接在头像旁渲染红字“阵亡”
+          startupCtx.fillStyle = '#ff3333';
+          startupCtx.font = '12px sans-serif';
+          startupCtx.fillText('阵亡', bx + 36, by + 18);
+        }
+
+        // 选择目标状态：被选中的目标上方绘制 Pic #67 红色向下指示器
+        if (uiState === 'select_target' && i === targetPartyIndex) {
+          const targetArrowImg = loadPic(67);
+          if (targetArrowImg) {
+            startupCtx.drawImage(targetArrowImg, 75 + 78 * i, 158);
+          }
+        }
+      }
+    };
+
+    const onInputFn = async (input) => {
+      if (!state.party || casterPartyIndex >= state.party.length) return;
+      const casterPartyRole = state.party[casterPartyIndex];
+      const casterRole = state.roles[casterPartyRole.index];
+      if (!casterRole) return;
+
+      const magicsList = (casterRole.magics || []).map(magicId => {
+        const item = state.items[magicId];
+        if (!item) return null;
+        const magicNumber = item.roleId;
+        const magic = state.magics[magicNumber];
+        if (!magic) return null;
+        const isUsable = ((item.gold & 1) !== 0) && (casterRole.mp >= magic.wCostMP);
+        return { magicId, item, magic, isUsable };
+      }).filter(m => m !== null);
+
+      if (selectedMagicIndex >= magicsList.length) {
+        selectedMagicIndex = Math.max(0, magicsList.length - 1);
+      }
+
+      if (uiState === 'select_magic') {
+        const n = magicsList.length;
+        if (input === 'ESC' || input === 'e') {
+          ESC.popMenu();
+          return;
+        }
+
+        if (n === 0) return;
+
+        if (input === 'left') {
+          if (selectedMagicIndex % 3 > 0) {
+            selectedMagicIndex--;
+            updateScroll();
+            ESC.renderAll();
+          }
+        } else if (input === 'right') {
+          if (selectedMagicIndex % 3 < 2 && selectedMagicIndex + 1 < n) {
+            selectedMagicIndex++;
+            updateScroll();
+            ESC.renderAll();
+          }
+        } else if (input === 'up') {
+          if (selectedMagicIndex - 3 >= 0) {
+            selectedMagicIndex -= 3;
+            updateScroll();
+            ESC.renderAll();
+          }
+        } else if (input === 'down') {
+          if (selectedMagicIndex + 3 < n) {
+            selectedMagicIndex += 3;
+            updateScroll();
+            ESC.renderAll();
+          }
+        } else if (input === 'blank') {
+          const curMagic = magicsList[selectedMagicIndex];
+          if (!curMagic || !curMagic.isUsable) return;
+
+          // 步骤 9：判定全体还是单体仙术
+          const isTargetAll = (curMagic.item.gold & 16) !== 0;
+          if (isTargetAll) {
+            await castMagic(curMagic, null);
+            ESC.renderAll();
+          } else {
+            uiState = 'select_target';
+            targetPartyIndex = casterPartyIndex;
+            ESC.renderAll();
+          }
+        }
+      } else if (uiState === 'select_target') {
+        if (input === 'ESC' || input === 'e') {
+          uiState = 'select_magic';
+          ESC.renderAll();
+          return;
+        }
+
+        const partyLen = state.party.length;
+        if (input === 'left' || input === 'up') {
+          targetPartyIndex = (targetPartyIndex - 1 + partyLen) % partyLen;
+          ESC.renderAll();
+        } else if (input === 'right' || input === 'down') {
+          targetPartyIndex = (targetPartyIndex + 1) % partyLen;
+          ESC.renderAll();
+        } else if (input === 'blank') {
+          const curMagic = magicsList[selectedMagicIndex];
+          if (!curMagic) return;
+
+          const targetRole = state.party[targetPartyIndex];
+          await castMagic(curMagic, targetRole);
+
+          // 步骤 10：施法完毕后根据余下 MP 决定是否保留在施法状态
+          const latestCasterRole = state.roles[casterPartyRole.index];
+          if (latestCasterRole.mp < curMagic.magic.wCostMP) {
+            uiState = 'select_magic';
+          }
+          ESC.renderAll();
+        }
+      }
+    };
+
+    const updateScroll = () => {
+      const currRow = Math.floor(selectedMagicIndex / 3);
+      if (currRow < scrollRow) {
+        scrollRow = currRow;
+      } else if (currRow >= scrollRow + 7) {
+        scrollRow = currRow - 7 + 1;
+      }
+    };
+
+    const castMagic = async (magicInfo, targetRole) => {
+      state.scriptSuccess = true;
+
+      const item = magicInfo.item;
+      let nextEquScr = item.equScr;
+      if (item.equScr && item.equScr !== 0) {
+        nextEquScr = await Script.runTriggerScript(item.equScr, targetRole, 'item');
+      }
+
+      let nextUseScr = item.useScr;
+      if (state.scriptSuccess !== false) {
+        if (item.useScr && item.useScr !== 0) {
+          nextUseScr = await Script.runTriggerScript(item.useScr, targetRole, 'item');
+        }
+      }
+
+      if (state.scriptSuccess !== false) {
+        const casterPartyRole = state.party[casterPartyIndex];
+        const casterRole = state.roles[casterPartyRole.index];
+        casterRole.mp -= magicInfo.magic.wCostMP;
+        if (casterRole.mp < 0) casterRole.mp = 0;
+
+        if (nextEquScr !== undefined) item.equScr = nextEquScr;
+        if (nextUseScr !== undefined) item.useScr = nextUseScr;
+        console.log(`[castMagic] 成功施法，消耗 MP: ${magicInfo.magic.wCostMP}`);
+      } else {
+        console.warn(`[castMagic] 施放仙术被脚本标记为失败`);
+      }
+    };
+
+    ESC.pushMenu('magicSelector', null, renderFn, onInputFn);
+  },
 
   onSystem() {
     const systemPanel = PanelFactory.createList([11, 12, 13, 14, 15]);

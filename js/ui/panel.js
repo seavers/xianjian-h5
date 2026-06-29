@@ -143,6 +143,19 @@ export const UI = {
         dy += testPic.height;
       }
     }
+  },
+
+  drawPicFlippedY(picId, x, y, ctx) {
+    const drawCtx = ctx || state.contexts.startup;
+    if (!drawCtx) return;
+    const pic = loadPic(picId);
+    if (pic) {
+      drawCtx.save();
+      drawCtx.translate(x, y + pic.height);
+      drawCtx.scale(1, -1);
+      drawCtx.drawImage(pic, 0, 0);
+      drawCtx.restore();
+    }
   }
 };
 
