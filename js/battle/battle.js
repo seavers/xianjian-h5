@@ -9,6 +9,8 @@ import { checkAndFadeOut, fadeIn, fadeOut } from '../ui/fade.js';
 import { update } from '../ui/draw.js';
 import { Script } from '../engine/script.js';
 import { UI } from '../ui/panel.js';
+import { ESC } from '../esc/esc.js';
+import { UseItemMenu } from '../ui/useItemMenu.js';
 
 // 站位坐标配置 (1人, 2人, 3人)
 const PLAYER_POS_PRESETS = [
@@ -54,6 +56,8 @@ let turn = 0;
 let phase = 'select'; // 'select' | 'action' | 'end'
 let activePlayerIndex = 0; // 当前选定指令的角色索引
 let selectedAction = 0; // 0: 攻击, 1: 法术, 2: 合击, 3: 更多
+let selectedMoreIndex = 0; // 更多选项索引
+let selectedMoreItemIndex = 0; // 更多物品子菜单索引
 let menuState = 'main'; // 'main' | 'target'
 let targetEnemyIndex = 0; // 选中的目标敌人索引
 let resolvePromise = null;
@@ -524,7 +528,7 @@ function draw() {
 
   // 4. 指令选择阶段 UI 绘制
   if (showCommandUI && phase === 'select') {
-    // 当正处于主菜单或法术菜单时展示左下角动作指令菱形菜单（选择目标时隐藏）
+    // 当正处于主菜单、法术菜单或更多菜单时展示左下角动作指令菱形菜单（选择目标时隐藏）
     let isDrawingMenu = false;
     let highlightIdx = selectedAction;
     if (menuState === 'main') {
@@ -532,6 +536,9 @@ function draw() {
     } else if (menuState === 'magic') {
       isDrawingMenu = true;
       highlightIdx = 1; // 处于法术子操作阶段时，高亮“法术”图标 (1)
+    } else if (menuState === 'more' || menuState === 'more_item') {
+      isDrawingMenu = true;
+      highlightIdx = 3; // 处于更多子操作阶段时，高亮“更多”图标 (3)
     }
 
     if (isDrawingMenu) {
@@ -668,6 +675,38 @@ function draw() {
             }
 
             drawWordToCtx(battleCtx, wordId, xPos + 5, yPos, wordColor);
+          }
+        }
+      }
+    }
+
+    // 绘制“更多”及“道具使用/投掷”选择面板
+    if (menuState === 'more' || menuState === 'more_item') {
+      UI.drawMultiLineBox(10, 8, 5, 7, 10, battleCtx);
+      for (let i = 0; i < 5; i++) {
+        const wordId = 56 + i;
+        const isSelected = (menuState === 'more' && i === selectedMoreIndex);
+        const color = isSelected ? 0x00FCDC84 : 0x00D4D0C0;
+        drawWordToCtx(battleCtx, wordId, 22, 20 + i * 18, color);
+        if (isSelected) {
+          const arrowImg = loadPic(70);
+          if (arrowImg) {
+            battleCtx.drawImage(arrowImg, 58, 20 + i * 18 + 5);
+          }
+        }
+      }
+      if (menuState === 'more_item') {
+        UI.drawMultiLineBox(62, 34, 5, 4, 10, battleCtx);
+        for (let i = 0; i < 2; i++) {
+          const wordId = 23 + i;
+          const isSelected = (i === selectedMoreItemIndex);
+          const color = isSelected ? 0x00FCDC84 : 0x00D4D0C0;
+          drawWordToCtx(battleCtx, wordId, 74, 46 + i * 18, color);
+          if (isSelected) {
+            const arrowImg = loadPic(70);
+            if (arrowImg) {
+              battleCtx.drawImage(arrowImg, 110, 46 + i * 18 + 5);
+            }
           }
         }
       }
@@ -843,6 +882,11 @@ export function onInput(input) {
           } else {
             playSound(31);
           }
+        } else if (selectedAction === 3) {
+          // 确认进入“更多”二级菜单
+          selectedMoreIndex = 0;
+          menuState = 'more';
+          playSound(29);
         }
         break;
       case 'ESC':
@@ -1042,6 +1086,149 @@ export function onInput(input) {
         menuState = 'magic';
         break;
     }
+  } else if (menuState === 'more') {
+    // “更多”菜单操作模式
+    switch (input) {
+      case 'up':
+        selectedMoreIndex = (selectedMoreIndex - 1 + 5) % 5;
+        playSound(29);
+        break;
+      case 'down':
+        selectedMoreIndex = (selectedMoreIndex + 1) % 5;
+        playSound(29);
+        break;
+      case 'ESC':
+        menuState = 'main';
+        selectedAction = 3;
+        playSound(30);
+        break;
+      case 'blank':
+        playSound(29);
+        if (selectedMoreIndex === 0) {
+          // 围攻 (Coop/Auto attack)
+          const targetIdx = enemies.findIndex(e => e.hp > 0);
+          if (targetIdx !== -1) {
+            for (let i = activePlayerIndex; i < players.length; i++) {
+              if (players[i].hp > 0) {
+                players[i].action = {
+                  type: 'attack',
+                  target: targetIdx
+                };
+              }
+            }
+            runActionPhase();
+          }
+        } else if (selectedMoreIndex === 1) {
+          // 道具 (Item)
+          selectedMoreItemIndex = 0;
+          menuState = 'more_item';
+        } else if (selectedMoreIndex === 2) {
+          // 防御 (Defend)
+          players[activePlayerIndex].action = {
+            type: 'defend'
+          };
+          advanceToNextPlayer();
+        } else if (selectedMoreIndex === 3) {
+          // 逃跑 (Flee)
+          players[activePlayerIndex].action = {
+            type: 'flee'
+          };
+          advanceToNextPlayer();
+        } else if (selectedMoreIndex === 4) {
+          // 状态 (Status)
+          ESC.onStatus();
+        }
+        break;
+    }
+  } else if (menuState === 'more_item') {
+    // 道具子操作菜单：使用/投掷
+    switch (input) {
+      case 'up':
+      case 'down':
+        selectedMoreItemIndex = (selectedMoreItemIndex + 1) % 2;
+        playSound(29);
+        break;
+      case 'ESC':
+        menuState = 'more';
+        selectedMoreIndex = 1;
+        playSound(30);
+        break;
+      case 'blank':
+        playSound(29);
+        if (selectedMoreItemIndex === 0) {
+          openItemMenuForActivePlayer(1); // 1: 使用
+        } else {
+          openItemMenuForActivePlayer(4); // 4: 投掷
+        }
+        break;
+    }
+  } else if (menuState === 'target_player_item') {
+    // 使用道具选择我方单体目标
+    const isRevival = isRevivalItem(players[activePlayerIndex].pendingItem);
+    switch (input) {
+      case 'left':
+      case 'up': {
+        let idx = targetPlayerIndex;
+        do {
+          idx = (idx - 1 + players.length) % players.length;
+        } while (players[idx].hp <= 0 && !isRevival && idx !== targetPlayerIndex);
+        targetPlayerIndex = idx;
+        break;
+      }
+      case 'right':
+      case 'down': {
+        let idx = targetPlayerIndex;
+        do {
+          idx = (idx + 1) % players.length;
+        } while (players[idx].hp <= 0 && !isRevival && idx !== targetPlayerIndex);
+        targetPlayerIndex = idx;
+        break;
+      }
+      case 'blank':
+        players[activePlayerIndex].action = {
+          type: 'useItem',
+          itemId: players[activePlayerIndex].pendingItem,
+          target: targetPlayerIndex
+        };
+        advanceToNextPlayer();
+        break;
+      case 'ESC':
+        openItemMenuForActivePlayer(1);
+        break;
+    }
+  } else if (menuState === 'target_enemy_item') {
+    // 投掷道具选择敌方单体目标
+    switch (input) {
+      case 'left':
+      case 'up': {
+        let idx = targetEnemyIndex;
+        do {
+          idx = (idx - 1 + enemies.length) % enemies.length;
+        } while (enemies[idx].hp <= 0 && idx !== targetEnemyIndex);
+        targetEnemyIndex = idx;
+        break;
+      }
+      case 'right':
+      case 'down': {
+        let idx = targetEnemyIndex;
+        do {
+          idx = (idx + 1) % enemies.length;
+        } while (enemies[idx].hp <= 0 && idx !== targetEnemyIndex);
+        targetEnemyIndex = idx;
+        break;
+      }
+      case 'blank':
+        players[activePlayerIndex].action = {
+          type: 'throwItem',
+          itemId: players[activePlayerIndex].pendingItem,
+          target: targetEnemyIndex
+        };
+        advanceToNextPlayer();
+        break;
+      case 'ESC':
+        openItemMenuForActivePlayer(4);
+        break;
+    }
   }
 
   draw();
@@ -1053,6 +1240,12 @@ async function runActionPhase() {
   showCommandUI = false;
   state.uiMode = 'block';
   phase = 'action';
+
+  // 清空所有角色的防御状态
+  players.forEach(p => {
+    p.isDefending = false;
+  });
+
   draw();
 
   // 根据身法属性由高到低对所有出手者进行排序
@@ -1090,6 +1283,135 @@ async function runActionPhase() {
         }
         if (targetIdx !== -1) {
           await playPlayerAttack(actor.index, targetIdx);
+        }
+      } else if (act && act.type === 'defend') {
+        // 执行玩家防御动作
+        player.isDefending = true;
+        player.currentFrame = 3; // 防御姿态
+        draw();
+        await sleep(200);
+      } else if (act && act.type === 'flee') {
+        // 执行玩家逃跑动作
+        const isBoss = state.currentBattle?.isBoss || state.isBossBattle || false;
+        if (isBoss) {
+          playSound(31);
+        }
+        let str = player.fleeRate;
+        let def = 0;
+        enemies.forEach(e => {
+          if (e && e.hp > 0) {
+            def += e.dexterity;
+            def += ((e.level || 1) + 6) * 4;
+          }
+        });
+        if (def < 0) def = 0;
+
+        const escapeSuccess = (str >= Math.random() * def) && !isBoss;
+        if (escapeSuccess) {
+          playSound(45);
+          const originalPos = players.map(p => ({ p, x: p.x, y: p.y }));
+          for (let step = 0; step < 16; step++) {
+            players.forEach((p, j) => {
+              if (p.hp > 0) {
+                p.currentFrame = 0;
+                if (j === 0 && players.length > 1) {
+                  p.x += 4;
+                  p.y += 6;
+                } else if (j === 1) {
+                  p.x += 4;
+                  p.y += 4;
+                } else if (j === 2) {
+                  p.x += 6;
+                  p.y += 3;
+                } else {
+                  p.x += 4;
+                  p.y += 4;
+                }
+              }
+            });
+            draw();
+            await sleep(80);
+          }
+          players.forEach(p => {
+            p.x = 9999;
+            p.y = 9999;
+          });
+          draw();
+          await sleep(500);
+          endBattle(0xFFFF);
+          return;
+        } else {
+          const origX = player.x;
+          const origY = player.y;
+          player.currentFrame = 0;
+          for (let step = 0; step < 3; step++) {
+            player.x += 4;
+            player.y += 2;
+            draw();
+            await sleep(80);
+          }
+          player.currentFrame = 1;
+          draw();
+          const talkCtx = state.contexts.talk;
+          if (talkCtx) {
+            UI.drawSingleLineBox(110, 80, 5, talkCtx);
+            drawWordToCtx(talkCtx, 31, 118, 90);
+          }
+          await sleep(1000);
+          if (talkCtx) {
+            talkCtx.clearRect(0, 0, 320, 200);
+          }
+          player.x = origX;
+          player.y = origY;
+          restorePlayerFrame(player);
+          draw();
+        }
+      } else if (act && act.type === 'useItem') {
+        const itemId = act.itemId;
+        const itemObj = state.items[itemId];
+        if (itemObj) {
+          const ownItems = state.ownItems || [];
+          const idx = ownItems.indexOf(itemId);
+          if (idx !== -1) {
+            ownItems.splice(idx, 1);
+          }
+          player.currentFrame = 4; // 投掷/使用道具姿势
+          draw();
+          await sleep(200);
+          const targetPlayerIndex = act.target;
+          if (itemObj.useScr) {
+            await Script.runTriggerScript(itemObj.useScr, state.roles[players[targetPlayerIndex].index], 'item');
+          }
+          players.forEach(p => {
+            const roleStats = state.roles[p.index];
+            if (roleStats) {
+              p.hp = roleStats.hp;
+              p.mp = roleStats.mp;
+            }
+            restorePlayerFrame(p);
+          });
+          draw();
+          await sleep(400);
+        }
+      } else if (act && act.type === 'throwItem') {
+        const itemId = act.itemId;
+        const itemObj = state.items[itemId];
+        if (itemObj) {
+          const ownItems = state.ownItems || [];
+          const idx = ownItems.indexOf(itemId);
+          if (idx !== -1) {
+            ownItems.splice(idx, 1);
+          }
+          player.currentFrame = 4;
+          draw();
+          await sleep(200);
+          const targetEnemyIndex = act.target;
+          if (itemObj.useScr) {
+            await Script.runTriggerScript(itemObj.useScr, enemies[targetEnemyIndex], 'item');
+          }
+          restorePlayerFrame(player);
+          draw();
+          await sleep(400);
         }
       } else if (act && act.type === 'magic') {
         const magicId = act.magicId;
@@ -1756,6 +2078,11 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
 
   // 步骤 7.5：折减一半（敌人攻击主角时，防御折减系数固定为 2）
   let dmg = Math.floor(baseDmg / 2);
+
+  // 步骤 7.5.5：若主角处于防御状态，伤害再次折减一半
+  if (player.isDefending) {
+    dmg = Math.floor(dmg / 2);
+  }
 
   // 步骤 7.6：加上 0~1 点的随机打击微小伤害浮动
   dmg += Math.floor(Math.random() * 2);
@@ -2454,6 +2781,8 @@ function restorePlayerFrame(player) {
     player.currentFrame = 2;
   } else if (player.hp < player.maxHp * 0.2) {
     player.currentFrame = 1;
+  } else if (player.isDefending) {
+    player.currentFrame = 3;
   } else {
     player.currentFrame = 0;
   }
@@ -2501,5 +2830,109 @@ function waitWinSpace() {
   return new Promise((resolve) => {
     winSpaceResolve = resolve;
   });
+}
+
+export function addDamagePopup(actor, value, isPlayer) {
+  damagePopups.push({
+    actor,
+    value,
+    isPlayer,
+    startTime: Date.now()
+  });
+}
+
+export async function escape() {
+  playSound(45);
+  const originalPos = players.map(p => ({ p, x: p.x, y: p.y }));
+  for (let step = 0; step < 16; step++) {
+    players.forEach((p, j) => {
+      if (p.hp > 0) {
+        p.currentFrame = 0;
+        if (j === 0 && players.length > 1) {
+          p.x += 4;
+          p.y += 6;
+        } else if (j === 1) {
+          p.x += 4;
+          p.y += 4;
+        } else if (j === 2) {
+          p.x += 6;
+          p.y += 3;
+        } else {
+          p.x += 4;
+          p.y += 4;
+        }
+      }
+    });
+    draw();
+    await sleep(80);
+  }
+  players.forEach(p => {
+    p.x = 9999;
+    p.y = 9999;
+  });
+  draw();
+  await sleep(500);
+  endBattle(0xFFFF);
+}
+
+function openItemMenuForActivePlayer(filterBit) {
+  UseItemMenu.open(filterBit).then(itemId => {
+    if (itemId === -1) {
+      menuState = 'more_item';
+      draw();
+    } else {
+      players[activePlayerIndex].pendingItem = itemId;
+      const item = state.items[itemId];
+      const isTargetAll = (item.flags & 16) !== 0;
+      if (filterBit === 1) {
+        if (isTargetAll) {
+          players[activePlayerIndex].action = {
+            type: 'useItem',
+            itemId: itemId,
+            target: activePlayerIndex
+          };
+          advanceToNextPlayer();
+        } else {
+          targetPlayerIndex = activePlayerIndex;
+          menuState = 'target_player_item';
+          draw();
+        }
+      } else {
+        if (isTargetAll) {
+          players[activePlayerIndex].action = {
+            type: 'throwItem',
+            itemId: itemId,
+            target: 0
+          };
+          advanceToNextPlayer();
+        } else {
+          targetEnemyIndex = enemies.findIndex(e => e.hp > 0);
+          menuState = 'target_enemy_item';
+          draw();
+        }
+      }
+    }
+  });
+}
+
+function isRevivalItem(itemId) {
+  const itemObj = state.items[itemId];
+  if (!itemObj || !itemObj.useScr) {
+    return false;
+  }
+  const ip = itemObj.useScr;
+  for (let i = 0; i < 50; i++) {
+    const script = state.scripts[ip + i];
+    if (!script) {
+      break;
+    }
+    if (script.code === 0x22) {
+      return true;
+    }
+    if (script.code === 0x00) {
+      break;
+    }
+  }
+  return false;
 }
 

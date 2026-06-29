@@ -17,7 +17,8 @@ export const UseItemMenu = {
   resolve: null,
   timer: null,
 
-  async open() {
+  async open(filterBit = 1) {
+    this.filterBit = filterBit;
     this.selectedIndex = 0;
     this.scrollRow = 0;
 
@@ -58,14 +59,14 @@ export const UseItemMenu = {
     }
   },
 
-  // 获取玩家拥有的、flag & 1 !== 0 的道具列表
   getUsableItems() {
     const itemCounts = {};
     const uniqueItems = [];
     const ownItems = state.ownItems || [];
+    const filter = this.filterBit !== undefined ? this.filterBit : 1;
     for (const id of ownItems) {
       const item = state.items[id];
-      if (item && (item.flags & 1) !== 0) {
+      if (item && (item.flags & filter) !== 0) {
         if (itemCounts[id] === undefined) {
           itemCounts[id] = 0;
           uniqueItems.push(id);

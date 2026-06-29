@@ -44,6 +44,9 @@ export const ESC = {
     this.menuStack = [];
     this.hideMenuCanvas();
     state.uiMode = 'operate'; // 恢复为游戏正常探索行走状态
+    if (state.currentMode === 'battle' && window.Battle && typeof window.Battle.draw === 'function') {
+      window.Battle.draw();
+    }
   },
 
   renderAll() {

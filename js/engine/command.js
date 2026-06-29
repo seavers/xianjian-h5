@@ -18,7 +18,7 @@ import { playMusic, stopMusic as stopBgMusic } from '../resources/music.js';
 import { playSound } from '../resources/sound.js';
 import { TICK_TIME } from '../app.js';
 import { clearWithEffect } from '../ui/clearWithEffect.js';
-import { enemies } from '../battle/battle.js';
+import { enemies, players, addDamagePopup } from '../battle/battle.js';
 import { loadMkf } from '../resources/loader.js';
 import { Talk } from '../ui/talk.js';
 
@@ -910,8 +910,27 @@ export async function changeHpMp(toAll, value) {
         role.mp = 100; // 默认满法力值设定为 100
       }
 
+      const oldHp = role.hp;
       role.hp += changeValue;
       role.mp += changeValue;
+
+      if (role.hp > (role.maxHp || 100)) role.hp = role.maxHp || 100;
+      if (role.hp < 0) role.hp = 0;
+      if (role.mp > (role.maxMp || 100)) role.mp = role.maxMp || 100;
+      if (role.mp < 0) role.mp = 0;
+
+      // 在战斗模式下，同步更新战斗实体的生命与魔法值，并弹出飘字
+      if (state.currentMode === 'battle' && players) {
+        const player = players.find(p => p.index === role.index);
+        if (player) {
+          player.hp = role.hp;
+          player.mp = role.mp;
+          const diff = role.hp - oldHp;
+          if (diff !== 0) {
+            addDamagePopup(player, Math.abs(diff), diff > 0);
+          }
+        }
+      }
     }
   }
 
@@ -1600,10 +1619,33 @@ export async function removeItem(itemId, count, failScriptId) {
 }
 
 export function inflictDamage(allEnemies, damage) {
-  // 步骤 1：若战斗系统暂未实现，输出详细的伤害调试日志以供追踪意图
   const target = allEnemies ? '全体敌人' : `当前敌人 (ID: ${this?.id || '未知'})`;
-
   console.log(`[0x21 inflictDamage] 造成伤害: ${damage}, 目标: ${target}`);
+
+  // 战斗模式下扣减敌人生命值并展示飘字
+  if (state.currentMode === 'battle' && enemies) {
+    if (allEnemies) {
+      enemies.forEach(e => {
+        if (e && e.hp > 0) {
+          e.hp = Math.max(0, e.hp - damage);
+          addDamagePopup(e, damage, false);
+          if (e.hp <= 0 && e.wDeathSound > 0) {
+            playSound(e.wDeathSound);
+          }
+        }
+      });
+    } else {
+      const enemyIndex = (this && typeof this.index === 'number') ? this.index : 0;
+      const enemy = enemies[enemyIndex];
+      if (enemy && enemy.hp > 0) {
+        enemy.hp = Math.max(0, enemy.hp - damage);
+        addDamagePopup(enemy, damage, false);
+        if (enemy.hp <= 0 && enemy.wDeathSound > 0) {
+          playSound(enemy.wDeathSound);
+        }
+      }
+    }
+  }
 }
 
 export async function startBattle(battleId, failScriptId, fleeScriptId) {
@@ -1952,9 +1994,22 @@ export function changeHp(toAll, value) {
     if (role) {
       if (role.hp === undefined) role.hp = 100;
       if (role.maxHp === undefined) role.maxHp = 100;
+      const oldHp = role.hp;
       role.hp += changeValue;
       if (role.hp > role.maxHp) role.hp = role.maxHp;
       if (role.hp < 0) role.hp = 0;
+
+      // 战斗模式下同步生命值并展示加血飘字
+      if (state.currentMode === 'battle' && players) {
+        const player = players.find(p => p.index === role.index);
+        if (player) {
+          player.hp = role.hp;
+          const diff = role.hp - oldHp;
+          if (diff !== 0) {
+            addDamagePopup(player, Math.abs(diff), diff > 0);
+          }
+        }
+      }
     }
   }
   console.log(`[0x1B changeHp] 范围: ${toAll ? '全队' : '主角'}, HP 变动量: ${changeValue}`);
@@ -1971,6 +2026,14 @@ export function changeMp(toAll, value) {
       role.mp += changeValue;
       if (role.mp > role.maxMp) role.mp = role.maxMp;
       if (role.mp < 0) role.mp = 0;
+
+      // 战斗模式下同步魔法值
+      if (state.currentMode === 'battle' && players) {
+        const player = players.find(p => p.index === role.index);
+        if (player) {
+          player.mp = role.mp;
+        }
+      }
     }
   }
   console.log(`[0x1C changeMp] 范围: ${toAll ? '全队' : '主角'}, MP 变动量: ${changeValue}`);
@@ -1988,6 +2051,22 @@ export function revivePlayer(toAll, hpPercent) {
       role.poisons = [];
       role.status = {};
       success = true;
+
+      // 战斗模式下同步复活后的生命值与动作帧姿态，并展示回复飘字
+      if (state.currentMode === 'battle' && players) {
+        const player = players.find(p => p.index === role.index);
+        if (player) {
+          player.hp = role.hp;
+          addDamagePopup(player, role.hp, true);
+          if (player.hp <= 0) {
+            player.currentFrame = 2;
+          } else if (player.hp < player.maxHp * 0.2) {
+            player.currentFrame = 1;
+          } else {
+            player.currentFrame = 0;
+          }
+        }
+      }
     }
   }
   console.log(`[0x22 revivePlayer] 范围: ${toAll ? '全队' : '主角'}, 恢复HP百分比: ${hpPercent * 10}%, 复活成功: ${success}`);
