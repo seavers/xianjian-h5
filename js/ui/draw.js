@@ -436,9 +436,8 @@ export function renderScreen(refreshType) {
   }
 
   // 步骤 3：如果是战斗模式，常规重绘交由战斗系统的 draw() 完成
-  if (state.currentMode === 'battle' && window.Battle && typeof window.Battle.draw === 'function') {
-    window.Battle.draw();
-    updateCount[1]++;
+  if (state.currentMode === 'battle') {
+    console.log('renderScreen 进入了 battle 分支，这个不应该的');
     return;
   }
 
