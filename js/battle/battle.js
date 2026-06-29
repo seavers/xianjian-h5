@@ -126,6 +126,9 @@ export async function start(id, failId, fleeId) {
       spriteData: spriteData,
       currentFrame: 0,
       maxIdleFrames: cfg.wIdleFrames || 4,
+      wMagicFrames: cfg.wMagicFrames || 0,
+      wAttackFrames: cfg.wAttackFrames || 0,
+      wActWaitFrames: cfg.wActWaitFrames || 0,
       animSpeed: cfg.wIdleAnimSpeed || 4,
       animTick: 0,
       attackSound: cfg.wAttackSound || 0,
@@ -215,6 +218,9 @@ export async function start(id, failId, fleeId) {
     });
   }
 
+  // 确保入战时正确应用角色的状态姿态帧（如倒地死亡或虚弱帧）
+  players.forEach(p => restorePlayerFrame(p));
+
   // 确保至少有一个活着的队员可供指令选择
   activePlayerIndex = players.findIndex(p => p.hp > 0);
   if (activePlayerIndex === -1) {
@@ -271,7 +277,7 @@ export async function start(id, failId, fleeId) {
 function startBattleClock() {
   // 步进敌人 idle 动画帧
   enemies.forEach(e => {
-    if (e.hp <= 0) {
+    if (e.hp <= 0 || e.isActing) {
       return;
     }
     e.animTick++;
@@ -465,9 +471,8 @@ function draw() {
   });
 
   players.forEach(p => {
-    if (p.hp > 0) {
-      renderQueue.push({ type: 'player', actor: p });
-    }
+    // 即使死亡也不要隐藏我方角色，以显示其倒地状态并支持复活法术的目标选择
+    renderQueue.push({ type: 'player', actor: p });
   });
 
   renderQueue.sort((a, b) => a.actor.y - b.actor.y);
@@ -1005,13 +1010,14 @@ export function onInput(input) {
     }
   } else if (menuState === 'target_player_magic') {
     // 治疗/状态类单体法术选择我方队员
+    const isRevival = isRevivalSpell(players[activePlayerIndex].pendingMagic);
     switch (input) {
       case 'left':
       case 'up': {
         let idx = targetPlayerIndex;
         do {
           idx = (idx - 1 + players.length) % players.length;
-        } while (players[idx].hp <= 0 && idx !== targetPlayerIndex);
+        } while (players[idx].hp <= 0 && !isRevival && idx !== targetPlayerIndex);
         targetPlayerIndex = idx;
         break;
       }
@@ -1020,7 +1026,7 @@ export function onInput(input) {
         let idx = targetPlayerIndex;
         do {
           idx = (idx + 1) % players.length;
-        } while (players[idx].hp <= 0 && idx !== targetPlayerIndex);
+        } while (players[idx].hp <= 0 && !isRevival && idx !== targetPlayerIndex);
         targetPlayerIndex = idx;
         break;
       }
@@ -1188,8 +1194,9 @@ async function runActionPhase() {
               }
             } else {
               // 针对我方 (治疗回复等法术)
-              if (players[targetIdx].hp <= 0 && magic.wType !== 5) {
-                // 单体治疗且目标阵亡，顺延至第一个活着的主角
+              const isRevival = isRevivalSpell(magicId);
+              if (players[targetIdx].hp <= 0 && !isRevival && magic.wType !== 5) {
+                // 单体治疗且目标阵亡，且不是复活法术，顺延至第一个活着的主角
                 targetIdx = players.findIndex(p => p.hp > 0);
               }
               if (targetIdx !== -1) {
@@ -1200,7 +1207,10 @@ async function runActionPhase() {
                 if (magic.wType === 5) {
                   players.forEach((p, pIdx) => { if (p.hp > 0) targets.push(pIdx); });
                 } else {
-                  if (players[targetIdx].hp > 0) targets = [targetIdx];
+                  // 单体治疗/复活：如果目标是活着的，或者目标虽阵亡但所施放的是复活仙术，则作为合法对象进行结算
+                  if (players[targetIdx].hp > 0 || isRevival) {
+                    targets = [targetIdx];
+                  }
                 }
 
                 let recover = Math.floor(player.magicStrength * 1.5 + magic.wBaseDamage);
@@ -1215,6 +1225,9 @@ async function runActionPhase() {
                   if (roleStats) {
                     roleStats.hp = targetPlayer.hp;
                   }
+
+                  // 恢复 HP 后立即重新应用角色的状态姿态帧（确保复活时由倒地动作立即恢复为正常/虚弱动作帧）
+                  restorePlayerFrame(targetPlayer);
 
                   // 飘白色加血字 (isPlayer 为 true)
                   damagePopups.push({
@@ -1334,10 +1347,17 @@ export async function playMagicEffect(magic, actor, target) {
   const loopCount = totalFrames * effectTimes;
   const speed = (magic.wSpeed + 5) * 10 || 100;
 
+  const isEnemyActor = enemies.includes(actor);
+
   for (let step = 0; step < loopCount; step++) {
     if (!isBattleRunning) break;
 
     const frameIndex = step % totalFrames;
+
+    // 若施法者为敌方怪物，且仙术 wFireDelay 延迟蓄力大于 0，且当前特效帧正处于蓄力物理攻击期，则动态更新怪物姿态为对应的攻击帧
+    if (isEnemyActor && magic.wFireDelay > 0 && step >= magic.wFireDelay && step < magic.wFireDelay + actor.wAttackFrames) {
+      actor.currentFrame = step - magic.wFireDelay + actor.maxIdleFrames + actor.wMagicFrames;
+    }
 
     if (frameIndex === magic.wFireDelay && magic.wSound > 0) {
       playSound(magic.wSound);
@@ -1537,6 +1557,45 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
         // 绑定法术 ID 供特效系统解析其描述
         magic.id = enemy.wMagic;
 
+        const origX = enemy.x;
+        const origY = enemy.y;
+        enemy.isActing = true;
+
+        // 施法动作前斜倾 (对应 C 语言 ex += 12; ey += 6; ex += 4; ey += 2;)
+        enemy.x += 12;
+        enemy.y += 6;
+        draw();
+        await sleep(80);
+
+        enemy.x += 4;
+        enemy.y += 2;
+        draw();
+        await sleep(80);
+
+        if (enemy.wMagicSound > 0) {
+          playSound(enemy.wMagicSound);
+        }
+
+        // 播放施法准备动作帧
+        if (enemy.wMagicFrames > 0) {
+          for (let i = 0; i < enemy.wMagicFrames; i++) {
+            enemy.currentFrame = enemy.maxIdleFrames + i;
+            draw();
+            await sleep(Math.max(1, enemy.wActWaitFrames) * 80);
+          }
+        } else {
+          await sleep(80);
+        }
+
+        // 若 wFireDelay == 0，播放怪物攻击物理动画帧
+        if (magic.wFireDelay === 0) {
+          for (let i = 0; i <= enemy.wAttackFrames; i++) {
+            enemy.currentFrame = enemy.maxIdleFrames + enemy.wMagicFrames + i - 1;
+            draw();
+            await sleep(Math.max(1, enemy.wActWaitFrames) * 80);
+          }
+        }
+
         // 1. 播放怪物的法术特效
         await playMagicEffect(magic, enemy, player);
 
@@ -1619,6 +1678,11 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
           restorePlayerFrame(item.player);
         });
 
+        enemy.isActing = false;
+        enemy.currentFrame = 0;
+        enemy.x = origX;
+        enemy.y = origY;
+
         draw();
         await sleep(400); // 伤害飘字停留
         return;
@@ -1628,17 +1692,50 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
 
   const origX = enemy.x;
   const origY = enemy.y;
+  enemy.isActing = true;
 
   // 播放敌方普通物理攻击叫喊音效
   if (enemy.attackSound > 0) {
     playSound(enemy.attackSound);
   }
 
-  // 1. 敌人瞬移到队员面前
+  // 1. 播放攻击前摇施法预备帧 (对应 C 语言 wMagicFrames 动作帧)
+  if (enemy.wMagicFrames > 0) {
+    for (let i = 0; i < enemy.wMagicFrames; i++) {
+      enemy.currentFrame = enemy.maxIdleFrames + i;
+      draw();
+      await sleep(Math.max(1, enemy.wActWaitFrames) * 80);
+    }
+  }
+
+  // 3步前斜移表示攻击扑击动作
+  for (let i = 0; i < 3 - enemy.wMagicFrames; i++) {
+    enemy.x -= 2;
+    enemy.y -= 1;
+    draw();
+    await sleep(80);
+  }
+
+  if (enemy.wActionSound > 0) {
+    playSound(enemy.wActionSound);
+  }
+  await sleep(80);
+
+  // 2. 敌人瞬移到队员面前，并播放物理攻击姿态动作帧
   enemy.x = player.x - 30;
   enemy.y = player.y - 10;
-  draw();
-  await sleep(150);
+
+  if (enemy.wAttackFrames === 0) {
+    enemy.currentFrame = enemy.maxIdleFrames - 1;
+    draw();
+    await sleep(160);
+  } else {
+    for (let i = 0; i <= enemy.wAttackFrames; i++) {
+      enemy.currentFrame = enemy.maxIdleFrames + enemy.wMagicFrames + i - 1;
+      draw();
+      await sleep(Math.max(1, enemy.wActWaitFrames) * 80);
+    }
+  }
 
   // 步骤 7.1：获取敌方等级并对其物理攻击力进行战场等级修正
   const enemyLevel = enemy.level || 1;
@@ -1714,7 +1811,9 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
   // 检测并运行濒死/死亡触发脚本
   await checkPlayerInjury(player, originalHp);
 
-  // 3. 返回原位
+  // 3. 返回原位并重置怪物动作与姿态
+  enemy.isActing = false;
+  enemy.currentFrame = 0;
   enemy.x = origX;
   enemy.y = origY;
   draw();
@@ -2324,6 +2423,29 @@ export async function showPlayerPreMagicAnim(playerIndex) {
   player.currentFrame = 6;
   draw();
   await sleep(80);
+}
+
+// 辅助函数：通过扫描指令序列判定某仙术是否为复活法术 (包含 0x22 revivePlayer 指令)
+function isRevivalSpell(magicId) {
+  const itemObj = state.items[magicId];
+  if (!itemObj || !itemObj.useScr) {
+    return false;
+  }
+
+  const ip = itemObj.useScr;
+  for (let i = 0; i < 50; i++) {
+    const script = state.scripts[ip + i];
+    if (!script) {
+      break;
+    }
+    if (script.code === 0x22) {
+      return true;
+    }
+    if (script.code === 0x00) {
+      break;
+    }
+  }
+  return false;
 }
 
 // 步骤 16：还原玩家在战斗中的正常姿势帧 (死者为 2，虚弱为 1，正常为 0)
