@@ -477,7 +477,7 @@ export const ESC = {
       }
     };
 
-    const onInputFn = (input) => {
+    const onInputFn = async (input) => {
       // 步骤 9：按键时动态收集最新的背包道具信息以保证逻辑一致
       const itemCounts = {};
       const uniqueItems = [];
