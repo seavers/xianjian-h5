@@ -235,32 +235,12 @@ export class Panel {
   }
 
   draw() {
+    this.width = this.width || 2;
     const style = this.style;
     const arr = this.arr;
+
+    // 步骤 1：确定当前面板的列数与总行数
     const cols = (style >= 10) ? 3 : 1;
-
-    // 步骤 0：如果未指定宽度且为单列模式，自动根据文字内容最大长度来动态适配宽度
-    if (!this.width) {
-      if (cols === 1 && arr.length > 0) {
-        let maxWordLen = 0;
-        for (const item of arr) {
-          let len = 0;
-          if (typeof item === 'number') {
-            const w = state.words[item];
-            if (w) len = w.length / 2;
-          }
-          if (len > maxWordLen) {
-            maxWordLen = len;
-          }
-        }
-        if (maxWordLen > 0) {
-          this.width = Math.ceil(maxWordLen / 2) + 1;
-        }
-      }
-    }
-    this.width = this.width || 2;
-
-    // 步骤 1：确定当前面板的总行数
     this.height = this.height || Math.ceil(arr.length / cols);
     const totalRows = Math.ceil(arr.length / cols);
 

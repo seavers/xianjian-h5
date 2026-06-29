@@ -783,6 +783,7 @@ export const ESC = {
     const casterPanel = PanelFactory.createList(state.party.map(p => state.roles[p.index].nameId));
     casterPanel.x = 28;
     casterPanel.y = 60;
+    casterPanel.width = 3;
 
     const renderFn = () => {
       casterPanel.draw();
@@ -1238,6 +1239,7 @@ export const ESC = {
     const systemPanel = PanelFactory.createList([11, 12, 13, 14, 15]);
     systemPanel.x = 28;
     systemPanel.y = 72;
+    systemPanel.width = 3;
 
     const renderFn = () => {
       systemPanel.draw();
