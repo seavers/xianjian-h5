@@ -547,12 +547,22 @@ export const ESC = {
         if (!isUsable) return;
 
         if (mode === 'use') {
-          // 不再选择角色，直接使用物品并执行脚本
           const itemToUse = state.items[currItemId];
-          itemToUse.index = (state.party && state.party.length > 0 && state.party[0]) ? state.party[0].index : 0;
-
-          Script.startItemScript(itemToUse);
-          ESC.clearMenus();
+          const isTargetAll = (itemToUse.flags & 16) !== 0;
+          if (isTargetAll) {
+            state.scriptSuccess = true;
+            const nextUseScr = await Script.runTriggerScript(itemToUse.useScr, state.party[0], 'item');
+            if (state.scriptSuccess !== false) {
+              if (nextUseScr !== undefined) itemToUse.useScr = nextUseScr;
+              const idx = state.ownItems.indexOf(currItemId);
+              if (idx > -1) {
+                state.ownItems.splice(idx, 1);
+              }
+            }
+            ESC.renderAll();
+          } else {
+            ESC.openItemUseMenu(currItemId);
+          }
         } else if (mode === 'equip') {
           // 选中可装备的道具时，按空格跳转到比对装备前后属性对备面板
           ESC.openEquipComparison(currItemId);
@@ -1100,6 +1110,128 @@ export const ESC = {
     };
 
     ESC.pushMenu('magicSelector', null, renderFn, onInputFn);
+  },
+
+  openItemUseMenu(itemId) {
+    let selectedPlayerIndex = 0;
+
+    const renderFn = () => {
+      const startupCtx = state.contexts.startup;
+      if (!startupCtx) return;
+
+      // 步骤 1：绘制右半部分的大红卷轴边框 (X=110, Y=2, 宽度11, 高度9)
+      UI.drawScrollBox(110, 2, 11, 9);
+
+      // 步骤 2：绘制当前选定角色的八维属性
+      if (!state.party || selectedPlayerIndex >= state.party.length) return;
+      const pRole = state.party[selectedPlayerIndex];
+      const roleStats = state.roles[pRole.index];
+      if (!roleStats) return;
+
+      // 绘制八个属性项的标签名 (青色 0x8cbeae)
+      const labelColor = 0x8cbeae;
+      UI.drawWord(48, 200, 16, labelColor);  // 修行
+      UI.drawWord(49, 200, 34, labelColor);  // 体力
+      UI.drawWord(50, 200, 52, labelColor);  // 真气
+      UI.drawWord(51, 200, 70, labelColor);  // 武术
+      UI.drawWord(52, 200, 88, labelColor);  // 灵力
+      UI.drawWord(53, 200, 106, labelColor); // 防御
+      UI.drawWord(54, 200, 124, labelColor); // 身法
+      UI.drawWord(55, 200, 142, labelColor); // 吉运
+
+      // 绘制具体数值
+      UI.drawNum(roleStats.level, 280, 16, 'yellow');
+
+      UI.drawSlash(261, 35);
+      UI.drawNum(roleStats.hp, 258, 34, 'yellow');
+      UI.drawNum(roleStats.maxHp, 280, 37, 'blue');
+
+      UI.drawSlash(261, 53);
+      UI.drawNum(roleStats.mp, 258, 52, 'yellow');
+      UI.drawNum(roleStats.maxMp, 280, 55, 'blue');
+
+      UI.drawNum(roleStats.attackStrength || 0, 280, 70, 'yellow');
+      UI.drawNum(roleStats.magicStrength || 0, 280, 88, 'yellow');
+      UI.drawNum(roleStats.defense || 0, 280, 106, 'yellow');
+      UI.drawNum(roleStats.dexterity || 0, 280, 124, 'yellow');
+      UI.drawNum(roleStats.fleeRate || 0, 280, 142, 'yellow');
+
+      // 步骤 3：绘制左上角的人名列表，选中为明黄色，未选中为灰白色
+      for (let i = 0; i < state.party.length; i++) {
+        const p = state.party[i];
+        const isSelected = (i === selectedPlayerIndex);
+        const color = isSelected ? COLOR_YELLOW : COLOR_GRAY;
+        UI.drawWord(state.roles[p.index].nameId, 125, 16 + 20 * i, color);
+      }
+
+      // 步骤 4：绘制左下角的道具小纸卷轴、大球图及数量名称
+      const boxImg = loadPic(71);
+      if (boxImg) {
+        startupCtx.drawImage(boxImg, 120, 80);
+      }
+
+      const item = state.items[itemId];
+      if (item) {
+        const ballImg = loadBall(item.roleId);
+        if (ballImg) {
+          startupCtx.drawImage(ballImg, 128, 87);
+        }
+
+        UI.drawWord(itemId, 116, 143, COLOR_YELLOW);
+
+        // 统计该道具在背包里的剩余数量，并绘制在小图标的右下边
+        const count = (state.ownItems || []).filter(id => id === itemId).length;
+        if (count > 0) {
+          UI.drawNum(count, 172, 128, 'cyan');
+        }
+      }
+    };
+
+    const onInputFn = async (input) => {
+      if (!state.party || state.party.length === 0) return;
+      const partyLen = state.party.length;
+
+      if (input === 'ESC' || input === 'e') {
+        ESC.popMenu();
+        return;
+      }
+
+      if (input === 'up' || input === 'left') {
+        selectedPlayerIndex = (selectedPlayerIndex - 1 + partyLen) % partyLen;
+        ESC.renderAll();
+      } else if (input === 'down' || input === 'right') {
+        selectedPlayerIndex = (selectedPlayerIndex + 1) % partyLen;
+        ESC.renderAll();
+      } else if (input === 'blank') {
+        const item = state.items[itemId];
+        if (!item) return;
+
+        const targetRole = state.party[selectedPlayerIndex];
+
+        // 步骤 5：运行使用脚本
+        state.scriptSuccess = true;
+        const nextUseScr = await Script.runTriggerScript(item.useScr, targetRole, 'item');
+
+        // 步骤 6：如果脚本执行成功，扣减道具并更新脚本号
+        if (state.scriptSuccess !== false) {
+          if (nextUseScr !== undefined) item.useScr = nextUseScr;
+
+          const idx = state.ownItems.indexOf(itemId);
+          if (idx > -1) {
+            state.ownItems.splice(idx, 1);
+          }
+
+          // 重新检查道具在背包中是否耗尽
+          const remainingCount = (state.ownItems || []).filter(id => id === itemId).length;
+          if (remainingCount === 0) {
+            ESC.popMenu(); // 道具耗尽，退回道具列表
+          }
+        }
+        ESC.renderAll();
+      }
+    };
+
+    ESC.pushMenu('itemUse', null, renderFn, onInputFn);
   },
 
   onSystem() {

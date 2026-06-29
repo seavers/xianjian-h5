@@ -156,6 +156,10 @@ export const UI = {
       drawCtx.drawImage(pic, 0, 0);
       drawCtx.restore();
     }
+  },
+
+  drawScrollBox(x, y, width, height, ctx) {
+    this.drawMultiLineBox(x, y, width, height, 1, ctx);
   }
 };
 
