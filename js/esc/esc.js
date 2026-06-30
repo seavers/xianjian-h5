@@ -551,14 +551,19 @@ export const ESC = {
           const isTargetAll = (itemToUse.flags & 16) !== 0;
           if (isTargetAll) {
             state.scriptSuccess = true;
-            const nextUseScr = await Script.runTriggerScript(itemToUse.useScr, state.party[0], 'item');
-            if (state.scriptSuccess !== false) {
-              if (nextUseScr !== undefined) itemToUse.useScr = nextUseScr;
-              const idx = state.ownItems.indexOf(currItemId);
-              if (idx > -1) {
-                state.ownItems.splice(idx, 1);
-              }
-            }
+
+            // 这里不能使用 runTriggerScript，因为需要先关闭物品列表对话框
+            // const nextUseScr = await Script.runTriggerScript(itemToUse.useScr, state.party[0], 'item');
+            // if (state.scriptSuccess !== false) {
+            //   if (nextUseScr !== undefined) itemToUse.useScr = nextUseScr;
+            //   const idx = state.ownItems.indexOf(currItemId);
+            //   if (idx > -1) {
+            //     state.ownItems.splice(idx, 1);
+            //   }
+            // }
+
+            Script.startItemScript(itemToUse);
+            ESC.clearMenus();
             ESC.renderAll();
           } else {
             ESC.openItemUseMenu(currItemId);
