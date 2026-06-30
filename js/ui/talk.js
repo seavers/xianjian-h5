@@ -473,7 +473,7 @@ function resetMessageOrTips() {
 
 async function checkNeedNextTips() {
   const t = Script.activeThread;
-  if(isNextTalk(t)) {
+  if(!t || isNextTalk(t)) {
     return;
   }
   
