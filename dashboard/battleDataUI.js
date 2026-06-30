@@ -12,6 +12,26 @@ const { useState, useEffect, useRef, useMemo } = React;
 const BATTLE_COLOR = '#a78bfa';
 const BATTLE_COLOR_RGB = '167, 139, 250';
 
+const big5Decoder = new TextDecoder('big5');
+function getItemName(itemId) {
+  if (!itemId) return '无';
+  const itemWord = state?.words?.[itemId];
+  if (itemWord) {
+    try {
+      const bytes = [];
+      for (let i = 0; i < itemWord.length; i++) {
+        bytes.push(itemWord.getByte(i));
+      }
+      const decodedStr = big5Decoder.decode(new Uint8Array(bytes)).trim();
+      const simplifiedFn = window.toSimplifiedFn;
+      return simplifiedFn ? simplifiedFn(decodedStr) : decodedStr;
+    } catch (e) {
+      console.error('[getItemName] 无法解析物品名称:', e);
+    }
+  }
+  return `物品 #${itemId}`;
+}
+
 // 步骤 1：获取任意 MKF 文件的子块总包数
 function getMkfBlockCount(filename) {
   try {
@@ -225,12 +245,12 @@ function EnemyTabComponent({ selectedEnemyId, setSelectedEnemyId }) {
           </div>
 
           <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
-            <span style=${{ color: 'rgba(255,255,255,0.3)' }}>可偷取道具 ID</span>
-            <span style=${{ color: BATTLE_COLOR }}>${cur.wStealItem || '无'}</span>
+            <span style=${{ color: 'rgba(255,255,255,0.3)' }}>可偷取物品</span>
+            <span style=${{ color: BATTLE_COLOR }}>${cur.nStealItem > 0 ? (cur.wStealItem === 0 ? '💰 金钱' : `${getItemName(cur.wStealItem)} (ID: ${cur.wStealItem})`) : '无'}</span>
           </div>
           <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
-            <span style=${{ color: 'rgba(255,255,255,0.3)' }}>可偷取件数</span>
-            <span style=${{ color: '#fff' }}>${cur.nStealItem} 个</span>
+            <span style=${{ color: 'rgba(255,255,255,0.3)' }}>可偷取数量</span>
+            <span style=${{ color: '#fff' }}>${cur.nStealItem > 0 ? (cur.wStealItem === 0 ? `${cur.nStealItem} 文钱` : `${cur.nStealItem} 个`) : '0'}</span>
           </div>
           <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
             <span style=${{ color: 'rgba(255,255,255,0.3)' }}>逃跑率 Flee</span>
