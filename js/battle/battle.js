@@ -2509,11 +2509,6 @@ async function endBattle(result) {
     }
   }
 
-  // 步骤 9.2：对于非胜利结算（全员战败、逃跑等），仍等待 1.5 秒展示普通框
-  if (result !== 3 && result !== true) {
-    await sleep(1500);
-  }
-
   // 步骤 9.3：渐变淡出当前战斗画面至黑色
   // await fadeOut();
 
