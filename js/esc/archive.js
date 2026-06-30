@@ -1,4 +1,5 @@
 import { state } from '../engine/state.js';
+import { getCurrentMusicNum, playMusic } from '../resources/music.js';
 import { Lang } from '../utils/lang.js';
 import { ByteArray } from '../utils/view.js';
 
@@ -275,7 +276,7 @@ export function saveArchive(slotId, callback) {
   view.setUint16(8, state.sceneId, true); // wNumScene
   view.setUint16(10, state.fNightPalette ? 0x180 : 0, true); // wPaletteOffset
   view.setUint16(12, leader ? leader.dir : 0, true); // wPartyDirection
-  view.setUint16(14, 0, true); // wNumMusic
+  view.setUint16(14, getCurrentMusicNum() > 0 ? getCurrentMusicNum() : 0, true); // wNumMusic
   view.setUint16(16, 0, true); // wNumBattleMusic
   view.setUint16(18, state.battlefieldId || 0, true); // wNumBattleField
   view.setUint16(20, 0, true); // wScreenWave
@@ -285,7 +286,7 @@ export function saveArchive(slotId, callback) {
   view.setUint16(28, state.chaseRange || 1, true); // wChaseRange
   view.setUint16(30, state.chasespeedChangeCycles || 0, true); // wChasespeedChangeCycles
   view.setUint16(32, state.nFollower || 0, true); // nFollower
-  view.setUint16(34, 0, true); // rgwReserved2[0]
+  view.setUint16(34, state.paletteId || 0, true); // rgwReserved2[0]
   view.setUint16(36, 0, true); // rgwReserved2[1]
   view.setUint16(38, 0, true); // rgwReserved2[2]
 
@@ -522,7 +523,9 @@ function parseSaveData(byteArray) {
   const wChaseRange = view.nextShort();
   const wChasespeedChangeCycles = view.nextShort();
   const nFollower = view.nextShort();
-  view.skipByte(6); // 跳过 rgwReserved2[3]
+  const rgwReserved2_0 = view.nextShort(); // rgwReserved2[0] -> paletteId
+  const rgwReserved2_1 = view.nextShort(); // rgwReserved2[1]
+  const rgwReserved2_2 = view.nextShort(); // rgwReserved2[2]
 
   // 2. 读取资金，并读取 rgParty，跳过 rgTrail, Exp, PlayerRoles, rgPoisonStatus
   const dwCash = view.nextInt();
@@ -826,6 +829,12 @@ function parseSaveData(byteArray) {
   state.chasespeedChangeCycles = wChasespeedChangeCycles;
   state.nFollower = nFollower;
   state.roleHistory = []; // 清空移动历史以便起步重新计算
+  state.fNightPalette = (wPaletteOffset !== 0);
+  state.paletteId = rgwReserved2_0;
+
+  if (wNumMusic > 0) {
+    playMusic(wNumMusic, true, 1.0);
+  }
 
   const scene = state.scenes[wNumScene];
   if (scene) {
