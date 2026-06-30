@@ -2457,7 +2457,10 @@ export async function stealFromEnemy(stealRate) {
   const sleep = ms => new Promise(res => setTimeout(res, ms));
 
   // 寻找并确定当前被施法的目标敌人
-  const enemyIndex = (this && typeof this.index === 'number') ? this.index : 0;
+  let enemyIndex = enemies.findIndex(e => e === this);
+  if (enemyIndex === -1) {
+    enemyIndex = enemies.findIndex(e => e.hp > 0);
+  }
   const enemy = enemies[enemyIndex];
 
   if (!enemy || enemy.hp <= 0) {
