@@ -316,11 +316,6 @@ function drawUIBox(ctx, x, y, width, height, style = 0) {
   }
 
   if (pics.some(p => !p)) {
-    ctx.fillStyle = 'rgba(10, 13, 20, 0.9)';
-    ctx.fillRect(x, y, width, height);
-    ctx.strokeStyle = 'rgba(167, 139, 250, 0.8)';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(x, y, width, height);
     return;
   }
 
@@ -587,8 +582,8 @@ export function draw() {
     if (menuState === 'magic') {
       const activePlayer = players[activePlayerIndex];
       if (activePlayer && activePlayer.magics && activePlayer.magics.length > 0) {
-        // 1. 绘制左上角使用MP/当前主角MP框 (x: 10, y: 8, w: 80, h: 22)，完全使用九宫格贴图拼框
-        drawUIBox(battleCtx, 10, 8, 80, 22);
+        // 1. 绘制左上角使用MP/当前主角MP框 (x: 10, y: 8, w: 80, h: 22)
+        UI.drawSingleLineBox(10, 8, 4, battleCtx);
 
         const currentMagicId = activePlayer.magics[selectedMagicIndex];
         const currentItemObj = state.items[currentMagicId];
@@ -619,7 +614,7 @@ export function draw() {
         }
 
         // 3. 绘制锦缎美感大控制盒 (x: 10, y: 40, w: 300, h: 110)，完全使用九宫格贴图拼框
-        drawUIBox(battleCtx, 10, 40, 300, 110);
+        UI.drawScrollBox(10, 40, 18, 7, battleCtx);
 
         // 4. 绘制法术三列列表网格
         const colW = 95;
@@ -657,25 +652,27 @@ export function draw() {
             const isSelected = idx === selectedMagicIndex;
             const xPos = 15 + c * colW;
 
-            // 绘制选中高亮底色与游标
-            if (isSelected) {
-              battleCtx.fillStyle = 'rgba(167, 139, 250, 0.25)';
-              battleCtx.fillRect(xPos, yPos, 90, 15);
-              battleCtx.fillStyle = '#a78bfa';
-              battleCtx.fillRect(xPos + 1, yPos + 4, 2, 7);
-            }
-
-            // 判定字体色调：MP不足深灰，选中白色，否则淡灰
+            // 判定字体色调：MP不足深灰，选中是黄色高亮，否则经典灰色
             let wordColor = undefined;
             if (activePlayer.mp < magic.wCostMP) {
               wordColor = 0x00555555;
             } else if (isSelected) {
-              wordColor = 0x00FFFFFF;
+              wordColor = 0x00FCDC84; // 黄色高亮 (COLOR_YELLOW)
             } else {
-              wordColor = 0x00C0C0C0;
+              wordColor = 0x00D4D0C0; // 经典灰色 (COLOR_GRAY)
             }
 
             drawWordToCtx(battleCtx, wordId, xPos + 5, yPos, wordColor);
+
+            // 绘制高亮光标 (PIC #70)
+            if (isSelected) {
+              const arrowImg = loadPic(70);
+              if (arrowImg) {
+                const word = state.words[wordId];
+                const wordLen = word ? word.length / 2 : 2;
+                battleCtx.drawImage(arrowImg, xPos + 5 + wordLen * 16, yPos + 5);
+              }
+            }
           }
         }
       }
@@ -728,22 +725,22 @@ export function draw() {
       // 头像 (49 + 角色 0-based 索引)
       const avatarImg = loadPic(49 + p.index);
       if (avatarImg) {
-        battleCtx.drawImage(avatarImg, bx - 3, by);
+        if (p.hp <= 0) {
+          battleCtx.save();
+          battleCtx.filter = 'grayscale(100%)';
+          battleCtx.drawImage(avatarImg, bx - 3, by);
+          battleCtx.restore();
+        } else {
+          battleCtx.drawImage(avatarImg, bx - 3, by);
+        }
       }
 
       // 数字渲染：显示「当前HP / 最大HP」和「当前MP / 最大MP」
       // 参考 sdlpal: PAL_DrawNumber(HP, ...) + SPRITENUM_SLASH(#40号图) + PAL_DrawNumber(MaxHP, ...)
-      if (p.hp > 0) {
-        // HP 行（黄色数字 20~29，中间是 #40 号斜杠图片）
-        drawHpMpLine(battleCtx, p.hp, p.maxHp, 'hp', bx + 29, by + 6);
-        // MP 行（青色数字 57~66，中间是 #40 号斜杠图片）
-        drawHpMpLine(battleCtx, p.mp, p.maxMp, 'mp', bx + 29, by + 20);
-      } else {
-        // 阵亡状态
-        battleCtx.fillStyle = '#ff3333';
-        battleCtx.font = 'bold 8px sans-serif';
-        battleCtx.fillText('阵亡', bx + 44, by + 18);
-      }
+      // HP 行（0/最大HP）
+      drawHpMpLine(battleCtx, Math.max(0, p.hp), p.maxHp, 'hp', bx + 29, by + 6);
+      // MP 行（青色数字 57~66，中间是 #40 号斜杠图片）
+      drawHpMpLine(battleCtx, p.mp, p.maxMp, 'mp', bx + 29, by + 20);
     });
   }
 

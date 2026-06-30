@@ -948,24 +948,24 @@ export const ESC = {
         // 绘制头像
         const avatarImg = loadPic(49 + pRole.index);
         if (avatarImg) {
-          startupCtx.drawImage(avatarImg, bx - 3, by);
+          if (roleStats.hp <= 0) {
+            startupCtx.save();
+            startupCtx.filter = 'grayscale(100%)';
+            startupCtx.drawImage(avatarImg, bx - 3, by);
+            startupCtx.restore();
+          } else {
+            startupCtx.drawImage(avatarImg, bx - 3, by);
+          }
         }
 
         // 绘制 HP / MP 数值属性
-        if (roleStats.hp > 0) {
-          UI.drawNum(roleStats.hp, bx + 50, by + 6, 'yellow');
-          UI.drawSlash(bx + 51, by + 7);
-          UI.drawNum(roleStats.maxHp, bx + 72, by + 10, 'blue');
+        UI.drawNum(Math.max(0, roleStats.hp), bx + 50, by + 6, 'yellow');
+        UI.drawSlash(bx + 51, by + 7);
+        UI.drawNum(roleStats.maxHp, bx + 72, by + 10, 'blue');
 
-          UI.drawNum(roleStats.mp, bx + 50, by + 19, 'yellow');
-          UI.drawSlash(bx + 51, by + 20);
-          UI.drawNum(roleStats.maxMp, bx + 72, by + 23, 'blue');
-        } else {
-          // 阵亡状态直接在头像旁渲染红字“阵亡”
-          startupCtx.fillStyle = '#ff3333';
-          startupCtx.font = '12px sans-serif';
-          startupCtx.fillText('阵亡', bx + 36, by + 18);
-        }
+        UI.drawNum(roleStats.mp, bx + 50, by + 19, 'yellow');
+        UI.drawSlash(bx + 51, by + 20);
+        UI.drawNum(roleStats.maxMp, bx + 72, by + 23, 'blue');
 
         // 选择目标状态：被选中的目标上方绘制 Pic #67 红色向下指示器
         if (uiState === 'select_target' && i === targetPartyIndex) {
