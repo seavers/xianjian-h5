@@ -2698,6 +2698,52 @@ export async function setBattleResult(result) {
   }
 }
 
+export async function enemyEscapeAnim() {
+  if (!isBattleRunning) {
+    return;
+  }
+
+  // 步骤 1：播放逃跑音效
+  playSound(45);
+
+  // 步骤 2：对所有仍然存活的敌方成员执行向左滑出屏幕的动画
+  let escapeInProgress = true;
+  while (escapeInProgress) {
+    escapeInProgress = false;
+
+    for (let i = 0; i < enemies.length; i++) {
+      const enemy = enemies[i];
+      if (!enemy || enemy.hp <= 0 || enemy.escaped) {
+        continue;
+      }
+
+      // X 坐标左移 5 像素
+      enemy.x -= 5;
+
+      const halfWidth = (enemy.width || 80) / 2;
+      if (enemy.x + halfWidth > 0) {
+        escapeInProgress = true;
+      }
+    }
+
+    // 步骤 3：每一帧重绘战场并等待 10 毫秒
+    draw();
+    await sleep(10);
+  }
+
+  // 步骤 4：所有敌人均已跑出屏幕后，重置其 HP 并标记为逃跑离场
+  enemies.forEach(enemy => {
+    if (enemy && enemy.hp > 0) {
+      enemy.hp = 0;
+      enemy.escaped = true;
+    }
+  });
+
+  // 步骤 5：延迟 500 毫秒，随后结束战斗
+  await sleep(500);
+  await setBattleResult(0xFFFF);
+}
+
 // 步骤 14：播放主角施法前摇与发光效果 (完全还原自 sdlpal 中的 0x92 指令)
 export async function showPlayerPreMagicAnim(playerIndex) {
   if (!isBattleRunning) return;

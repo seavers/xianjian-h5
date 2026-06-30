@@ -2713,15 +2713,20 @@ export function jumpIfEnemyTurn(targetScriptId) {
   console.log(`[0x68 jumpIfEnemyTurn] 非敌方行动回合，不跳转`);
 }
 
-export function enemyEscape() {
-  // 步骤 1：寻找当前战斗中第一个存活的敌人
+export async function enemyEscape() {
+  // 步骤 1：寻找当前战斗中第一个存活的敌人以确保战斗有效
   if (enemies && enemies.length > 0) {
     const enemy = enemies.find(e => e && e.hp > 0);
     if (enemy) {
-      // 步骤 2：直接将该敌人 HP 归零并设置逃跑标记已离场
-      enemy.hp = 0;
-      enemy.escaped = true;
-      console.log('[0x69 enemyEscape] 战斗中敌方逃跑，其 HP 被设为 0，并标记 escaped = true');
+      // 步骤 2：调用战斗模块的逃跑动画并等待其完成
+      if (window.Battle && typeof window.Battle.enemyEscapeAnim === 'function') {
+        await window.Battle.enemyEscapeAnim();
+      } else {
+        // 降级使用原有同步状态设置
+        enemy.hp = 0;
+        enemy.escaped = true;
+        console.log('[0x69 enemyEscape] 降级执行：敌方逃跑，其 HP 被设为 0，并标记 escaped = true');
+      }
     }
   } else {
     console.log('[0x69 enemyEscape] 敌方逃跑，当前不在战斗或无存活敌人');
