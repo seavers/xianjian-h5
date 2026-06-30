@@ -2775,7 +2775,10 @@ export function enemyDivision(count, targetScriptId) {
   original.hp = newHp;
 
   for (let i = 0; i < count; i++) {
+    // 备份无法通过 JSON 序列化的 spriteData 属性以避免克隆后原型丢失
+    const spriteData = original.spriteData;
     const clone = JSON.parse(JSON.stringify(original));
+    clone.spriteData = spriteData;
     clone.hp = newHp;
     clone.index = enemies.length;
     enemies.push(clone);
@@ -2832,7 +2835,10 @@ export function enemySummon(summonId, summonCount, targetScriptId) {
   if (template) {
     const posTable = loadEnemyPos();
     for (let i = 0; i < summonCount; i++) {
+      // 备份无法通过 JSON 序列化的 spriteData 属性以避免克隆后原型丢失
+      const spriteData = template.spriteData;
       const clone = JSON.parse(JSON.stringify(template));
+      clone.spriteData = spriteData;
       clone.hp = clone.maxHp || 100;
       clone.index = enemies.length;
       
