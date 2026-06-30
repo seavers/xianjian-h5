@@ -22,6 +22,8 @@ import { enemies, players, addDamagePopup, draw } from '../battle/battle.js';
 import { loadMkf } from '../resources/loader.js';
 import { Talk } from '../ui/talk.js';
 
+const big5Decoder = new TextDecoder('big5');
+
 export function setRolePos(sx, sy, shalf) {
   state.mx = sx;
   state.my = sy;
@@ -2451,14 +2453,71 @@ export function setPartyStatus(statusId, rounds) {
 }
 
 export function stealFromEnemy(stealRate) {
-  // 步骤 1：寻找当前战斗中第一个存活的敌人
-  if (enemies && enemies.length > 0) {
-    const enemy = enemies.find(e => e && e.hp > 0);
-    if (enemy) {
-      console.log(`[0x6A stealFromEnemy] 战斗中尝试从敌方 (ID: ${enemy.id}) 窃取物品，成功率系数: ${stealRate}`);
+  // 步骤 1：寻找并确定当前被施法的目标敌人。如果 this 绑定了上下文且包含有效索引，则使用该敌人；否则默认寻找第一个存活敌人。
+  const enemyIndex = (this && typeof this.index === 'number') ? this.index : 0;
+  const enemy = enemies[enemyIndex];
+
+  if (!enemy || enemy.hp <= 0) {
+    console.log(`[0x6A stealFromEnemy] 尝试从敌方窃取物品，成功率系数: ${stealRate}，但目标敌人不存在或已阵亡`);
+    return;
+  }
+
+  // 步骤 2：判定是否成功。判定成功概率：sdlpal 规则下为 (RandomLong(0, 10) <= wStealRate || wStealRate == 0)
+  const canSteal = enemy.nStealItem && enemy.nStealItem > 0;
+  const isSuccess = canSteal && (stealRate === 0 || Math.floor(Math.random() * 11) <= stealRate);
+
+  if (isSuccess) {
+    if (enemy.wStealItem === 0) {
+      // 步骤 3：偷取钱财（wStealItem === 0）
+      const divisor = Math.random() < 0.5 ? 2 : 3;
+      let c = Math.floor(enemy.nStealItem / divisor);
+
+      // 保底处理，避免余量不为0却得到0
+      if (c === 0 && enemy.nStealItem > 0) {
+        c = 1;
+      }
+
+      enemy.nStealItem -= c;
+      state.money = (state.money || 0) + c;
+
+      console.log(`[0x6A stealFromEnemy] 成功窃取金钱: ${c} 文，剩余可窃取钱数: ${enemy.nStealItem}`);
+
+      // 飘字提示：“得 [钱数] 文钱”
+      addDamagePopup(enemy, `得 ${c} 文钱`, true);
+    } else {
+      // 步骤 4：偷取物品（wStealItem > 0）
+      const itemId = enemy.wStealItem;
+      enemy.nStealItem--;
+
+      state.ownItems = state.ownItems || [];
+      state.ownItems.push(itemId);
+
+      // 还原物品名称
+      let itemName = `物品 #${itemId}`;
+      const itemWord = state.words[itemId];
+      if (itemWord) {
+        try {
+          const bytes = [];
+          for (let i = 0; i < itemWord.length; i++) {
+            bytes.push(itemWord.getByte(i));
+          }
+          const decodedStr = big5Decoder.decode(new Uint8Array(bytes)).trim();
+          const simplifiedFn = window.toSimplifiedFn;
+          itemName = simplifiedFn ? simplifiedFn(decodedStr) : decodedStr;
+        } catch (e) {
+          console.error(`[0x6A stealFromEnemy] 解析物品 #${itemId} 名字失败:`, e);
+        }
+      }
+
+      console.log(`[0x6A stealFromEnemy] 成功窃取物品: ${itemName} (ID: ${itemId})，剩余可窃取次数: ${enemy.nStealItem}`);
+
+      // 飘字提示：“得 [物品名]”
+      addDamagePopup(enemy, `得 ${itemName}`, true);
     }
   } else {
-    console.log(`[0x6A stealFromEnemy] 尝试从敌方窃取物品，成功率系数: ${stealRate}，但当前没有敌人`);
+    // 步骤 5：偷窃失败（概率未命中或已被偷空）
+    console.log(`[0x6A stealFromEnemy] 窃取失败（概率未命中或已被偷空），当前 nStealItem: ${enemy.nStealItem}`);
+    addDamagePopup(enemy, '无', true);
   }
 }
 
