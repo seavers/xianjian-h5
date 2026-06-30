@@ -2456,9 +2456,9 @@ export function setPartyStatus(statusId, rounds) {
 export async function stealFromEnemy(stealRate) {
   const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-  // 寻找并确定当前被施法的目标敌人
-  let enemyIndex = enemies.findIndex(e => e === this);
-  if (enemyIndex === -1) {
+  // 寻找并确定当前被施法的目标敌人 (优先使用当前活动的仙术目标索引)
+  let enemyIndex = (state.activeTargetIdx !== undefined) ? state.activeTargetIdx : -1;
+  if (enemyIndex === -1 || !enemies[enemyIndex] || enemies[enemyIndex].hp <= 0) {
     enemyIndex = enemies.findIndex(e => e.hp > 0);
   }
   const enemy = enemies[enemyIndex];

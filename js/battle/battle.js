@@ -2832,6 +2832,7 @@ async function handleMagicAction(player, actor, act) {
     if (enemies[targetIdx].hp <= 0) {
       targetIdx = enemies.findIndex(e => e.hp > 0);
     }
+    state.activeTargetIdx = targetIdx;
     if (targetIdx !== -1) {
       // 步骤 1：运行施法前置脚本
       if (itemObj.useScr > 0) {
