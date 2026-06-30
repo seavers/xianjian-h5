@@ -129,13 +129,21 @@ function EnemyTabComponent({ selectedEnemyId, setSelectedEnemyId }) {
                 borderRadius: '2px',
                 cursor: 'pointer',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
+                flexDirection: 'column',
+                gap: '2px',
                 transition: 'all 0.1s'
               }}
             >
-              <span style=${{ fontSize: '9px', fontWeight: 'bold', color: isSelected ? BATTLE_COLOR : '#fff' }}>敌人 #${idx}</span>
-              <span style=${{ fontSize: '8px', color: e.wHealth > 300 ? 'var(--glow-red)' : 'rgba(255,255,255,0.3)' }}>HP ${e.wHealth}</span>
+              <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <span style=${{ fontSize: '9.5px', fontWeight: 'bold', color: isSelected ? BATTLE_COLOR : '#fff' }}>敌人 #${idx}</span>
+                <span style=${{ fontSize: '8px', color: e.wHealth > 300 ? 'var(--glow-red)' : 'rgba(255,255,255,0.3)' }}>HP ${e.wHealth}</span>
+              </div>
+              <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', fontSize: '7.5px' }}>
+                <span style=${{ color: 'rgba(255,255,255,0.3)' }}>🎁 偷窃</span>
+                <span style=${{ color: e.nStealItem > 0 ? '#fcdc84' : 'rgba(255,255,255,0.2)' }}>
+                  ${e.nStealItem > 0 ? (e.wStealItem === 0 ? `💰 ${e.nStealItem} 文` : `${getItemName(e.wStealItem)} x ${e.nStealItem}`) : '已空'}
+                </span>
+              </div>
             </div>
           `;
         })}
