@@ -2211,8 +2211,8 @@ async function endBattle(result) {
         drawWordToCtx(talkCtx, 48, 110 + nameLen * 16, 10);
         drawWordToCtx(talkCtx, 32, 110 + nameLen * 16 + 32, 10);
 
-        // 3. 绘制具体数值大面板背景框：x=74, y=32, 宽=9, 高=8
-        UI.drawScrollBox(66, 34, 11, 8, talkCtx);
+        // 3. 绘制具体数值大面板背景框：x=66, y=34, 宽=11, 高=9
+        UI.drawScrollBox(66, 34, 11, 9, talkCtx);
 
         // 4. 绘制 8 项属性的文字标签 (修行、体力、真气、武术、灵力、防御、身法、吉运)
         for (let j = 0; j < 8; j++) {
