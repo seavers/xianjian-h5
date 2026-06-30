@@ -11,6 +11,7 @@ import { Script } from '../engine/script.js';
 import { UI } from '../ui/panel.js';
 import { ESC } from '../esc/esc.js';
 import { UseItemMenu } from '../ui/useItemMenu.js';
+import { intToShort } from '../utils/number.js';
 
 // 站位坐标配置 (1人, 2人, 3人)
 const PLAYER_POS_PRESETS = [
@@ -2847,7 +2848,7 @@ async function handleMagicAction(player, actor, act) {
       }
 
       // 步骤 3：结算伤害 (单体伤害或群体伤害，仅在 wBaseDamage > 0 时结算，防止飞龙探云手等辅助仙术误伤)
-      if (magic.wBaseDamage > 0) {
+      if (intToShort(magic.wBaseDamage) > 0) {
         let targets = [];
         if (magic.wType === 1 || magic.wType === 6 || magic.wType === 2) {
           enemies.forEach((e, eIdx) => { if (e.hp > 0) targets.push(eIdx); });
