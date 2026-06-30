@@ -1239,7 +1239,7 @@ export const ESC = {
     const systemPanel = PanelFactory.createList([11, 12, 13, 14, 15]);
     systemPanel.x = 28;
     systemPanel.y = 72;
-    systemPanel.width = 3;
+    systemPanel.width = 4;
 
     const renderFn = () => {
       systemPanel.draw();
