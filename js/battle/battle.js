@@ -2198,9 +2198,6 @@ async function endBattle(result) {
   // 步骤 9.1：绘制胜负消息框提示
   const talkCtx = state.contexts.talk;
   if (talkCtx) {
-    let resultText = '';
-    let textColor = '';
-
     if (result === 3 || result === true) {
       // 步骤 1：统计所有已被击败敌人的经验与金钱
       let totalExp = 0;
@@ -2509,24 +2506,6 @@ async function endBattle(result) {
       }
 
       state.uiMode = prevUiMode; // 还原 UI Mode
-    } else if (result === 1 || result === false) {
-      resultText = '全 员 战 败';
-      textColor = '#ff3333';
-    } else if (result === 0xFFFF) {
-      resultText = '逃 跑 成 功';
-      textColor = '#ffd700';
-    }
-
-    if (resultText) {
-      talkCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      talkCtx.fillRect(80, 80, 160, 40);
-      talkCtx.strokeStyle = '#ffd700';
-      talkCtx.strokeRect(80, 80, 160, 40);
-
-      talkCtx.fillStyle = textColor;
-      talkCtx.font = 'bold 12px sans-serif';
-      talkCtx.textAlign = 'center';
-      talkCtx.fillText(resultText, 160, 104);
     }
   }
 
