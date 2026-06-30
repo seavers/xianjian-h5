@@ -18,7 +18,7 @@ import { playMusic, stopMusic as stopBgMusic } from '../resources/music.js';
 import { playSound } from '../resources/sound.js';
 import { TICK_TIME } from '../app.js';
 import { clearWithEffect } from '../ui/clearWithEffect.js';
-import { enemies, players, addDamagePopup } from '../battle/battle.js';
+import { enemies, players, addDamagePopup, draw } from '../battle/battle.js';
 import { loadMkf } from '../resources/loader.js';
 import { Talk } from '../ui/talk.js';
 
@@ -2753,7 +2753,7 @@ export function jumpIfEnemyNotFirstOfSameKind(targetScriptId) {
   }
 }
 
-export function enemyDivision(count, targetScriptId) {
+export async function enemyDivision(count, targetScriptId) {
   // 步骤 1：统计当前存活的敌人数量
   const aliveEnemies = enemies.filter(e => e && e.hp > 0);
 
@@ -2774,6 +2774,10 @@ export function enemyDivision(count, targetScriptId) {
   const newHp = Math.floor((original.hp + count) / (count + 1));
   original.hp = newHp;
 
+  // 记录分身前原始对象的坐标，所有的分身（包括原主体）将从这里飞散开
+  const startX = original.x;
+  const startY = original.y;
+
   for (let i = 0; i < count; i++) {
     // 备份无法通过 JSON 序列化的 spriteData 属性以避免克隆后原型丢失
     const spriteData = original.spriteData;
@@ -2783,6 +2787,55 @@ export function enemyDivision(count, targetScriptId) {
     clone.index = enemies.length;
     enemies.push(clone);
   }
+
+  // 步骤 4：强行将所有活着的敌人的坐标设置为原主体的位置，开始展开拆分
+  enemies.forEach(e => {
+    if (e.hp > 0) {
+      e.x = startX;
+      e.y = startY;
+    }
+  });
+
+  // 步骤 5：加载各敌人在当前队伍大小下的理想战场排布位置坐标
+  const posTable = loadEnemyPos();
+  const allConfigs = loadEnemies();
+  const wMaxEnemyIndex = enemies.length - 1;
+
+  const targetPosList = enemies.map(enemy => {
+    const cfg = allConfigs[enemy.id] || {};
+    const yOffset = cfg.wYPosOffset || 0;
+    const pos = posTable[enemy.index]?.[wMaxEnemyIndex] || { x: 50, y: 100 };
+    return {
+      x: pos.x,
+      y: pos.y + yOffset
+    };
+  });
+
+  // 辅助的睡眠 Promise，为了产生帧率延迟
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  // 步骤 6：通过 10 帧的指数衰减插值动画将每个分身移动到目标坐标
+  for (let step = 0; step < 10; step++) {
+    for (let j = 0; j < enemies.length; j++) {
+      const enemy = enemies[j];
+      if (enemy.hp <= 0) continue;
+      const target = targetPosList[j];
+      enemy.x = Math.round((enemy.x + target.x) / 2);
+      enemy.y = Math.round((enemy.y + target.y) / 2);
+    }
+    draw();
+    await sleep(40);
+  }
+
+  // 步骤 7：强制精确对齐到目标物理坐标以消除插值累积计算的舍入误差
+  for (let j = 0; j < enemies.length; j++) {
+    const enemy = enemies[j];
+    if (enemy.hp <= 0) continue;
+    const target = targetPosList[j];
+    enemy.x = target.x;
+    enemy.y = target.y;
+  }
+  draw();
 
   console.log(`[0x9C enemyDivision] 成功分身，分身数量: ${count}，平分后的 HP: ${newHp}，当前战场敌人总数: ${enemies.length}`);
 }

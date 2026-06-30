@@ -446,7 +446,7 @@ function drawWordToCtx(ctx, wordId, x, y, color) {
 }
 
 // 步骤 3：战斗系统界面统一渲染绘制核心
-function draw() {
+export function draw() {
   const backCtx = state.contexts.back;
   const mainCtx = state.contexts.main;
   const battleCtx = state.contexts.battle;
