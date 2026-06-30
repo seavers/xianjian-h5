@@ -433,7 +433,7 @@ function drawNumberToBattleCtx(num, x, y, type = 'cyan') {
   return currX;
 }
 
-function drawWordToCtx(ctx, wordId, x, y, color) {
+export function drawWordToCtx(ctx, wordId, x, y, color) {
   const word = state.words[wordId];
   if (!word) return;
   for (let i = 0; i < word.length / 2; i++) {
@@ -1415,6 +1415,7 @@ async function runActionPhase() {
           await sleep(400);
         }
       } else if (act && act.type === 'magic') {
+        state.activePlayer = player;
         await handleMagicAction(player, actor, act);
       }
     } else {
@@ -2643,7 +2644,7 @@ function isRevivalSpell(magicId) {
 }
 
 // 步骤 16：还原玩家在战斗中的正常姿势帧 (死者为 2，虚弱为 1，正常为 0)
-function restorePlayerFrame(player) {
+export function restorePlayerFrame(player) {
   if (player.hp <= 0) {
     player.currentFrame = 2;
   } else if (player.hp < player.maxHp * 0.2) {
@@ -2656,7 +2657,7 @@ function restorePlayerFrame(player) {
 }
 
 // 绘制结算小数字，利用 data.mkf #9 中的 20~29 (黄色) 或 30~39 (蓝色) 号数字元素
-function drawWinNumber(ctx, num, x, y, length, align = 'right', type = 'yellow') {
+export function drawWinNumber(ctx, num, x, y, length, align = 'right', type = 'yellow') {
   const baseId = type === 'blue' ? 30 : 20;
   let numStr = Math.floor(num).toString();
   let nActualLength = numStr.length;
@@ -2693,7 +2694,7 @@ function drawWinNumber(ctx, num, x, y, length, align = 'right', type = 'yellow')
 }
 
 // 封装阻塞式按键/空格等待逻辑
-function waitWinSpace() {
+export function waitWinSpace() {
   return new Promise((resolve) => {
     winSpaceResolve = resolve;
   });

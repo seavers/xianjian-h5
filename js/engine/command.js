@@ -18,9 +18,10 @@ import { playMusic, stopMusic as stopBgMusic } from '../resources/music.js';
 import { playSound } from '../resources/sound.js';
 import { TICK_TIME } from '../app.js';
 import { clearWithEffect } from '../ui/clearWithEffect.js';
-import { enemies, players, addDamagePopup, draw } from '../battle/battle.js';
+import { enemies, players, addDamagePopup, draw, drawWordToCtx, drawWinNumber, restorePlayerFrame, waitWinSpace } from '../battle/battle.js';
 import { loadMkf } from '../resources/loader.js';
 import { Talk } from '../ui/talk.js';
+import { UI } from '../ui/panel.js';
 
 const big5Decoder = new TextDecoder('big5');
 
@@ -2452,8 +2453,10 @@ export function setPartyStatus(statusId, rounds) {
   console.log(`[0x6A setPartyStatus] 给全队伙伴附加了属性状态 ID: ${statusId}, 持续回合: ${rounds}`);
 }
 
-export function stealFromEnemy(stealRate) {
-  // 步骤 1：寻找并确定当前被施法的目标敌人。如果 this 绑定了上下文且包含有效索引，则使用该敌人；否则默认寻找第一个存活敌人。
+export async function stealFromEnemy(stealRate) {
+  const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+  // 寻找并确定当前被施法的目标敌人
   const enemyIndex = (this && typeof this.index === 'number') ? this.index : 0;
   const enemy = enemies[enemyIndex];
 
@@ -2462,62 +2465,126 @@ export function stealFromEnemy(stealRate) {
     return;
   }
 
-  // 步骤 2：判定是否成功。判定成功概率：sdlpal 规则下为 (RandomLong(0, 10) <= wStealRate || wStealRate == 0)
+  // 判定是否成功
   const canSteal = enemy.nStealItem && enemy.nStealItem > 0;
   const isSuccess = canSteal && (stealRate === 0 || Math.floor(Math.random() * 11) <= stealRate);
 
+  // 播放施法者飞过去突进抓取和归位的动画
+  if (state.activePlayer) {
+    const origX = state.activePlayer.x;
+    const origY = state.activePlayer.y;
+
+    // 1. 瞬移到敌人身前 (抓取姿势 10)
+    state.activePlayer.x = enemy.x + 35;
+    state.activePlayer.y = enemy.y + 10;
+    state.activePlayer.currentFrame = 10;
+    draw();
+    await sleep(150);
+
+    // 2. 突进抓取动作
+    state.activePlayer.x = enemy.x + 28;
+    state.activePlayer.y = enemy.y + 8;
+    draw();
+    await sleep(150);
+
+    // 3. 归位
+    state.activePlayer.x = origX;
+    state.activePlayer.y = origY;
+    restorePlayerFrame(state.activePlayer);
+    draw();
+  }
+
   if (isSuccess) {
+    let successType = 'item'; // 'item' 或 'money'
+    let cashAmount = 0;
+    let itemId = 0;
+
     if (enemy.wStealItem === 0) {
-      // 步骤 3：偷取钱财（wStealItem === 0）
+      // 偷取钱财
+      successType = 'money';
       const divisor = Math.random() < 0.5 ? 2 : 3;
       let c = Math.floor(enemy.nStealItem / divisor);
-
-      // 保底处理，避免余量不为0却得到0
       if (c === 0 && enemy.nStealItem > 0) {
         c = 1;
       }
-
       enemy.nStealItem -= c;
       state.money = (state.money || 0) + c;
-
-      console.log(`[0x6A stealFromEnemy] 成功窃取金钱: ${c} 文，剩余可窃取钱数: ${enemy.nStealItem}`);
-
-      // 飘字提示：“得 [钱数] 文钱”
-      addDamagePopup(enemy, `得 ${c} 文钱`, true);
+      cashAmount = c;
+      console.log(`[0x6A stealFromEnemy] 成功窃取金钱: ${c} 文，剩余钱数: ${enemy.nStealItem}`);
     } else {
-      // 步骤 4：偷取物品（wStealItem > 0）
-      const itemId = enemy.wStealItem;
+      // 偷取物品
+      successType = 'item';
+      itemId = enemy.wStealItem;
       enemy.nStealItem--;
-
       state.ownItems = state.ownItems || [];
       state.ownItems.push(itemId);
+      console.log(`[0x6A stealFromEnemy] 成功窃取物品: ${itemId}，剩余可窃取次数: ${enemy.nStealItem}`);
+    }
 
-      // 还原物品名称
-      let itemName = `物品 #${itemId}`;
-      const itemWord = state.words[itemId];
-      if (itemWord) {
-        try {
-          const bytes = [];
-          for (let i = 0; i < itemWord.length; i++) {
-            bytes.push(itemWord.getByte(i));
+    // 绘制获得画卷提示框并等待确认
+    const talkCtx = state.contexts.talk;
+    if (talkCtx) {
+      const getWordLen = (wordId) => {
+        const word = state.words[wordId];
+        let len = 0;
+        if (word) {
+          for (let k = 0; k < word.length / 2; k++) {
+            if (word.getShort(k * 2) !== 0x2020) {
+              len++;
+            }
           }
-          const decodedStr = big5Decoder.decode(new Uint8Array(bytes)).trim();
-          const simplifiedFn = window.toSimplifiedFn;
-          itemName = simplifiedFn ? simplifiedFn(decodedStr) : decodedStr;
-        } catch (e) {
-          console.error(`[0x6A stealFromEnemy] 解析物品 #${itemId} 名字失败:`, e);
         }
+        return len || 2;
+      };
+
+      let totalLen = 0;
+      let boxX = 0;
+      let textX = 0;
+
+      if (successType === 'money') {
+        const w1 = 2; // “获得”
+        const w2 = 2; // 空格
+        const w3 = 3; // 数字宽
+        const w4 = 2; // “文钱”
+        totalLen = w1 + w2 + w3 + w4;
+
+        boxX = 65 - (totalLen - 10) * 8;
+        textX = 75 - (totalLen - 10) * 8;
+
+        UI.drawSingleLineBox(boxX, 105, totalLen, talkCtx);
+
+        // 绘制文字：“获得” (30) + 金额 + “文钱” (10)
+        drawWordToCtx(talkCtx, 30, textX, 115);
+        drawWinNumber(talkCtx, cashAmount, textX + (w1 + w2 + w3) * 16 - 2, 119, w3, 'right', 'yellow');
+        drawWordToCtx(talkCtx, 10, textX + (w1 + w2 + w3) * 16, 115);
+      } else {
+        const w1 = 2; // “获得”
+        const w2 = 2; // 空格
+        const w3 = getWordLen(itemId);
+        totalLen = w1 + w2 + w3;
+
+        boxX = 65 - (totalLen - 10) * 8;
+        textX = 75 - (totalLen - 10) * 8;
+
+        UI.drawSingleLineBox(boxX, 105, totalLen, talkCtx);
+
+        // 绘制文字：“获得” (30) + 物品名称 (itemId)
+        drawWordToCtx(talkCtx, 30, textX, 115);
+        drawWordToCtx(talkCtx, itemId, textX + (w1 + w2) * 16, 115);
       }
 
-      console.log(`[0x6A stealFromEnemy] 成功窃取物品: ${itemName} (ID: ${itemId})，剩余可窃取次数: ${enemy.nStealItem}`);
+      // 临时开启按键控制
+      const prevUiMode = state.uiMode;
+      state.uiMode = 'operate';
 
-      // 飘字提示：“得 [物品名]”
-      addDamagePopup(enemy, `得 ${itemName}`, true);
+      await waitWinSpace();
+
+      state.uiMode = prevUiMode;
+      talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
     }
   } else {
-    // 步骤 5：偷窃失败（概率未命中或已被偷空）
-    console.log(`[0x6A stealFromEnemy] 窃取失败（概率未命中或已被偷空），当前 nStealItem: ${enemy.nStealItem}`);
-    addDamagePopup(enemy, '无', true);
+    // 失败什么都不做，直接跳过
+    console.log(`[0x6A stealFromEnemy] 窃取失败（概率未命中或已被偷空），什么都不展示，直接跳过`);
   }
 }
 
