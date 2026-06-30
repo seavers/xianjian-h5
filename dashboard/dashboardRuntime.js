@@ -15,6 +15,22 @@ const DEFAULT_ROLE_NAMES = ['李逍遥', '赵灵儿', '林月如', '巫后', '�
 const DEFAULT_ROLE_TILE_IDS = [2, 3, 7, 525, 5, 26];
 const big5Decoder = new TextDecoder('big5');
 
+function getItemName(itemId) {
+  if (!itemId) return '无';
+  const itemWord = state?.words?.[itemId];
+  if (itemWord) {
+    try {
+      const uint8Array = itemWord.buffer.subarray(itemWord.byteOffset, itemWord.byteOffset + itemWord.length);
+      const decodedStr = big5Decoder.decode(uint8Array).trim();
+      const simplifiedFn = window.toSimplifiedFn;
+      return simplifiedFn ? simplifiedFn(decodedStr) : decodedStr;
+    } catch (e) {
+      console.error('[getItemName] 无法解析物品名称:', e);
+    }
+  }
+  return `物品 #${itemId}`;
+}
+
 function getRoleName(role) {
   if (!role) return '';
   if (role.roleName) return role.roleName;
@@ -1046,6 +1062,14 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                               <span>HP</span>
                               <span style=${{ color: '#ff6b8b', fontWeight: 'bold' }}>${enemy.hp}/${enemy.maxHp}</span>
                             </div>
+                          </div>
+
+                          <!-- 偷窃物品与金钱展示 -->
+                          <div style=${{ marginTop: '2px', fontSize: '8px', display: 'flex', justifyContent: 'space-between', lineHeight: '1.2' }}>
+                            <span style=${{ color: 'rgba(255,255,255,0.3)' }}>可偷取</span>
+                            <span style=${{ color: enemy.nStealItem > 0 ? '#fcdc84' : 'rgba(255,255,255,0.2)' }}>
+                              ${enemy.nStealItem > 0 ? (enemy.wStealItem === 0 ? `💰 ${enemy.nStealItem} 文钱` : `${getItemName(enemy.wStealItem)} x ${enemy.nStealItem}`) : '无'}
+                            </span>
                           </div>
                         </div>
                       </div>
