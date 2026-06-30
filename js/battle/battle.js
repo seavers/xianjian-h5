@@ -489,15 +489,15 @@ function draw() {
       const dy = actor.y - frameImg.height;
 
       // 选中敌人目标时高亮闪烁（对应 sdlpal PAL_RLEBlitWithColorShift(sprite, ..., colorShift=7)）
-      if (phase === 'select' && (menuState === 'target' || menuState === 'target_magic') && item.type === 'enemy') {
+      if (phase === 'select' && (menuState === 'target' || menuState === 'target_magic' || menuState === 'target_enemy_item') && item.type === 'enemy') {
         const isTarget = enemies.indexOf(actor) === targetEnemyIndex;
         if (isTarget && Math.floor(Date.now() / 250) % 2 === 1) {
           mainCtx.filter = 'brightness(2.5) saturate(0.2)';
         } else {
           mainCtx.filter = 'none';
         }
-      } else if (phase === 'select' && menuState === 'target_player_magic' && item.type === 'player') {
-        const isTarget = actor.index === targetPlayerIndex;
+      } else if (phase === 'select' && (menuState === 'target_player_magic' || menuState === 'target_player_item') && item.type === 'player') {
+        const isTarget = players.indexOf(actor) === targetPlayerIndex;
         if (isTarget && Math.floor(Date.now() / 250) % 2 === 1) {
           mainCtx.filter = 'brightness(2.5) saturate(0.2)';
         } else {
