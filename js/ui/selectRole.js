@@ -71,7 +71,7 @@ export const SelectRole = {
     if (partyCount === 0) return;
 
     // 绘制一个样式为 1 的选择框
-    UI.drawArea(110, 50, 4, partyCount, 1);
+    UI.drawModalBox(110, 50, 4, partyCount);
 
     // 步骤 5：绘制队伍各成员的名字，高亮当前选中的名字
     for (let i = 0; i < partyCount; i++) {

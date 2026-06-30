@@ -134,7 +134,7 @@ export const Shop = {
 
   drawBuyMenu(startupCtx) {
     // 步骤 2：绘制右侧可供挑选的商品大卷轴框 (x: 122, y: 8, width: 9, height: 9)
-    UI.drawArea(122, 8, 9, 9, 10);
+    UI.drawScrollBox(122, 8, 9, 9);
 
     const palette = loadPal(state.paletteId);
     const time = Date.now();
@@ -244,7 +244,7 @@ export const Shop = {
     this.adjustSellScroll(sellableItems.length);
 
     // 步骤 2：在顶部绘制三列可售卖道具的大红框背景 (0, 0, width: 18, height: 7, style: 10)
-    UI.drawArea(0, 0, 18, 7, 10);
+    UI.drawScrollBox(0, 0, 18, 7);
 
     const palette = loadPal(state.paletteId);
     const time = Date.now();

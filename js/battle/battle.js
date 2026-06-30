@@ -682,7 +682,7 @@ function draw() {
 
     // 绘制“更多”及“道具使用/投掷”选择面板
     if (menuState === 'more' || menuState === 'more_item') {
-      UI.drawMultiLineBox(10, 8, 5, 7, 10, battleCtx);
+      UI.drawScrollBox(10, 8, 5, 7, battleCtx);
       for (let i = 0; i < 5; i++) {
         const wordId = 56 + i;
         const isSelected = (menuState === 'more' && i === selectedMoreIndex);
@@ -696,7 +696,7 @@ function draw() {
         }
       }
       if (menuState === 'more_item') {
-        UI.drawMultiLineBox(62, 34, 5, 4, 10, battleCtx);
+        UI.drawScrollBox(62, 34, 5, 4, battleCtx);
         for (let i = 0; i < 2; i++) {
           const wordId = 23 + i;
           const isSelected = (i === selectedMoreItemIndex);
@@ -2370,7 +2370,7 @@ async function endBattle(result) {
         drawWordToCtx(talkCtx, 32, 110 + nameLen * 16 + 32, 10);
 
         // 3. 绘制具体数值大面板背景框：x=74, y=32, 宽=9, 高=8
-        UI.drawMultiLineBox(66, 34, 11, 8, 10, talkCtx);
+        UI.drawScrollBox(66, 34, 11, 8, talkCtx);
 
         // 4. 绘制 8 项属性的文字标签 (修行、体力、真气、武术、灵力、防御、身法、吉运)
         for (let j = 0; j < 8; j++) {

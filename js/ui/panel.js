@@ -158,8 +158,12 @@ export const UI = {
     }
   },
 
-  drawScrollBox(x, y, width, height, ctx) {
+  drawModalBox(x, y, width, height, ctx) {
     this.drawMultiLineBox(x, y, width, height, 1, ctx);
+  },
+
+  drawScrollBox(x, y, width, height, ctx) {
+    this.drawMultiLineBox(x, y, width, height, 10, ctx);
   }
 };
 

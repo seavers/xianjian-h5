@@ -367,7 +367,7 @@ export const ESC = {
       }
 
       // 步骤 3：绘制大面板红色背景，使用 10 号 Skin（320x136 像素）
-      UI.drawArea(0, 0, 18, 7, 10);
+      UI.drawScrollBox(0, 0, 18, 7);
 
       // 步骤 4：在 3 列网格网中绘制当前可视页面的物品
       const n = uniqueItems.length;
@@ -651,7 +651,7 @@ export const ESC = {
       }
 
       // 步骤 5：在左下角使用大红木纹卷轴框 (style=1) 绘制使用人切换列表，选中可装备为明黄色，未选中可装备为深黑色，选中不可装备为粉红，未选中不可装备为红褐色
-      UI.drawArea(2, 95, 3, state.party.length, 1);
+      UI.drawModalBox(2, 95, 3, state.party.length);
       for (let i = 0; i < state.party.length; i++) {
         const pRole = state.party[i];
         if (!pRole || !state.roles[pRole.index]) continue;
@@ -874,7 +874,7 @@ export const ESC = {
       }
 
       // 步骤 5：绘制大红织锦底框（10号Style，320x136 像素）
-      UI.drawArea(0, 0, 18, 7, 10);
+      UI.drawScrollBox(0, 0, 18, 7);
 
       // 步骤 6：利用 3 列滚动网格绘制当前的仙术项
       for (let i = 0; i < magicsList.length; i++) {
@@ -1121,7 +1121,7 @@ export const ESC = {
       if (!startupCtx) return;
 
       // 步骤 1：绘制右半部分的大红卷轴边框 (X=110, Y=2, 宽度11, 高度9)
-      UI.drawScrollBox(110, 2, 11, 9);
+      UI.drawModalBox(110, 2, 11, 9);
 
       // 步骤 2：绘制当前选定角色的八维属性
       if (!state.party || selectedPlayerIndex >= state.party.length) return;

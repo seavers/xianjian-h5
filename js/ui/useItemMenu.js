@@ -100,7 +100,7 @@ export const UseItemMenu = {
     }
 
     // 步骤 5：绘制大面板红色背景，使用 10 号 Skin（320x136 像素）
-    UI.drawArea(0, 0, 18, 7, 10);
+    UI.drawScrollBox(0, 0, 18, 7);
 
     // 步骤 6：在 3 列网格中绘制物品名称及数量
     for (let i = 0; i < n; i++) {
