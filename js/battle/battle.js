@@ -128,6 +128,8 @@ export async function start(id, failId, fleeId) {
       physicalResistance: cfg.wPhysicalResistance || 0,
       x: pos.x,
       y: yPos,
+      origX: pos.x,
+      origY: yPos,
       spriteData: spriteData,
       currentFrame: 0,
       maxIdleFrames: cfg.wIdleFrames || 4,
@@ -210,6 +212,8 @@ export async function start(id, failId, fleeId) {
       magics: roleStats.magics || [], // 保存当前习得法术 ID 列表
       x: pos[0],
       y: pos[1],
+      origX: pos[0],
+      origY: pos[1],
       spriteData: spriteData,
       currentFrame: 0,
       action: null, // 选择的指令
@@ -1827,10 +1831,10 @@ async function playPlayerAttack(playerIdx, enemyIdx) {
   draw();
   await sleep(250);
 
-  // 3. 返回原位
-  player.x = origX;
-  player.y = origY;
-  player.currentFrame = 0;
+  // 3. 返回原位并重置玩家姿势与位置坐标
+  player.x = player.origX !== undefined ? player.origX : origX;
+  player.y = player.origY !== undefined ? player.origY : origY;
+  restorePlayerFrame(player);
   draw();
   await sleep(100);
 }
@@ -2819,8 +2823,15 @@ function isBacchusOrMoneyThrow(magicId) {
   return false;
 }
 
-// 步骤 16：还原玩家在战斗中的正常姿势帧 (死者为 2，虚弱为 1，正常为 0)
+// 步骤 16：还原玩家在战斗中的正常姿势帧与位置坐标 (死者为 2，虚弱为 1，正常为 0)
 export function restorePlayerFrame(player) {
+  // 步骤 16.1：只要主角当前不处于防御状态，就将其坐标还原为入战时的原始位置
+  if (player.origX !== undefined && player.origY !== undefined && !player.isDefending) {
+    player.x = player.origX;
+    player.y = player.origY;
+  }
+
+  // 步骤 16.2：根据血量还原玩家的状态动作帧
   if (player.hp <= 0) {
     player.currentFrame = 2;
   } else if (player.hp < player.maxHp * 0.2) {
