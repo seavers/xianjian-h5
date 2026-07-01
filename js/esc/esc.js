@@ -416,7 +416,7 @@ export const ESC = {
         if (isSelected) {
           const arrowImg = loadPic(70);
           if (arrowImg) {
-            startupCtx.drawImage(arrowImg, xText + 32, yText + 5);
+            startupCtx.drawImage(arrowImg, xText + 24, yText + 11);
           }
         }
       }
@@ -1126,7 +1126,7 @@ export const ESC = {
       if (!startupCtx) return;
 
       // 步骤 1：绘制右半部分的大红卷轴边框 (X=110, Y=2, 宽度11, 高度9)
-      UI.drawModalBox(110, 2, 11, 9);
+      UI.drawModalBox(110, 2, 11, 8);
 
       // 步骤 2：绘制当前选定角色的八维属性
       if (!state.party || selectedPlayerIndex >= state.party.length) return;
@@ -1148,11 +1148,11 @@ export const ESC = {
       // 绘制具体数值
       UI.drawNum(roleStats.level, 280, 16, 'yellow');
 
-      UI.drawSlash(261, 35);
+      UI.drawSlash(258, 35);
       UI.drawNum(roleStats.hp, 258, 34, 'yellow');
       UI.drawNum(roleStats.maxHp, 280, 37, 'blue');
 
-      UI.drawSlash(261, 53);
+      UI.drawSlash(258, 53);
       UI.drawNum(roleStats.mp, 258, 52, 'yellow');
       UI.drawNum(roleStats.maxMp, 280, 55, 'blue');
 
@@ -1183,7 +1183,7 @@ export const ESC = {
           startupCtx.drawImage(ballImg, 128, 87);
         }
 
-        UI.drawWord(itemId, 116, 143, COLOR_YELLOW);
+        UI.drawWord(itemId, 116, 143, COLOR_GRAY);
 
         // 统计该道具在背包里的剩余数量，并绘制在小图标的右下边
         const count = (state.ownItems || []).filter(id => id === itemId).length;

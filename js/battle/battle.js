@@ -308,69 +308,6 @@ export let selectedMagicIndex = 0;
 export let magicScrollRow = 0;
 export let targetPlayerIndex = 0;
 
-// 基于 data.mkf #9 中的 PIC #1 ~ #9 拼接绘制自适应九宫格 UI 框
-function drawUIBox(ctx, x, y, width, height, style = 0) {
-  const pics = [];
-  for (let i = 1; i <= 9; i++) {
-    pics.push(loadPic(i + style * 9));
-  }
-
-  if (pics.some(p => !p)) {
-    return;
-  }
-
-  const [pic1, pic2, pic3, pic4, pic5, pic6, pic7, pic8, pic9] = pics;
-
-  const wLeft = pic1.width;
-  const wRight = pic3.width;
-  const hTop = pic1.height;
-  const hBottom = pic7.height;
-
-  // 先绘制右下角半透明黑色投影 (阴影偏置 4px)
-  ctx.save();
-  ctx.globalAlpha = 0.35;
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(x + 4, y + 4, width, height);
-  ctx.restore();
-
-  // 1. 绘制九宫格的中心填充区域 (平铺)
-  for (let tx = x + wLeft; tx < x + width - wRight; tx += pic5.width) {
-    const drawW = Math.min(pic5.width, x + width - wRight - tx);
-    for (let ty = y + hTop; ty < y + height - hBottom; ty += pic5.height) {
-      const drawH = Math.min(pic5.height, y + height - hBottom - ty);
-      ctx.drawImage(pic5, 0, 0, drawW, drawH, tx, ty, drawW, drawH);
-    }
-  }
-
-  // 2. 绘制九宫格的四个边框 (平铺)
-  // 上边框
-  for (let tx = x + wLeft; tx < x + width - wRight; tx += pic2.width) {
-    const drawW = Math.min(pic2.width, x + width - wRight - tx);
-    ctx.drawImage(pic2, 0, 0, drawW, pic2.height, tx, y, drawW, pic2.height);
-  }
-  // 下边框
-  for (let tx = x + wLeft; tx < x + width - wRight; tx += pic8.width) {
-    const drawW = Math.min(pic8.width, x + width - wRight - tx);
-    ctx.drawImage(pic8, 0, 0, drawW, pic8.height, tx, y + height - hBottom, drawW, pic8.height);
-  }
-  // 左边框
-  for (let ty = y + hTop; ty < y + height - hBottom; ty += pic4.height) {
-    const drawH = Math.min(pic4.height, y + height - hBottom - ty);
-    ctx.drawImage(pic4, 0, 0, pic4.width, drawH, x, ty, pic4.width, drawH);
-  }
-  // 右边框
-  for (let ty = y + hTop; ty < y + height - hBottom; ty += pic6.height) {
-    const drawH = Math.min(pic6.height, y + height - hBottom - ty);
-    ctx.drawImage(pic6, 0, 0, pic6.width, drawH, x + width - wRight, ty, pic6.width, drawH);
-  }
-
-  // 3. 绘制九宫格的四个角块
-  ctx.drawImage(pic1, x, y);
-  ctx.drawImage(pic3, x + width - wRight, y);
-  ctx.drawImage(pic7, x, y + height - hBottom);
-  ctx.drawImage(pic9, x + width - wRight, y + height - hBottom);
-}
-
 // 步骤 2.95：辅助点阵描述渲染器与调色板数字渲染器
 function drawSpellDesc(ctx, magicId, startX, startY, color) {
   const descBytes = state.desc[magicId];
@@ -583,7 +520,7 @@ export function draw() {
       const activePlayer = players[activePlayerIndex];
       if (activePlayer && activePlayer.magics && activePlayer.magics.length > 0) {
         // 1. 绘制左上角使用MP/当前主角MP框 (x: 10, y: 8, w: 80, h: 22)
-        UI.drawSingleLineBox(10, 8, 4, battleCtx);
+        UI.drawSingleLineBox(0, 0, 6, battleCtx);
 
         const currentMagicId = activePlayer.magics[selectedMagicIndex];
         const currentItemObj = state.items[currentMagicId];
@@ -610,14 +547,14 @@ export function draw() {
 
         // 2. 绘制选中法术的上方描述文字 (中偏上位置：x: 100, y: 8)
         if (currentItemObj) {
-          drawSpellDesc(battleCtx, currentMagicId, 100, 8, 0x00FCDC84); // 0x00FCDC84 仙剑米黄色
+          drawSpellDesc(battleCtx, currentMagicId, 120, 2, 0x00FCDC84); // 0x00FCDC84 仙剑米黄色
         }
 
         // 3. 绘制锦缎美感大控制盒 (x: 10, y: 40, w: 300, h: 110)，完全使用九宫格贴图拼框
-        UI.drawScrollBox(10, 40, 18, 7, battleCtx);
+        UI.drawScrollBox(10, 40, 17, 5, battleCtx);
 
         // 4. 绘制法术三列列表网格
-        const colW = 95;
+        const colW = 88;
         const rowH = 18;
         const startY = 48;
 
@@ -650,7 +587,7 @@ export function draw() {
             if (!magic) continue;
 
             const isSelected = idx === selectedMagicIndex;
-            const xPos = 15 + c * colW;
+            const xPos = 34 + c * colW;
 
             // 判定字体色调：MP不足深灰，选中是黄色高亮，否则经典灰色
             let wordColor = undefined;
@@ -662,7 +599,7 @@ export function draw() {
               wordColor = 0x00D4D0C0; // 经典灰色 (COLOR_GRAY)
             }
 
-            drawWordToCtx(battleCtx, wordId, xPos + 5, yPos, wordColor);
+            drawWordToCtx(battleCtx, wordId, xPos, yPos, wordColor);
 
             // 绘制高亮光标 (PIC #70)
             if (isSelected) {
@@ -670,7 +607,7 @@ export function draw() {
               if (arrowImg) {
                 const word = state.words[wordId];
                 const wordLen = word ? word.length / 2 : 2;
-                battleCtx.drawImage(arrowImg, xPos + 5 + wordLen * 16, yPos + 5);
+                battleCtx.drawImage(arrowImg, xPos + 24, yPos + 11);
               }
             }
           }
@@ -680,32 +617,20 @@ export function draw() {
 
     // 绘制“更多”及“道具使用/投掷”选择面板
     if (menuState === 'more' || menuState === 'more_item') {
-      UI.drawScrollBox(10, 8, 5, 7, battleCtx);
+      UI.drawModalBox(10, 8, 3, 5, battleCtx);
       for (let i = 0; i < 5; i++) {
         const wordId = 56 + i;
         const isSelected = (menuState === 'more' && i === selectedMoreIndex);
         const color = isSelected ? 0x00FCDC84 : 0x00D4D0C0;
         drawWordToCtx(battleCtx, wordId, 22, 20 + i * 18, color);
-        if (isSelected) {
-          const arrowImg = loadPic(70);
-          if (arrowImg) {
-            battleCtx.drawImage(arrowImg, 58, 20 + i * 18 + 5);
-          }
-        }
       }
       if (menuState === 'more_item') {
-        UI.drawScrollBox(62, 34, 5, 4, battleCtx);
+        UI.drawModalBox(34, 34, 2, 2, battleCtx);
         for (let i = 0; i < 2; i++) {
           const wordId = 23 + i;
           const isSelected = (i === selectedMoreItemIndex);
           const color = isSelected ? 0x00FCDC84 : 0x00D4D0C0;
-          drawWordToCtx(battleCtx, wordId, 74, 46 + i * 18, color);
-          if (isSelected) {
-            const arrowImg = loadPic(70);
-            if (arrowImg) {
-              battleCtx.drawImage(arrowImg, 110, 46 + i * 18 + 5);
-            }
-          }
+          drawWordToCtx(battleCtx, wordId, 46, 46 + i * 18, color);
         }
       }
     }
