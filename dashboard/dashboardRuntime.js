@@ -1189,11 +1189,11 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">最大 HP</span><span class="hero-attr-val">${heroMaxHp}</span></div>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">当前 MP</span><span class="hero-attr-val" style=${{ color: 'var(--glow-blue)' }}>${heroMp}</span></div>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">最大 MP</span><span class="hero-attr-val">${heroMaxMp}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">攻击 Strength</span><span class="hero-attr-val" style=${{ color: 'var(--glow-green)' }}>${heroAtk}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">防御 Armor</span><span class="hero-attr-val" style=${{ color: 'var(--glow-blue)' }}>${heroDef}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">轻功身法</span><span class="hero-attr-val">${heroSpd}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">吉 运 Luck</span><span class="hero-attr-val">${heroLck}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">灵 力 Mag</span><span class="hero-attr-val">${heroMag}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">武术 attackStrength</span><span class="hero-attr-val" style=${{ color: 'var(--glow-green)' }}>${heroAtk}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">防御 defense</span><span class="hero-attr-val" style=${{ color: 'var(--glow-blue)' }}>${heroDef}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">身法 dexterity</span><span class="hero-attr-val">${heroSpd}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">吉运 fleeRate</span><span class="hero-attr-val">${heroLck}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">灵力 magicStrength</span><span class="hero-attr-val">${heroMag}</span></div>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">避 毒 Poi</span><span class="hero-attr-val">${heroPoi}</span></div>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">火抗 RES</span><span class="hero-attr-val">${heroRes.fire}</span></div>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">雷抗 RES</span><span class="hero-attr-val">${heroRes.thunder}</span></div>
