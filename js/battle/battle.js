@@ -146,7 +146,10 @@ export async function start(id, failId, fleeId) {
       wScriptOnBattleEnd: state.items[objId]?.equScr || 0,
       wScriptOnReady: state.items[objId]?.dropScr || 0,
       exp: cfg.wExp || 0,
-      cash: cfg.wCash || 0
+      cash: cfg.wCash || 0,
+      // 从配置中拷贝敌人可偷窃物品 ID 和数量，以支持飞龙探云手等窃取指令
+      wStealItem: cfg.wStealItem || 0,
+      nStealItem: cfg.nStealItem || 0
     });
   }
 
@@ -2592,7 +2595,10 @@ export function getBattleState() {
       y: e.y,
       currentFrame: e.currentFrame,
       maxIdleFrames: e.maxIdleFrames,
-      spriteData: e.spriteData
+      spriteData: e.spriteData,
+      // 对外暴露敌人实时可偷窃物品 ID 和剩余数量
+      wStealItem: e.wStealItem,
+      nStealItem: e.nStealItem
     }))
   };
 }
