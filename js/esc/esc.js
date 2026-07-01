@@ -812,6 +812,55 @@ export const ESC = {
     let uiState = 'select_magic'; // 两个子状态: 'select_magic' 或 'select_target'
     let targetPartyIndex = casterPartyIndex; // 目标人物默认为施法者自己
 
+    // 辅助函数：将数字自左向右绘制到 startupCtx 上，以与战斗中 HP/MP 格式对齐
+    const drawNumberToStartupCtx = (num, x, y, type = 'cyan') => {
+      let baseId = 57; // 默认青色
+      if (type === 'hp' || type === 'yellow') {
+        baseId = 20;
+      } else if (type === 'blue') {
+        baseId = 30;
+      }
+
+      const numStr = num.toString();
+      const digitW = 6;
+      const startupCtx = state.contexts.startup;
+      if (!startupCtx) return x;
+
+      let currX = x;
+      for (let i = 0; i < numStr.length; i++) {
+        const digit = parseInt(numStr.charAt(i));
+        const digitImg = loadPic(baseId + digit);
+        if (digitImg) {
+          startupCtx.drawImage(digitImg, currX, y);
+        }
+        currX += digitW;
+      }
+      return currX;
+    };
+
+    // 辅助函数：为 Pic 图片进行特定颜色替换后，绘制到 startupCtx 上，用于灰色目标箭头
+    const drawColorPic = (picId, x, y, color, ctx) => {
+      const pic = loadPic(picId);
+      if (!pic) return;
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = pic.width;
+      tempCanvas.height = pic.height;
+      const tempCtx = tempCanvas.getContext('2d');
+
+      // 将 RLE 图片先绘制到临时画布中，随后填充指定的调色板颜色
+      tempCtx.drawImage(pic, 0, 0);
+      tempCtx.globalCompositeOperation = 'source-in';
+
+      const r = (color >> 16) & 0xff;
+      const g = (color >> 8) & 0xff;
+      const b = color & 0xff;
+      tempCtx.fillStyle = `rgb(${r},${g},${b})`;
+      tempCtx.fillRect(0, 0, pic.width, pic.height);
+
+      ctx.drawImage(tempCanvas, x, y);
+    };
+
     // 步骤 3：定义仙术描述文本解析与绘制的本地辅助函数
     const drawDesc = (magicId, dx, dy, color) => {
       const descBytes = state.desc[magicId];
@@ -878,26 +927,32 @@ export const ESC = {
         selectedMagicIndex = Math.max(0, magicsList.length - 1);
       }
 
-      // 步骤 5：绘制大红织锦底框（10号Style，320x136 像素）
-      UI.drawScrollBox(0, 0, 18, 7);
+      // 步骤 5：绘制锦缎大控制框（与战斗一模一样，大小：宽 17，高 5，坐标 10, 40）
+      UI.drawScrollBox(10, 40, 17, 5, startupCtx);
 
-      // 步骤 6：利用 3 列滚动网格绘制当前的仙术项
+      // 步骤 6：利用 3 列滚动网格绘制当前的仙术项（最大显示 3 行，与战斗一致）
+      const colW = 88;
+      const rowH = 18;
+      const startY = 48;
+      const maxRows = 3;
+
       for (let i = 0; i < magicsList.length; i++) {
         const row = Math.floor(i / 3);
         const col = i % 3;
 
-        if (row < scrollRow || row >= scrollRow + 7) continue;
+        if (row < scrollRow || row >= scrollRow + maxRows) continue;
 
-        const xText = 28 + col * 88;
-        const yText = 16 + (row - scrollRow) * 18;
+        const xText = 34 + col * colW;
+        const yText = startY + (row - scrollRow) * rowH;
         const isSelected = (i === selectedMagicIndex);
         const itemInfo = magicsList[i];
 
+        // 确定字色：如果不可用为深灰，可用且选中为黄色高亮，否则经典灰色
         let color = COLOR_GRAY;
         if (itemInfo.isUsable) {
           color = isSelected ? COLOR_YELLOW : COLOR_GRAY;
         } else {
-          color = isSelected ? COLOR_LIGHT_RED : COLOR_DARK_RED;
+          color = 0x555555;
         }
 
         UI.drawWord(itemInfo.magicId, xText, yText, color);
@@ -906,37 +961,49 @@ export const ESC = {
         if (isSelected && uiState === 'select_magic') {
           const arrowImg = loadPic(70);
           if (arrowImg) {
-            startupCtx.drawImage(arrowImg, xText + 32, yText + 5);
+            startupCtx.drawImage(arrowImg, xText + 24, yText + 11);
           }
         }
 
         // 选择目标状态：被选中项上方绘制 Y 轴镜像反转的 Pic #69 黄色向下指示器
         if (isSelected && uiState === 'select_target') {
-          UI.drawPicFlippedY(69, xText + 32, yText - 10);
+          UI.drawPicFlippedY(69, xText + 24, yText - 4, startupCtx);
         }
       }
 
-      // 步骤 7：绘制高亮选中法术的消耗 MP 以及描述内容
+      // 步骤 7：绘制高亮选中法术的消耗 MP 以及右上角的描述内容
       if (magicsList.length > 0 && selectedMagicIndex < magicsList.length) {
         const curMagic = magicsList[selectedMagicIndex];
 
-        // 绘制右上角 MP 信息单行框：Needed MP / Current MP
-        UI.drawSingleLineBox(215, 0, 5);
-        UI.drawSlash(265, 14);
-        UI.drawNum(curMagic.magic.wCostMP, 261, 14, 'yellow');
-        UI.drawNum(casterRole.mp, 295, 14, 'cyan');
+        // 绘制左上角使用MP/当前主角MP框 (x: 0, y: 0, w: 6)，与战斗中一模一样
+        UI.drawSingleLineBox(0, 0, 6, startupCtx);
 
-        // 绘制选中的法术文字描述
-        drawDesc(curMagic.magicId, 102, 3, COLOR_YELLOW);
+        // 用调色板数字自左往右绘制
+        let startX = 18;
+        startX = drawNumberToStartupCtx(curMagic.magic.wCostMP, startX, 15, 'cyan');
+        const slashImg = loadPic(40);
+        if (slashImg) {
+          startupCtx.drawImage(slashImg, startX + 1, 15);
+          startX += slashImg.width + 3;
+        } else {
+          startX += 6;
+        }
+        drawNumberToStartupCtx(casterRole.mp, startX, 15, 'cyan');
+
+        // 绘制右上角选中的法术文字描述，位置设为与战斗中的描述位置一模一样的 (120, 2)
+        drawDesc(curMagic.magicId, 120, 2, COLOR_YELLOW);
       }
 
       // 步骤 8：绘制最底部的队伍成员头像与数值状态
-      for (let i = 0; i < state.party.length; i++) {
+      const totalParty = state.party.length;
+      const bxStart = Math.floor((320 - (77 * (totalParty - 1) + 74)) / 2);
+
+      for (let i = 0; i < totalParty; i++) {
         const pRole = state.party[i];
         const roleStats = state.roles[pRole.index];
         if (!roleStats) continue;
 
-        const bx = 45 + 78 * i;
+        const bx = bxStart + 77 * i;
         const by = 165;
 
         // 绘制状态小木框背景
@@ -958,21 +1025,34 @@ export const ESC = {
           }
         }
 
-        // 绘制 HP / MP 数值属性
-        UI.drawNum(Math.max(0, roleStats.hp), bx + 50, by + 6, 'yellow');
-        UI.drawSlash(bx + 51, by + 7);
-        UI.drawNum(roleStats.maxHp, bx + 72, by + 10, 'blue');
+        // 绘制 HP 数值属性 (自左向右绘制)
+        const hp = Math.max(0, roleStats.hp);
+        let hpX = bx + 50;
+        hpX = drawNumberToStartupCtx(hp, hpX, by + 6, 'hp');
+        const slashImg1 = loadPic(40);
+        if (slashImg1) {
+          startupCtx.drawImage(slashImg1, hpX + 1, by + 7);
+          hpX += slashImg1.width + 3;
+        } else {
+          hpX += 6;
+        }
+        drawNumberToStartupCtx(roleStats.maxHp, hpX, by + 10, 'blue');
 
-        UI.drawNum(roleStats.mp, bx + 50, by + 19, 'yellow');
-        UI.drawSlash(bx + 51, by + 20);
-        UI.drawNum(roleStats.maxMp, bx + 72, by + 23, 'blue');
+        // 绘制 MP 数值属性 (自左向右绘制)
+        let mpX = bx + 50;
+        mpX = drawNumberToStartupCtx(roleStats.mp, mpX, by + 19, 'cyan');
+        const slashImg2 = loadPic(40);
+        if (slashImg2) {
+          startupCtx.drawImage(slashImg2, mpX + 1, by + 20);
+          mpX += slashImg2.width + 3;
+        } else {
+          mpX += 6;
+        }
+        drawNumberToStartupCtx(roleStats.maxMp, mpX, by + 23, 'blue');
 
-        // 选择目标状态：被选中的目标上方绘制 Pic #67 红色向下指示器
+        // 选择目标状态：被选中的目标上方绘制灰色向下指示器，对齐在头像正上方 (bx + 30)
         if (uiState === 'select_target' && i === targetPartyIndex) {
-          const targetArrowImg = loadPic(67);
-          if (targetArrowImg) {
-            startupCtx.drawImage(targetArrowImg, 75 + 78 * i, 158);
-          }
+          drawColorPic(67, bx + 30, 158, COLOR_GRAY, startupCtx);
         }
       }
     };
@@ -1080,8 +1160,8 @@ export const ESC = {
       const currRow = Math.floor(selectedMagicIndex / 3);
       if (currRow < scrollRow) {
         scrollRow = currRow;
-      } else if (currRow >= scrollRow + 7) {
-        scrollRow = currRow - 7 + 1;
+      } else if (currRow >= scrollRow + 3) {
+        scrollRow = currRow - 3 + 1;
       }
     };
 
