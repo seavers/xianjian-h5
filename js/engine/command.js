@@ -1143,8 +1143,12 @@ export async function finishCode() {
   return {endFlag: true, nextScriptId: RESET_SCRIPT};
 }
 
-export async function stopCode() {
-  await checkNeedDraw();
+export async function stopCode(_1, _2, _3, { type }) {
+  // 不能增加这个check，比如黑龙窟出来的剧情脚本 15136，不要被抢先变白
+  if (type != 'auto') {
+    await checkNeedDraw();
+  }
+
   return {endFlag: true, nextScriptId: null};
 }
 
