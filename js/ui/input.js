@@ -150,14 +150,30 @@ function handleGameInput(input, ev) {
       ESC.onMenu();
       break;
     }
-    case 'e': {
-      ev.preventDefault();
-      ESC.onItem();
-      break;
-    }
     case 's': {
       ev.preventDefault();
       ESC.onStatus();
+      break;
+    }
+    case 'w': {
+      ev.preventDefault();
+      ESC.onEquipItem();
+      break;
+    }
+    case 'e': {
+      ev.preventDefault();
+      ESC.onUseItem();
+      break;
+    }
+    case 'f': {
+      ev.preventDefault();
+      ESC.onMagic();
+      break;
+    }
+    case 'q': {
+      ev.preventDefault();
+      console.log('系统设置 - 结束游戏选项选中');
+      ESC.clearMenus();
       break;
     }
     case 'blank': {

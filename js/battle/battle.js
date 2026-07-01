@@ -771,6 +771,218 @@ export function onInput(input) {
     return;
   }
 
+  // 快捷键处理：处理选择行动阶段的各种快捷按键操作
+  const activePlayer = players[activePlayerIndex];
+  if (activePlayer && activePlayer.hp > 0) {
+    switch (input) {
+      case 'q': {
+        // 逃跑
+        playSound(29);
+        activePlayer.action = {
+          type: 'flee'
+        };
+        advanceToNextPlayer();
+        draw();
+        return;
+      }
+      case 'd': {
+        // 防御
+        playSound(29);
+        activePlayer.action = {
+          type: 'defend'
+        };
+        advanceToNextPlayer();
+        draw();
+        return;
+      }
+      case 's': {
+        // 查看状态
+        playSound(29);
+        ESC.onStatus();
+        draw();
+        return;
+      }
+      case 'a': {
+        // 自动普通攻击 (围攻)
+        playSound(29);
+        const targetIdx = enemies.findIndex(e => e.hp > 0);
+        if (targetIdx !== -1) {
+          for (let i = activePlayerIndex; i < players.length; i++) {
+            if (players[i].hp > 0) {
+              players[i].action = {
+                type: 'attack',
+                target: targetIdx
+              };
+            }
+          }
+          runActionPhase();
+        }
+        draw();
+        return;
+      }
+      case 'w': {
+        // 投掷物品
+        playSound(29);
+        openItemMenuForActivePlayer(4);
+        draw();
+        return;
+      }
+      case 'e': {
+        // 使用物品
+        playSound(29);
+        openItemMenuForActivePlayer(1);
+        draw();
+        return;
+      }
+      case 'r': {
+        // 重复上次攻击
+        if (activePlayer.lastAction) {
+          let valid = true;
+          const act = { ...activePlayer.lastAction };
+          
+          if (act.type === 'attack') {
+            if (act.target >= enemies.length || enemies[act.target].hp <= 0) {
+              act.target = enemies.findIndex(e => e.hp > 0);
+            }
+            if (act.target === -1) {
+              valid = false;
+            }
+          } else if (act.type === 'magic') {
+            const magicId = act.magicId;
+            const itemObj = state.items[magicId];
+            if (!itemObj) {
+              valid = false;
+            } else {
+              const magicNumber = itemObj.roleId;
+              const magic = state.magics[magicNumber];
+              if (!magic || activePlayer.mp < magic.wCostMP) {
+                valid = false;
+              } else {
+                const isToEnemy = [0, 1, 2, 3, 9].includes(magic.wType);
+                const isTargetAll = [1, 2, 3, 5, 9].includes(magic.wType);
+                if (!isTargetAll) {
+                  if (isToEnemy) {
+                    if (act.target >= enemies.length || enemies[act.target].hp <= 0) {
+                      act.target = enemies.findIndex(e => e.hp > 0);
+                    }
+                    if (act.target === -1) {
+                      valid = false;
+                    }
+                  } else {
+                    const isRevival = isRevivalSpell(magicId);
+                    if (act.target >= players.length || (players[act.target].hp <= 0 && !isRevival)) {
+                      act.target = activePlayerIndex;
+                    }
+                  }
+                }
+              }
+            }
+          } else if (act.type === 'useItem' || act.type === 'throwItem') {
+            const itemId = act.itemId;
+            const ownItems = state.ownItems || [];
+            const idx = ownItems.indexOf(itemId);
+            if (idx === -1) {
+              valid = false;
+            } else {
+              const itemObj = state.items[itemId];
+              const isTargetAll = (itemObj.flags & 16) !== 0;
+              if (!isTargetAll) {
+                if (act.type === 'throwItem') {
+                  if (act.target >= enemies.length || enemies[act.target].hp <= 0) {
+                    act.target = enemies.findIndex(e => e.hp > 0);
+                  }
+                  if (act.target === -1) {
+                    valid = false;
+                  }
+                } else {
+                  const isRevival = isRevivalItem(itemId);
+                  if (act.target >= players.length || (players[act.target].hp <= 0 && !isRevival)) {
+                    act.target = activePlayerIndex;
+                  }
+                }
+              }
+            }
+          } else if (act.type === 'defend' || act.type === 'flee') {
+            // 防御和逃跑动作始终有效
+          } else {
+            valid = false;
+          }
+          
+          if (valid) {
+            playSound(29);
+            activePlayer.action = act;
+            advanceToNextPlayer();
+          } else {
+            playSound(31);
+          }
+        } else {
+          playSound(31);
+        }
+        draw();
+        return;
+      }
+      case 'f': {
+        // 使用最强法术（除“酒神”和“乾坤一掷”外）
+        let bestMagicId = -1;
+        let maxDamage = -1;
+        let bestMagic = null;
+        
+        if (activePlayer.magics && activePlayer.magics.length > 0) {
+          activePlayer.magics.forEach(magicId => {
+            if (isBacchusOrMoneyThrow(magicId)) return;
+            const itemObj = state.items[magicId];
+            if (!itemObj) return;
+            const magicNumber = itemObj.roleId;
+            const magic = state.magics[magicNumber];
+            if (!magic) return;
+            
+            const isToEnemy = [0, 1, 2, 3, 9].includes(magic.wType);
+            if (isToEnemy) {
+              const damage = magic.wBaseDamage || 0;
+              if (damage > maxDamage) {
+                maxDamage = damage;
+                bestMagicId = magicId;
+                bestMagic = magic;
+              }
+            }
+          });
+        }
+        
+        if (bestMagicId !== -1 && bestMagic) {
+          if (activePlayer.mp >= bestMagic.wCostMP) {
+            playSound(29);
+            const isTargetAll = [1, 2, 3, 5, 9].includes(bestMagic.wType);
+            if (isTargetAll) {
+              activePlayer.action = {
+                type: 'magic',
+                magicId: bestMagicId,
+                target: 0
+              };
+              advanceToNextPlayer();
+            } else {
+              activePlayer.pendingMagic = bestMagicId;
+              targetEnemyIndex = enemies.findIndex(e => e.hp > 0);
+              if (targetEnemyIndex !== -1) {
+                menuState = 'target_magic';
+              }
+            }
+            draw();
+            return;
+          }
+        }
+        
+        // 如果真气不足或没有攻击法术，采用一般攻击
+        playSound(29);
+        targetEnemyIndex = enemies.findIndex(e => e.hp > 0);
+        if (targetEnemyIndex !== -1) {
+          menuState = 'target';
+        }
+        draw();
+        return;
+      }
+    }
+  }
+
   if (menuState === 'main') {
     // 菜单选择模式
     switch (input) {
@@ -1159,6 +1371,13 @@ export function onInput(input) {
 
 // 步骤 5：按速度出手顺序依次执行战斗结算
 async function runActionPhase() {
+  // 保存每个队员当前回合的有效指令，以便下回合能够用 R 键重复该指令
+  players.forEach(p => {
+    if (p.hp > 0 && p.action) {
+      p.lastAction = { ...p.action };
+    }
+  });
+
   // 结算期间隐藏操作界面与角色状态栏
   showCommandUI = false;
   state.uiMode = 'block';
@@ -2562,6 +2781,35 @@ function isRevivalSpell(magicId) {
       break;
     }
   }
+  return false;
+}
+
+// 判定某仙术是否为“酒神”或“乾坤一掷”
+function isBacchusOrMoneyThrow(magicId) {
+  const word = state.words[magicId];
+  if (!word) return false;
+
+  const len = word.length / 2;
+  const arr = [];
+  for (let i = 0; i < len; i++) {
+    arr.push(word.getShort(i * 2));
+  }
+
+  // 校验简体及繁体“酒神”的字库字符编码
+  if (len === 2) {
+    if ((arr[0] === 0xBEC0 && arr[1] === 0xC9F1) || (arr[0] === 0xB1DB && arr[1] === 0xAFEB)) {
+      return true;
+    }
+  }
+
+  // 校验简体“乾坤一掷”与繁体“乾坤一擲”的字库字符编码
+  if (len === 4) {
+    if ((arr[0] === 0xC7AC && arr[1] === 0xC0A7 && arr[2] === 0xD2BB && arr[3] === 0xD6C1) ||
+        (arr[0] === 0xB7E2 && arr[1] === 0xB5CA && arr[2] === 0xA440 && arr[3] === 0xC6B0)) {
+      return true;
+    }
+  }
+
   return false;
 }
 
