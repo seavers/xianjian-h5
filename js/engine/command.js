@@ -22,6 +22,7 @@ import { enemies, players, addDamagePopup, draw, drawWordToCtx, drawWinNumber, r
 import { loadMkf } from '../resources/loader.js';
 import { Talk } from '../ui/talk.js';
 import { UI } from '../ui/panel.js';
+import { COLOR_RED } from '../ui/colors.js';
 
 const big5Decoder = new TextDecoder('big5');
 
@@ -2542,7 +2543,7 @@ export async function stealFromEnemy(stealRate) {
 
       let totalLen = 0;
       let boxX = 0;
-      let textX = 0;
+      let boxY = 0;
 
       if (successType === 'money') {
         const w1 = 2; // “获得”
@@ -2552,14 +2553,13 @@ export async function stealFromEnemy(stealRate) {
         totalLen = w1 + w2 + w3 + w4;
 
         boxX = 65 - (totalLen - 10) * 8;
-        textX = 75 - (totalLen - 10) * 8;
 
         UI.drawSingleLineBox(boxX, 105, totalLen, talkCtx);
 
         // 绘制文字：“获得” (30) + 金额 + “文钱” (10)
-        drawWordToCtx(talkCtx, 30, textX, 115);
-        drawWinNumber(talkCtx, cashAmount, textX + (w1 + w2 + w3) * 16 - 2, 119, w3, 'right', 'yellow');
-        drawWordToCtx(talkCtx, 10, textX + (w1 + w2 + w3) * 16, 115);
+        drawWordToCtx(talkCtx, 30, boxX + 10, 115);
+        drawWinNumber(talkCtx, cashAmount, boxX + 10 + (w1 + w2 + w3) * 16 - 2, 119, w3, 'right', 'yellow');
+        drawWordToCtx(talkCtx, 10, boxX + 10 + (w1 + w2 + w3) * 16, 115);
       } else {
         const w1 = 2; // “获得”
         const w2 = 2; // 空格
@@ -2567,13 +2567,13 @@ export async function stealFromEnemy(stealRate) {
         totalLen = w1 + w2 + w3;
 
         boxX = 65 - (totalLen - 10) * 8;
-        textX = 75 - (totalLen - 10) * 8;
+        boxY = 25;
 
-        UI.drawSingleLineBox(boxX, 105, totalLen, talkCtx);
+        UI.drawSingleLineBox(boxX, boxY, totalLen + 1, talkCtx);
 
         // 绘制文字：“获得” (30) + 物品名称 (itemId)
-        drawWordToCtx(talkCtx, 30, textX, 115);
-        drawWordToCtx(talkCtx, itemId, textX + (w1 + w2) * 16, 115);
+        drawWordToCtx(talkCtx, 34, boxX + 10, boxY + 10);
+        drawWordToCtx(talkCtx, itemId, boxX + 10 + (w1 + w2) * 16, boxY + 10, COLOR_RED);
       }
 
       // 临时开启按键控制
