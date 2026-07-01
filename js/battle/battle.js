@@ -119,30 +119,31 @@ export async function start(id, failId, fleeId) {
       id: enemyConfigId,
       objId: objId,
       name: `敌人 #${enemyConfigId}`,
-      maxHp: cfg.wHealth || 100,
-      hp: cfg.wHealth || 100,
-      defense: cfg.wDefense || 10,
-      dexterity: cfg.wDexterity || 10,
-      attackStrength: cfg.wAttackStrength || 10,
-      level: cfg.wLevel || 1,
-      physicalResistance: cfg.wPhysicalResistance || 0,
+      maxHp: cfg.wHealth ?? 100,
+      hp: cfg.wHealth ?? 100,
+      // 使用 ?? 运算符代替 || 以免合法的 0 属性配置被错误覆盖为 10
+      defense: cfg.wDefense ?? 10,
+      dexterity: cfg.wDexterity ?? 10,
+      attackStrength: cfg.wAttackStrength ?? 10,
+      level: cfg.wLevel ?? 1,
+      physicalResistance: cfg.wPhysicalResistance ?? 0,
       x: pos.x,
       y: yPos,
       origX: pos.x,
       origY: yPos,
       spriteData: spriteData,
       currentFrame: 0,
-      maxIdleFrames: cfg.wIdleFrames || 4,
-      wMagicFrames: cfg.wMagicFrames || 0,
-      wAttackFrames: cfg.wAttackFrames || 0,
-      wActWaitFrames: cfg.wActWaitFrames || 0,
-      animSpeed: cfg.wIdleAnimSpeed || 4,
+      maxIdleFrames: cfg.wIdleFrames ?? 4,
+      wMagicFrames: cfg.wMagicFrames ?? 0,
+      wAttackFrames: cfg.wAttackFrames ?? 0,
+      wActWaitFrames: cfg.wActWaitFrames ?? 0,
+      animSpeed: cfg.wIdleAnimSpeed ?? 4,
       animTick: 0,
-      attackSound: cfg.wAttackSound || 0,
-      deathSound: cfg.wDeathSound || 0,
-      wMagic: cfg.wMagic || 0,
-      wMagicRate: cfg.wMagicRate || 0,
-      wMagicStrength: cfg.wMagicStrength || 10,
+      attackSound: cfg.wAttackSound ?? 0,
+      deathSound: cfg.wDeathSound ?? 0,
+      wMagic: cfg.wMagic ?? 0,
+      wMagicRate: cfg.wMagicRate ?? 0,
+      wMagicStrength: cfg.wMagicStrength ?? 10,
       wMagicSound: cfg.wMagicSound || 0,
       wScriptOnTurnStart: state.items[objId]?.useScr || 0,
       wScriptOnBattleEnd: state.items[objId]?.equScr || 0,
@@ -2363,7 +2364,7 @@ async function endBattle(result) {
         drawWordToCtx(talkCtx, 32, 110 + nameLen * 16 + 32, 10);
 
         // 3. 绘制具体数值大面板背景框：x=66, y=34, 宽=11, 高=9
-        UI.drawScrollBox(66, 34, 11, 9, talkCtx);
+        UI.drawScrollBox(66, 34, 11, 8, talkCtx);
 
         // 4. 绘制 8 项属性的文字标签 (修行、体力、真气、武术、灵力、防御、身法、吉运)
         for (let j = 0; j < 8; j++) {
