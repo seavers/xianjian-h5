@@ -566,7 +566,7 @@ export function draw() {
         const rowH = 18;
         const startY = 48;
 
-        const maxRows = 3;
+        const maxRows = 5;
         const totalSpells = activePlayer.magics.length;
 
         // 根据光标自动滚动页面行
@@ -3025,12 +3025,12 @@ async function handleMagicAction(player, actor, act) {
     }
     state.activeTargetIdx = targetIdx;
     if (targetIdx !== -1) {
-      // 步骤 1：运行施法前置脚本
+      await playMagicEffect(magic, player, enemies[targetIdx]);
+
+      // 步骤 1：运行施法脚本
       if (itemObj.useScr > 0) {
         await Script.runTriggerScript(itemObj.useScr, state.roles[player.index], 'magic');
       }
-
-      await playMagicEffect(magic, player, enemies[targetIdx]);
       
       // 步骤 2：运行施法成功后脚本
       if (itemObj.equScr > 0) {
@@ -3120,12 +3120,12 @@ async function handleMagicAction(player, actor, act) {
       targetIdx = players.findIndex(p => p.hp > 0);
     }
     if (targetIdx !== -1) {
-      // 步骤 1：运行施法前置脚本
+      await playMagicEffect(magic, player, players[targetIdx]);
+
+      // 步骤 1：运行施法脚本
       if (itemObj.useScr > 0) {
         await Script.runTriggerScript(itemObj.useScr, state.roles[player.index], 'magic');
       }
-
-      await playMagicEffect(magic, player, players[targetIdx]);
 
       // 步骤 2：运行施法成功后脚本
       if (itemObj.equScr > 0) {
