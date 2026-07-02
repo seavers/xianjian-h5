@@ -1246,7 +1246,7 @@ export async function clearTalk() {
   await Talk.clearTalk();
 }
 
-export async function updateScreen(p1, p2, p3, {type}) {
+export async function updateScreen(p1, time, p3, {type}) {
   if (type === 'enemy') {
     await Talk.resetTalk();
     return;
@@ -1264,7 +1264,7 @@ export async function updateScreen(p1, p2, p3, {type}) {
   update(true);
 
   // 步骤 2：增加 80ms 的非阻塞式延迟，以满足剧情或转场时图像更新的视觉停留感要求
-  await new Promise(resolve => setTimeout(resolve, TICK_TIME));
+  await new Promise(resolve => setTimeout(resolve, TICK_TIME * (time || 1)));
 }
 
 export async function delayPeriod(time, p2, p3, context) {
