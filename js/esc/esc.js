@@ -918,8 +918,8 @@ export const ESC = {
         const magicNumber = item.roleId;
         const magic = state.magics[magicNumber];
         if (!magic) return null;
-        // 是否可用：非战斗可用 (gold & 1) 且 MP 足够
-        const isUsable = ((item.gold & 1) !== 0) && (casterRole.mp >= magic.wCostMP);
+        // 是否可用：非战斗可用 (flags & 1) 且 MP 足够
+        const isUsable = ((item.flags & 1) !== 0) && (casterRole.mp >= magic.wCostMP);
         return { magicId, item, magic, isUsable };
       }).filter(m => m !== null);
 
@@ -996,18 +996,20 @@ export const ESC = {
 
       // 步骤 8：绘制最底部的队伍成员头像与数值状态
       const totalParty = state.party.length;
-      const bxStart = Math.floor((320 - (77 * (totalParty - 1) + 74)) / 2);
+      // 动态调整间距以消除属性字符被下一人边框遮挡的问题（2人使用95像素间距，3人使用85像素间距，并自动保持整体居中）
+      const spacing = totalParty === 2 ? 95 : (totalParty === 3 ? 85 : 77);
+      const bxStart = Math.floor((320 - (spacing * (totalParty - 1) + 74)) / 2);
 
       for (let i = 0; i < totalParty; i++) {
         const pRole = state.party[i];
         const roleStats = state.roles[pRole.index];
         if (!roleStats) continue;
 
-        const bx = bxStart + 77 * i;
+        const bx = bxStart + spacing * i;
         const by = 165;
 
-        // 绘制状态小木框背景
-        const borderImg = loadPic(72);
+        // 绘制状态小木框背景（使用与战斗完全一致的 Pic #19）
+        const borderImg = loadPic(19);
         if (borderImg) {
           startupCtx.drawImage(borderImg, bx, by);
         }
@@ -1069,7 +1071,8 @@ export const ESC = {
         const magicNumber = item.roleId;
         const magic = state.magics[magicNumber];
         if (!magic) return null;
-        const isUsable = ((item.gold & 1) !== 0) && (casterRole.mp >= magic.wCostMP);
+        // 使用 flags & 1 判定非战斗仙术可用性
+        const isUsable = ((item.flags & 1) !== 0) && (casterRole.mp >= magic.wCostMP);
         return { magicId, item, magic, isUsable };
       }).filter(m => m !== null);
 
@@ -1115,7 +1118,7 @@ export const ESC = {
           if (!curMagic || !curMagic.isUsable) return;
 
           // 步骤 9：判定全体还是单体仙术
-          const isTargetAll = (curMagic.item.gold & 16) !== 0;
+          const isTargetAll = (curMagic.item.flags & 16) !== 0;
           if (isTargetAll) {
             await castMagic(curMagic, null);
             ESC.renderAll();
