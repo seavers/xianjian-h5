@@ -1312,16 +1312,6 @@ export async function updateScreenAndWait(time, p2, p3, context) {
   return await timesAction(time, this, () => {});
 }
 
-export async function waitSecond(time, p2, p3, context) {
-  // 步骤 1：原游戏是 80ms * time 延迟，我们在 TICK_TIME 毫秒为主循环周期的 H5 引擎中同步换算为对应的帧数 ticks
-  const ticks = Math.max(1, Math.round((time * 80) / TICK_TIME));
-  return await stepAction(context, () => Script.stepProgress(this, ticks));
-}
-
-export async function sleepFrame(frameCount, speed, p3, context) {
-  return await stepAction(context, () => Script.stepProgress(this, frameCount * speed));
-}
-
 function checkObstacle(px, py, fCheckEventObjects, wSelfObject) {
   // 步骤 1：将绝对像素坐标转换为瓦片网格的 mx, my 坐标及 half 标志
   let x = Math.floor(px / 32);
