@@ -1275,7 +1275,7 @@ export async function delayPeriod(time, p2, p3, context) {
   // 步骤 2：输出详细的非阻塞延迟调试日志，辅助追踪时序同步
   console.log(`[0x85 delayPeriod] 剧情等待, 原版毫秒: ${time * 80}ms, H5换算帧数: ${ticks} 帧`);
 
-  return await stepAction(context, () => Script.stepProgress(this, ticks));
+  return await new Promise(resolve => setTimeout(resolve, time * 80));
 }
 
 export async function updateScreenAndWait(time, p2, p3, context) {
@@ -3346,7 +3346,7 @@ scriptCodes[0xA4] = { func: scrollFbpToScreen, desc: '屏幕滚动背景' };
 
 scriptCodes[0x83] = { func: jumpIfNotInZone, desc: '若事件物体不在当前事件物体特定区域则跳转' };
 scriptCodes[0x84] = { func: placeItemUsedAsObject, desc: '放置当前使用道具为事件物体于场景' };
-scriptCodes[0x85] = { func: delayPeriod, desc: '非阻塞时序延迟' };
+scriptCodes[0x85] = { func: delayPeriod, desc: '阻塞式等待' };
 scriptCodes[0x86] = { func: jumpIfEquipmentNotEquipped, desc: '若装备未穿戴则跳转' };
 scriptCodes[0x4C] = { func: monsterChasePlayer, desc: '怪兽/事件物体追逐玩家' };
 
