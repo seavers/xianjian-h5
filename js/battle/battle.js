@@ -462,7 +462,7 @@ export function draw() {
     const frameImg = loadSpriteFrame(effect.spriteData, effect.frameIndex);
     if (frameImg) {
       const dx = effect.x - frameImg.width / 2;
-      const dy = effect.y - frameImg.height / 2;
+      const dy = effect.y - frameImg.height;
       mainCtx.drawImage(frameImg, dx, dy);
     }
   });
@@ -1684,19 +1684,40 @@ export async function playMagicEffect(magic, actor, target) {
 
     activeEffects = [];
     if (magic.wType === 2) {
+      // 整队法术 (kMagicTypeAttackWhole): 特效在 120, 100 加上偏移
+      activeEffects.push({
+        spriteData,
+        frameIndex,
+        x: 120 + (magic.wXOffset || 0),
+        y: 100 + (magic.wYOffset || 0)
+      });
+    } else if (magic.wType === 3) {
+      // 战场法术 (kMagicTypeAttackField): 特效在 160, 200 加上偏移
       activeEffects.push({
         spriteData,
         frameIndex,
         x: 160 + (magic.wXOffset || 0),
-        y: 100 + (magic.wYOffset || 0)
+        y: 200 + (magic.wYOffset || 0)
+      });
+    } else if (magic.wType === 1) {
+      // 全体法术 (kMagicTypeAttackAll): 特效分别绘制在三个固定位置上加上偏移
+      const effectpos = [[70, 140], [100, 110], [160, 100]];
+      effectpos.forEach(pos => {
+        activeEffects.push({
+          spriteData,
+          frameIndex,
+          x: pos[0] + (magic.wXOffset || 0),
+          y: pos[1] + (magic.wYOffset || 0)
+        });
       });
     } else {
+      // 单体/回复/召唤法术等: 特效底边中点与目标底边中点重合加上偏移
       targets.forEach(t => {
         activeEffects.push({
           spriteData,
           frameIndex,
           x: t.x + (magic.wXOffset || 0),
-          y: (t.y - (t.height || 30) / 2) + (magic.wYOffset || 0)
+          y: t.y + (magic.wYOffset || 0)
         });
       });
     }
@@ -3002,6 +3023,10 @@ async function handleMagicAction(player, actor, act) {
   const magic = state.magics[magicNumber];
   if (!magic) return;
 
+  // 记录施法主角的原始位置，以便在施法结束时复位，防止其发生漂移或坐标与特效脱节
+  const origX = player.x;
+  const origY = player.y;
+
   // 1. 扣除 MP
   player.mp = Math.max(0, player.mp - magic.wCostMP);
   const globalRole = state.roles[player.index];
@@ -3172,7 +3197,9 @@ async function handleMagicAction(player, actor, act) {
     }
   }
 
-  // 还原施法者的动作帧姿势
+  // 还原施法者的坐标位置与动作帧姿势
+  player.x = origX;
+  player.y = origY;
   restorePlayerFrame(player);
   draw();
 }
