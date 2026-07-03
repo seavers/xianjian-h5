@@ -1465,6 +1465,54 @@ export function monsterChasePlayer(maxDistance, speed, floating, context) {
   refreshWalkFrame(obj);
 }
 
+export function setEnemyStatus(statusId, value, failScriptId) {
+  // 步骤 0：智能分流。如果 this 存在且为玩家角色或队员，则应将该仙术状态直接施加到此玩家身上
+  if (this && (state.roles.includes(this) || players.includes(this))) {
+    const role = state.roles.includes(this) ? this : state.roles[this.index];
+    if (role) {
+      if (!role.status) {
+        role.status = {};
+      }
+      role.status[statusId] = value;
+    }
+    console.log(`[0x2E setEnemyStatus] 施法上下文为玩家角色，自动分流设定角色状态 ID ${statusId} ➔ 值 ${value}`);
+    return;
+  }
+
+  // 步骤 1：确定当前起效的敌人在 enemies 中的索引。
+  let enemy = null;
+  let enemyIndex = 0;
+  if (this && enemies.includes(this)) {
+    enemy = this;
+    enemyIndex = enemies.indexOf(enemy);
+  } else {
+    enemyIndex = (this && typeof this.index === 'number') ? this.index : 0;
+    enemy = enemies[enemyIndex];
+  }
+
+  if (enemy) {
+    // 步骤 2：参考 sdlpal 对抗性进行判定。如果敌人抗性较高，有概率判定状态附加失败，若失败则跳转到 failScriptId
+    const resistance = (enemy.config && typeof enemy.config.wPoisonResistance === 'number') ? enemy.config.wPoisonResistance : 0;
+    const maxVal = statusId === 4 ? 14 : 9; // kStatusSlow = 4
+    const rand = Math.floor(Math.random() * (maxVal + 1));
+
+    if (rand <= Math.floor(resistance / 10)) {
+      console.log(`[0x2E setEnemyStatus] 敌人状态附加失败 (抗性高)，跳转至脚本: ${failScriptId}`);
+      if (failScriptId) {
+        return failScriptId;
+      }
+      return;
+    }
+
+    enemy.status = enemy.status || {};
+    enemy.status[statusId] = value;
+    console.log(`[0x2E setEnemyStatus] 设定敌人 (Index: ${enemyIndex}) 状态 ID ${statusId} ➔ 值 ${value}`);
+  } else {
+    if (failScriptId) {
+      return failScriptId;
+    }
+  }
+}
 
 export function checkTalk() {
   console.log('global checkTalk');
@@ -2424,8 +2472,26 @@ export async function fadeToRed() {
 }
 
 export function setPlayerStatus(statusId, rounds) {
-  const roleIndex = getRoleIndex(this);
-  const role = state.roles[roleIndex];
+  // 步骤 0：智能分流。如果 this 存在且为敌人对象，则说明为对敌状态附仙术脚本误用，自动将状态应用给该敌人
+  if (this && enemies.includes(this)) {
+    const enemy = this;
+    enemy.status = enemy.status || {};
+    enemy.status[statusId] = rounds;
+    console.log(`[0x2D setPlayerStatus] 施法上下文为敌人，自动分流设定敌人 (ID: ${enemy.id}) 状态 ID ${statusId} ➔ 值 ${rounds}`);
+    return;
+  }
+
+  // 步骤 1：正常判定为玩家角色
+  let role = null;
+  let roleIndex = 0;
+  if (this && state.roles.includes(this)) {
+    role = this;
+    roleIndex = state.roles.indexOf(role);
+  } else {
+    roleIndex = getRoleIndex(this);
+    role = state.roles[roleIndex];
+  }
+
   if (role) {
     if (!role.status) role.status = {};
     role.status[statusId] = rounds;

@@ -118,6 +118,7 @@ export async function start(id, failId, fleeId) {
     enemies.push({
       id: enemyConfigId,
       objId: objId,
+      index: enemies.length,
       name: `敌人 #${enemyConfigId}`,
       maxHp: cfg.wHealth ?? 100,
       hp: cfg.wHealth ?? 100,
