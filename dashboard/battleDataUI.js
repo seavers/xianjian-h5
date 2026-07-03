@@ -3,7 +3,7 @@
 import { loadMkf, load } from '../js/resources/loader.js';
 import { deyj } from '../js/utils/deyj.js';
 import { state } from '../js/engine/state.js';
-import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame } from '../js/battle/battleData.js';
+import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame, loadMagics, loadLevelUpMagics } from '../js/battle/battleData.js';
 import { React, ReactDOM, html, drawPixelatedToCanvas } from './gameData/ui-helper.js';
 
 const { useState, useEffect, useRef, useMemo } = React;
@@ -579,6 +579,375 @@ function PosTabComponent({ selectedPosCountIndex, setSelectedPosCountIndex }) {
   `;
 }
 
+// 🔮 TAB 5: 法术资料组件
+
+// 五灵属性映射
+const ELEMENTAL_INFO = [
+  { id: 0, name: '⚪ 物理', color: '#aaaaaa' },
+  { id: 1, name: '💨 风灵', color: '#00e1ff' },
+  { id: 2, name: '⚡ 雷灵', color: '#e100ff' },
+  { id: 3, name: '❄️ 水灵', color: '#00ffaa' },
+  { id: 4, name: '🔥 火灵', color: '#ff5500' },
+  { id: 5, name: '🪨 土灵', color: '#ffd000' },
+  { id: 6, name: '☣️ 毒性', color: '#88ff00' },
+  { id: 7, name: '💖 治疗', color: '#ff88cc' }
+];
+
+function getElemInfo(elemId) {
+  return ELEMENTAL_INFO[elemId] || ELEMENTAL_INFO[0];
+}
+
+// 法术类型判断：flags 中 bit0 表示战斗可用, bit1 表示场景可用, bit3 表示全体, bit4 表示敌方
+function getMagicTypeLabel(flags) {
+  const labels = [];
+  if (flags & 0x01) labels.push('战斗');
+  if (flags & 0x02) labels.push('场景');
+  if (flags & 0x08) labels.push('全体');
+  if (flags & 0x10) labels.push('敌方');
+  return labels.length > 0 ? labels.join(' / ') : '特殊';
+}
+
+// 获取法术描述文本（从 desc.dat 中解码 Big5）
+function getMagicDescText(magicId) {
+  const descBytes = state.desc?.[magicId];
+  if (!descBytes) return null;
+  try {
+    const bytes = [];
+    for (let i = 0; i < descBytes.length; i++) {
+      const b = descBytes.getByte(i);
+      // '*' 分隔符转换为换行
+      if (b === 42) { bytes.push(10); continue; }
+      bytes.push(b);
+    }
+    const decoded = new TextDecoder('big5').decode(new Uint8Array(bytes)).trim();
+    const simplifiedFn = window.toSimplifiedFn;
+    return simplifiedFn ? simplifiedFn(decoded) : decoded;
+  } catch (e) {
+    return null;
+  }
+}
+
+// 查询哪些角色可以习得某个法术
+function getSpellLearners(magicObjId) {
+  const roleNames = ['李逍遥', '赵灵儿', '林月如', '巫后', '阿奴', '盖罗娇'];
+  const learners = [];
+  const foundRoles = new Set();
+
+  // 从升级法术表中查询
+  if (state.levelUpMagic) {
+    for (let i = 0; i < state.levelUpMagic.length; i++) {
+      const record = state.levelUpMagic[i];
+      for (let p = 0; p < 6; p++) {
+        if (record[p] && record[p].wMagic === magicObjId && record[p].wLevel > 0 && !foundRoles.has(p)) {
+          learners.push({ name: roleNames[p], level: record[p].wLevel });
+          foundRoles.add(p);
+        }
+      }
+    }
+  }
+
+  // 从角色初始法术中查询
+  if (state.roles) {
+    for (let p = 0; p < Math.min(state.roles.length, 6); p++) {
+      if (foundRoles.has(p)) continue;
+      const role = state.roles[p];
+      if (role && role.magics && role.magics.includes(magicObjId)) {
+        learners.push({ name: roleNames[p], level: 1, isInitial: true });
+      }
+    }
+  }
+  return learners;
+}
+
+function MagicTabComponent({ selectedMagicId, setSelectedMagicId }) {
+  const [filterElem, setFilterElem] = useState(-1); // -1 = 全部
+  const [searchText, setSearchText] = useState('');
+  const [effectFrame, setEffectFrame] = useState(0);
+  const effectCanvasRef = useRef(null);
+
+  // 步骤 1：加载法术配置并构建列表
+  const allMagics = useMemo(() => {
+    const magics = loadMagics();
+    loadLevelUpMagics();
+    const list = [];
+
+    // 法术的 Object ID 范围为 296~397 (word.dat 中的中文名称索引)
+    for (let objId = 296; objId <= 397; objId++) {
+      const item = state.items?.[objId];
+      if (!item) continue;
+      const magicNumber = item.roleId;
+      const magic = magics[magicNumber];
+      if (!magic) continue;
+
+      list.push({
+        objId,
+        magicNumber,
+        name: getItemName(objId),
+        flags: item.flags,
+        magic
+      });
+    }
+    return list;
+  }, []);
+
+  // 步骤 2：过滤列表
+  const filteredMagics = useMemo(() => {
+    return allMagics.filter(m => {
+      if (filterElem >= 0 && m.magic.wElemental !== filterElem) return false;
+      if (searchText && !m.name.includes(searchText)) return false;
+      return true;
+    });
+  }, [allMagics, filterElem, searchText]);
+
+  // 步骤 3：获取当前选中的法术详情
+  const curMagicEntry = useMemo(() => {
+    return allMagics.find(m => m.objId === selectedMagicId) || allMagics[0];
+  }, [allMagics, selectedMagicId]);
+
+  const curMagic = curMagicEntry?.magic;
+  const curElemInfo = curMagic ? getElemInfo(curMagic.wElemental) : getElemInfo(0);
+
+  // 步骤 4：特效动画帧循环
+  useEffect(() => {
+    setEffectFrame(0);
+  }, [selectedMagicId]);
+
+  useEffect(() => {
+    if (!curMagic || curMagic.wEffect <= 0) return;
+    let maxFrames = 0;
+    try {
+      const spriteData = deyj(loadMkf('fire.mkf', curMagic.wEffect));
+      if (spriteData) maxFrames = spriteData.getShort(0);
+    } catch (e) { /* 忽略 */ }
+    if (maxFrames <= 1) return;
+
+    const timer = setInterval(() => {
+      setEffectFrame(prev => (prev + 1) % maxFrames);
+    }, 120);
+    return () => clearInterval(timer);
+  }, [curMagic?.wEffect]);
+
+  // 步骤 5：特效帧绘制
+  useEffect(() => {
+    if (!effectCanvasRef.current || !curMagic || curMagic.wEffect <= 0) {
+      if (effectCanvasRef.current) {
+        const ctx = effectCanvasRef.current.getContext('2d');
+        ctx.clearRect(0, 0, effectCanvasRef.current.width, effectCanvasRef.current.height);
+      }
+      return;
+    }
+    drawSpriteFrameToCanvas(effectCanvasRef.current, 'fire.mkf', curMagic.wEffect, effectFrame);
+  }, [curMagic?.wEffect, effectFrame]);
+
+  // 步骤 6：获取习得信息与描述文本
+  const learners = useMemo(() => curMagicEntry ? getSpellLearners(curMagicEntry.objId) : [], [curMagicEntry?.objId]);
+  const descText = useMemo(() => curMagicEntry ? getMagicDescText(curMagicEntry.objId) : null, [curMagicEntry?.objId]);
+
+  // 属性值转换（有符号显示）
+  const toSigned = (v) => v > 32767 ? v - 65536 : v;
+
+  return html`
+    <!-- 左侧法术列表 -->
+    <div style=${{ width: '230px', borderRight: '1px solid var(--border-glass)', background: 'rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <!-- 搜索与过滤 -->
+      <div style=${{ padding: '8px', background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid var(--border-glass)' }}>
+        <div style=${{ fontSize: '9.5px', fontWeight: 'bold', color: BATTLE_COLOR, letterSpacing: '0.5px', marginBottom: '6px' }}>🔮 法术数据索引</div>
+        <input 
+          type="text" 
+          placeholder="🔍 搜索法术名称..."
+          value=${searchText}
+          onInput=${(e) => setSearchText(e.target.value)}
+          style=${{ width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '2px', padding: '3px 6px', fontSize: '8.5px', color: '#fff', outline: 'none' }}
+        />
+        <div style=${{ display: 'flex', flexWrap: 'wrap', gap: '2px', marginTop: '4px' }}>
+          <button onClick=${() => setFilterElem(-1)} class="btn-dbg" style=${{ padding: '1px 5px', fontSize: '7.5px', color: filterElem === -1 ? BATTLE_COLOR : 'rgba(255,255,255,0.4)', borderColor: filterElem === -1 ? BATTLE_COLOR : 'rgba(255,255,255,0.06)', background: filterElem === -1 ? `rgba(${BATTLE_COLOR_RGB}, 0.05)` : 'transparent' }}>全部</button>
+          ${ELEMENTAL_INFO.map(ei => html`
+            <button key=${ei.id} onClick=${() => setFilterElem(ei.id)} class="btn-dbg" style=${{ padding: '1px 5px', fontSize: '7.5px', color: filterElem === ei.id ? ei.color : 'rgba(255,255,255,0.4)', borderColor: filterElem === ei.id ? ei.color : 'rgba(255,255,255,0.06)', background: filterElem === ei.id ? `rgba(${ei.color}, 0.05)` : 'transparent' }}>${ei.name.split(' ')[0]}</button>
+          `)}
+        </div>
+      </div>
+
+      <!-- 法术条目列表 -->
+      <div style=${{ flex: 1, overflowY: 'auto', padding: '6px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        ${filteredMagics.map(m => {
+          const isSelected = selectedMagicId === m.objId;
+          const elemInfo = getElemInfo(m.magic.wElemental);
+          return html`
+            <div
+              key=${m.objId}
+              onClick=${() => setSelectedMagicId(m.objId)}
+              style=${{
+                padding: '5px 8px',
+                background: isSelected ? `rgba(${BATTLE_COLOR_RGB}, 0.08)` : 'rgba(255,255,255,0.015)',
+                border: `1px solid ${isSelected ? BATTLE_COLOR : 'rgba(255,255,255,0.03)'}`,
+                borderRadius: '2px',
+                cursor: 'pointer',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                transition: 'all 0.1s'
+              }}
+            >
+              <div style=${{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                <span style=${{ fontSize: '9.5px', fontWeight: 'bold', color: isSelected ? BATTLE_COLOR : '#fff' }}>${m.name}</span>
+                <span style=${{ fontSize: '7px', color: 'rgba(255,255,255,0.25)' }}>OBJ #${m.objId} → Magic #${m.magicNumber}</span>
+              </div>
+              <div style=${{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1px' }}>
+                <span style=${{ fontSize: '7.5px', color: elemInfo.color }}>${elemInfo.name}</span>
+                <span style=${{ fontSize: '7px', color: 'var(--glow-blue)' }}>MP ${m.magic.wCostMP}</span>
+              </div>
+            </div>
+          `;
+        })}
+        ${filteredMagics.length === 0 && html`<div style=${{ color: 'rgba(255,255,255,0.2)', fontSize: '8.5px', textAlign: 'center', padding: '20px' }}>无匹配的法术</div>`}
+      </div>
+    </div>
+
+    <!-- 右侧详细信息区 -->
+    <div style=${{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '15px' }}>
+      ${curMagicEntry ? html`
+        <!-- 头部：法术名称与特效预览 -->
+        <div style=${{ display: 'flex', gap: '12px', marginBottom: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.03)', padding: '8px', borderRadius: '2px' }}>
+          <!-- 特效动画预览 -->
+          <div style=${{ position: 'relative', width: '120px', height: '120px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '2px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4px' }}>
+            <canvas ref=${effectCanvasRef} width="100" height="100" style=${{ imageRendering: 'pixelated', width: '100px', height: '100px' }}></canvas>
+            <span style=${{ fontSize: '7px', color: 'rgba(255,255,255,0.25)', marginTop: '2px' }}>${curMagic.wEffect > 0 ? `fire.mkf #${curMagic.wEffect}` : '无特效'}</span>
+          </div>
+
+          <!-- 法术基本信息 -->
+          <div style=${{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style=${{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                <span style=${{ fontSize: '14px', fontWeight: 'bold', color: BATTLE_COLOR }}>${curMagicEntry.name}</span>
+                <span style=${{ fontSize: '9px', padding: '1px 6px', background: `rgba(${curElemInfo.color}, 0.1)`, border: `1px solid ${curElemInfo.color}`, borderRadius: '2px', color: curElemInfo.color }}>${curElemInfo.name}</span>
+              </div>
+              <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>Object #${curMagicEntry.objId} • Magic Index #${curMagicEntry.magicNumber} • data.mkf Block 4 • Offset: 0x${(curMagicEntry.magicNumber * 32).toString(16).toUpperCase()}</div>
+              <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>使用范围: ${getMagicTypeLabel(curMagicEntry.flags)} • Flags: 0x${curMagicEntry.flags.toString(16).toUpperCase()}</div>
+            </div>
+
+            <!-- 核心属性速览 -->
+            <div style=${{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginTop: '6px' }}>
+              <div style=${{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', padding: '3px 5px', borderRadius: '1.5px', display: 'flex', flexDirection: 'column' }}>
+                <span style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.3)' }}>真气消耗 MP</span>
+                <span style=${{ fontSize: '11px', fontWeight: 'bold', color: 'var(--glow-blue)' }}>${curMagic.wCostMP}</span>
+              </div>
+              <div style=${{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', padding: '3px 5px', borderRadius: '1.5px', display: 'flex', flexDirection: 'column' }}>
+                <span style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.3)' }}>基础伤害 DMG</span>
+                <span style=${{ fontSize: '11px', fontWeight: 'bold', color: curMagic.wBaseDamage > 0 && curMagic.wBaseDamage < 60000 ? 'var(--glow-red)' : 'var(--glow-green)' }}>${toSigned(curMagic.wBaseDamage)}</span>
+              </div>
+              <div style=${{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', padding: '3px 5px', borderRadius: '1.5px', display: 'flex', flexDirection: 'column' }}>
+                <span style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.3)' }}>特效编号 EFX</span>
+                <span style=${{ fontSize: '11px', fontWeight: 'bold', color: '#fff' }}>${curMagic.wEffect}</span>
+              </div>
+              <div style=${{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', padding: '3px 5px', borderRadius: '1.5px', display: 'flex', flexDirection: 'column' }}>
+                <span style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.3)' }}>音效编号 SND</span>
+                <span style=${{ fontSize: '11px', fontWeight: 'bold', color: '#fff' }}>${toSigned(curMagic.wSound)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 法术描述文本 -->
+        ${descText && html`
+          <div style=${{ marginBottom: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.03)', padding: '8px', borderRadius: '2px' }}>
+            <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.5px' }}>📜 法术说明 (desc.dat)</div>
+            <div style=${{ fontSize: '9.5px', color: '#ccc', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>${descText}</div>
+          </div>
+        `}
+
+        <!-- 完整属性表格 -->
+        <div style=${{ marginBottom: '12px' }}>
+          <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.5px' }}>⚙️ 法术底层配置注册表 (MAGIC Structure, 32 Bytes)</div>
+          <div style=${{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '3px' }}>
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>wEffect 特效</span>
+              <span style=${{ color: '#fff', fontWeight: 'bold' }}>${curMagic.wEffect}</span>
+            </div>
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>wType 类型</span>
+              <span style=${{ color: '#fff', fontWeight: 'bold' }}>${curMagic.wType}</span>
+            </div>
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>wXOffset X偏移</span>
+              <span style=${{ color: '#fff' }}>${curMagic.wXOffset}</span>
+            </div>
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>wYOffset Y偏移</span>
+              <span style=${{ color: '#fff' }}>${curMagic.wYOffset}</span>
+            </div>
+
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>sLayerOffset 层偏</span>
+              <span style=${{ color: '#fff' }}>${curMagic.sLayerOffset}</span>
+            </div>
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>wSpeed 速度</span>
+              <span style=${{ color: '#fff' }}>${curMagic.wSpeed}</span>
+            </div>
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>wKeepEffect 持续</span>
+              <span style=${{ color: '#fff' }}>${curMagic.wKeepEffect}</span>
+            </div>
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>wFireDelay 延时</span>
+              <span style=${{ color: '#fff' }}>${curMagic.wFireDelay}</span>
+            </div>
+
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>wEffectTimes 次数</span>
+              <span style=${{ color: '#fff', fontWeight: 'bold' }}>${curMagic.wEffectTimes}</span>
+            </div>
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>wShake 震屏</span>
+              <span style=${{ color: curMagic.wShake > 0 ? '#ff8800' : '#fff' }}>${curMagic.wShake}</span>
+            </div>
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>wWave 波动</span>
+              <span style=${{ color: curMagic.wWave > 0 ? '#ff8800' : '#fff' }}>${curMagic.wWave}</span>
+            </div>
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>wUnknown 保留</span>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>${curMagic.wUnknown}</span>
+            </div>
+
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>wCostMP 耗真气</span>
+              <span style=${{ color: 'var(--glow-blue)', fontWeight: 'bold' }}>${curMagic.wCostMP}</span>
+            </div>
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>wBaseDamage 伤害</span>
+              <span style=${{ color: 'var(--glow-red)', fontWeight: 'bold' }}>${toSigned(curMagic.wBaseDamage)}</span>
+            </div>
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>wElemental 属性</span>
+              <span style=${{ color: curElemInfo.color, fontWeight: 'bold' }}>${curMagic.wElemental} (${curElemInfo.name})</span>
+            </div>
+            <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '3px 6px', fontSize: '8.5px' }}>
+              <span style=${{ color: 'rgba(255,255,255,0.3)' }}>wSound 音效</span>
+              <span style=${{ color: '#fff' }}>${toSigned(curMagic.wSound)}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 习得信息 -->
+        <div>
+          <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.5px' }}>🎓 习得角色与等级 (data.mkf #6 LevelUpMagic)</div>
+          ${learners.length > 0 ? html`
+            <div style=${{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+              ${learners.map((l, idx) => html`
+                <div key=${idx} style=${{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', padding: '4px 8px', borderRadius: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style=${{ fontSize: '9px', fontWeight: 'bold', color: BATTLE_COLOR }}>${l.name}</span>
+                  <span style=${{ fontSize: '8px', color: l.isInitial ? '#00ffaa' : 'var(--glow-yellow)' }}>${l.isInitial ? '初始习得' : `Lv.${l.level} 习得`}</span>
+                </div>
+              `)}
+            </div>
+          ` : html`<div style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.2)', padding: '6px' }}>敌方专属 / 无玩家角色可习得</div>`}
+        </div>
+      ` : html`<div style=${{ color: 'rgba(255,255,255,0.2)', fontSize: '10px', textAlign: 'center', padding: '40px' }}>请从左侧选择一个法术</div>`}
+    </div>
+  `;
+}
+
 // 🖼️ TAB 4: 战斗贴图组件
 function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selectedSpritePackId, setSelectedSpritePackId, selectedSpriteFrameId, setSelectedSpriteFrameId, isPlayingSprite, setIsPlayingSprite, spritePlaySpeedMs, setSpritePlaySpeedMs }) {
   const mainCanvasRef = useRef(null);
@@ -736,6 +1105,7 @@ export function BattleDataApp() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('enemy');
 
+  const [selectedMagicId, setSelectedMagicId] = useState(296);
   const [selectedEnemyId, setSelectedEnemyId] = useState(0);
   const [selectedTeamId, setSelectedTeamId] = useState(0);
   const [selectedPosCountIndex, setSelectedPosCountIndex] = useState(2);
@@ -794,6 +1164,7 @@ export function BattleDataApp() {
   const tabs = [
     { id: 'enemy', label: '👹 敌人属性 (data.mkf #1)' },
     { id: 'team', label: '👥 敌方队伍 (data.mkf #2)' },
+    { id: 'magic', label: '🔮 法术资料 (data.mkf #4)' },
     { id: 'pos', label: '📍 战场坐标 (data.mkf #13)' },
     { id: 'sprite', label: '🖼️ 战斗贴图 (abc.mkf / f.mkf)' }
   ];
@@ -836,6 +1207,7 @@ export function BattleDataApp() {
         <div id="battledata-main-container" style=${{ flex: 1, display: 'flex', overflow: 'hidden', background: '#030305' }}>
           ${activeTab === 'enemy' && html`<${EnemyTabComponent} selectedEnemyId=${selectedEnemyId} setSelectedEnemyId=${setSelectedEnemyId} />`}
           ${activeTab === 'team' && html`<${TeamTabComponent} selectedTeamId=${selectedTeamId} setSelectedTeamId=${setSelectedTeamId} switchTab=${setActiveTab} selectEnemy=${setSelectedEnemyId} />`}
+          ${activeTab === 'magic' && html`<${MagicTabComponent} selectedMagicId=${selectedMagicId} setSelectedMagicId=${setSelectedMagicId} />`}
           ${activeTab === 'pos' && html`<${PosTabComponent} selectedPosCountIndex=${selectedPosCountIndex} setSelectedPosCountIndex=${setSelectedPosCountIndex} />`}
           ${activeTab === 'sprite' && html`
             <${SpriteTabComponent} 
