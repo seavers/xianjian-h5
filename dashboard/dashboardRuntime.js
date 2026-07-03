@@ -1183,7 +1183,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                   <span style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.3)', marginTop: '-1px' }}>F: ${heroFrame}</span>
                   <button class="btn-dbg" onClick=${openFrameGalleryToImageExplorer} style=${{ padding: '1px 4px', fontSize: '7.5px', color: 'var(--glow-yellow)', cursor: 'pointer' }}>🔍 帧画廊</button>
                 </div>
-                <div class="hero-attributes-matrix" style=${{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px' }}>
+                <div class="hero-attributes-matrix" style=${{ flex: 1, display: 'flex', gap: '2px' }}>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">等 级</span><span class="hero-attr-val">${heroLv}</span></div>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">当前 HP</span><span class="hero-attr-val" style=${{ color: 'var(--glow-red)' }}>${heroHp}</span></div>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">最大 HP</span><span class="hero-attr-val">${heroMaxHp}</span></div>
@@ -1202,7 +1202,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">土抗</span><span class="hero-attr-val">${heroRes.earth}</span></div>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">朝 向</span><span class="hero-attr-val">${heroDirText}</span></div>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">层级</span><span class="hero-attr-val">${heroLayer}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">当前钱资</span><span class="hero-attr-val" style=${{ color: 'var(--glow-yellow)' }}>${heroGoldText}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">金钱</span><span class="hero-attr-val" style=${{ color: 'var(--glow-yellow)' }}>${heroGoldText}</span></div>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">经验</span><span class="hero-attr-val" style=${{ color: 'var(--glow-blue)' }}>${heroExp}</span></div>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">下级所需</span><span class="hero-attr-val">${heroNext}</span></div>
                   <div class="hero-attr-chip" style=${{ gridColumn: 'span 2' }}><span class="hero-attr-lbl">当前武器</span><span class="hero-attr-val" style=${{ color: 'var(--glow-red)', fontSize: '8px' }}>${heroWp}</span></div>
@@ -1245,7 +1245,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                         onClick=${hasItem ? () => setSelectedItemId(itemId) : null}
                         onDoubleClick=${hasItem ? () => useBagItem(itemId) : null}
                       >
-                        ${hasItem ? `道具 #${itemId}` : '-'}
+                        ${hasItem ? `#${itemId}` : '-'}
                       </div>
                     `;
                   })}
