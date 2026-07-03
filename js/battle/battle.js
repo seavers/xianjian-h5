@@ -1,5 +1,5 @@
 import { state } from '../engine/state.js';
-import { loadFbp, loadPic, loadWord } from '../resources/pal.js';
+import { loadFbp, loadPic, loadWord, loadPal } from '../resources/pal.js';
 import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame, loadLevelUpMagics } from './battleData.js';
 import { loadMkf } from '../resources/loader.js';
 import { deyj } from '../utils/deyj.js';
@@ -234,10 +234,37 @@ export async function start(id, failId, fleeId) {
   // 确保入战时正确应用角色的状态姿态帧（如倒地死亡或虚弱帧）
   players.forEach(p => restorePlayerFrame(p));
 
-  // 确保至少有一个活着的队员可供指令选择
-  activePlayerIndex = players.findIndex(p => p.hp > 0);
+  // 回合开始前：为中毒、定身、眠、混乱的角色预设动作指令，跳过手动选择
+  players.forEach(p => {
+    if (p.hp > 0) {
+      const role = state.roles[p.index];
+      if (role && role.status) {
+        if (role.status[0] > 0) {
+          p.action = { type: 'confused' };
+        } else if (role.status[1] > 0 || role.status[2] > 0) {
+          p.action = { type: 'pass' };
+        } else {
+          p.action = null;
+        }
+      } else {
+        p.action = null;
+      }
+    } else {
+      p.action = null;
+    }
+  });
+
+  // 寻找到第一个可由玩家手动控制的队员
+  activePlayerIndex = players.findIndex(p => isPlayerControllable(p));
   if (activePlayerIndex === -1) {
-    activePlayerIndex = 0;
+    const hasAlive = players.some(p => p.hp > 0);
+    if (hasAlive) {
+      // 若有活着的主角但全部不可控，直接自动进入行动结算阶段
+      runActionPhase();
+      return;
+    } else {
+      activePlayerIndex = 0;
+    }
   }
 
   const enemyObjs = teamObjIds?.map(id=>({battleId,enemyId:id,abcId:state.items?.[id]?.roleId}));
@@ -674,6 +701,33 @@ export function draw() {
       drawHpMpLine(battleCtx, Math.max(0, p.hp), p.maxHp, 'hp', bx + 29, by + 6);
       // MP 行（青色数字 57~66，中间是 #40 号斜杠图片）
       drawHpMpLine(battleCtx, p.mp, p.maxMp, 'mp', bx + 29, by + 20);
+
+      // 步骤 2.5：在头像区域按原版指定位置渲染封、定、眠、乱的异常状态文字贴图
+      const role = state.roles[p.index];
+      if (role && p.hp > 0 && role.status) {
+        const palette = loadPal(state.paletteId || 0);
+        const statusColors = {
+          0: 0x7070D8, // 乱：#92号颜色 #7070D8
+          1: palette ? (palette[0xBF] & 0x00ffffff) : 0x00FF00, // 定
+          2: palette ? (palette[0x0E] & 0x00ffffff) : 0x0000FF, // 眠
+          3: palette ? (palette[0x3C] & 0x00ffffff) : 0xFF00FF, // 封
+        };
+        const STATUS_CONFIGS = {
+          0: { wordId: 29, ox: 35, oy: 19 }, // 乱
+          1: { wordId: 27, ox: 44, oy: 12 }, // 定
+          2: { wordId: 28, ox: 54, oy: 1 },  // 眠
+          3: { wordId: 26, ox: 55, oy: 20 }, // 封
+        };
+        [0, 1, 2, 3].forEach(statusId => {
+          if (role.status[statusId] !== undefined && role.status[statusId] > 0) {
+            const config = STATUS_CONFIGS[statusId];
+            if (config) {
+              const color = statusColors[statusId];
+              drawWordToCtx(battleCtx, config.wordId, bx + config.ox, by + config.oy, color);
+            }
+          }
+        });
+      }
     });
   }
 
@@ -748,10 +802,25 @@ function drawHpMpLine(ctx, cur, max, type, startX, startY) {
   }
 }
 
-// 推进到下一活着的队员指令选择
+// 判断战斗角色当前是否可由玩家手动控制（未死亡、未处于定、眠、乱状态）
+function isPlayerControllable(p) {
+  if (p.hp <= 0) {
+    return false;
+  }
+  const role = state.roles[p.index];
+  if (role && role.status) {
+    // 0: 乱, 1: 定, 2: 眠
+    if (role.status[0] > 0 || role.status[1] > 0 || role.status[2] > 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// 推进到下一活着的队员指令选择，并自动过滤不可手动控制的角色
 function advanceToNextPlayer() {
   let nextIdx = activePlayerIndex + 1;
-  while (nextIdx < players.length && players[nextIdx].hp <= 0) {
+  while (nextIdx < players.length && !isPlayerControllable(players[nextIdx])) {
     nextIdx++;
   }
 
@@ -930,8 +999,16 @@ export function onInput(input) {
         return;
       }
       case 'f': {
-        // 使用最强法术（除“酒神”和“乾坤一掷”外）
-        let bestMagicId = -1;
+        // 步骤 0.1：拦截封印状态，禁止使用仙术
+      const player = players[activePlayerIndex];
+      const role = state.roles[player.index];
+      if (role && role.status && role.status[3] > 0) {
+        playSound(31);
+        return;
+      }
+
+      // 使用最强法术（除“酒神”和“乾坤一掷”外）
+      let bestMagicId = -1;
         let maxDamage = -1;
         let bestMagic = null;
         
@@ -1015,8 +1092,14 @@ export function onInput(input) {
             playSound(29);
           }
         } else if (selectedAction === 1) {
-          // 确认进入法术选择：如果有已学会的法术则切换状态，否则报错
+          // 确认进入法术选择：拦截封印状态，禁止使用仙术
           const player = players[activePlayerIndex];
+          const role = state.roles[player.index];
+          if (role && role.status && role.status[3] > 0) {
+            playSound(31);
+            return;
+          }
+
           if (player.magics && player.magics.length > 0) {
             selectedMagicIndex = 0;
             magicScrollRow = 0;
@@ -1033,16 +1116,19 @@ export function onInput(input) {
         }
         break;
       case 'ESC':
-        // 回退选择上一个人的指令
+        // 回退选择上一个人的指令，并跳过不受控的角色
         if (activePlayerIndex > 0) {
           do {
             activePlayerIndex--;
-          } while (activePlayerIndex >= 0 && players[activePlayerIndex].hp <= 0);
+          } while (activePlayerIndex >= 0 && !isPlayerControllable(players[activePlayerIndex]));
 
           if (activePlayerIndex >= 0) {
             players[activePlayerIndex].action = null;
           } else {
-            activePlayerIndex = 0;
+            activePlayerIndex = players.findIndex(p => isPlayerControllable(p));
+            if (activePlayerIndex === -1) {
+              activePlayerIndex = 0;
+            }
           }
         }
         break;
@@ -1398,6 +1484,81 @@ async function runActionPhase() {
 
   draw();
 
+  // 步骤 5.0：在出手前结算玩家和敌人的中毒状态（运行对应毒素的中毒脚本）
+  // 5.0.1 玩家中毒结算
+  for (let i = 0; i < players.length; i++) {
+    const p = players[i];
+    if (p.hp > 0) {
+      const role = state.roles[p.index];
+      if (role && role.poisons && role.poisons.length > 0) {
+        const originalHp = p.hp;
+        // 遍历结算每一个中毒状态
+        for (let j = 0; j < role.poisons.length; j++) {
+          const poisonId = role.poisons[j];
+          const poisonObj = state.items[poisonId];
+          const useScr = poisonObj ? poisonObj.useScr : 0;
+          if (useScr > 0) {
+            console.log(`[Poison] 角色 ${p.name} 结算毒素 ID ${poisonId}, 脚本 ID ${useScr}`);
+            await Script.runTriggerScript(useScr, role, 'role');
+          }
+        }
+        // 同步扣减血量并展示表现效果
+        p.hp = role.hp;
+        if (p.hp !== originalHp) {
+          const dmg = originalHp - p.hp;
+          if (dmg > 0) {
+            damagePopups.push({
+              actor: p,
+              value: dmg,
+              isPlayer: true,
+              startTime: Date.now()
+            });
+          }
+          if (p.hp <= 0 && p.deathSound > 0) {
+            playSound(p.deathSound);
+          }
+          draw();
+          await sleep(400);
+          await checkPlayerInjury(p, originalHp);
+        }
+      }
+    }
+  }
+
+  // 5.0.2 敌人中毒结算
+  for (let i = 0; i < enemies.length; i++) {
+    const enemy = enemies[i];
+    if (enemy.hp > 0 && enemy.poisons && enemy.poisons.length > 0) {
+      const originalHp = enemy.hp;
+      // 遍历结算每个敌方中毒状态
+      for (let j = 0; j < enemy.poisons.length; j++) {
+        const poisonId = enemy.poisons[j];
+        const poisonObj = state.items[poisonId];
+        const equScr = poisonObj ? poisonObj.equScr : 0;
+        if (equScr > 0) {
+          console.log(`[Poison] 敌人 #${i} 结算毒素 ID ${poisonId}, 脚本 ID ${equScr}`);
+          await Script.runTriggerScript(equScr, enemy, 'enemy');
+        }
+      }
+      if (enemy.hp !== originalHp) {
+        const dmg = originalHp - enemy.hp;
+        if (dmg > 0) {
+          damagePopups.push({
+            actor: enemy,
+            value: dmg,
+            isPlayer: false,
+            startTime: Date.now()
+          });
+        }
+        if (enemy.hp <= 0 && enemy.deathSound > 0) {
+          playSound(enemy.deathSound);
+        }
+        draw();
+        await sleep(400);
+      }
+    }
+  }
+
   // 根据身法属性由高到低对所有出手者进行排序
   const actors = [];
   players.forEach((p, idx) => {
@@ -1425,7 +1586,110 @@ async function runActionPhase() {
       if (player.hp <= 0) continue;
 
       const act = player.action;
-      if (act && act.type === 'attack') {
+      if (act && act.type === 'confused') {
+        const aliveTeammateIdxs = [];
+        players.forEach((p, idx) => {
+          if (idx !== actor.index && p.hp > 0) {
+            aliveTeammateIdxs.push(idx);
+          }
+        });
+
+        if (aliveTeammateIdxs.length > 0) {
+          const targetIdx = aliveTeammateIdxs[Math.floor(Math.random() * aliveTeammateIdxs.length)];
+          const targetPlayer = players[targetIdx];
+
+          // 播放“乱跳”动画姿态切换
+          for (let j = 0; j < 2; j++) {
+            player.currentFrame = 8;
+            draw();
+            await sleep(150);
+            player.currentFrame = 0;
+            draw();
+            await sleep(150);
+          }
+
+          const origX = player.x;
+          const origY = player.y;
+
+          // 移动到队友面前攻击
+          player.x = targetPlayer.x - 30;
+          player.y = targetPlayer.y - 10;
+          player.currentFrame = 9;
+          draw();
+
+          if (player.weaponSound > 0) {
+            playSound(player.weaponSound);
+          }
+          await sleep(150);
+
+          let str = player.attackStrength;
+          let def = targetPlayer.defense;
+          if (targetPlayer.isDefending) {
+            def *= 2;
+          }
+          let baseDmg = calcBaseDamage(str, def);
+          let dmg = baseDmg + Math.floor(Math.random() * 2) + 1;
+          if (dmg < 1) dmg = 1;
+
+          const targetOrigX = targetPlayer.x;
+          const targetOrigY = targetPlayer.y;
+
+          // 播放受击抖动与击退
+          targetPlayer.currentFrame = 3;
+          targetPlayer.x += 8;
+          targetPlayer.y += 4;
+          draw();
+          await sleep(80);
+
+          targetPlayer.x += 2;
+          targetPlayer.y += 1;
+          draw();
+          await sleep(150);
+
+          const originalHp = targetPlayer.hp;
+          targetPlayer.hp = Math.max(0, targetPlayer.hp - dmg);
+
+          const targetRole = state.roles[targetPlayer.index];
+          if (targetRole) {
+            targetRole.hp = targetPlayer.hp;
+          }
+
+          if (targetPlayer.hp <= 0 && targetPlayer.deathSound > 0) {
+            playSound(targetPlayer.deathSound);
+          }
+
+          damagePopups.push({
+            actor: targetPlayer,
+            value: dmg,
+            isPlayer: true,
+            startTime: Date.now()
+          });
+
+          targetPlayer.x = targetOrigX;
+          targetPlayer.y = targetOrigY;
+          restorePlayerFrame(targetPlayer);
+
+          // 物理攻击受击醒来（解除昏睡）
+          const roleTargetObj = state.roles[targetPlayer.index];
+          if (roleTargetObj && roleTargetObj.status && roleTargetObj.status[2] > 0) {
+            delete roleTargetObj.status[2];
+            console.log(`[Status] 队友 ${targetPlayer.name} 受物理攻击，昏睡状态解除`);
+          }
+
+          player.x = player.origX !== undefined ? player.origX : origX;
+          player.y = player.origY !== undefined ? player.origY : origY;
+          restorePlayerFrame(player);
+          draw();
+          await sleep(400);
+
+          await checkPlayerInjury(targetPlayer, originalHp);
+        } else {
+          // 若无活着队友，不行动
+          player.currentFrame = 0;
+          draw();
+          await sleep(200);
+        }
+      } else if (act && act.type === 'attack') {
         let targetIdx = act.target;
         if (enemies[targetIdx].hp <= 0) {
           // 目标已被击杀，顺延切换到下一个活着敌人
@@ -1580,6 +1844,31 @@ async function runActionPhase() {
       // 如果在此期间敌人死亡或战斗结束（比如脚本内杀死了敌人/结束了战斗），则跳过
       if (enemy.hp <= 0 || checkBattleEnd()) continue;
 
+      // 检查定身（ID=1）或昏睡（ID=2）状态
+      if (enemy.status && (enemy.status[1] > 0 || enemy.status[2] > 0)) {
+        console.log(`[Status] 敌人 #${actor.index} 处于定身/昏睡状态，无法行动`);
+        continue;
+      }
+
+      // 检查混乱状态（ID=0）
+      if (enemy.status && enemy.status[0] > 0) {
+        const aliveEnemyIdxs = [];
+        enemies.forEach((e, eIdx) => {
+          if (eIdx !== actor.index && e.hp > 0) {
+            aliveEnemyIdxs.push(eIdx);
+          }
+        });
+
+        if (aliveEnemyIdxs.length > 0) {
+          const targetEnemyIdx = aliveEnemyIdxs[Math.floor(Math.random() * aliveEnemyIdxs.length)];
+          console.log(`[Status] 敌人 #${actor.index} 处于混乱状态，物理攻击其队友敌人 #${targetEnemyIdx}`);
+          await playEnemyAttackEnemy(actor.index, targetEnemyIdx);
+        } else {
+          console.log(`[Status] 敌人 #${actor.index} 处于混乱状态，但无活着的队友`);
+        }
+        continue;
+      }
+
       // 敌方攻击：随机挑一个活着我方成员作为目标
       const alivePlayerIdxs = [];
       players.forEach((p, pIdx) => {
@@ -1595,6 +1884,37 @@ async function runActionPhase() {
 
   // 行动阶段后，判定本回合战斗是否结束
   if (!checkBattleEnd()) {
+    // 递减主角异常状态剩余回合数
+    players.forEach(p => {
+      if (p.hp > 0) {
+        const role = state.roles[p.index];
+        if (role && role.status) {
+          Object.keys(role.status).forEach(statusId => {
+            if (role.status[statusId] > 0) {
+              role.status[statusId]--;
+              if (role.status[statusId] <= 0) {
+                delete role.status[statusId];
+              }
+            }
+          });
+        }
+      }
+    });
+
+    // 递减敌人异常状态剩余回合数
+    enemies.forEach(e => {
+      if (e.hp > 0 && e.status) {
+        Object.keys(e.status).forEach(statusId => {
+          if (e.status[statusId] > 0) {
+            e.status[statusId]--;
+            if (e.status[statusId] <= 0) {
+              delete e.status[statusId];
+            }
+          }
+        });
+      }
+    });
+
     // 运行回合开始脚本
     for (let i = 0; i < enemies.length; i++) {
       const enemy = enemies[i];
@@ -1609,14 +1929,35 @@ async function runActionPhase() {
     selectedAction = 0;
     menuState = 'main';
     
-    activePlayerIndex = players.findIndex(p => p.hp > 0);
-    if (activePlayerIndex === -1) {
-      activePlayerIndex = 0;
-    }
-    
     players.forEach(p => {
-      p.action = null;
+      if (p.hp > 0) {
+        const role = state.roles[p.index];
+        if (role && role.status) {
+          if (role.status[0] > 0) {
+            p.action = { type: 'confused' };
+          } else if (role.status[1] > 0 || role.status[2] > 0) {
+            p.action = { type: 'pass' };
+          } else {
+            p.action = null;
+          }
+        } else {
+          p.action = null;
+        }
+      } else {
+        p.action = null;
+      }
     });
+
+    activePlayerIndex = players.findIndex(p => isPlayerControllable(p));
+    if (activePlayerIndex === -1) {
+      const hasAlive = players.some(p => p.hp > 0);
+      if (hasAlive) {
+        runActionPhase();
+        return;
+      } else {
+        activePlayerIndex = 0;
+      }
+    }
 
     turn++;
 
@@ -1832,6 +2173,12 @@ async function playPlayerAttack(playerIdx, enemyIdx) {
   await sleep(150);
 
   enemy.hp = Math.max(0, enemy.hp - dmg);
+
+  // 物理受击醒来（清除昏睡状态 ID 2）
+  if (enemy.status && enemy.status[2] > 0) {
+    delete enemy.status[2];
+    console.log(`[Status] 敌人 ${enemy.name || enemyIdx} 受物理普通攻击，昏睡状态解除`);
+  }
 
   // 触发伤害数额浮动字样
   damagePopups.push({
@@ -2126,6 +2473,13 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
   await sleep(150);
 
   player.hp = Math.max(0, player.hp - dmg);
+
+  // 物理受击醒来（清除昏睡状态 ID 2）
+  const roleObj = state.roles[player.index];
+  if (roleObj && roleObj.status && roleObj.status[2] > 0) {
+    delete roleObj.status[2];
+    console.log(`[Status] 角色 ${player.name} 受物理普通攻击，昏睡状态解除`);
+  }
 
   // 同步削减全局角色状态中的 HP，以便大地图和存档顺利响应
   const roleStats = state.roles[player.index];
@@ -3202,4 +3556,111 @@ async function handleMagicAction(player, actor, act) {
   player.y = origY;
   restorePlayerFrame(player);
   draw();
+}
+
+// 混乱状态下敌方物理攻击己方目标（其它活着的敌人）
+async function playEnemyAttackEnemy(enemyIdx, targetEnemyIdx) {
+  const enemy = enemies[enemyIdx];
+  const targetEnemy = enemies[targetEnemyIdx];
+
+  const origX = enemy.x;
+  const origY = enemy.y;
+  enemy.isActing = true;
+
+  // 播放敌方普通物理攻击叫喊音效
+  if (enemy.attackSound > 0) {
+    playSound(enemy.attackSound);
+  }
+
+  // 1. 播放物理攻击扑击前斜移动作
+  for (let i = 0; i < 3; i++) {
+    enemy.x -= 2;
+    enemy.y -= 1;
+    draw();
+    await sleep(80);
+  }
+
+  if (enemy.wActionSound > 0) {
+    playSound(enemy.wActionSound);
+  }
+  await sleep(80);
+
+  // 2. 敌人瞬移到目标敌人面前，并播放物理攻击姿态动作帧
+  enemy.x = targetEnemy.x + 30;
+  enemy.y = targetEnemy.y + 10;
+
+  if (enemy.wAttackFrames === 0) {
+    enemy.currentFrame = enemy.maxIdleFrames - 1;
+    draw();
+    await sleep(160);
+  } else {
+    for (let i = 0; i <= enemy.wAttackFrames; i++) {
+      enemy.currentFrame = enemy.maxIdleFrames + i - 1;
+      draw();
+      await sleep(Math.max(1, enemy.wActWaitFrames) * 80);
+    }
+  }
+
+  // 计算物理基础伤害
+  const enemyLevel = enemy.level || 1;
+  let str = enemy.attackStrength;
+  str += (enemyLevel + 6) * 6;
+  if (str < 0) {
+    str = 0;
+  }
+
+  let def = targetEnemy.defense;
+  const finalStr = str + Math.floor(Math.random() * 3);
+  let baseDmg = calcBaseDamage(finalStr, def);
+  let dmg = Math.floor(baseDmg / 2);
+  dmg += Math.floor(Math.random() * 2);
+
+  if (dmg < 1) dmg = 1;
+
+  // 记录被击中怪物原位置，用于受击击退抖动
+  const targetOrigX = targetEnemy.x;
+  const targetOrigY = targetEnemy.y;
+
+  // 怪物被攻击，执行击退退后一格动画
+  targetEnemy.x -= 8;
+  targetEnemy.y -= 4;
+  draw();
+  await sleep(80);
+
+  targetEnemy.x -= 2;
+  targetEnemy.y -= 1;
+  draw();
+  await sleep(150);
+
+  targetEnemy.hp = Math.max(0, targetEnemy.hp - dmg);
+
+  if (targetEnemy.hp <= 0 && targetEnemy.deathSound > 0) {
+    playSound(targetEnemy.deathSound);
+  }
+
+  // 物理受击醒来（清除昏睡状态 ID 2）
+  if (targetEnemy.status && targetEnemy.status[2] > 0) {
+    delete targetEnemy.status[2];
+    console.log(`[Status] 敌人 ${targetEnemy.name || targetEnemyIdx} 受队友物理攻击，昏睡状态解除`);
+  }
+
+  damagePopups.push({
+    actor: targetEnemy,
+    value: dmg,
+    isPlayer: false,
+    startTime: Date.now()
+  });
+
+  // 目标怪物弹回原位置
+  targetEnemy.x = targetOrigX;
+  targetEnemy.y = targetOrigY;
+
+  // 还原攻击者
+  enemy.x = origX;
+  enemy.y = origY;
+  enemy.isActing = false;
+  enemy.currentFrame = 0;
+
+  draw();
+  await sleep(400);
 }
