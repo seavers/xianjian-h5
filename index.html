@@ -568,12 +568,13 @@
 		}
 
 		.ins-table {
-			display: grid;
-			grid-template-columns: repeat(3, 1fr); /* 3列极密表格排布 20 项数据 */
+			display: flex;
+			flex-wrap: wrap;
 			gap: 2px;
 		}
 
 		.ins-field {
+			width: 150px;
 			background: rgba(255,255,255,0.01);
 			padding: 1px 3px;
 			display: flex;

@@ -1258,7 +1258,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                     <span style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.25)' }}>${inspectorInfo.ballId}</span>
                   </div>
                   <div class="ins-header" style=${{ fontSize: '9px', fontWeight: 'bold', color: 'var(--glow-yellow)', marginBottom: '6px', marginRight: '15px' }}>${inspectorInfo.title}</div>
-                  <div class="ins-table" style=${{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1px 6px', fontSize: '8px', maxHeight: '110px', overflowY: 'auto' }}>
+                  <div class="ins-table" style=${{ display: 'flex', gap: '1px 6px', fontSize: '8px', maxHeight: '110px', overflowY: 'auto' }}>
                     ${inspectorInfo.fields.map((field, idx) => html`
                       <div key=${idx} class="ins-field" style=${{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dotted rgba(255,255,255,0.02)', padding: '1px 0' }}>
                         <span style=${{ color: 'rgba(255,255,255,0.3)' }}>${field.label}</span>
