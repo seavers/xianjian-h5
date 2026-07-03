@@ -1116,7 +1116,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
           <!-- 横栏二：主角 24 项多维矩阵 -->
           <div class="panel-row" style=${{ display: 'block' }}>
             <div class="panel-col" style=${{ border: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.01)', borderRadius: '2px', padding: '6px 8px' }}>
-              <div class="section-header" style=${{ fontSize: '9px', fontWeight: 'bold', marginBottom: '5px' }}>👥 主角团实时状态矩阵 (Hero Attributes)</div>
+              <div class="section-header" style=${{ fontSize: '9px', fontWeight: 'bold', marginBottom: '5px' }}>👥 主角团实时状态矩阵</div>
               
               <!-- 6人选择卡片 Tabs -->
               <div class="hero-tabs" style=${{ display: 'flex', gap: '4px', marginBottom: '6px', overflowX: 'auto' }}>
@@ -1189,21 +1189,21 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">最大 HP</span><span class="hero-attr-val">${heroMaxHp}</span></div>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">当前 MP</span><span class="hero-attr-val" style=${{ color: 'var(--glow-blue)' }}>${heroMp}</span></div>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">最大 MP</span><span class="hero-attr-val">${heroMaxMp}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">武术 attackStrength</span><span class="hero-attr-val" style=${{ color: 'var(--glow-green)' }}>${heroAtk}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">防御 defense</span><span class="hero-attr-val" style=${{ color: 'var(--glow-blue)' }}>${heroDef}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">身法 dexterity</span><span class="hero-attr-val">${heroSpd}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">吉运 fleeRate</span><span class="hero-attr-val">${heroLck}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">灵力 magicStrength</span><span class="hero-attr-val">${heroMag}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">避 毒 Poi</span><span class="hero-attr-val">${heroPoi}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">火抗 RES</span><span class="hero-attr-val">${heroRes.fire}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">雷抗 RES</span><span class="hero-attr-val">${heroRes.thunder}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">水抗 RES</span><span class="hero-attr-val">${heroRes.water}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">风抗 RES</span><span class="hero-attr-val">${heroRes.wind}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">土抗 RES</span><span class="hero-attr-val">${heroRes.earth}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">朝 向 Dir</span><span class="hero-attr-val">${heroDirText}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">层级 Layer</span><span class="hero-attr-val">${heroLayer}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">武术</span><span class="hero-attr-val" style=${{ color: 'var(--glow-green)' }}>${heroAtk}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">防御</span><span class="hero-attr-val" style=${{ color: 'var(--glow-blue)' }}>${heroDef}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">身法</span><span class="hero-attr-val">${heroSpd}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">吉运</span><span class="hero-attr-val">${heroLck}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">灵力</span><span class="hero-attr-val">${heroMag}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">避 毒</span><span class="hero-attr-val">${heroPoi}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">火抗</span><span class="hero-attr-val">${heroRes.fire}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">雷抗</span><span class="hero-attr-val">${heroRes.thunder}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">水抗</span><span class="hero-attr-val">${heroRes.water}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">风抗</span><span class="hero-attr-val">${heroRes.wind}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">土抗</span><span class="hero-attr-val">${heroRes.earth}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">朝 向</span><span class="hero-attr-val">${heroDirText}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">层级</span><span class="hero-attr-val">${heroLayer}</span></div>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">当前钱资</span><span class="hero-attr-val" style=${{ color: 'var(--glow-yellow)' }}>${heroGoldText}</span></div>
-                  <div class="hero-attr-chip"><span class="hero-attr-lbl">经验 Exp</span><span class="hero-attr-val" style=${{ color: 'var(--glow-blue)' }}>${heroExp}</span></div>
+                  <div class="hero-attr-chip"><span class="hero-attr-lbl">经验</span><span class="hero-attr-val" style=${{ color: 'var(--glow-blue)' }}>${heroExp}</span></div>
                   <div class="hero-attr-chip"><span class="hero-attr-lbl">下级所需</span><span class="hero-attr-val">${heroNext}</span></div>
                   <div class="hero-attr-chip" style=${{ gridColumn: 'span 2' }}><span class="hero-attr-lbl">当前武器</span><span class="hero-attr-val" style=${{ color: 'var(--glow-red)', fontSize: '8px' }}>${heroWp}</span></div>
                   <div class="hero-attr-chip" style=${{ gridColumn: 'span 2' }}><span class="hero-attr-lbl">当前防具</span><span class="hero-attr-val" style=${{ fontSize: '8px' }}>${heroAr}</span></div>
