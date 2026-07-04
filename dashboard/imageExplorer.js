@@ -271,64 +271,35 @@ function LazyWordItemCard({ wordId, labelText, loaderModule, palResources }) {
 
 // 3. 原生剧情文本行渲染组件 (msg.mkf)
 function MsgItemCard({ msgId, labelText, palResources }) {
-  const canvasRef = useRef(null);
-  const [emptyText, setEmptyText] = useState('');
+  const [textStr, setTextStr] = useState('加载中...');
 
-  // 渲染剧情富文本点阵拼接与字色控制解析
+  // 渲染剧情文本直接转码并进行简体字转化呈现，不采用底层 Canvas 绘制
   useEffect(() => {
-    if (!canvasRef.current || !palResources) return;
+    if (!palResources) return;
 
     try {
       const text = palResources.loadMsg(msgId);
       if (text && text.length > 0) {
-        const r = [];
-        let color = null;
-
+        const bytes = [];
         for (let i = 0; i < text.length; i++) {
           const b = text.getByte(i);
-          if (b === 34) {
-            color = color === 0xFCDC84 ? null : 0xFCDC84;
-          } else if (b === 45) {
-            color = color === 0xFFFF00 ? null : 0xFFFF00;
-          } else if (b === 39) {
-            color = color === 0x0000FF ? null : 0x0000FF;
-          } else {
-            r.push({
-              charCode: text.getShort(i++),
-              color: color
-            });
+          // 排除仙剑原版用作文字高亮的特殊颜色控制字节，取得纯净的文本数据流
+          if (b === 34 || b === 45 || b === 39) {
+            continue;
           }
+          bytes.push(b);
         }
-
-        if (r.length > 0) {
-          const canvas = canvasRef.current;
-          canvas.width = r.length * 16;
-          canvas.height = 16;
-          canvas.style.setProperty('--raw-width', `${canvas.width}px`);
-          canvas.style.setProperty('--raw-height', '16px');
-          canvas.style.background = 'rgba(0,0,0,0.4)';
-          canvas.style.borderRadius = '1px';
-          canvas.style.display = 'block';
-
-          const ctx = canvas.getContext('2d');
-          ctx.imageSmoothingEnabled = false;
-
-          for (let j = 0; j < r.length; j++) {
-            const wordImg = r[j].color ? palResources.loadWord(r[j].charCode, r[j].color) : palResources.loadWord(r[j].charCode);
-            if (wordImg) {
-              ctx.drawImage(wordImg, j * 16, 0);
-            }
-          }
-          setEmptyText('');
-        } else {
-          setEmptyText('[控制字符或空指令]');
-        }
+        
+        // 采用 JavaScript 原生 TextDecoder 还原 Big5 并转换为简体
+        const decoded = new TextDecoder('big5').decode(new Uint8Array(bytes)).trim();
+        const simplifiedFn = window.toSimplifiedFn;
+        setTextStr(simplifiedFn ? simplifiedFn(decoded) : decoded);
       } else {
-        setEmptyText('[空文本]');
+        setTextStr('[空文本]');
       }
     } catch (e) {
-      console.error(`绘制剧本文本 MSG #${msgId} 失败:`, e);
-      setEmptyText('[解析/绘制失败]');
+      console.error(`解析剧本文本 MSG #${msgId} 失败:`, e);
+      setTextStr('[解析失败]');
     }
   }, [msgId, palResources]);
 
@@ -348,19 +319,32 @@ function MsgItemCard({ msgId, labelText, palResources }) {
         borderRadius: '2px',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         justifyContent: 'center',
         padding: '8px',
         transition: 'all 0.1s',
-        maxWidth: 'calc(330px * var(--image-explorer-scale))',
-        overflow: 'hidden',
+        minWidth: '100px',
+        minHeight: '70px',
         boxSizing: 'border-box'
       }}
     >
-      ${emptyText ? html`<span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.15)' }}>${labelText}\n${emptyText}</span>` : html`
-        <canvas ref=${canvasRef} />
-        <span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', fontWeight: 'bold', marginTop: '4px' }}>${labelText}</span>
-      `}
+      <div style=${{ 
+        color: '#fff', 
+        fontSize: '11px', 
+        textAlign: 'center',
+        marginBottom: '6px',
+        wordBreak: 'break-all',
+        whiteSpace: 'normal',
+        padding: '0 4px',
+        lineHeight: '1.4'
+      }}>${textStr}</div>
+      <span style=${{
+        fontSize: '7.5px',
+        color: 'rgba(255,255,255,0.3)',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        lineHeight: 1.2
+      }}>${labelText}</span>
     </div>
   `;
 }
@@ -704,7 +688,7 @@ function MusicItemCard({ musicId, labelText, musicModule, activePlayingId, setAc
 }
 
 // 6. 游戏技能与状态音效播放控制组件
-function SoundItemCard({ soundId, labelText, soundModule }) {
+function SoundItemCard({ soundId, labelText, soundModule, mkfName }) {
   const isMuteBtn = soundId === 0;
 
   const handlePlay = async () => {
@@ -712,18 +696,21 @@ function SoundItemCard({ soundId, labelText, soundModule }) {
     if (isMuteBtn) {
       soundModule.stopAllSounds();
     } else {
-      await soundModule.playSound(soundId);
+      // 优先调用 playSoundFromMkf 精准定包播放
+      if (soundModule.playSoundFromMkf) {
+        await soundModule.playSoundFromMkf(mkfName, soundId);
+      } else {
+        await soundModule.playSound(soundId);
+      }
     }
   };
 
   const handleDownload = () => {
     if (!soundModule) return;
-    const vocMkf = soundModule.getVocMkf();
-    const soundsMkf = soundModule.getSoundsMkf();
-    const mkf = vocMkf || soundsMkf;
+    const mkf = mkfName === 'sounds.mkf' ? soundModule.getSoundsMkf() : soundModule.getVocMkf();
 
     if (!mkf) {
-      alert("当前环境未检测到 voc.mkf / sounds.mkf 归档文件。");
+      alert(`当前环境未检测到 ${mkfName || 'voc.mkf / sounds.mkf'} 归档文件。`);
       return;
     }
 
@@ -813,7 +800,7 @@ function SoundItemCard({ soundId, labelText, soundModule }) {
             textAlign: 'center'
           }}
         >
-          📥 下载 VOC
+          📥 下载 音频
         </button>
       `}
     </div>
@@ -997,11 +984,12 @@ function ImageExplorerApp() {
       } else if (currentType === 'music') {
         const musMkf = music.getMusMkf();
         total = musMkf ? (Math.floor(musMkf.getInt(0) / 4) - 1) : 100;
+      } else if (currentType === 'sounds') {
+        const soundsMkf = sound.getSoundsMkf();
+        total = soundsMkf ? (Math.floor(soundsMkf.getInt(0) / 4) - 1) : 250;
       } else if (currentType === 'sound') {
         const vocMkf = sound.getVocMkf();
-        const soundsMkf = sound.getSoundsMkf();
-        const mkf = vocMkf || soundsMkf;
-        total = mkf ? (Math.floor(mkf.getInt(0) / 4) - 1) : 250;
+        total = vocMkf ? (Math.floor(vocMkf.getInt(0) / 4) - 1) : 250;
       } else if (currentType === 'palette') {
         total = 256;
       }
@@ -1314,8 +1302,10 @@ function ImageExplorerApp() {
         items.push(html`<${LazyRngItemCard} key=${i} rngId=${i} labelText=${`RNG #${i}`} loaderModule=${loader} palResources=${pal} rngModule=${rng} onZoom=${(id, lbl) => window.openRngPlayer(id, lbl)} activePlayingId=${activePlayingId} setActivePlayingId=${setActivePlayingId} />`);
       } else if (currentType === 'music') {
         items.push(html`<${MusicItemCard} key=${i} musicId=${i} labelText=${`BGM #${i}`} musicModule=${music} activePlayingId=${activePlayingId} setActivePlayingId=${setActivePlayingId} />`);
+      } else if (currentType === 'sounds') {
+        items.push(html`<${SoundItemCard} key=${i} soundId=${i} labelText=${`SYS #${i}`} soundModule=${sound} mkfName="sounds.mkf" />`);
       } else if (currentType === 'sound') {
-        items.push(html`<${SoundItemCard} key=${i} soundId=${i} labelText=${`SFX #${i}`} soundModule=${sound} />`);
+        items.push(html`<${SoundItemCard} key=${i} soundId=${i} labelText=${`SFX #${i}`} soundModule=${sound} mkfName="voc.mkf" />`);
       } else if (currentType === 'palette') {
         const colorVal = palette ? palette[i] : 0;
         items.push(html`<${PaletteItemCard} key=${i} index=${i} colorInt=${colorVal} />`);
@@ -1360,6 +1350,7 @@ function ImageExplorerApp() {
           <button class=${`btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact ${currentType === 'word' ? 'active' : ''}`} onClick=${() => handleTypeChange('word')}>短语资源 (word.dat)</button>
           <button class=${`btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact ${currentType === 'rng' ? 'active' : ''}`} onClick=${() => handleTypeChange('rng')}>全屏动画 (rng.mkf)</button>
           <button class=${`btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact ${currentType === 'music' ? 'active' : ''}`} onClick=${() => handleTypeChange('music')}>背景音乐 (mus.mkf)</button>
+          <button class=${`btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact ${currentType === 'sounds' ? 'active' : ''}`} onClick=${() => handleTypeChange('sounds')} style=${{ '--tab-accent': 'var(--glow-blue)' }}>系统音效 (sounds.mkf)</button>
           <button class=${`btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact ${currentType === 'sound' ? 'active' : ''}`} onClick=${() => handleTypeChange('sound')}>游戏音效 (voc.mkf)</button>
           <button class=${`btn-dbg image-tab-btn tool-modal-tab-btn tool-modal-tab-btn--compact ${currentType === 'palette' ? 'active' : ''}`} onClick=${() => handleTypeChange('palette')} style=${{ '--tab-accent': 'var(--glow-yellow)' }}>游戏调色板 (palette)</button>
         </div>

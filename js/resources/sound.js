@@ -39,7 +39,7 @@ async function loadMkfFile(filename) {
 // 初始化音频包，确保 voc.mkf 与 sounds.mkf 加载完成
 export async function initSound() {
   if (!vocMkf) vocMkf = await loadMkfFile('voc.mkf');
-  // if (!soundsMkf) soundsMkf = await loadMkfFile('sounds.mkf');
+  if (!soundsMkf) soundsMkf = await loadMkfFile('sounds.mkf');
 }
 
 export function getVocMkf() { return vocMkf; }
@@ -234,5 +234,48 @@ export async function playSound(soundId, loop = false) {
     }
   } catch (e) {
     console.error(`[Sound] 播放特技音效 ID: ${soundId} 发生错误:`, e);
+  }
+}
+
+// 显式指定音频包播放音效，用于在控制台音效列表精准试听
+export async function playSoundFromMkf(mkfName, soundId, loop = false) {
+  if (soundId <= 0) return;
+  if (localStorage.getItem('sound_enabled') === 'false') {
+    return;
+  }
+  await initSound();
+
+  let mkf = null;
+  if (mkfName === 'sounds.mkf') {
+    mkf = soundsMkf;
+  } else if (mkfName === 'voc.mkf') {
+    mkf = vocMkf;
+  }
+
+  if (!mkf) {
+    console.warn(`[Sound] 音频归档包 ${mkfName} 未加载`);
+    return;
+  }
+
+  const chunk = getMkfChunk(mkf, soundId);
+  if (!chunk) {
+    console.warn(`[Sound] 未能在归档包 ${mkfName} 中找到音效 ID: ${soundId}`);
+    return;
+  }
+
+  try {
+    let audioBuffer = null;
+    if (isVoc(chunk)) {
+      audioBuffer = parseVoc(chunk);
+    } else if (isWav(chunk)) {
+      const ctx = getAudioContext();
+      audioBuffer = await ctx.decodeAudioData(toArrayBuffer(chunk));
+    }
+
+    if (audioBuffer) {
+      playSoundBuffer(audioBuffer, loop);
+    }
+  } catch (e) {
+    console.error(`[Sound] 播放归档包 ${mkfName} 音效 ID: ${soundId} 发生错误:`, e);
   }
 }

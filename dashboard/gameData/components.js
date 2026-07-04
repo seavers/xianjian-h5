@@ -6,6 +6,7 @@ import { getDetailedItemInfo } from '../../js/data/gameData/items.js';
 import { getCommandName, getInstructionChineseDetail } from '../../js/data/gameData/scripts.js';
 import { getRoleName, getItemNameHtml, makeScriptHyperlinks } from './helpers.js';
 import { scriptCodes } from '../../js/engine/command.js';
+import { loadMkf } from '../../js/resources/loader.js';
 
 const { useState, useEffect, useRef, useMemo } = React;
 
@@ -769,6 +770,332 @@ function SceneTabComponent({ selectedSceneId, setSelectedSceneId, jumpToScript, 
   `;
 }
 
+// 🛒 Shop Tab 子组件
+function ShopTabComponent({ jumpToItem }) {
+  const [selectedShopId, setSelectedShopId] = useState(0);
+
+  // 解析并缓存商店数据
+  const stores = useMemo(() => {
+    let s = state.stores;
+    if (!s || s.length === 0) {
+      try {
+        const data = loadMkf('data.mkf', 0);
+        if (data) {
+          const view = data.toDataView();
+          const num = data.length / 18;
+          s = [];
+          for (let i = 0; i < num; i++) {
+            const items = [];
+            for (let j = 0; j < 9; j++) {
+              const itemId = view.nextShort();
+              if (itemId !== 0) {
+                items.push(itemId);
+              }
+            }
+            s.push(items);
+          }
+          state.stores = s;
+        }
+      } catch (e) {
+        console.error('加载商店配置数据出错:', e);
+      }
+    }
+    return s || [];
+  }, []);
+
+  const shopItems = useMemo(() => {
+    return stores[selectedShopId] || [];
+  }, [stores, selectedShopId]);
+
+  // 根据所售商品的大致倾向生成一个直白的店名注释，提升调试直观感
+  const getShopComment = (itemsList) => {
+    if (itemsList.length === 0) return '空无一物';
+    const names = itemsList.slice(0, 3).map(id => getItemNameHtml(id));
+    return names.join('/') + (itemsList.length > 3 ? '...' : '');
+  };
+
+  return html`
+    <div class="gamedata-sidebar" style=${{ flex: '0 0 280px' }}>
+      <div class="gamedata-sidebar-header">
+        <span class="gamedata-sidebar-title">🛒 游戏商店列表 (共 ${stores.length} 个)</span>
+      </div>
+      <div class="gamedata-sidebar-list">
+        ${stores.map((itemsList, idx) => {
+          const isSelected = selectedShopId === idx;
+          const comment = getShopComment(itemsList);
+          return html`
+            <div 
+              key=${idx} 
+              onClick=${() => setSelectedShopId(idx)} 
+              class=${`gamedata-list-item ${isSelected ? 'is-selected' : ''}`}
+            >
+              <div class="gamedata-list-item-row" style=${{ flexDirection: 'column', alignItems: 'flex-start', gap: '3px' }}>
+                <div style=${{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                  <span class="gamedata-list-item-title" style=${{ fontWeight: 'bold' }}>商店 #${idx}</span>
+                  <span class="gamedata-list-item-meta" style=${{ color: 'var(--glow-yellow)' }}>${itemsList.length} 种货物</span>
+                </div>
+                <div style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.3)', width: '100%', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                  常售: ${comment}
+                </div>
+              </div>
+            </div>
+          `;
+        })}
+      </div>
+    </div>
+
+    <div class="gamedata-detail">
+      <div class="gamedata-detail-header">
+        <div class="gamedata-detail-header-main">
+          <h2 class="gamedata-detail-title" style=${{ fontSize: '12px' }}>商店 #${selectedShopId} 货架详情</h2>
+          <span class="gamedata-detail-badge" style=${{ background: 'rgba(0, 225, 255, 0.15)', color: 'var(--glow-blue)', borderColor: 'var(--glow-blue)' }}>实时配置</span>
+        </div>
+        <div class="gamedata-detail-meta">数据来源: <span style=${{ color: 'var(--glow-yellow)' }}>data.mkf #0</span></div>
+      </div>
+
+      <div class="gamedata-scroll-panel" style=${{ padding: '12px', flex: 1, overflowY: 'auto' }}>
+        <div class="gamedata-section-title">在售商品名录 (点击名称穿梭至物品详情)</div>
+        <div style=${{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.02)', borderRadius: '2px', padding: '6px' }}>
+          <table style=${{ width: '100%', borderCollapse: 'collapse', fontSize: '9.5px', textAlign: 'left' }}>
+            <thead>
+              <tr style=${{ borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)' }}>
+                <th style=${{ padding: '6px 4px' }}>物品 ID</th>
+                <th style=${{ padding: '6px 4px' }}>商品名称</th>
+                <th style=${{ padding: '6px 4px' }}>商品类型</th>
+                <th style=${{ padding: '6px 4px' }}>商店售价</th>
+                <th style=${{ padding: '6px 4px' }}>回购折旧</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${shopItems.length === 0 ? html`
+                <tr>
+                  <td colSpan="5" style=${{ textAlign: 'center', padding: '12px', color: 'rgba(255,255,255,0.2)' }}>这家店目前不卖任何东西</td>
+                </tr>
+              ` : shopItems.map(itemId => {
+                const itemInfo = getDetailedItemInfo(itemId);
+                return html`
+                  <tr key=${itemId} style=${{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                    <td style=${{ padding: '6px 4px', fontFamily: 'monospace', color: 'rgba(255,255,255,0.3)' }}>#${itemId}</td>
+                    <td style=${{ padding: '6px 4px' }}>
+                      <span 
+                        onClick=${() => jumpToItem(itemId)}
+                        style=${{ color: 'var(--glow-yellow)', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold' }}
+                      >
+                        ${getItemNameHtml(itemId)}
+                      </span>
+                    </td>
+                    <td style=${{ padding: '6px 4px', color: 'rgba(255,255,255,0.5)' }}>${itemInfo.type}</td>
+                    <td style=${{ padding: '6px 4px', color: 'var(--glow-green)' }}>${itemInfo.buy}</td>
+                    <td style=${{ padding: '6px 4px', color: '#ff5777' }}>${itemInfo.sell}</td>
+                  </tr>
+                `;
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 📈 Growth Tab 子组件
+function GrowthTabComponent({ jumpToItem }) {
+  const [selectedRoleId, setSelectedRoleId] = useState(0);
+
+  const roleNames = ['李逍遥', '赵灵儿', '林月如', '巫后', '阿奴', '盖罗娇'];
+  const equipPartLabels = ['头顶饰件 (Helmet)', '身体防具 (Armor)', '手握兵器 (Weapon)', '御风披风 (Cloak)', '脚穿便鞋 (Shoes)', '随身佩饰 (Ring)'];
+
+  // 从全局 state.roles 获取已载入的角色属性配置
+  const role = useMemo(() => {
+    return state.roles[selectedRoleId] || {};
+  }, [selectedRoleId]);
+
+  const handlePlaySound = (soundId) => {
+    // 动态获取全局 sound 模块，支持在线测试属性音效播放
+    const soundModule = window.soundModule || state.soundModule;
+    if (soundModule && typeof soundModule.playSound === 'function') {
+      soundModule.playSound(soundId);
+    } else {
+      // 降级使用原生 playSound 播放
+      import('../../js/resources/sound.js').then(module => {
+        module.playSound(soundId);
+      });
+    }
+  };
+
+  return html`
+    <div class="gamedata-sidebar" style=${{ flex: '0 0 240px' }}>
+      <div class="gamedata-sidebar-header">
+        <span class="gamedata-sidebar-title">📈 主角团成员列表</span>
+      </div>
+      <div class="gamedata-sidebar-list">
+        ${roleNames.map((name, idx) => {
+          const isSelected = selectedRoleId === idx;
+          const r = state.roles[idx] || {};
+          return html`
+            <div 
+              key=${idx} 
+              onClick=${() => setSelectedRoleId(idx)} 
+              class=${`gamedata-list-item ${isSelected ? 'is-selected' : ''}`}
+            >
+              <div class="gamedata-list-item-row">
+                <span class="gamedata-list-item-title">${name}</span>
+                <span class="gamedata-list-item-meta">LV ${r.level || 1}</span>
+              </div>
+            </div>
+          `;
+        })}
+      </div>
+    </div>
+
+    <div class="gamedata-detail" style=${{ display: 'flex', flexDirection: 'column' }}>
+      <div class="gamedata-detail-header">
+        <div class="gamedata-detail-header-main">
+          <h2 class="gamedata-detail-title" style=${{ fontSize: '12px' }}>${roleNames[selectedRoleId]} 默认初始属性与战斗音效表</h2>
+          <span class="gamedata-detail-badge" style=${{ background: 'rgba(255, 208, 0, 0.15)', color: 'var(--glow-yellow)', borderColor: 'var(--glow-yellow)' }}>初登场配置</span>
+        </div>
+        <div class="gamedata-detail-meta">数据来源: <span style=${{ color: 'var(--glow-yellow)' }}>data.mkf #3</span></div>
+      </div>
+
+      <div class="gamedata-scroll-panel" style=${{ padding: '12px', flex: 1, overflowY: 'auto' }}>
+        <!-- 基础战力数据网格 -->
+        <div>
+          <div class="gamedata-section-title">默认属性参数</div>
+          <div class="gamedata-stat-grid" style=${{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+            <div class="gamedata-stat-card"><div class="gamedata-stat-label">初始等级</div><div class="gamedata-stat-value" style=${{ color: 'var(--glow-yellow)' }}>${role.level}</div></div>
+            <div class="gamedata-stat-card"><div class="gamedata-stat-label">初始最大生命 (HP)</div><div class="gamedata-stat-value" style=${{ color: '#ff5777' }}>${role.maxHp}</div></div>
+            <div class="gamedata-stat-card"><div class="gamedata-stat-label">初始最大法力 (MP)</div><div class="gamedata-stat-value" style=${{ color: '#00d2ff' }}>${role.maxMp}</div></div>
+            <div class="gamedata-stat-card"><div class="gamedata-stat-label">武术 ATK</div><div class="gamedata-stat-value" style=${{ color: '#ffb84d' }}>${role.attackStrength}</div></div>
+            <div class="gamedata-stat-card"><div class="gamedata-stat-label">防御 DEF</div><div class="gamedata-stat-value" style=${{ color: '#66ff66' }}>${role.defense}</div></div>
+            <div class="gamedata-stat-card"><div class="gamedata-stat-label">身法 SPD</div><div class="gamedata-stat-value" style=${{ color: '#00ffcc' }}>${role.dexterity}</div></div>
+            <div class="gamedata-stat-card"><div class="gamedata-stat-label">吉运 LCK</div><div class="gamedata-stat-value" style=${{ color: '#cc66ff' }}>${role.fleeRate}</div></div>
+            <div class="gamedata-stat-card"><div class="gamedata-stat-label">抗毒 PSN</div><div class="gamedata-stat-value" style=${{ color: '#ff66cc' }}>${role.poisonResistance}</div></div>
+          </div>
+        </div>
+
+        <!-- 初始五灵魔法抗性 -->
+        <div style=${{ marginTop: '12px' }}>
+          <div class="gamedata-section-title">五灵魔法抗性参数 (%)</div>
+          <div class="gamedata-block-grid" style=${{ gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
+            <div class="gamedata-block-card"><div class="gamedata-block-label">⚡ 雷 (Thunder)</div><div class="gamedata-block-value" style=${{ color: 'var(--glow-yellow)' }}>${role.elementalResistance?.[0] || 0}%</div></div>
+            <div class="gamedata-block-card"><div class="gamedata-block-label">🍃 风 (Wind)</div><div class="gamedata-block-value" style=${{ color: 'var(--glow-green)' }}>${role.elementalResistance?.[1] || 0}%</div></div>
+            <div class="gamedata-block-card"><div class="gamedata-block-label">🌊 水 (Water)</div><div class="gamedata-block-value" style=${{ color: 'var(--glow-blue)' }}>${role.elementalResistance?.[2] || 0}%</div></div>
+            <div class="gamedata-block-card"><div class="gamedata-block-label">🔥 火 (Fire)</div><div class="gamedata-block-value" style=${{ color: '#ff3b6f' }}>${role.elementalResistance?.[3] || 0}%</div></div>
+            <div class="gamedata-block-card"><div class="gamedata-block-label">🪨 土 (Earth)</div><div class="gamedata-block-value" style=${{ color: '#d2a679' }}>${role.elementalResistance?.[4] || 0}%</div></div>
+          </div>
+        </div>
+
+        <!-- 初始默认装备与绑定武功 -->
+        <div style=${{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '10px', marginTop: '12px' }}>
+          <!-- 装备挂载槽 -->
+          <div>
+            <div class="gamedata-section-title">初登场佩戴装备</div>
+            <div class="gamedata-binding-list">
+              ${equipPartLabels.map((label, partIdx) => {
+                const equipItemId = role.equipments?.[partIdx];
+                return html`
+                  <div class="gamedata-binding-item" key=${partIdx}>
+                    <span class="gamedata-binding-label" style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.4)' }}>${label}</span>
+                    <span class="gamedata-binding-value">
+                      ${equipItemId > 0 ? html`
+                        <span onClick=${() => jumpToItem(equipItemId)} style=${{ color: 'var(--glow-yellow)', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold' }}>
+                          ${getItemNameHtml(equipItemId)}
+                        </span>
+                      ` : html`<span style=${{ color: 'rgba(255,255,255,0.2)' }}>无装备</span>`}
+                    </span>
+                  </div>
+                `;
+              })}
+            </div>
+          </div>
+
+          <!-- 已会法术武功 -->
+          <div>
+            <div class="gamedata-section-title">初登场已会技能 (共 ${role.magics?.length || 0} 门)</div>
+            <div style=${{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '2px', padding: '6px', maxHeight: '170px', overflowY: 'auto' }}>
+              ${!role.magics || role.magics.length === 0 ? html`
+                <div style=${{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', textAlign: 'center', padding: '20px 0' }}>未掌握任何法术</div>
+              ` : html`
+                <div style=${{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                  ${role.magics.map(magicId => {
+                    const name = getItemNameHtml(magicId);
+                    return html`
+                      <div key=${magicId} style=${{ background: 'rgba(255, 215, 0, 0.05)', border: '1px solid rgba(255, 215, 0, 0.1)', borderRadius: '2px', padding: '2px 4px', fontSize: '8.5px', color: '#ffcc66' }}>
+                        ${name} <span style=${{ fontSize: '7px', color: 'rgba(255,255,255,0.25)' }}>#${magicId}</span>
+                      </div>
+                    `;
+                  })}
+                </div>
+              `}
+            </div>
+          </div>
+        </div>
+
+        <!-- 角色特有音频绑定试听 -->
+        <div style=${{ marginTop: '12px' }}>
+          <div class="gamedata-section-title">默认动作与特技音效 (点击 🔊 在线调试播放)</div>
+          <div class="gamedata-stat-grid" style=${{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+            <div class="gamedata-stat-card" style=${{ padding: '5px' }}>
+              <div class="gamedata-stat-label" style=${{ fontSize: '7.5px' }}>⚔ 普攻音效</div>
+              <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                <span style=${{ color: 'var(--glow-yellow)', fontSize: '9.5px', fontWeight: 'bold' }}>#${role.attackSound}</span>
+                ${role.attackSound > 0 && html`
+                  <button class="btn-dbg" onClick=${() => handlePlaySound(role.attackSound)} style=${{ padding: '1px 4px', fontSize: '7px' }}>🔊</button>
+                `}
+              </div>
+            </div>
+            <div class="gamedata-stat-card" style=${{ padding: '5px' }}>
+              <div class="gamedata-stat-label" style=${{ fontSize: '7.5px' }}>💥 暴击音效</div>
+              <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                <span style=${{ color: 'var(--glow-yellow)', fontSize: '9.5px', fontWeight: 'bold' }}>#${role.criticalSound}</span>
+                ${role.criticalSound > 0 && html`
+                  <button class="btn-dbg" onClick=${() => handlePlaySound(role.criticalSound)} style=${{ padding: '1px 4px', fontSize: '7px' }}>🔊</button>
+                `}
+              </div>
+            </div>
+            <div class="gamedata-stat-card" style=${{ padding: '5px' }}>
+              <div class="gamedata-stat-label" style=${{ fontSize: '7.5px' }}>🔮 施法音效</div>
+              <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                <span style=${{ color: 'var(--glow-yellow)', fontSize: '9.5px', fontWeight: 'bold' }}>#${role.magicSound}</span>
+                ${role.magicSound > 0 && html`
+                  <button class="btn-dbg" onClick=${() => handlePlaySound(role.magicSound)} style=${{ padding: '1px 4px', fontSize: '7px' }}>🔊</button>
+                `}
+              </div>
+            </div>
+            <div class="gamedata-stat-card" style=${{ padding: '5px' }}>
+              <div class="gamedata-stat-label" style=${{ fontSize: '7.5px' }}>🛡 援护音效</div>
+              <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                <span style=${{ color: 'var(--glow-yellow)', fontSize: '9.5px', fontWeight: 'bold' }}>#${role.coverSound}</span>
+                ${role.coverSound > 0 && html`
+                  <button class="btn-dbg" onClick=${() => handlePlaySound(role.coverSound)} style=${{ padding: '1px 4px', fontSize: '7px' }}>🔊</button>
+                `}
+              </div>
+            </div>
+            <div class="gamedata-stat-card" style=${{ padding: '5px' }}>
+              <div class="gamedata-stat-label" style=${{ fontSize: '7.5px' }}>🤕 受击音效</div>
+              <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                <span style=${{ color: 'var(--glow-yellow)', fontSize: '9.5px', fontWeight: 'bold' }}>#${role.dyingSound}</span>
+                ${role.dyingSound > 0 && html`
+                  <button class="btn-dbg" onClick=${() => handlePlaySound(role.dyingSound)} style=${{ padding: '1px 4px', fontSize: '7px' }}>🔊</button>
+                `}
+              </div>
+            </div>
+            <div class="gamedata-stat-card" style=${{ padding: '5px' }}>
+              <div class="gamedata-stat-label" style=${{ fontSize: '7.5px' }}>💀 战死音效</div>
+              <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                <span style=${{ color: 'var(--glow-yellow)', fontSize: '9.5px', fontWeight: 'bold' }}>#${role.deathSound}</span>
+                ${role.deathSound > 0 && html`
+                  <button class="btn-dbg" onClick=${() => handlePlaySound(role.deathSound)} style=${{ padding: '1px 4px', fontSize: '7px' }}>🔊</button>
+                `}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 // 📚 GameDataApp 根组件
 export function GameDataApp() {
   const [isOpen, setIsOpen] = useState(false);
@@ -855,12 +1182,19 @@ export function GameDataApp() {
     window.jumpToGameDataNpc(npcId);
   };
 
+  const jumpToItem = (itemId) => {
+    setSelectedItemId(itemId);
+    setActiveTab('item');
+  };
+
   const tabs = [
     { id: 'role', label: '👤 角色信息 (rgm.mkf / mgo.mkf)' },
     { id: 'npc', label: '👾 NPC 信息 (sss.mkf #0)' },
     { id: 'item', label: '🎒 物品资料' },
     { id: 'script', label: '📜 脚本信息 (sss.mkf #4)' },
-    { id: 'scene', label: '🗺️ 场景信息 (sss.mkf #1 / gop.mkf)' }
+    { id: 'scene', label: '🗺️ 场景信息 (sss.mkf #1 / gop.mkf)' },
+    { id: 'shop', label: '🛒 商店货物表 (data.mkf #0)' },
+    { id: 'growth', label: '📈 默认角色属性 (data.mkf #3)' }
   ];
 
   return html`
@@ -906,6 +1240,8 @@ export function GameDataApp() {
           ${activeTab === 'item' && html`<${ItemTabComponent} selectedItemId=${selectedItemId} setSelectedItemId=${setSelectedItemId} jumpToScript=${jumpToScript} />`}
           ${activeTab === 'script' && html`<${ScriptTabComponent} selectedScriptId=${selectedScriptId} setSelectedScriptId=${setSelectedScriptId} />`}
           ${activeTab === 'scene' && html`<${SceneTabComponent} selectedSceneId=${selectedSceneId} setSelectedSceneId=${setSelectedSceneId} jumpToScript=${jumpToScript} jumpToNpc=${jumpToNpc} />`}
+          ${activeTab === 'shop' && html`<${ShopTabComponent} jumpToItem=${jumpToItem} />`}
+          ${activeTab === 'growth' && html`<${GrowthTabComponent} jumpToItem=${jumpToItem} />`}
         </div>
       </div>
     </div>

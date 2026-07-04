@@ -69,12 +69,37 @@ function drawItemBall(itemId) {
   }
 }
 
+function getItemDescText(itemId) {
+  // 从全局 state.desc 词表读取对应物品的未解码 ByteArray
+  const descBytes = state.desc?.[itemId];
+  if (!descBytes) return '<span style="color: rgba(255,255,255,0.25);">暂无物品描述</span>';
+  try {
+    const bytes = [];
+    for (let i = 0; i < descBytes.length; i++) {
+      const b = descBytes.getByte(i);
+      // 将原版的 '*' 换行占位符转化为标准换行
+      if (b === 42) {
+        bytes.push(10);
+        continue;
+      }
+      bytes.push(b);
+    }
+    // 解码 Big5 数据段为繁体文本，并将其转换为简体
+    const decoded = new TextDecoder('big5').decode(new Uint8Array(bytes)).trim();
+    const simplifiedFn = window.toSimplifiedFn;
+    return simplifiedFn ? simplifiedFn(decoded) : decoded;
+  } catch (e) {
+    return '<span style="color: rgba(255,255,255,0.25);">解密描述信息失败</span>';
+  }
+}
+
 function buildItemRightHtml(item) {
   const info = getDetailedItemInfo(item.id);
   const usescrHtml = item.useScr > 0 ? `<span onclick="jumpToGameDataScript(${item.useScr})" style="color: var(--glow-yellow); text-decoration: underline; cursor: pointer; font-weight: bold;">Script #${item.useScr} ➔ 穿梭反解</span>` : '<span style="color: rgba(255,255,255,0.25);">无 (0)</span>';
   const equscrHtml = item.equScr > 0 ? `<span onclick="jumpToGameDataScript(${item.equScr})" style="color: var(--glow-yellow); text-decoration: underline; cursor: pointer; font-weight: bold;">Script #${item.equScr} ➔ 穿梭反解</span>` : '<span style="color: rgba(255,255,255,0.25);">无 (0)</span>';
   const dropscrHtml = item.dropScr > 0 ? `<span onclick="jumpToGameDataScript(${item.dropScr})" style="color: var(--glow-yellow); text-decoration: underline; cursor: pointer; font-weight: bold;">Script #${item.dropScr} ➔ 穿梭反解</span>` : '<span style="color: rgba(255,255,255,0.25);">无 (0)</span>';
   const nameHtml = getItemNameHtml(item.id);
+  const descHtml = getItemDescText(item.id);
   const baseStats = renderStatGrid([
     renderStatCard({ label: '买价价值', value: info.buy, valueColor: 'var(--glow-yellow)' }),
     renderStatCard({ label: '卖价价值', value: info.sell, valueColor: '#ff5777' }),
@@ -107,6 +132,12 @@ function buildItemRightHtml(item) {
         <div style="font-size: 7.5px; color: rgba(255,255,255,0.35); text-align: left; line-height: 1.4; width: 100%;">数据偏移: ${info.offset}<br>物品 Flags: ${info.flags}<br>是否消耗: ${info.consumable}<br>是否丢弃: ${info.throwable || '是'}<br>是否可售: ${info.sellable || '是'}</div>
       </div>
       <div class="gamedata-scroll-panel">
+        <div>
+          ${renderSectionTitle('物品文字描述 (desc.dat)')}
+          <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.03); padding: 8px; border-radius: 2px; font-size: 9.5px; color: #b3d4ff; line-height: 1.5; white-space: pre-wrap; margin-bottom: 12px;">
+            ${descHtml}
+          </div>
+        </div>
         <div>
           ${renderSectionTitle('物品基础属性')}
           ${baseStats}

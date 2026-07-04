@@ -30,12 +30,28 @@ export function getWordImg(wordId, color = 0xFFFFFF) {
   return canvas;
 }
 
-export function getItemNameHtml(itemId) {
-  const canvas = getWordImg(itemId);
-  if (canvas) {
-    return `<img src="${canvas.toDataURL()}" style="height: 20px; image-rendering: pixelated; vertical-align: middle;" />`;
+export function getWordText(wordId) {
+  // 从全局 state.words 获取该词条的 ByteArray 字节流
+  const itemWord = state?.words?.[wordId];
+  if (itemWord) {
+    try {
+      // 提取有效的 Uint8Array 缓冲区段，用于 Big5 文本解码
+      const uint8Array = itemWord.buffer.subarray(itemWord.byteOffset, itemWord.byteOffset + itemWord.length);
+      const decodedStr = new TextDecoder('big5').decode(uint8Array).trim();
+      const simplifiedFn = window.toSimplifiedFn;
+      // 优先转换成简体中文，若无简繁转换器则直接返回解码字串
+      return simplifiedFn ? simplifiedFn(decodedStr) : decodedStr;
+    } catch (e) {
+      console.error('[getWordText] 无法解析词条名称:', e);
+    }
   }
-  return `物品 #${itemId}`;
+  return '';
+}
+
+export function getItemNameHtml(itemId) {
+  // 直接以纯文字格式获取和返回物品名称，避免大批量 Canvas 转换带来的性能开销
+  const name = getWordText(itemId);
+  return name || `物品 #${itemId}`;
 }
 
 export function drawPixelated(srcCanvas, destCanvasId) {
