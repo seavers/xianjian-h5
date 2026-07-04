@@ -313,7 +313,7 @@ export function BattleImageApp() {
                     }}
                   >
                     <span style=${{ fontSize: '9px', fontWeight: 'bold', color: isSelected ? '#00fffa' : '#fff' }}>精灵包 #${idx}</span>
-                    <span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.25)' }}>帧数: ${getFrameCount(activeTab, idx)}</span>
+                    ${isSelected ? html`<span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.25)' }}>帧数: ${maxFrames}</span>` : null}
                   </div>
                 `;
               })}

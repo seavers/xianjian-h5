@@ -206,6 +206,8 @@ export function createRleImage(data, isPal) {
   const result = [];
   while (result.length < width * height) {
     const n = view.nextByte();
+    // n===0 或 n===undefined（数据耗尽）时跳出，防止死循环
+    if (n === 0 || n === undefined || isNaN(n)) break;
     if (n > 0x80) {
       for (let i = 0; i < n - 0x80; i++) {
         result.push(0x00000000); // 透明色
