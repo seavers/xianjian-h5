@@ -978,28 +978,32 @@ function MagicTabComponent({ selectedMagicId, setSelectedMagicId }) {
   `;
 }
 
-// 🖼️ TAB 4: 战斗贴图组件
-function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selectedSpritePackId, setSelectedSpritePackId, selectedSpriteFrameId, setSelectedSpriteFrameId, isPlayingSprite, setIsPlayingSprite, spritePlaySpeedMs, setSpritePlaySpeedMs }) {
+// 🖼️ 战斗贴图组件（自管状态，按 spriteFile 显示对应文件的精灵帧画廊）
+function SpriteTabComponent({ spriteFile }) {
   const mainCanvasRef = useRef(null);
+  const [selectedSpritePackId, setSelectedSpritePackId] = useState(0);
+  const [selectedSpriteFrameId, setSelectedSpriteFrameId] = useState(0);
+  const [isPlayingSprite, setIsPlayingSprite] = useState(false);
+  const [spritePlaySpeedMs, setSpritePlaySpeedMs] = useState(150);
 
   const totalPacks = useMemo(() => {
-    if (selectedSpriteFile === 'data10') return getBattleEffectBlockCount();
-    return getMkfBlockCount(selectedSpriteFile);
-  }, [selectedSpriteFile]);
+    if (spriteFile === 'data10') return getBattleEffectBlockCount();
+    return getMkfBlockCount(spriteFile);
+  }, [spriteFile]);
   const spriteData = useMemo(() => {
-    if (selectedSpriteFile === 'data10') {
+    if (spriteFile === 'data10') {
       const effectMkf = loadMkf('data.mkf', 10);
       const subData = loadMkf2(effectMkf, selectedSpritePackId);
       return subData ? deyj(subData) : null;
     }
-    return deyj(loadMkf(selectedSpriteFile, selectedSpritePackId));
-  }, [selectedSpriteFile, selectedSpritePackId]);
+    return deyj(loadMkf(spriteFile, selectedSpritePackId));
+  }, [spriteFile, selectedSpritePackId]);
   const maxFrames = useMemo(() => (spriteData ? spriteData.getShort(0) : 0), [spriteData]);
 
   // 重置帧索引
   useEffect(() => {
     setSelectedSpriteFrameId(0);
-  }, [selectedSpriteFile, selectedSpritePackId, setSelectedSpriteFrameId]);
+  }, [spriteFile, selectedSpritePackId]);
 
   // 自动播放时钟管理
   useEffect(() => {
@@ -1015,19 +1019,8 @@ function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selecte
   // 主画布重绘
   useEffect(() => {
     if (!mainCanvasRef.current) return;
-    drawSpriteFrameToCanvas(mainCanvasRef.current, selectedSpriteFile, selectedSpritePackId, selectedSpriteFrameId);
-  }, [selectedSpriteFile, selectedSpritePackId, selectedSpriteFrameId]);
-
-  // 绑定全局快捷辅助以便 index.html 直连切换
-  useEffect(() => {
-    window.selectSpriteFrameDirectly = (frameId) => {
-      setIsPlayingSprite(false);
-      setSelectedSpriteFrameId(frameId);
-    };
-    window.changeBattleDataSpritePlaySpeed = (ms) => {
-      setSpritePlaySpeedMs(parseInt(ms, 10));
-    };
-  }, [setIsPlayingSprite, setSelectedSpriteFrameId, setSpritePlaySpeedMs]);
+    drawSpriteFrameToCanvas(mainCanvasRef.current, spriteFile, selectedSpritePackId, selectedSpriteFrameId);
+  }, [spriteFile, selectedSpritePackId, selectedSpriteFrameId]);
 
   // 渲染贴图缩略图卡片
   function ThumbCard({ fIdx }) {
@@ -1035,7 +1028,7 @@ function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selecte
 
     useEffect(() => {
       if (!thumbRef.current) return;
-      drawSpriteFrameToCanvas(thumbRef.current, selectedSpriteFile, selectedSpritePackId, fIdx);
+      drawSpriteFrameToCanvas(thumbRef.current, spriteFile, selectedSpritePackId, fIdx);
     }, [fIdx]);
 
     const isSelected = selectedSpriteFrameId === fIdx;
@@ -1098,23 +1091,13 @@ function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selecte
     </div>
 
     <div style=${{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '15px' }}>
-      <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-        <div style=${{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-          <button class=${`btn-dbg ${selectedSpriteFile === 'abc.mkf' ? 'active' : ''}`} onClick=${() => { setSelectedSpriteFile('abc.mkf'); setSelectedSpritePackId(0); setIsPlayingSprite(false); }} style=${selectedSpriteFile === 'abc.mkf' ? { color: BATTLE_COLOR, borderColor: BATTLE_COLOR, background: `rgba(${BATTLE_COLOR_RGB}, 0.05)` } : {}}>👹 敌方贴图包 (abc.mkf)</button>
-          <button class=${`btn-dbg ${selectedSpriteFile === 'f.mkf' ? 'active' : ''}`} onClick=${() => { setSelectedSpriteFile('f.mkf'); setSelectedSpritePackId(0); setIsPlayingSprite(false); }} style=${selectedSpriteFile === 'f.mkf' ? { color: BATTLE_COLOR, borderColor: BATTLE_COLOR, background: `rgba(${BATTLE_COLOR_RGB}, 0.05)` } : {}}>⚔️ 玩家贴图包 (f.mkf)</button>
-          <button class=${`btn-dbg ${selectedSpriteFile === 'fire.mkf' ? 'active' : ''}`} onClick=${() => { setSelectedSpriteFile('fire.mkf'); setSelectedSpritePackId(0); setIsPlayingSprite(false); }} style=${selectedSpriteFile === 'fire.mkf' ? { color: BATTLE_COLOR, borderColor: BATTLE_COLOR, background: `rgba(${BATTLE_COLOR_RGB}, 0.05)` } : {}}>🔥 魔法特效 (fire.mkf)</button>
-          <button class=${`btn-dbg ${selectedSpriteFile === 'data10' ? 'active' : ''}`} onClick=${() => { setSelectedSpriteFile('data10'); setSelectedSpritePackId(0); setIsPlayingSprite(false); }} style=${selectedSpriteFile === 'data10' ? { color: BATTLE_COLOR, borderColor: BATTLE_COLOR, background: `rgba(${BATTLE_COLOR_RGB}, 0.05)` } : {}}>💥 战斗效果图 (data.mkf #10)</button>
-        </div>
-        <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase' }}>RLE Sprite Gallery Viewer • Pack #${selectedSpritePackId}</div>
-      </div>
-
       <div style=${{ display: 'flex', gap: '15px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.03)', padding: '10px', borderRadius: '2px', marginBottom: '12px', alignItems: 'center' }}>
         <div style=${{ width: '128px', height: '128px', background: 'rgba(5,5,8,0.7)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', boxShadow: 'inset 0 0 10px rgba(0,0,0,0.8)' }}>
           <canvas ref=${mainCanvasRef} width="120" height="120" style=${{ imageRendering: 'pixelated', width: '120px', height: '120px' }}></canvas>
         </div>
         <div style=${{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '128px' }}>
           <div>
-            <div style=${{ fontSize: '13px', fontWeight: 'bold', color: BATTLE_COLOR, marginBottom: '2px' }}>当前包：${selectedSpriteFile} • 包 #${selectedSpritePackId}</div>
+            <div style=${{ fontSize: '13px', fontWeight: 'bold', color: BATTLE_COLOR, marginBottom: '2px' }}>当前包：${spriteFile === 'data10' ? 'data.mkf #10' : spriteFile} • 包 #${selectedSpritePackId}</div>
             <div style=${{ fontSize: '9px', color: '#fff', marginBottom: '4px' }}>当前帧: ${selectedSpriteFrameId} / ${maxFrames - 1}</div>
             <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)', lineHeight: '1.3' }}>贴图帧包含攻击、施法、待机等丰富帧切，使用播放控制器可以查看其连贯动作。</div>
           </div>
@@ -1152,12 +1135,6 @@ export function BattleDataApp() {
   const [selectedTeamId, setSelectedTeamId] = useState(0);
   const [selectedPosCountIndex, setSelectedPosCountIndex] = useState(2);
 
-  const [selectedSpriteFile, setSelectedSpriteFile] = useState('abc.mkf');
-  const [selectedSpritePackId, setSelectedSpritePackId] = useState(0);
-  const [selectedSpriteFrameId, setSelectedSpriteFrameId] = useState(0);
-  const [isPlayingSprite, setIsPlayingSprite] = useState(false);
-  const [spritePlaySpeedMs, setSpritePlaySpeedMs] = useState(150);
-
   // 将状态接口挂载到 window 上，以实现与外部逻辑的完全兼容
   useEffect(() => {
     window.openBattleDataModal = () => {
@@ -1183,20 +1160,6 @@ export function BattleDataApp() {
     window.onBattleDataPosCountChange = (index) => {
       setSelectedPosCountIndex(index);
     };
-
-    window.switchBattleDataSpriteFile = (file) => {
-      setSelectedSpriteFile(file);
-    };
-
-    window.onBattleDataSpritePackSelect = (packId) => {
-      setSelectedSpritePackId(packId);
-      setSelectedSpriteFrameId(0);
-      setIsPlayingSprite(false);
-    };
-
-    window.toggleBattleDataSpritePlay = () => {
-      setIsPlayingSprite(prev => !prev);
-    };
   }, []);
 
   if (!isOpen) {
@@ -1208,7 +1171,10 @@ export function BattleDataApp() {
     { id: 'team', label: '👥 敌方队伍 (data.mkf #2)' },
     { id: 'magic', label: '🔮 法术资料 (data.mkf #4)' },
     { id: 'pos', label: '📍 战场坐标 (data.mkf #13)' },
-    { id: 'sprite', label: '🖼️ 战斗贴图 (abc.mkf / f.mkf)' }
+    { id: 'abc', label: '👹 敌人精灵图 (abc.mkf)' },
+    { id: 'f', label: '⚔️ 玩家战斗精灵图 (f.mkf)' },
+    { id: 'fire', label: '🔥 魔法特效 (fire.mkf)' },
+    { id: 'data10', label: '💥 战斗效果图 (data.mkf #10)' }
   ];
 
   return html`
@@ -1251,20 +1217,10 @@ export function BattleDataApp() {
           ${activeTab === 'team' && html`<${TeamTabComponent} selectedTeamId=${selectedTeamId} setSelectedTeamId=${setSelectedTeamId} switchTab=${setActiveTab} selectEnemy=${setSelectedEnemyId} />`}
           ${activeTab === 'magic' && html`<${MagicTabComponent} selectedMagicId=${selectedMagicId} setSelectedMagicId=${setSelectedMagicId} />`}
           ${activeTab === 'pos' && html`<${PosTabComponent} selectedPosCountIndex=${selectedPosCountIndex} setSelectedPosCountIndex=${setSelectedPosCountIndex} />`}
-          ${activeTab === 'sprite' && html`
-            <${SpriteTabComponent} 
-              selectedSpriteFile=${selectedSpriteFile} 
-              setSelectedSpriteFile=${setSelectedSpriteFile} 
-              selectedSpritePackId=${selectedSpritePackId} 
-              setSelectedSpritePackId=${setSelectedSpritePackId} 
-              selectedSpriteFrameId=${selectedSpriteFrameId} 
-              setSelectedSpriteFrameId=${setSelectedSpriteFrameId} 
-              isPlayingSprite=${isPlayingSprite} 
-              setIsPlayingSprite=${setIsPlayingSprite} 
-              spritePlaySpeedMs=${spritePlaySpeedMs} 
-              setSpritePlaySpeedMs=${setSpritePlaySpeedMs} 
-            />
-          `}
+          ${activeTab === 'abc' && html`<${SpriteTabComponent} key="abc" spriteFile="abc.mkf" />`}
+          ${activeTab === 'f' && html`<${SpriteTabComponent} key="f" spriteFile="f.mkf" />`}
+          ${activeTab === 'fire' && html`<${SpriteTabComponent} key="fire" spriteFile="fire.mkf" />`}
+          ${activeTab === 'data10' && html`<${SpriteTabComponent} key="data10" spriteFile="data10" />`}
         </div>
       </div>
     </div>
@@ -1321,20 +1277,3 @@ export function onBattleDataPosCountChange(index) {
   }
 }
 
-export function switchBattleDataSpriteFile(file) {
-  if (window.switchBattleDataSpriteFile) {
-    window.switchBattleDataSpriteFile(file);
-  }
-}
-
-export function onBattleDataSpritePackSelect(packId) {
-  if (window.onBattleDataSpritePackSelect) {
-    window.onBattleDataSpritePackSelect(packId);
-  }
-}
-
-export function toggleBattleDataSpritePlay() {
-  if (window.toggleBattleDataSpritePlay) {
-    window.toggleBattleDataSpritePlay();
-  }
-}
