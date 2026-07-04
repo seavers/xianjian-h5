@@ -318,39 +318,34 @@ function MsgItemCard({ msgId, labelText, palResources, isVertical }) {
         border: '1px solid rgba(255,255,255,0.02)',
         borderRadius: '2px',
         display: 'flex',
-        flexDirection: isVertical ? 'row-reverse' : 'column',
+        flexDirection: isVertical ? 'row' : 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        padding: isVertical ? '10px 8px' : '8px',
+        justifyContent: isVertical ? 'space-between' : 'center',
+        padding: isVertical ? '8px 16px' : '8px',
         transition: 'all 0.1s',
-        minWidth: isVertical ? '70px' : '120px',
-        minHeight: isVertical ? '180px' : '75px',
+        width: isVertical ? '100%' : '120px',
+        minHeight: isVertical ? '40px' : '75px',
         boxSizing: 'border-box',
-        gap: '4px'
+        gap: '8px'
       }}
     >
       <div style=${{ 
         color: '#fff', 
         fontSize: '16px', 
-        textAlign: 'center',
+        textAlign: isVertical ? 'left' : 'center',
         wordBreak: 'break-all',
         whiteSpace: 'normal',
         padding: '0 4px',
         lineHeight: '1.4',
-        writingMode: isVertical ? 'vertical-rl' : 'horizontal-tb',
-        textCombineUpright: 'all',
-        height: isVertical ? '130px' : 'auto',
-        width: isVertical ? 'auto' : '100%'
+        flex: isVertical ? '1' : 'none'
       }}>${textStr}</div>
       <span style=${{
-        fontSize: '7.5px',
-        color: 'rgba(255,255,255,0.3)',
+        fontSize: '8.5px',
+        color: 'rgba(255,255,255,0.4)',
         fontWeight: 'bold',
         textAlign: 'center',
         lineHeight: 1.2,
-        writingMode: isVertical ? 'vertical-rl' : 'horizontal-tb',
-        marginTop: isVertical ? '0' : '4px',
-        marginLeft: isVertical ? '4px' : '0'
+        flexShrink: 0
       }}>${labelText}</span>
     </div>
   `;
@@ -1417,7 +1412,7 @@ function ImageExplorerApp() {
             </div>
           `}
 
-          <!-- 剧情文本特有：竖排/横排切换 -->
+          <!-- 剧情文本特有：排版方案切换（网格平铺 vs 单行纵向列表） -->
           ${currentType === 'msg' && html`
             <div style=${{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style=${{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>📐 排版方案:</span>
@@ -1426,14 +1421,14 @@ function ImageExplorerApp() {
                 onClick=${() => setIsVerticalMsg(false)} 
                 style=${{ padding: '2px 6px', fontSize: '8px', cursor: 'pointer', background: !isVerticalMsg ? 'rgba(0, 255, 157, 0.1)' : 'transparent', color: !isVerticalMsg ? 'var(--glow-green)' : '#fff', borderColor: !isVerticalMsg ? 'var(--glow-green)' : 'rgba(255,255,255,0.1)' }}
               >
-                横向流式
+                网格平铺 (Grid)
               </button>
               <button 
                 class=${`btn-dbg ${isVerticalMsg ? 'active' : ''}`} 
                 onClick=${() => setIsVerticalMsg(true)} 
                 style=${{ padding: '2px 6px', fontSize: '8px', cursor: 'pointer', background: isVerticalMsg ? 'rgba(0, 255, 157, 0.1)' : 'transparent', color: isVerticalMsg ? 'var(--glow-green)' : '#fff', borderColor: isVerticalMsg ? 'var(--glow-green)' : 'rgba(255,255,255,0.1)' }}
               >
-                竖排展示
+                单行纵向 (List)
               </button>
             </div>
           `}
