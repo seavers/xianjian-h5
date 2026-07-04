@@ -46,29 +46,12 @@ function getMkfBlockCount(filename) {
   }
 }
 
-// 步骤 1.5：获取 data.mkf #10 (二级 MKF2) 的子包总数
-// 注意：二级 MKF 使用 2 字节 short 偏移表，与常规 MKF 的 4 字节 int 偏移不同
-function getBattleEffectBlockCount() {
-  try {
-    const effectMkf = loadMkf('data.mkf', 10);
-    if (!effectMkf) return 0;
-    // MKF2 的偏移表为 short 数组，首个 short 值即为子包数量（含尾部哨兵需减 1）
-    return effectMkf.getShort(0) - 1;
-  } catch (e) {
-    console.error('[BattleDataUI] 无法解析 data.mkf #10 的子包数:', e);
-    return 0;
-  }
-}
-
 // 步骤 1.6：获取指定精灵包解密解压后的总帧数（支持 data10 模式）
 function getFrameCount(file, packId) {
   try {
     let spriteData = null;
     if (file === 'data10') {
-      const effectMkf = loadMkf('data.mkf', 10);
-      const subData = loadMkf2(effectMkf, packId);
-      if (!subData) return 0;
-      spriteData = deyj(subData);
+      spriteData = deyj(loadMkf('data.mkf', 10));
     } else {
       spriteData = deyj(loadMkf(file, packId));
     }
@@ -88,9 +71,7 @@ function drawSpriteFrameToCanvas(canvasEl, file, packId, frameId) {
   try {
     let spriteData = null;
     if (file === 'data10') {
-      const effectMkf = loadMkf('data.mkf', 10);
-      const subData = loadMkf2(effectMkf, packId);
-      if (subData) spriteData = deyj(subData);
+      spriteData = deyj(loadMkf('data.mkf', 10));
     } else {
       spriteData = deyj(loadMkf(file, packId));
     }
@@ -987,14 +968,12 @@ function SpriteTabComponent({ spriteFile }) {
   const [spritePlaySpeedMs, setSpritePlaySpeedMs] = useState(150);
 
   const totalPacks = useMemo(() => {
-    if (spriteFile === 'data10') return getBattleEffectBlockCount();
+    if (spriteFile === 'data10') return 1;
     return getMkfBlockCount(spriteFile);
   }, [spriteFile]);
   const spriteData = useMemo(() => {
     if (spriteFile === 'data10') {
-      const effectMkf = loadMkf('data.mkf', 10);
-      const subData = loadMkf2(effectMkf, selectedSpritePackId);
-      return subData ? deyj(subData) : null;
+      return deyj(loadMkf('data.mkf', 10));
     }
     return deyj(loadMkf(spriteFile, selectedSpritePackId));
   }, [spriteFile, selectedSpritePackId]);
@@ -1029,7 +1008,7 @@ function SpriteTabComponent({ spriteFile }) {
     useEffect(() => {
       if (!thumbRef.current) return;
       drawSpriteFrameToCanvas(thumbRef.current, spriteFile, selectedSpritePackId, fIdx);
-    }, [fIdx]);
+    }, [spriteFile, selectedSpritePackId, fIdx]);
 
     const isSelected = selectedSpriteFrameId === fIdx;
 
@@ -1082,7 +1061,9 @@ function SpriteTabComponent({ spriteFile }) {
                 transition: 'all 0.1s'
               }}
             >
-              <span style=${{ fontSize: '9px', fontWeight: 'bold', color: isSelected ? BATTLE_COLOR : '#fff' }}>贴图包 #${idx}</span>
+              <span style=${{ fontSize: '9px', fontWeight: 'bold', color: isSelected ? BATTLE_COLOR : '#fff' }}>
+                ${spriteFile === 'data10' ? '💥 战斗效果图' : `贴图包 #${idx}`}
+              </span>
               ${isSelected ? html`<span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.25)' }}>帧: ${maxFrames}</span>` : null}
             </div>
           `;
