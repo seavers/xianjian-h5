@@ -340,6 +340,27 @@ function ItemTabComponent({ selectedItemId, setSelectedItemId, jumpToScript }) {
     return getDetailedItemInfo(item.id);
   }, [item.id]);
 
+  const getItemDescText = (itemId) => {
+    const descBytes = state.desc?.[itemId];
+    if (!descBytes) return '暂无物品描述';
+    try {
+      const bytes = [];
+      for (let i = 0; i < descBytes.length; i++) {
+        const b = descBytes.getByte(i);
+        if (b === 42) { // '*' 换行
+          bytes.push(10);
+          continue;
+        }
+        bytes.push(b);
+      }
+      const decoded = new TextDecoder('big5').decode(new Uint8Array(bytes)).trim();
+      const simplifiedFn = window.toSimplifiedFn;
+      return simplifiedFn ? simplifiedFn(decoded) : decoded;
+    } catch (e) {
+      return '解密描述信息失败';
+    }
+  };
+
   // 步骤 1：绘制物品图标 Ball Canvas
   useEffect(() => {
     try {
@@ -395,6 +416,12 @@ function ItemTabComponent({ selectedItemId, setSelectedItemId, jumpToScript }) {
         </div>
         
         <div class="gamedata-scroll-panel">
+          <div>
+            <div class="gamedata-section-title">物品文字描述 (desc.dat)</div>
+            <div style=${{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.03)', padding: '8px', borderRadius: '2px', fontSize: '9.5px', color: '#b3d4ff', lineHeight: '1.5', whiteSpace: 'pre-wrap', marginBottom: '12px' }}>
+              ${getItemDescText(item.id)}
+            </div>
+          </div>
           <div>
             <div class="gamedata-section-title">物品基础属性</div>
             <div class="gamedata-stat-grid" style=${{ gridTemplateColumns: 'repeat(3, 1fr)' }}>

@@ -270,7 +270,7 @@ function LazyWordItemCard({ wordId, labelText, loaderModule, palResources }) {
 }
 
 // 3. 原生剧情文本行渲染组件 (msg.mkf)
-function MsgItemCard({ msgId, labelText, palResources }) {
+function MsgItemCard({ msgId, labelText, palResources, isVertical }) {
   const [textStr, setTextStr] = useState('加载中...');
 
   // 渲染剧情文本直接转码并进行简体字转化呈现，不采用底层 Canvas 绘制
@@ -318,32 +318,39 @@ function MsgItemCard({ msgId, labelText, palResources }) {
         border: '1px solid rgba(255,255,255,0.02)',
         borderRadius: '2px',
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: isVertical ? 'row-reverse' : 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '8px',
+        padding: isVertical ? '10px 8px' : '8px',
         transition: 'all 0.1s',
-        minWidth: '100px',
-        minHeight: '70px',
-        boxSizing: 'border-box'
+        minWidth: isVertical ? '70px' : '120px',
+        minHeight: isVertical ? '180px' : '75px',
+        boxSizing: 'border-box',
+        gap: '4px'
       }}
     >
       <div style=${{ 
         color: '#fff', 
-        fontSize: '11px', 
+        fontSize: '16px', 
         textAlign: 'center',
-        marginBottom: '6px',
         wordBreak: 'break-all',
         whiteSpace: 'normal',
         padding: '0 4px',
-        lineHeight: '1.4'
+        lineHeight: '1.4',
+        writingMode: isVertical ? 'vertical-rl' : 'horizontal-tb',
+        textCombineUpright: 'all',
+        height: isVertical ? '130px' : 'auto',
+        width: isVertical ? 'auto' : '100%'
       }}>${textStr}</div>
       <span style=${{
         fontSize: '7.5px',
         color: 'rgba(255,255,255,0.3)',
         fontWeight: 'bold',
         textAlign: 'center',
-        lineHeight: 1.2
+        lineHeight: 1.2,
+        writingMode: isVertical ? 'vertical-rl' : 'horizontal-tb',
+        marginTop: isVertical ? '0' : '4px',
+        marginLeft: isVertical ? '4px' : '0'
       }}>${labelText}</span>
     </div>
   `;
@@ -877,6 +884,7 @@ function ImageExplorerApp() {
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(48);
   const [currentScale, setCurrentScale] = useState(2);
+  const [isVerticalMsg, setIsVerticalMsg] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
   const [subId, setSubId] = useState(0);
 
@@ -1007,7 +1015,7 @@ function ImageExplorerApp() {
     setActivePlayingId(null);
 
     if (type === 'msg') {
-      setItemsPerPage(15);
+      setItemsPerPage(100);
       setCurrentScale(1.5);
     } else {
       setItemsPerPage(100000);
@@ -1295,7 +1303,7 @@ function ImageExplorerApp() {
         const code = data ? data.getShort(i * 2) : 0;
         items.push(html`<${LazySingleItemCard} key=${i} itemId=${i} itemLabelText=${`FON #${i}\n0x${code.toString(16).toUpperCase()}`} scale=${currentScale} loadFn=${(id) => pal.loadFon(id)} />`);
       } else if (currentType === 'msg') {
-        items.push(html`<${MsgItemCard} key=${i} msgId=${i} labelText=${`MSG #${i}`} palResources=${pal} />`);
+        items.push(html`<${MsgItemCard} key=${i} msgId=${i} labelText=${`MSG #${i}`} palResources=${pal} isVertical=${isVerticalMsg} />`);
       } else if (currentType === 'word') {
         items.push(html`<${LazyWordItemCard} key=${i} wordId=${i} labelText=${`WORD #${i}`} loaderModule=${loader} palResources=${pal} />`);
       } else if (currentType === 'rng') {
@@ -1312,7 +1320,7 @@ function ImageExplorerApp() {
       }
     }
     return items;
-  }, [modules, currentType, currentPage, itemsPerPage, totalItems, subId, currentScale, activePlayingId]);
+  }, [modules, currentType, currentPage, itemsPerPage, totalItems, subId, currentScale, activePlayingId, isVerticalMsg]);
 
   if (!isVisible) return null;
 
@@ -1406,6 +1414,27 @@ function ImageExplorerApp() {
                 }
               }} onKeyDown=${(e) => e.key === 'Enter' && window.searchImageMap()} style=${{ background: '#08080c', border: '1px solid rgba(255,255,255,0.06)', color: '#fff', fontSize: '8.5px', padding: '2px 4px', width: '50px', outline: 'none', textAlign: 'center' }} />
               <button class="btn-dbg" onClick=${window.searchImageMap} style=${{ color: 'var(--glow-green)', borderColor: 'rgba(0,255,157,0.2)', padding: '2px 6px', fontSize: '8.5px', cursor: 'pointer' }}>载入图元</button>
+            </div>
+          `}
+
+          <!-- 剧情文本特有：竖排/横排切换 -->
+          ${currentType === 'msg' && html`
+            <div style=${{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style=${{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold' }}>📐 排版方案:</span>
+              <button 
+                class=${`btn-dbg ${!isVerticalMsg ? 'active' : ''}`} 
+                onClick=${() => setIsVerticalMsg(false)} 
+                style=${{ padding: '2px 6px', fontSize: '8px', cursor: 'pointer', background: !isVerticalMsg ? 'rgba(0, 255, 157, 0.1)' : 'transparent', color: !isVerticalMsg ? 'var(--glow-green)' : '#fff', borderColor: !isVerticalMsg ? 'var(--glow-green)' : 'rgba(255,255,255,0.1)' }}
+              >
+                横向流式
+              </button>
+              <button 
+                class=${`btn-dbg ${isVerticalMsg ? 'active' : ''}`} 
+                onClick=${() => setIsVerticalMsg(true)} 
+                style=${{ padding: '2px 6px', fontSize: '8px', cursor: 'pointer', background: isVerticalMsg ? 'rgba(0, 255, 157, 0.1)' : 'transparent', color: isVerticalMsg ? 'var(--glow-green)' : '#fff', borderColor: isVerticalMsg ? 'var(--glow-green)' : 'rgba(255,255,255,0.1)' }}
+              >
+                竖排展示
+              </button>
             </div>
           `}
 
