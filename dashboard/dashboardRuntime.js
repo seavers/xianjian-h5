@@ -727,7 +727,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
     ];
 
     setInspectorInfo({
-      title: `🏷️ 物品解码: ${info.name}`,
+      title: `🏷️ 物品解码: ${getItemName(itemId)}`,
       ballId: `Ball: #${itemId}`,
       hasBall: true,
       fields
