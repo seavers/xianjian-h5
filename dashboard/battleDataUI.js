@@ -46,13 +46,14 @@ function getMkfBlockCount(filename) {
   }
 }
 
-// 步骤 1.5：获取 data.mkf #10 (二级 MKF) 的子包总数
+// 步骤 1.5：获取 data.mkf #10 (二级 MKF2) 的子包总数
+// 注意：二级 MKF 使用 2 字节 short 偏移表，与常规 MKF 的 4 字节 int 偏移不同
 function getBattleEffectBlockCount() {
   try {
     const effectMkf = loadMkf('data.mkf', 10);
     if (!effectMkf) return 0;
-    // 同样通过首块偏移计算子包数量
-    return Math.floor(effectMkf.getInt(0) / 4) - 1;
+    // MKF2 的偏移表为 short 数组，首个 short 值即为子包数量（含尾部哨兵需减 1）
+    return effectMkf.getShort(0) - 1;
   } catch (e) {
     console.error('[BattleDataUI] 无法解析 data.mkf #10 的子包数:', e);
     return 0;
@@ -1089,7 +1090,7 @@ function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selecte
               }}
             >
               <span style=${{ fontSize: '9px', fontWeight: 'bold', color: isSelected ? BATTLE_COLOR : '#fff' }}>贴图包 #${idx}</span>
-              <span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.25)' }}>帧: ${getFrameCount(selectedSpriteFile, idx)}</span>
+              ${isSelected ? html`<span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.25)' }}>帧: ${maxFrames}</span>` : null}
             </div>
           `;
         })}
