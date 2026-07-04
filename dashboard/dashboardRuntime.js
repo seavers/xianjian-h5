@@ -875,7 +875,6 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
       </div>
       <div class="dashboard-header-actions" style=${{ display: 'flex', alignItems: 'center', gap: '6px' }}>
         <button class="btn-dbg launch-btn launch-btn--battle" onClick=${() => window.openBattleDataModal?.()} style=${{ padding: '2px 6px', fontSize: '8px' }}>⚔️ 战斗资料</button>
-        <button class="btn-dbg launch-btn launch-btn--battle-image" onClick=${() => window.openBattleImageModal?.()} style=${{ padding: '2px 6px', fontSize: '8px' }}>🖼️ 战斗图片资料</button>
         <button class="btn-dbg launch-btn launch-btn--game-data" onClick=${() => window.openGameDataModal?.()} style=${{ padding: '2px 6px', fontSize: '8px' }}>📚 游戏资料</button>
         <button class="btn-dbg launch-btn launch-btn--image-explorer" onClick=${() => window.openImageExplorer?.()} style=${{ padding: '2px 6px', fontSize: '8px' }}>🖼️ 图片资源</button>
         <div style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.2)' }}>VER: 4.0-DECRYPT-STREAM</div>

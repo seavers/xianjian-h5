@@ -882,8 +882,6 @@
 	<!-- ==================== ⚔️ 仙剑奇侠传战斗资料监视与调试弹窗 ==================== -->
 	<div id="battle-data-modal-root"></div>
 
-	<!-- ==================== 🖼️ 仙剑奇侠传战斗图片资料监视与调试弹窗 ==================== -->
-	<div id="battle-image-modal-root"></div>
 
 
 
@@ -1274,20 +1272,6 @@
 			markAsyncActionReady('btn-open-battle-data-modal');
 		}).catch((error) => {
 			markAsyncActionFailed('btn-open-battle-data-modal', error);
-		});
-
-		// 🖼️ 动态载入战斗图片与特效资料面板的全部逻辑
-		import('./dashboard/battleImageUI.js').then((module) => {
-			window.openBattleImageModal = module.openBattleImageModal;
-			window.closeBattleImageModal = module.closeBattleImageModal;
-			window.switchBattleImageTab = module.switchBattleImageTab;
-			window.onBattleImagePackSelect = module.onBattleImagePackSelect;
-			window.toggleBattleImagePlay = module.toggleBattleImagePlay;
-			window.selectBattleImageFrameDirectly = module.selectBattleImageFrameDirectly;
-			window.changeBattleImagePlaySpeed = module.changeBattleImagePlaySpeed;
-			markAsyncActionReady('btn-open-battle-image-modal');
-		}).catch((error) => {
-			markAsyncActionFailed('btn-open-battle-image-modal', error);
 		});
 
 

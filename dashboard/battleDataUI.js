@@ -2,6 +2,7 @@
 
 import { loadMkf, load } from '../js/resources/loader.js';
 import { deyj } from '../js/utils/deyj.js';
+import { loadMkf2 } from '../js/resources/pal.js';
 import { state } from '../js/engine/state.js';
 import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame, loadMagics, loadLevelUpMagics } from '../js/battle/battleData.js';
 import { React, ReactDOM, html, drawPixelatedToCanvas } from './gameData/ui-helper.js';
@@ -45,10 +46,31 @@ function getMkfBlockCount(filename) {
   }
 }
 
-// 步骤 1.5：获取指定精灵包解密解压后的总帧数
+// 步骤 1.5：获取 data.mkf #10 (二级 MKF) 的子包总数
+function getBattleEffectBlockCount() {
+  try {
+    const effectMkf = loadMkf('data.mkf', 10);
+    if (!effectMkf) return 0;
+    // 同样通过首块偏移计算子包数量
+    return Math.floor(effectMkf.getInt(0) / 4) - 1;
+  } catch (e) {
+    console.error('[BattleDataUI] 无法解析 data.mkf #10 的子包数:', e);
+    return 0;
+  }
+}
+
+// 步骤 1.6：获取指定精灵包解密解压后的总帧数（支持 data10 模式）
 function getFrameCount(file, packId) {
   try {
-    const spriteData = deyj(loadMkf(file, packId));
+    let spriteData = null;
+    if (file === 'data10') {
+      const effectMkf = loadMkf('data.mkf', 10);
+      const subData = loadMkf2(effectMkf, packId);
+      if (!subData) return 0;
+      spriteData = deyj(subData);
+    } else {
+      spriteData = deyj(loadMkf(file, packId));
+    }
     if (!spriteData) return 0;
     return spriteData.getShort(0);
   } catch (e) {
@@ -56,14 +78,21 @@ function getFrameCount(file, packId) {
   }
 }
 
-// 步骤 2：在指定 Canvas 上精准渲染某帧战斗精灵图片
+// 步骤 2：在指定 Canvas 上精准渲染某帧战斗精灵图片（支持 data10 模式）
 function drawSpriteFrameToCanvas(canvasEl, file, packId, frameId) {
   if (!canvasEl) return;
   const ctx = canvasEl.getContext('2d');
   ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
   try {
-    const spriteData = deyj(loadMkf(file, packId));
+    let spriteData = null;
+    if (file === 'data10') {
+      const effectMkf = loadMkf('data.mkf', 10);
+      const subData = loadMkf2(effectMkf, packId);
+      if (subData) spriteData = deyj(subData);
+    } else {
+      spriteData = deyj(loadMkf(file, packId));
+    }
     if (!spriteData) return;
 
     const frameCanvas = loadSpriteFrame(spriteData, frameId);
@@ -952,8 +981,18 @@ function MagicTabComponent({ selectedMagicId, setSelectedMagicId }) {
 function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selectedSpritePackId, setSelectedSpritePackId, selectedSpriteFrameId, setSelectedSpriteFrameId, isPlayingSprite, setIsPlayingSprite, spritePlaySpeedMs, setSpritePlaySpeedMs }) {
   const mainCanvasRef = useRef(null);
 
-  const totalPacks = useMemo(() => getMkfBlockCount(selectedSpriteFile), [selectedSpriteFile]);
-  const spriteData = useMemo(() => deyj(loadMkf(selectedSpriteFile, selectedSpritePackId)), [selectedSpriteFile, selectedSpritePackId]);
+  const totalPacks = useMemo(() => {
+    if (selectedSpriteFile === 'data10') return getBattleEffectBlockCount();
+    return getMkfBlockCount(selectedSpriteFile);
+  }, [selectedSpriteFile]);
+  const spriteData = useMemo(() => {
+    if (selectedSpriteFile === 'data10') {
+      const effectMkf = loadMkf('data.mkf', 10);
+      const subData = loadMkf2(effectMkf, selectedSpritePackId);
+      return subData ? deyj(subData) : null;
+    }
+    return deyj(loadMkf(selectedSpriteFile, selectedSpritePackId));
+  }, [selectedSpriteFile, selectedSpritePackId]);
   const maxFrames = useMemo(() => (spriteData ? spriteData.getShort(0) : 0), [spriteData]);
 
   // 重置帧索引
@@ -1050,7 +1089,7 @@ function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selecte
               }}
             >
               <span style=${{ fontSize: '9px', fontWeight: 'bold', color: isSelected ? BATTLE_COLOR : '#fff' }}>贴图包 #${idx}</span>
-              <span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.25)' }}>帧数: ${getFrameCount(selectedSpriteFile, idx)}</span>
+              <span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.25)' }}>帧: ${getFrameCount(selectedSpriteFile, idx)}</span>
             </div>
           `;
         })}
@@ -1062,6 +1101,8 @@ function SpriteTabComponent({ selectedSpriteFile, setSelectedSpriteFile, selecte
         <div style=${{ display: 'flex', gap: '6px', alignItems: 'center' }}>
           <button class=${`btn-dbg ${selectedSpriteFile === 'abc.mkf' ? 'active' : ''}`} onClick=${() => { setSelectedSpriteFile('abc.mkf'); setSelectedSpritePackId(0); setIsPlayingSprite(false); }} style=${selectedSpriteFile === 'abc.mkf' ? { color: BATTLE_COLOR, borderColor: BATTLE_COLOR, background: `rgba(${BATTLE_COLOR_RGB}, 0.05)` } : {}}>👹 敌方贴图包 (abc.mkf)</button>
           <button class=${`btn-dbg ${selectedSpriteFile === 'f.mkf' ? 'active' : ''}`} onClick=${() => { setSelectedSpriteFile('f.mkf'); setSelectedSpritePackId(0); setIsPlayingSprite(false); }} style=${selectedSpriteFile === 'f.mkf' ? { color: BATTLE_COLOR, borderColor: BATTLE_COLOR, background: `rgba(${BATTLE_COLOR_RGB}, 0.05)` } : {}}>⚔️ 玩家贴图包 (f.mkf)</button>
+          <button class=${`btn-dbg ${selectedSpriteFile === 'fire.mkf' ? 'active' : ''}`} onClick=${() => { setSelectedSpriteFile('fire.mkf'); setSelectedSpritePackId(0); setIsPlayingSprite(false); }} style=${selectedSpriteFile === 'fire.mkf' ? { color: BATTLE_COLOR, borderColor: BATTLE_COLOR, background: `rgba(${BATTLE_COLOR_RGB}, 0.05)` } : {}}>🔥 魔法特效 (fire.mkf)</button>
+          <button class=${`btn-dbg ${selectedSpriteFile === 'data10' ? 'active' : ''}`} onClick=${() => { setSelectedSpriteFile('data10'); setSelectedSpritePackId(0); setIsPlayingSprite(false); }} style=${selectedSpriteFile === 'data10' ? { color: BATTLE_COLOR, borderColor: BATTLE_COLOR, background: `rgba(${BATTLE_COLOR_RGB}, 0.05)` } : {}}>💥 战斗效果图 (data.mkf #10)</button>
         </div>
         <div style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase' }}>RLE Sprite Gallery Viewer • Pack #${selectedSpritePackId}</div>
       </div>
