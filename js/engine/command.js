@@ -1740,35 +1740,6 @@ export async function confirmMenu(failScriptId) {
   }
 }
 
-export function setEnemyStatus(statusId, value, failScriptId) {
-  // 步骤 1：确定当前起效的敌人在 enemies 中的索引。若 this 代表敌人的上下文，则使用 this 的属性
-  const enemyIndex = (this && typeof this.index === 'number') ? this.index : 0;
-  const enemy = enemies[enemyIndex];
-
-  if (enemy) {
-    // 步骤 2：参考 sdlpal 对抗性进行判定。如果敌人抗性较高，有概率判定状态附加失败，若失败则跳转到 failScriptId
-    const resistance = (enemy.config && typeof enemy.config.wPoisonResistance === 'number') ? enemy.config.wPoisonResistance : 0;
-    const maxVal = statusId === 4 ? 14 : 9; // kStatusSlow = 4
-    const rand = Math.floor(Math.random() * (maxVal + 1));
-
-    if (rand <= Math.floor(resistance / 10)) {
-      console.log(`[0x2E setEnemyStatus] 敌人状态附加失败 (抗性高)，跳转至脚本: ${failScriptId}`);
-      if (failScriptId) {
-        return failScriptId;
-      }
-      return;
-    }
-
-    enemy.status = enemy.status || {};
-    enemy.status[statusId] = value;
-    console.log(`[0x2E setEnemyStatus] 设定敌人 (Index: ${enemyIndex}) 状态 ID ${statusId} ➔ 值 ${value}`);
-  } else {
-    if (failScriptId) {
-      return failScriptId;
-    }
-  }
-}
-
 export function increasePlayerStatTemp(statId, percent, roleId) {
   let roleIndex = roleId;
   if (roleId === 0 || roleId === 0xFFFF) {
