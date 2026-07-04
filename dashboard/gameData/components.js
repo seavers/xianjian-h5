@@ -1217,7 +1217,7 @@ export function GameDataApp() {
   const tabs = [
     { id: 'role', label: '👤 角色信息 (rgm.mkf / mgo.mkf)' },
     { id: 'npc', label: '👾 NPC 信息 (sss.mkf #0)' },
-    { id: 'item', label: '🎒 物品资料' },
+    { id: 'item', label: '🎒 物品资料 (sss.mkf #2)' },
     { id: 'script', label: '📜 脚本信息 (sss.mkf #4)' },
     { id: 'scene', label: '🗺️ 场景信息 (sss.mkf #1 / gop.mkf)' },
     { id: 'shop', label: '🛒 商店货物表 (data.mkf #0)' },
