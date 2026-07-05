@@ -1817,12 +1817,13 @@ async function runActionPhase() {
           if (idx !== -1) {
             ownItems.splice(idx, 1);
           }
+          state.activePlayer = player;
           player.currentFrame = 4;
           draw();
           await sleep(200);
           const targetEnemyIndex = act.target;
-          if (itemObj.useScr) {
-            await Script.runTriggerScript(itemObj.useScr, enemies[targetEnemyIndex], 'item');
+          if (itemObj.dropScr) {
+            await Script.runTriggerScript(itemObj.dropScr, enemies[targetEnemyIndex], 'item');
           }
           restorePlayerFrame(player);
           draw();

@@ -18,7 +18,7 @@ import { playMusic, stopMusic as stopBgMusic } from '../resources/music.js';
 import { playSound } from '../resources/sound.js';
 import { TICK_TIME } from '../app.js';
 import { clearWithEffect } from '../ui/clearWithEffect.js';
-import { enemies, players, addDamagePopup, draw, drawWordToCtx, drawWinNumber, restorePlayerFrame, waitWinSpace } from '../battle/battle.js';
+import { enemies, players, addDamagePopup, draw, drawWordToCtx, drawWinNumber, restorePlayerFrame, waitWinSpace, playMagicEffect } from '../battle/battle.js';
 import { loadMkf } from '../resources/loader.js';
 import { Talk } from '../ui/talk.js';
 import { UI } from '../ui/panel.js';
@@ -2835,9 +2835,10 @@ export function jumpIfEnemyHpRatioGreaterThan(ratio, targetScriptId) {
   }
 }
 
-export function throwWeaponToEnemy(animId, baseDamage) {
+export async function throwWeaponToEnemy(animId, baseDamage) {
   // 步骤 1：确定当前行动角色的攻击力
-  const roleIndex = getRoleIndex(this);
+  const activePlayer = state.activePlayer;
+  const roleIndex = activePlayer ? activePlayer.index : 0;
   const role = state.roles[roleIndex];
   const attack = role ? (role.attackStrength || 10) : 10;
 
@@ -2845,12 +2846,31 @@ export function throwWeaponToEnemy(animId, baseDamage) {
   let damage = baseDamage * 5;
   damage += attack * Math.floor(Math.random() * 4);
 
-  // 步骤 3：扣减战斗中第一个存活敌人的 HP
+  // 步骤 3：扣减战斗中指定或第一个存活敌人的 HP
   if (enemies && enemies.length > 0) {
-    const enemy = enemies.find(e => e && e.hp > 0);
+    const enemy = (this && typeof this.hp === 'number') ? this : enemies.find(e => e && e.hp > 0);
     if (enemy) {
+      // 步骤 3.1：播放投掷法术特效动画，参考 handleMagicAction
+      const itemObj = state.items[animId];
+      if (itemObj) {
+        const magicNumber = itemObj.roleId;
+        const magic = state.magics[magicNumber];
+        if (magic) {
+          magic.id = animId;
+          const player = activePlayer || players[0];
+          await playMagicEffect(magic, player, enemy);
+        }
+      }
+
+      // 步骤 3.2：执行扣减 HP
       enemy.hp = Math.max(0, enemy.hp - damage);
       console.log(`[0x66 throwWeaponToEnemy] 投掷特效动画 ID: ${animId}，造成的伤害值: ${damage}，当前敌人 HP: ${enemy.hp}`);
+
+      // 步骤 3.3：弹出伤害飘字
+      addDamagePopup(enemy, damage, false);
+
+      // 步骤 3.4：重绘战斗画面
+      draw();
     }
   } else {
     console.log(`[0x66 throwWeaponToEnemy] 投掷特效动画 ID: ${animId}，无战斗目标敌人`);
