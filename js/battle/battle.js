@@ -1110,6 +1110,23 @@ export function onInput(input) {
           } else {
             playSound(31);
           }
+        } else if (selectedAction === 2) {
+          // 确认合击：判定释放合击门槛
+          const player = players[activePlayerIndex];
+          const role = state.roles[player.index];
+          // 统计活着的非状态异常队友数量
+          const healthyNumber = players.filter(p => p.hp > 0 && !(state.roles[p.index]?.status && (state.roles[p.index].status[0] > 0 || state.roles[p.index].status[1] > 0 || state.roles[p.index].status[2] > 0 || state.roles[p.index].status[3] > 0))).length;
+          const isCurrentPlayerHealthy = player.hp > 0 && !(role && role.status && (role.status[0] > 0 || role.status[1] > 0 || role.status[2] > 0 || role.status[3] > 0));
+
+          if (players.length > 1 && isCurrentPlayerHealthy && healthyNumber > 1) {
+            targetEnemyIndex = enemies.findIndex(e => e.hp > 0);
+            if (targetEnemyIndex !== -1) {
+              menuState = 'coop_target';
+              playSound(29);
+            }
+          } else {
+            playSound(31);
+          }
         } else if (selectedAction === 3) {
           // 确认进入“更多”二级菜单
           selectedMoreIndex = 0;
@@ -1167,6 +1184,49 @@ export function onInput(input) {
         break;
       case 'ESC': // 取消选择，返回指令菜单
         menuState = 'main';
+        break;
+    }
+  } else if (menuState === 'coop_target') {
+    // 合击选择目标敌人
+    switch (input) {
+      case 'left':
+      case 'up': {
+        let idx = targetEnemyIndex;
+        do {
+          idx = (idx - 1 + enemies.length) % enemies.length;
+        } while (enemies[idx].hp <= 0 && idx !== targetEnemyIndex);
+        targetEnemyIndex = idx;
+        playSound(29);
+        break;
+      }
+      case 'right':
+      case 'down': {
+        let idx = targetEnemyIndex;
+        do {
+          idx = (idx + 1) % enemies.length;
+        } while (enemies[idx].hp <= 0 && idx !== targetEnemyIndex);
+        targetEnemyIndex = idx;
+        playSound(29);
+        break;
+      }
+      case 'blank': { // 确认释放合击
+        players[activePlayerIndex].action = {
+          type: 'coop',
+          target: targetEnemyIndex
+        };
+        // 扣除本回合其他队员的行动权
+        for (let j = activePlayerIndex + 1; j < players.length; j++) {
+          if (players[j].hp > 0 && isPlayerControllable(players[j])) {
+            players[j].action = { type: 'pass' };
+          }
+        }
+        playSound(29);
+        runActionPhase();
+        break;
+      }
+      case 'ESC':
+        menuState = 'main';
+        playSound(30);
         break;
     }
   } else if (menuState === 'magic') {
@@ -1851,6 +1911,137 @@ async function runActionPhase() {
         player.rgMagicExp = (player.rgMagicExp || 0) + Math.floor(Math.random() * 2) + 2;
         player.rgMagicPowerExp = (player.rgMagicPowerExp || 0) + 1;
         await handleMagicAction(player, actor, act);
+      } else if (act && act.type === 'coop') {
+        const roleStats = state.roles[player.index];
+        if (roleStats && roleStats.cooperativeMagic) {
+          const coopMagicId = roleStats.cooperativeMagic;
+          const itemObj = state.items[coopMagicId];
+          if (itemObj) {
+            const magicNumber = itemObj.roleId;
+            const magic = state.magics[magicNumber];
+            if (magic) {
+              magic.id = coopMagicId;
+              state.activePlayer = player;
+
+              // 1. 搜集并筛选本回合活着的健康贡献者
+              const coopContributors = [];
+              players.forEach(p => {
+                const r = state.roles[p.index];
+                const isHealthy = p.hp > 0 && !(r && r.status && (r.status[0] > 0 || r.status[1] > 0 || r.status[2] > 0 || r.status[3] > 0));
+                if (isHealthy) {
+                  coopContributors.push(p);
+                }
+              });
+
+              if (coopContributors.length > 1) {
+                // 2. 消耗所有健康贡献者的 HP（等于 wCostMP，保底剩 1 HP）
+                coopContributors.forEach(p => {
+                  p.hp = Math.max(1, p.hp - magic.wCostMP);
+                  const r = state.roles[p.index];
+                  if (r) {
+                    r.hp = p.hp;
+                  }
+                });
+
+                // 3. 播放合击集体前倾准备动作
+                const origPositions = coopContributors.map(p => ({
+                  player: p,
+                  x: p.x,
+                  y: p.y
+                }));
+
+                coopContributors.forEach(p => {
+                  p.x -= 20;
+                  p.y -= 10;
+                  p.currentFrame = 4; // 施法前斜倾/动作准备帧
+                });
+                draw();
+                await sleep(150);
+
+                // 4. 确认敌方目标并释放法术特效
+                let targetIdx = act.target;
+                if (enemies[targetIdx].hp <= 0) {
+                  targetIdx = enemies.findIndex(e => e.hp > 0);
+                }
+                state.activeTargetIdx = targetIdx;
+
+                if (targetIdx !== -1) {
+                  await playMagicEffect(magic, player, enemies[targetIdx]);
+
+                  // 5. 计算合击的平均属性加成（武力+灵力总和除以4作为基础灵力）
+                  let sumStr = 0;
+                  coopContributors.forEach(p => {
+                    sumStr += p.attackStrength + p.magicStrength;
+                  });
+                  let str = Math.floor(sumStr / 4);
+
+                  // 判定是否群攻
+                  const isAll = magic.wType === 1 || magic.wType === 6 || magic.wType === 2 || magic.wType === 3;
+                  let targets = [];
+                  if (isAll) {
+                    enemies.forEach((e, idx) => { if (e.hp > 0) targets.push(idx); });
+                  } else {
+                    if (enemies[targetIdx].hp > 0) targets = [targetIdx];
+                  }
+
+                  const enemyOrigPositions = targets.map(eIdx => ({
+                    enemy: enemies[eIdx],
+                    x: enemies[eIdx].x,
+                    y: enemies[eIdx].y
+                  }));
+
+                  enemyOrigPositions.forEach(item => {
+                    item.enemy.x -= 8;
+                    item.enemy.y -= 4;
+                  });
+                  draw();
+                  await sleep(80);
+
+                  enemyOrigPositions.forEach(item => {
+                    item.enemy.x -= 2;
+                    item.enemy.y -= 1;
+                  });
+                  draw();
+                  await sleep(150);
+
+                  // 结算合击输出伤害与抗性修正
+                  for (const eIdx of targets) {
+                    const enemy = enemies[eIdx];
+                    let def = enemy.defense + (enemy.level + 6) * 4;
+                    let dmg = calcMagicDamage(str, def, enemy.wElemResistance, enemy.wPoisonResistance || 0, 1, magic);
+                    if (dmg < 1) dmg = 1;
+                    enemy.hp = Math.max(0, enemy.hp - dmg);
+
+                    damagePopups.push({
+                      actor: enemy,
+                      value: dmg,
+                      isPlayer: false,
+                      startTime: Date.now()
+                    });
+
+                    if (enemy.hp <= 0 && enemy.wDeathSound > 0) {
+                      playSound(enemy.wDeathSound);
+                    }
+                  }
+
+                  enemyOrigPositions.forEach(item => {
+                    item.enemy.x = item.x;
+                    item.enemy.y = item.y;
+                  });
+                }
+
+                // 6. 合击结束还原集体站位和动作姿势
+                origPositions.forEach(item => {
+                  item.player.x = item.x;
+                  item.player.y = item.y;
+                  restorePlayerFrame(item.player);
+                });
+                draw();
+                await sleep(400);
+              }
+            }
+          }
+        }
       }
     } else {
       const enemy = enemies[actor.index];
