@@ -867,7 +867,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
   };
 
   return html`
-    <div class="pal-dashboard realtime-panel" style=${{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+    <div class="pal-dashboard realtime-panel" style=${{ display: 'flex', flexDirection: 'column', minHeight: '100%', width: '100%' }}>
       <!-- 控制台头部 -->
       <div id="dashboard-header">
         <div class="db-title dashboard-header-main" style=${{ display: 'flex', alignItems: 'center', gap: '6px' }}>

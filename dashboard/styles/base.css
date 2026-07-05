@@ -37,8 +37,13 @@
   border-left: 1px solid var(--border-glass);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   position: relative;
+}
+
+.picture-panel,
+.battle-panel,
+.gamedata-panel {
+  overflow: hidden;
 }
 
 .pal-dashboard * {
