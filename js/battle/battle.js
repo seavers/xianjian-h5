@@ -1698,6 +1698,9 @@ async function runActionPhase() {
           targetIdx = enemies.findIndex(e => e.hp > 0);
         }
         if (targetIdx !== -1) {
+          // 累积物攻与生命修行计数
+          player.rgAttackExp = (player.rgAttackExp || 0) + 1;
+          player.rgHealthExp = (player.rgHealthExp || 0) + Math.floor(Math.random() * 2) + 2;
           await playPlayerAttack(actor.index, targetIdx);
         }
       } else if (act && act.type === 'defend') {
@@ -1705,6 +1708,8 @@ async function runActionPhase() {
         player.isDefending = true;
         player.currentFrame = 3; // 防御姿态
         draw();
+        // 累积防御修行计数
+        player.rgDefenseExp = (player.rgDefenseExp || 0) + 2;
         await sleep(200);
       } else if (act && act.type === 'flee') {
         // 执行玩家逃跑动作
@@ -1712,6 +1717,8 @@ async function runActionPhase() {
         if (isBoss) {
           playSound(31);
         }
+        // 累积逃跑修行计数
+        player.rgFleeExp = (player.rgFleeExp || 0) + 2;
         let str = player.fleeRate;
         let def = 0;
         enemies.forEach(e => {
@@ -1832,6 +1839,9 @@ async function runActionPhase() {
         }
       } else if (act && act.type === 'magic') {
         state.activePlayer = player;
+        // 累积仙术与灵力修行计数
+        player.rgMagicExp = (player.rgMagicExp || 0) + Math.floor(Math.random() * 2) + 2;
+        player.rgMagicPowerExp = (player.rgMagicPowerExp || 0) + 1;
         await handleMagicAction(player, actor, act);
       }
     } else {
@@ -2820,6 +2830,117 @@ async function endBattle(result) {
         // 等待玩家按下空格键切换
         await waitWinSpace();
         talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
+      }
+
+      // 步骤 5.2：在主等级修行提升后，结算各主角在战斗中累积的动作修行隐性成长经验
+      for (let i = 0; i < players.length; i++) {
+        const p = players[i];
+        if (p.hp > 0) {
+          const w = p.index;
+          const roleStats = state.roles[w];
+          if (!roleStats) continue;
+
+          // 同步并初始化隐藏经验存储结构
+          if (!state.exp) {
+            state.exp = {
+              rgPrimaryExp: [], rgHealthExp: [], rgMagicExp: [], rgAttackExp: [],
+              rgMagicPowerExp: [], rgDefenseExp: [], rgDexterityExp: [], rgFleeExp: []
+            };
+          }
+          const initExpObj = (arr, idx) => {
+            if (!arr[idx]) arr[idx] = { wExp: 0, wReserved: 0, wLevel: roleStats.level || 1, wCount: 0 };
+          };
+          initExpObj(state.exp.rgHealthExp, w);
+          initExpObj(state.exp.rgMagicExp, w);
+          initExpObj(state.exp.rgAttackExp, w);
+          initExpObj(state.exp.rgMagicPowerExp, w);
+          initExpObj(state.exp.rgDefenseExp, w);
+          initExpObj(state.exp.rgDexterityExp, w);
+          initExpObj(state.exp.rgFleeExp, w);
+
+          state.exp.rgHealthExp[w].wCount = p.rgHealthExp || 0;
+          state.exp.rgMagicExp[w].wCount = p.rgMagicExp || 0;
+          state.exp.rgAttackExp[w].wCount = p.rgAttackExp || 0;
+          state.exp.rgMagicPowerExp[w].wCount = p.rgMagicPowerExp || 0;
+          state.exp.rgDefenseExp[w].wCount = p.rgDefenseExp || 0;
+          state.exp.rgDexterityExp[w].wCount = p.rgDexterityExp || 0;
+          state.exp.rgFleeExp[w].wCount = p.rgFleeExp || 0;
+
+          let iTotalCount = 0;
+          iTotalCount += state.exp.rgHealthExp[w].wCount;
+          iTotalCount += state.exp.rgMagicExp[w].wCount;
+          iTotalCount += state.exp.rgAttackExp[w].wCount;
+          iTotalCount += state.exp.rgMagicPowerExp[w].wCount;
+          iTotalCount += state.exp.rgDefenseExp[w].wCount;
+          iTotalCount += state.exp.rgDexterityExp[w].wCount;
+          iTotalCount += state.exp.rgFleeExp[w].wCount;
+
+          if (iTotalCount > 0) {
+            const MAX_LEVELS = 99;
+            const getWordLenLocal = (wordId) => {
+              const word = state.words[wordId];
+              let len = 0;
+              if (word) {
+                for (let k = 0; k < word.length / 2; k++) {
+                  if (word.getShort(k * 2) !== 0x2020) len++;
+                }
+              }
+              return len || 2;
+            };
+
+            const checkHiddenExp = async (expName, statName, labelWordId) => {
+              let count = state.exp[expName][w].wCount;
+              let dwExp = Math.floor((totalExp * count / iTotalCount) * 2);
+              dwExp += state.exp[expName][w].wExp || 0;
+
+              if (state.exp[expName][w].wLevel > MAX_LEVELS) {
+                state.exp[expName][w].wLevel = MAX_LEVELS;
+              }
+
+              const origVal = roleStats[statName];
+
+              while (state.levelUpExp && dwExp >= (state.levelUpExp[state.exp[expName][w].wLevel] || 0) && state.exp[expName][w].wLevel < MAX_LEVELS) {
+                dwExp -= state.levelUpExp[state.exp[expName][w].wLevel] || 0;
+                roleStats[statName] = (roleStats[statName] || 0) + (Math.floor(Math.random() * 2) + 1);
+                if (state.exp[expName][w].wLevel < MAX_LEVELS) {
+                  state.exp[expName][w].wLevel++;
+                }
+              }
+
+              state.exp[expName][w].wExp = dwExp;
+
+              if (roleStats[statName] !== origVal) {
+                roleStats[statName] = Math.min(999, roleStats[statName]);
+
+                const nameLen = getWordLenLocal(roleStats.nameId);
+                const propLen = getWordLenLocal(labelWordId);
+                const upLen = getWordLenLocal(32); // “提升”
+                const totalLen = nameLen + propLen + upLen;
+                const boxX = 65 - (totalLen - 10) * 8;
+                const textX = 75 - (totalLen - 10) * 8;
+
+                UI.drawSingleLineBox(boxX, 105, totalLen, talkCtx);
+                drawWordToCtx(talkCtx, roleStats.nameId, textX, 115);
+                drawWordToCtx(talkCtx, labelWordId, textX + nameLen * 16, 115);
+                drawWordToCtx(talkCtx, 32, textX + (nameLen + propLen) * 16, 115);
+
+                const diff = roleStats[statName] - origVal;
+                drawWinNumber(talkCtx, diff, textX + (nameLen + propLen + upLen) * 16 + 8, 119, 3, 'left', 'yellow');
+
+                await waitWinSpace();
+                talkCtx.clearRect(0, 0, talkCtx.canvas.width, talkCtx.canvas.height);
+              }
+            };
+
+            await checkHiddenExp('rgHealthExp', 'maxHp', 49);
+            await checkHiddenExp('rgMagicExp', 'maxMp', 50);
+            await checkHiddenExp('rgAttackExp', 'attackStrength', 51);
+            await checkHiddenExp('rgMagicPowerExp', 'magicStrength', 52);
+            await checkHiddenExp('rgDefenseExp', 'defense', 53);
+            await checkHiddenExp('rgDexterityExp', 'dexterity', 54);
+            await checkHiddenExp('rgFleeExp', 'fleeRate', 55);
+          }
+        }
       }
 
       // 步骤 5.5：遍历队伍中的每位角色，检查并学习达到等级门槛的新法术
