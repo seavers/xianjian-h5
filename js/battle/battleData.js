@@ -239,3 +239,41 @@ export function loadLevelUpMagics() {
   return list;
 }
 
+// 解析战场参数配置（data.mkf #5）
+// 每个 BATTLEFIELD 结构大小为 12 字节：wScreenWave 2B, rgsMagicEffect 5*2B = 10B
+let cachedBattleFields = null;
+
+export function loadBattleFields() {
+  if (cachedBattleFields) {
+    return cachedBattleFields;
+  }
+
+  const data = loadMkf('data.mkf', 5);
+  if (!data) {
+    console.error('无法加载 data.mkf #5 战场配置数据块');
+    return [];
+  }
+
+  const list = [];
+  const numRecords = Math.floor(data.length / 12);
+
+  for (let i = 0; i < numRecords; i++) {
+    const offset = i * 12;
+    const rgsMagicEffect = [];
+    for (let e = 0; e < 5; e++) {
+      rgsMagicEffect.push(toShort(data.getShort(offset + 2 + e * 2)));
+    }
+    list.push({
+      wScreenWave: data.getShort(offset + 0),
+      rgsMagicEffect: rgsMagicEffect
+    });
+  }
+
+  cachedBattleFields = list;
+  console.log(`成功加载并解析 ${list.length} 个战场属性配置数据`);
+
+  state.battleFields = list;
+  return list;
+}
+
+

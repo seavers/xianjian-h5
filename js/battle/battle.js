@@ -1,6 +1,6 @@
 import { state } from '../engine/state.js';
 import { loadFbp, loadPic, loadWord, loadPal } from '../resources/pal.js';
-import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame, loadLevelUpMagics } from './battleData.js';
+import { loadEnemies, loadEnemyTeam, loadEnemyPos, loadSpriteFrame, loadLevelUpMagics, loadBattleFields } from './battleData.js';
 import { loadMkf } from '../resources/loader.js';
 import { deyj } from '../utils/deyj.js';
 import { playMusic, stopMusic } from '../resources/music.js';
@@ -90,6 +90,7 @@ export async function start(id, failId, fleeId) {
   // 加载战场背景 (FBP 格式)
   bgImage = loadFbp(state.battlefieldId);
   borderImage = loadPic(19);
+  loadBattleFields();
 
   // 加载指令图标
   attackIcon = loadPic(41);
@@ -2332,10 +2333,22 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
           const targetPlayer = players[pIdx];
           let def = targetPlayer.defense;
 
-          // 计算法术基础伤害并折减
-          let baseDmg = calcBaseDamage(str, def);
-          let dmg = Math.floor(baseDmg / 2 + magic.wBaseDamage / 2);
-          dmg += Math.floor(Math.random() * 2);
+          // 使用对齐 C Pal 的五灵/毒抗性算法
+          const roleStats = state.roles[targetPlayer.index];
+          const playerElemResist = [];
+          for (let x = 0; x < 5; x++) {
+            playerElemResist.push(100 + (roleStats && roleStats.elementalResistance ? roleStats.elementalResistance[x] : 0));
+          }
+          const playerPoisonResist = 100 + ((roleStats && roleStats.poisonResistance) || 0);
+
+          let dmg = calcMagicDamage(str, def, playerElemResist, playerPoisonResist, 20, magic);
+
+          // 判定防御状态和真元护体状态（kStatusProtect = 6）
+          const isProtected = roleStats && roleStats.status && roleStats.status[6] > 0;
+          let divisor = 1;
+          if (targetPlayer.isDefending) divisor *= 2;
+          if (isProtected) divisor *= 2;
+          dmg = Math.floor(dmg / divisor);
 
           if (dmg < 1) dmg = 1;
           targetPlayer.hp = Math.max(0, targetPlayer.hp - dmg);
@@ -3041,6 +3054,34 @@ function calcBaseDamage(attackStrength, defense) {
   return damage;
 }
 
+// 步骤 12.5：仙术伤害计算 (完全还原自 sdlpal 中的 PAL_CalcMagicDamage)
+export function calcMagicDamage(magicStrength, defense, elementalResistance, poisonResistance, resistanceMultiplier, magic) {
+  // 灵力小幅度波动
+  let str = Math.floor(magicStrength * (1.0 + Math.random() * 0.1));
+  let sDamage = Math.floor(calcBaseDamage(str, defense) / 4) + magic.wBaseDamage;
+
+  if (magic.wElemental !== 0) {
+    const wElem = magic.wElemental;
+    if (wElem > 5) {
+      // 毒抗性
+      sDamage = Math.floor(sDamage * (10 - poisonResistance / resistanceMultiplier) / 5);
+    } else {
+      // 五灵抗性 (风雷水火土)
+      const resistVal = (elementalResistance && elementalResistance[wElem - 1] !== undefined) ? elementalResistance[wElem - 1] : 5;
+      sDamage = Math.floor(sDamage * (10 - resistVal / resistanceMultiplier) / 5);
+
+      // 战场五灵属性加成
+      const bfId = state.battlefieldId || 0;
+      const bf = state.battleFields ? state.battleFields[bfId] : null;
+      if (bf && bf.rgsMagicEffect && bf.rgsMagicEffect[wElem - 1] !== undefined) {
+        sDamage = Math.floor(sDamage * (10 + bf.rgsMagicEffect[wElem - 1]) / 10);
+      }
+    }
+  }
+
+  return sDamage;
+}
+
 export async function setBattleResult(result) {
   // 步骤 13：设置当前由脚本强行指定的战斗结果，以在主循环中自动退出战斗
   battleResult = result;
@@ -3452,18 +3493,11 @@ async function handleMagicAction(player, actor, act) {
 
         for (const eIdx of targets) {
           const enemy = enemies[eIdx];
-          // 灵力换算
+           // 灵力换算
           let str = player.magicStrength;
-          // 基础伤害计算
-          let baseDmg = calcBaseDamage(str, enemy.defense);
-          let dmg = Math.floor(baseDmg / 2 + magic.wBaseDamage);
-          
-          // 根据五灵抗性修正
-          if (magic.wElemental > 0 && magic.wElemental <= 5) {
-            const resist = enemy.wElemResistance ? enemy.wElemResistance[magic.wElemental - 1] : 0;
-            dmg = Math.floor(dmg * (100 - resist) / 100);
-          }
-          
+          // 基础伤害计算 (完全还原自 sdlpal 中的 PAL_CalcMagicDamage)
+          let dmg = calcMagicDamage(str, enemy.defense, enemy.wElemResistance, enemy.wPoisonResistance || 0, 1, magic);
+
           if (dmg < 1) dmg = 1;
           enemy.hp = Math.max(0, enemy.hp - dmg);
 
@@ -3790,15 +3824,8 @@ export async function simulateMagic(roleIndex, magicId, value) {
       // 循环结算每一个受击怪物的伤害
       for (const eIdx of targets) {
         const enemy = enemies[eIdx];
-        const str = actor.magicStrength || 10;
-        let baseDmg = calcBaseDamage(str, enemy.defense);
-        let dmg = Math.floor(baseDmg / 2 + baseDmgValue);
-
-        // 根据五灵抗性进行计算修正
-        if (magic.wElemental > 0 && magic.wElemental <= 5) {
-          const resist = enemy.wElemResistance ? enemy.wElemResistance[magic.wElemental - 1] : 0;
-          dmg = Math.floor(dmg * (100 - resist) / 100);
-        }
+        const str = baseDmgValue;
+        let dmg = calcMagicDamage(str, enemy.defense, enemy.wElemResistance, enemy.wPoisonResistance || 0, 1, magic);
 
         if (dmg < 1) {
           dmg = 1;
