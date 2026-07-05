@@ -3666,3 +3666,200 @@ async function playEnemyAttackEnemy(enemyIdx, targetEnemyIdx) {
   draw();
   await sleep(400);
 }
+
+// 步骤 16：模拟仙术播放与结算 (还原自 sdlpal 中的 PAL_BattleSimulateMagic)
+export async function simulateMagic(roleIndex, magicId, value) {
+  if (!isBattleRunning) {
+    return;
+  }
+
+  // 1. 获取对应的仙术对象
+  const itemObj = state.items[magicId];
+  if (!itemObj) {
+    return;
+  }
+
+  const magicNumber = itemObj.roleId;
+  const magic = state.magics[magicNumber];
+  if (!magic) {
+    return;
+  }
+
+  // 绑定当前法术 ID，方便特效模块寻找名称短语等
+  magic.id = magicId;
+
+  // 2. 确定法术作用目标方向（敌方还是我方）
+  const isToEnemy = [0, 1, 2, 3, 9].includes(magic.wType);
+  const actor = players[roleIndex] || players[0];
+
+  let targetIdx = -1;
+  let targets = [];
+
+  if (isToEnemy) {
+    // 敌方群体法术判定
+    const isAll = magic.wType === 1 || magic.wType === 6 || magic.wType === 2;
+    if (isAll) {
+      enemies.forEach((e, idx) => {
+        if (e && e.hp > 0) {
+          targets.push(idx);
+        }
+      });
+      if (targets.length === 0) {
+        return;
+      }
+      targetIdx = targets[0];
+    } else {
+      // 敌方单体法术判定，优先选取指定索引，若死亡或无效则顺延
+      if (enemies[roleIndex] && enemies[roleIndex].hp > 0) {
+        targetIdx = roleIndex;
+      } else {
+        targetIdx = enemies.findIndex(e => e && e.hp > 0);
+      }
+      if (targetIdx === -1) {
+        return;
+      }
+      targets = [targetIdx];
+    }
+  } else {
+    // 我方群体或单体法术判定
+    const isAll = magic.wType === 5;
+    const isRevival = isRevivalSpell(magicId);
+    if (isAll) {
+      players.forEach((p, idx) => {
+        if (p && (p.hp > 0 || isRevival)) {
+          targets.push(idx);
+        }
+      });
+      if (targets.length === 0) {
+        return;
+      }
+      targetIdx = targets[0];
+    } else {
+      // 我方单体法术判定
+      if (players[roleIndex] && (players[roleIndex].hp > 0 || isRevival)) {
+        targetIdx = roleIndex;
+      } else {
+        if (isRevival) {
+          targetIdx = players.findIndex(p => p && p.hp <= 0);
+          if (targetIdx === -1) {
+            targetIdx = players.findIndex(p => p && p.hp > 0);
+          }
+        } else {
+          targetIdx = players.findIndex(p => p && p.hp > 0);
+        }
+      }
+      if (targetIdx === -1) {
+        return;
+      }
+      targets = [targetIdx];
+    }
+  }
+
+  // 3. 播放仙术动画与音效
+  const animTarget = isToEnemy ? enemies[targetIdx] : players[targetIdx];
+  await playMagicEffect(magic, actor, animTarget);
+
+  // 4. 结算伤害或恢复效果 (若配置了伤害值或传入了自定义数值)
+  const baseDmgValue = (value !== undefined && value > 0) ? value : magic.wBaseDamage;
+
+  if (intToShort(magic.wBaseDamage) > 0 || (value !== undefined && value > 0)) {
+    if (isToEnemy) {
+      // 执行敌方受击伤害计算与抖动退后动画
+      const enemyOrigPositions = targets.map(eIdx => ({
+        enemy: enemies[eIdx],
+        x: enemies[eIdx].x,
+        y: enemies[eIdx].y
+      }));
+
+      // 受击怪物第一阶段退后
+      enemyOrigPositions.forEach(item => {
+        item.enemy.x -= 8;
+        item.enemy.y -= 4;
+      });
+      draw();
+      await sleep(80);
+
+      // 受击怪物第二阶段退后
+      enemyOrigPositions.forEach(item => {
+        item.enemy.x -= 2;
+        item.enemy.y -= 1;
+      });
+      draw();
+      await sleep(150);
+
+      // 循环结算每一个受击怪物的伤害
+      for (const eIdx of targets) {
+        const enemy = enemies[eIdx];
+        const str = actor.magicStrength || 10;
+        let baseDmg = calcBaseDamage(str, enemy.defense);
+        let dmg = Math.floor(baseDmg / 2 + baseDmgValue);
+
+        // 根据五灵抗性进行计算修正
+        if (magic.wElemental > 0 && magic.wElemental <= 5) {
+          const resist = enemy.wElemResistance ? enemy.wElemResistance[magic.wElemental - 1] : 0;
+          dmg = Math.floor(dmg * (100 - resist) / 100);
+        }
+
+        if (dmg < 1) {
+          dmg = 1;
+        }
+        enemy.hp = Math.max(0, enemy.hp - dmg);
+
+        // 推送伤害飘字数据
+        damagePopups.push({
+          actor: enemy,
+          value: dmg,
+          isPlayer: false,
+          startTime: Date.now()
+        });
+
+        // 播放死亡声效
+        if (enemy.hp <= 0 && (enemy.deathSound > 0 || enemy.wDeathSound > 0)) {
+          playSound(enemy.deathSound || enemy.wDeathSound);
+        }
+      }
+
+      // 还原受击怪物位置
+      enemyOrigPositions.forEach(item => {
+        item.enemy.x = item.x;
+        item.enemy.y = item.y;
+      });
+
+      draw();
+      await sleep(400);
+    } else {
+      // 执行我方恢复/治疗计算
+      let recover = Math.floor((actor.magicStrength || 10) * 1.5 + baseDmgValue);
+      if (recover < 1) {
+        recover = 1;
+      }
+
+      for (const pIdx of targets) {
+        const targetPlayer = players[pIdx];
+        targetPlayer.hp = Math.min(targetPlayer.maxHp, targetPlayer.hp + recover);
+        
+        const roleStats = state.roles[targetPlayer.index];
+        if (roleStats) {
+          roleStats.hp = targetPlayer.hp;
+        }
+
+        restorePlayerFrame(targetPlayer);
+
+        // 推送绿色生命恢复飘字数据
+        damagePopups.push({
+          actor: targetPlayer,
+          value: recover,
+          isPlayer: true,
+          startTime: Date.now()
+        });
+      }
+
+      draw();
+      await sleep(400);
+    }
+  } else {
+    // 若法术无伤害/恢复值配置，只重绘一次，停留少许时间以防特效突兀消失
+    draw();
+    await sleep(400);
+  }
+}

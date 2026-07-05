@@ -2365,7 +2365,7 @@ export function setScriptSuccess() {
   console.log(`[0x41 setScriptSuccess] 标记脚本执行为失败状态 (g_fScriptSuccess = FALSE)`);
 }
 
-export function simulateMagic(magicId, value, roleId) {
+export async function simulateMagic(magicId, value, roleId) {
   let roleIndex = roleId;
   if (roleId === 0 || roleId === 0xFFFF) {
     roleIndex = getRoleIndex(this);
@@ -2374,7 +2374,7 @@ export function simulateMagic(magicId, value, roleId) {
   }
   console.log(`[0x42 simulateMagic] 模拟仙术 ID: ${magicId}, 数值: ${value}, 角色 Index: ${roleIndex}`);
   if (window.Battle && typeof window.Battle.simulateMagic === 'function') {
-    window.Battle.simulateMagic(roleIndex, magicId, value);
+    await window.Battle.simulateMagic(roleIndex, magicId, value);
   }
 }
 
