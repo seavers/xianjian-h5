@@ -1664,6 +1664,7 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
         </div>
       `}
     </div>
+    </div>
   `;
 }
 
