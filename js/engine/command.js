@@ -1492,25 +1492,21 @@ export function setEnemyStatus(statusId, value, failScriptId) {
 
   if (enemy) {
     // 步骤 2：参考 sdlpal 对抗性进行判定。如果敌人抗性较高，有概率判定状态附加失败，若失败则跳转到 failScriptId
-    const resistance = (enemy.config && typeof enemy.config.wPoisonResistance === 'number') ? enemy.config.wPoisonResistance : 0;
+    // 仙剑1中物体的 gold 属性在敌人类型中复用为 wResistanceToSorcery (范围 0-10)
+    const resistance = state.items[enemy.objId]?.gold || 0;
     const maxVal = statusId === 4 ? 14 : 9; // kStatusSlow = 4
     const rand = Math.floor(Math.random() * (maxVal + 1));
 
-    if (rand <= Math.floor(resistance / 10)) {
+    if (rand <= resistance) {
       console.log(`[0x2E setEnemyStatus] 敌人状态附加失败 (抗性高)，跳转至脚本: ${failScriptId}`);
-      if (failScriptId) {
-        return failScriptId;
-      }
-      return;
+      return failScriptId || 0;
     }
 
     enemy.status = enemy.status || {};
     enemy.status[statusId] = value;
     console.log(`[0x2E setEnemyStatus] 设定敌人 (Index: ${enemyIndex}) 状态 ID ${statusId} ➔ 值 ${value}`);
   } else {
-    if (failScriptId) {
-      return failScriptId;
-    }
+    return failScriptId || 0;
   }
 }
 
