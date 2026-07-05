@@ -1159,7 +1159,8 @@ export function BattleDataApp() {
   ];
 
   return html`
-    <div id="battle-data-modal" style=${{ display: 'flex', position: 'fixed', zIndex: 99999, left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(5,5,8,0.75)', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+    <div id="battle-data-modal" class="pal-dashboard battle-panel" style=${{ display: 'flex', position: 'fixed', zIndex: 99999, left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(5,5,8,0.75)', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+
       <div style=${{ background: 'rgba(10,13,20,0.96)', border: `1px solid ${BATTLE_COLOR}`, borderRadius: '4px', boxShadow: `0 0 25px rgba(${BATTLE_COLOR_RGB}, 0.15)`, width: 'calc(100% - 40px)', height: 'calc(100% - 40px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'JetBrains Mono', sans-serif" }}>
         <!-- 弹窗头部 -->
         <div class="tool-modal-header" style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(0,0,0,0.6)', borderBottom: '1px solid var(--border-glass)' }}>

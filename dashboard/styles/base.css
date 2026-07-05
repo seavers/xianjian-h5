@@ -1,0 +1,535 @@
+/* ==================== 💻 仙剑奇侠传开发者面板公共基础样式 (base.css) ==================== */
+
+.pal-dashboard {
+  --glow-green: #00ff9d;
+  --glow-yellow: #ffd000;
+  --glow-blue: #00e1ff;
+  --glow-red: #ff3b6f;
+  --glow-purple: #c56cf0;
+  --border-glass: rgba(255, 255, 255, 0.05);
+  --bg-dark: #050508;
+  --panel-inner-bg: rgba(13, 13, 20, 0.96);
+  --grid-item-bg: rgba(255, 255, 255, 0.015);
+
+  background: var(--bg-dark);
+  border-left: 1px solid var(--border-glass);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.pal-dashboard * {
+  box-sizing: border-box;
+}
+
+
+/* 基础布局结构：侧边栏 */
+.pal-dashboard .sidebar {
+  flex-shrink: 0;
+  flex-grow: 0;
+  border-right: 1px solid var(--border-glass);
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pal-dashboard .sidebar-header {
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pal-dashboard .sidebar-title {
+  font-size: 9.5px;
+  font-weight: bold;
+  color: var(--glow-yellow);
+}
+
+.pal-dashboard .sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 列表条目样式 */
+.pal-dashboard .list-item {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pal-dashboard .list-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.pal-dashboard .list-item.is-selected {
+  background: rgba(255, 215, 0, 0.08);
+  border-color: var(--glow-yellow);
+}
+
+.pal-dashboard .list-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pal-dashboard .list-item-row-secondary {
+  margin-top: 2px;
+}
+
+.pal-dashboard .list-item-title {
+  font-size: 9px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.pal-dashboard .list-item.is-selected .list-item-title {
+  color: var(--glow-yellow);
+}
+
+.pal-dashboard .list-item-meta {
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.pal-dashboard .list-item-subtitle {
+  font-size: 8px;
+  color: var(--glow-green);
+}
+
+.pal-dashboard .list-item-tail {
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* 详情面板样式 */
+.pal-dashboard .detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 15px;
+}
+
+.pal-dashboard .detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.15);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.pal-dashboard .detail-header-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pal-dashboard .detail-title {
+  margin: 0;
+  color: var(--glow-yellow);
+  font-weight: bold;
+}
+
+.pal-dashboard .detail-badge {
+  font-size: 8px;
+  background: rgba(0, 255, 157, 0.1);
+  border: 1px solid rgba(0, 255, 157, 0.3);
+  color: var(--glow-green);
+  padding: 1px 4px;
+  border-radius: 1px;
+  font-weight: bold;
+}
+
+.pal-dashboard .detail-meta {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: bold;
+}
+
+/* 分栏及容器布局 */
+.pal-dashboard .content-split {
+  flex: 1;
+  display: flex;
+  gap: 15px;
+  overflow: hidden;
+}
+
+.pal-dashboard .preview-card {
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  border-radius: 3px;
+}
+
+.pal-dashboard .preview-label {
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.3);
+  font-weight: bold;
+}
+
+.pal-dashboard .preview-canvas {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+}
+
+.pal-dashboard .scroll-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.pal-dashboard .section-title {
+  font-size: 8.5px;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: bold;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pal-dashboard .section-title::before {
+  content: "";
+  width: 3px;
+  height: 3px;
+  background: var(--glow-yellow);
+  border-radius: 50%;
+}
+
+/* 状态展示卡片网格 */
+.pal-dashboard .stat-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.pal-dashboard .stat-card {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  padding: 4px 8px;
+  border-radius: 2px;
+}
+
+.pal-dashboard .stat-label {
+  font-size: 7.5px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.pal-dashboard .stat-value {
+  font-size: 10px;
+  font-weight: bold;
+}
+
+/* 属性卡片数据网格 */
+.pal-dashboard .block-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.pal-dashboard .block-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  padding: 5px 8px;
+  border-radius: 2px;
+}
+
+.pal-dashboard .block-label {
+  font-size: 7px;
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.pal-dashboard .block-value {
+  font-size: 8px;
+  color: #fff;
+  font-weight: bold;
+  margin-top: 2px;
+}
+
+.pal-dashboard .tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pal-dashboard .tag {
+  font-size: 8px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-weight: bold;
+}
+
+.pal-dashboard .link {
+  color: var(--glow-yellow);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.pal-dashboard .binding-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pal-dashboard .binding-item {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 215, 0, 0.08);
+  padding: 6px 10px;
+  border-radius: 2px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.pal-dashboard .binding-label {
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.pal-dashboard .binding-value {
+  font-size: 8.5px;
+}
+
+/* 兼容遗留的全局类别名，以便于渐进重构 */
+.gamedata-sidebar {
+  composes: sidebar;
+}
+.gamedata-sidebar-header {
+  composes: sidebar-header;
+}
+.gamedata-sidebar-title {
+  composes: sidebar-title;
+}
+.gamedata-sidebar-list {
+  composes: sidebar-list;
+}
+.gamedata-list-item {
+  composes: list-item;
+}
+.gamedata-detail {
+  composes: detail;
+}
+.gamedata-detail-header {
+  composes: detail-header;
+}
+.gamedata-detail-title {
+  composes: detail-title;
+}
+.gamedata-detail-badge {
+  composes: detail-badge;
+}
+.gamedata-detail-meta {
+  composes: detail-meta;
+}
+.gamedata-content-split {
+  composes: content-split;
+}
+.gamedata-preview-card {
+  composes: preview-card;
+}
+.gamedata-preview-label {
+  composes: preview-label;
+}
+.gamedata-preview-canvas {
+  composes: preview-canvas;
+}
+.gamedata-scroll-panel {
+  composes: scroll-panel;
+}
+.gamedata-section-title {
+  composes: section-title;
+}
+.gamedata-stat-grid {
+  composes: stat-grid;
+}
+.gamedata-stat-card {
+  composes: stat-card;
+}
+.gamedata-block-grid {
+  composes: block-grid;
+}
+.gamedata-block-card {
+  composes: block-card;
+}
+.gamedata-tag-list {
+  composes: tag-list;
+}
+.gamedata-tag {
+  composes: tag;
+}
+.gamedata-link {
+  composes: link;
+}
+.gamedata-binding-list {
+  composes: binding-list;
+}
+.gamedata-binding-item {
+  composes: binding-item;
+}
+.gamedata-binding-label {
+  composes: binding-label;
+}
+.gamedata-binding-value {
+  composes: binding-value;
+}
+
+
+/* 通用开发者面板弹窗及启动按钮样式 */
+.pal-dashboard .launch-btn {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 2px 6px;
+  font-size: 8.5px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.pal-dashboard .launch-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.pal-dashboard .launch-btn--battle {
+  color: #a78bfa;
+  border-color: rgba(167, 139, 250, 0.2);
+  margin-right: 2px;
+}
+.pal-dashboard .launch-btn--battle:hover {
+  background: rgba(167, 139, 250, 0.1);
+  border-color: #a78bfa;
+}
+.pal-dashboard .launch-btn--game-data {
+  color: var(--glow-yellow);
+  border-color: rgba(255, 215, 0, 0.2);
+  margin-right: 2px;
+}
+.pal-dashboard .launch-btn--game-data:hover {
+  background: rgba(255, 215, 0, 0.1);
+  border-color: var(--glow-yellow);
+}
+.pal-dashboard .launch-btn--image-explorer {
+  color: var(--glow-green);
+  border-color: rgba(0, 255, 157, 0.2);
+}
+.pal-dashboard .launch-btn--image-explorer:hover {
+  background: rgba(0, 255, 157, 0.1);
+  border-color: var(--glow-green);
+}
+
+/* 通用弹窗头部 */
+.pal-dashboard .tool-modal-header {
+  background: rgba(0, 0, 0, 0.6);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.pal-dashboard .tool-modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pal-dashboard .tool-modal-dot {
+  width: 5px;
+  height: 5px;
+  background: var(--modal-accent, var(--glow-green));
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--modal-accent, var(--glow-green));
+}
+.pal-dashboard .tool-modal-heading {
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--modal-accent, var(--glow-green));
+  letter-spacing: 0.5px;
+}
+.pal-dashboard .tool-modal-close {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 14px;
+  cursor: pointer;
+  transition: color 0.15s;
+  outline: none;
+}
+.pal-dashboard .tool-modal-close:hover {
+  color: var(--modal-accent, #ff3b6f);
+}
+
+/* 通用标签栏与选项卡 */
+.pal-dashboard .tool-modal-tabbar {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.pal-dashboard .tool-modal-tab-btn {
+  color: rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.06);
+  padding: 2px 10px;
+  font-size: 8.5px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 2px;
+  transition: all 0.1s;
+}
+.pal-dashboard .tool-modal-tab-btn:hover {
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+}
+.pal-dashboard .tool-modal-tab-btn--compact {
+  padding: 2px 8px;
+}
+.pal-dashboard .tool-modal-tab-btn.is-active,
+.pal-dashboard .tool-modal-tab-btn.active {
+  color: var(--tab-accent, var(--modal-accent, var(--glow-green))) !important;
+  border-color: var(--tab-accent, var(--modal-accent, var(--glow-green))) !important;
+  background: rgba(0, 255, 157, 0.08);
+}
+
+/* 通用开发者面板内的基础小按钮 */
+.pal-dashboard .btn-dbg {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  padding: 3px 6px;
+  border-radius: 2px;
+  font-size: 9px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.pal-dashboard .btn-dbg:hover {
+  background: rgba(0, 255, 157, 0.05);
+  border-color: var(--glow-green);
+  color: var(--glow-green);
+}
+

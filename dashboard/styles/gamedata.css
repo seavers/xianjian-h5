@@ -1,0 +1,64 @@
+/* ==================== 📚 仙剑奇侠传游戏静态数据面板与三级模块隔离样式 (gamedata.css) ==================== */
+
+.pal-dashboard.gamedata-panel {
+  /* 游戏资料面板专用布局修饰 */
+}
+
+/* 选项卡按钮激活态 */
+.pal-dashboard .gamedata-tab-btn.active {
+  background: rgba(255, 215, 0, 0.1) !important;
+  border-color: var(--glow-yellow) !important;
+  color: var(--glow-yellow) !important;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.15);
+}
+
+/* ==================== 三级模块专属隔离包裹容器 ==================== */
+
+/* 1. 👤 角色模块 */
+.pal-dashboard.gamedata-panel .role-tab {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 2. 👾 NPC 模块 */
+.pal-dashboard.gamedata-panel .npc-tab {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 3. 🎒 物品模块 */
+.pal-dashboard.gamedata-panel .item-tab {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 4. 📜 脚本模块 */
+.pal-dashboard.gamedata-panel .script-tab {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 5. 🗺️ 场景模块 */
+.pal-dashboard.gamedata-panel .scene-tab {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 6. 🛒 商店模块 */
+.pal-dashboard.gamedata-panel .shop-tab {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 7. 📈 成长模块 */
+.pal-dashboard.gamedata-panel .growth-tab {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}

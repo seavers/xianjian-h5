@@ -1328,8 +1328,9 @@ function ImageExplorerApp() {
 
   return html`
     <!-- 资源浏览器面板容器 -->
-    <div id="image-explorer-modal" style=${{ display: 'flex', position: 'fixed', zIndex: 99999, left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(5,5,8,0.75)', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+    <div id="image-explorer-modal" class="pal-dashboard picture-panel" style=${{ display: 'flex', position: 'fixed', zIndex: 99999, left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(5,5,8,0.75)', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
       <div style=${{ '--modal-accent': 'var(--glow-green)', background: 'rgba(13,13,20,0.96)', border: '1px solid var(--glow-green)', borderRadius: '4px', boxShadow: '0 0 25px rgba(0, 255, 157, 0.15)', width: 'calc(100% - 40px)', height: 'calc(100% - 40px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'JetBrains Mono', sans-serif" }}>
+
         
         <!-- 弹窗头部 -->
         <div class="tool-modal-header">

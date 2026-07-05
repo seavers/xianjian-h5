@@ -867,22 +867,24 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
   };
 
   return html`
-    <!-- 控制台头部 -->
-    <div id="dashboard-header" style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(5,5,8,0.96)', borderBottom: '1px solid var(--border-glass)', flexShrink: 0, position: 'sticky', top: 0, zIndex: 10 }}>
-      <div class="db-title dashboard-header-main" style=${{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <div class="dashboard-status-dot" style=${{ width: '6px', height: '6px', borderRadius: '50%', background: '#00ff9d', boxShadow: '0 0 8px #00ff9d' }}></div>
-        <h2 style=${{ fontSize: '11px', fontWeight: 'bold', color: '#fff', margin: 0 }}>PAL RUNTIME REALTIME PROFILE CONSOLE</h2>
+    <div class="pal-dashboard realtime-panel" style=${{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflowY: 'auto' }}>
+      <!-- 控制台头部 -->
+      <div id="dashboard-header">
+        <div class="db-title dashboard-header-main" style=${{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div class="dashboard-status-dot" style=${{ width: '6px', height: '6px', borderRadius: '50%', background: '#00ff9d', boxShadow: '0 0 8px #00ff9d' }}></div>
+          <h2 style=${{ fontSize: '11px', fontWeight: 'bold', color: '#fff', margin: 0 }}>PAL RUNTIME REALTIME PROFILE CONSOLE</h2>
+        </div>
+        <div class="dashboard-header-actions" style=${{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button class="btn-dbg launch-btn launch-btn--battle" onClick=${() => window.openBattleDataModal?.()} style=${{ padding: '2px 6px', fontSize: '8px' }}>⚔️ 战斗资料</button>
+          <button class="btn-dbg launch-btn launch-btn--game-data" onClick=${() => window.openGameDataModal?.()} style=${{ padding: '2px 6px', fontSize: '8px' }}>📚 游戏资料</button>
+          <button class="btn-dbg launch-btn launch-btn--image-explorer" onClick=${() => window.openImageExplorer?.()} style=${{ padding: '2px 6px', fontSize: '8px' }}>🖼️ 图片资源</button>
+          <div style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.2)' }}>VER: 4.0-DECRYPT-STREAM</div>
+        </div>
       </div>
-      <div class="dashboard-header-actions" style=${{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <button class="btn-dbg launch-btn launch-btn--battle" onClick=${() => window.openBattleDataModal?.()} style=${{ padding: '2px 6px', fontSize: '8px' }}>⚔️ 战斗资料</button>
-        <button class="btn-dbg launch-btn launch-btn--game-data" onClick=${() => window.openGameDataModal?.()} style=${{ padding: '2px 6px', fontSize: '8px' }}>📚 游戏资料</button>
-        <button class="btn-dbg launch-btn launch-btn--image-explorer" onClick=${() => window.openImageExplorer?.()} style=${{ padding: '2px 6px', fontSize: '8px' }}>🖼️ 图片资源</button>
-        <div style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.2)' }}>VER: 4.0-DECRYPT-STREAM</div>
-      </div>
-    </div>
 
-    <!-- 主面板区 -->
-    <div id="panel-container" style=${{ display: 'flex', flexDirection: 'column' }}>
+      <!-- 主面板区 -->
+      <div id="panel-container">
+
       
       <!-- ⚔️ 游戏战斗实时数据面板 -->
       ${isBattleRunning ? html`
@@ -1664,6 +1666,8 @@ function DashboardApp({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) 
     </div>
   `;
 }
+
+
 
 // 侧边栏 React Root 惰性挂载器
 export function initDashboardRuntime({ drawDecodedSprite, getDetailedItemInfo, scriptLogApi }) {

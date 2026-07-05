@@ -76,108 +76,112 @@ function RoleTabComponent({ selectedRoleId, setSelectedRoleId, jumpToScript }) {
   }, [role.mgoRoleId, isPlaying]);
 
   return html`
-    <div class="gamedata-sidebar" style=${{ flex: '0 0 260px' }}>
-      <div class="gamedata-sidebar-header">
-        <span class="gamedata-sidebar-title">👤 剧中角色列表</span>
-      </div>
-      <div class="gamedata-sidebar-list">
-        ${Object.keys(ROLES_DB).map(id => {
-          const roleId = parseInt(id, 10);
-          const r = ROLES_DB[roleId];
-          const isSelected = selectedRoleId === roleId;
-          return html`
-            <div 
-              key=${roleId} 
-              onClick=${() => { setSelectedRoleId(roleId); setAnimFrame(0); }} 
-              class=${`gamedata-list-item ${isSelected ? 'is-selected' : ''}`}
-            >
-              <div class="gamedata-list-item-row">
-                <span class="gamedata-list-item-title">${r.name}</span>
-                <span class="gamedata-list-item-meta">LV ${r.level}</span>
-              </div>
-            </div>
-          `;
-        })}
-      </div>
-    </div>
-    
-    <div class="gamedata-detail">
-      <div class="gamedata-detail-header">
-        <div class="gamedata-detail-header-main">
-          <h2 class="gamedata-detail-title" style=${{ fontSize: '14px', textShadow: '0 0 10px rgba(255,215,0,0.2)' }}>${role.name}</h2>
-          <span class="gamedata-detail-badge">主力队员</span>
+    <div class="role-tab" style=${{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div class="sidebar" style=${{ flex: '0 0 260px' }}>
+        <div class="sidebar-header">
+          <span class="sidebar-title">👤 剧中角色列表</span>
         </div>
-        <div class="gamedata-detail-meta">当前携带资金: <span style=${{ color: 'var(--glow-yellow)' }}>${state.money || 0} 文</span></div>
+        <div class="sidebar-list">
+          ${Object.keys(ROLES_DB).map(id => {
+            const roleId = parseInt(id, 10);
+            const r = ROLES_DB[roleId];
+            const isSelected = selectedRoleId === roleId;
+            return html`
+              <div 
+                key=${roleId} 
+                onClick=${() => { setSelectedRoleId(roleId); setAnimFrame(0); }} 
+                class=${`list-item ${isSelected ? 'is-selected' : ''}`}
+              >
+                <div class="list-item-row">
+                  <span class="list-item-title">${r.name}</span>
+                  <span class="list-item-meta">LV ${r.level}</span>
+                </div>
+              </div>
+            `;
+          })}
+        </div>
       </div>
       
-      <div class="gamedata-content-split">
-        <div class="gamedata-preview-card">
-          <span class="gamedata-preview-label">🖼️ 经典角色头像 (RGM)</span>
-          <canvas ref=${rgmCanvasRef} width="80" height="80" class="gamedata-preview-canvas"></canvas>
-          <span class="gamedata-preview-label" style=${{ marginTop: '5px' }}>🏃 2D 走动像素立绘 (MGO)</span>
-          <canvas ref=${mgoCanvasRef} width="60" height="138" class="gamedata-preview-canvas"></canvas>
-          <button 
-            onClick=${() => setIsPlaying(!isPlaying)} 
-            class="btn-dbg" 
-            style=${{ color: isPlaying ? 'var(--glow-green)' : 'var(--glow-yellow)', borderColor: 'rgba(0,255,157,0.2)', padding: '2px 8px', fontSize: '8px', cursor: 'pointer', fontWeight: 'bold' }}
-          >
-            ${isPlaying ? '⏸ 暂停走动' : '▶ 播放走动'}
-          </button>
+      <div class="detail">
+        <div class="detail-header">
+          <div class="detail-header-main">
+            <h2 class="detail-title" style=${{ fontSize: '14px', textShadow: '0 0 10px rgba(255,215,0,0.2)' }}>${role.name}</h2>
+            <span class="detail-badge">主力队员</span>
+          </div>
+          <div class="detail-meta">当前携带资金: <span style=${{ color: 'var(--glow-yellow)' }}>${state.money || 0} 文</span></div>
         </div>
         
-        <div class="gamedata-scroll-panel">
-          <div>
-            <div class="gamedata-section-title">角色基础属性</div>
-            <div class="gamedata-stat-grid" style=${{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-              <div class="gamedata-stat-card"><div class="gamedata-stat-label">等级 (LV)</div><div class="gamedata-stat-value" style=${{ color: 'var(--glow-yellow)' }}>LV ${role.level}</div></div>
-              <div class="gamedata-stat-card"><div class="gamedata-stat-label">体力 (HP)</div><div class="gamedata-stat-value" style=${{ color: '#ff5777' }}>${role.hp}</div></div>
-              <div class="gamedata-stat-card"><div class="gamedata-stat-label">真气 (MP)</div><div class="gamedata-stat-value" style=${{ color: '#4db3ff' }}>${role.mp}</div></div>
-              <div class="gamedata-stat-card"><div class="gamedata-stat-label">武术 (ATK)</div><div class="gamedata-stat-value" style=${{ color: '#ffa64d' }}>${role.atk}</div></div>
-              <div class="gamedata-stat-card"><div class="gamedata-stat-label">灵力 (MAG)</div><div class="gamedata-stat-value" style=${{ color: '#b366ff' }}>${role.mag}</div></div>
-              <div class="gamedata-stat-card"><div class="gamedata-stat-label">防御 (DEF)</div><div class="gamedata-stat-value" style=${{ color: '#00ffaa' }}>${role.def}</div></div>
-              <div class="gamedata-stat-card"><div class="gamedata-stat-label">身法 (SPD)</div><div class="gamedata-stat-value" style=${{ color: '#00e5ff' }}>${role.spd}</div></div>
-              <div class="gamedata-stat-card"><div class="gamedata-stat-label">吉运 (LCK)</div><div class="gamedata-stat-value" style=${{ color: '#ffff00' }}>${role.lck}</div></div>
-              <div class="gamedata-stat-card"><div class="gamedata-stat-label">状态 (STATUS)</div><div class="gamedata-stat-value" style=${{ color: 'var(--glow-green)' }}>${role.status}</div></div>
-            </div>
-          </div>
-
-          <div>
-            <div class="gamedata-section-title">运行时精灵图集解剖 (Sprite Profiles)</div>
-            <div class="gamedata-block-grid" style=${{ gridTemplateColumns: '1fr 1fr' }}>
-              <div class="gamedata-block-card">
-                <div class="gamedata-block-label">👾 大地图动作包 (mgo.mkf)</div>
-                <div class="gamedata-block-value" style=${{ color: 'var(--glow-yellow)' }}>mgo.mkf #${mgoIdVal}</div>
-              </div>
-              <div class="gamedata-block-card">
-                <div class="gamedata-block-label">⚔ 战斗贴图精灵包 (f.mkf)</div>
-                <div class="gamedata-block-value" style=${{ color: 'var(--glow-green)' }}>f.mkf #${battleSpriteVal}</div>
-              </div>
-            </div>
+        <div class="content-split">
+          <div class="preview-card">
+            <span class="preview-label">🖼️ 经典角色头像 (RGM)</span>
+            <canvas ref=${rgmCanvasRef} width="80" height="80" class="preview-canvas"></canvas>
+            <span class="preview-label" style=${{ marginTop: '5px' }}>🏃 2D 走动像素立绘 (MGO)</span>
+            <canvas ref=${mgoCanvasRef} width="60" height="138" class="preview-canvas"></canvas>
+            <button 
+              onClick=${() => setIsPlaying(!isPlaying)} 
+              class="btn-dbg" 
+              style=${{ color: isPlaying ? 'var(--glow-green)' : 'var(--glow-yellow)', borderColor: 'rgba(0,255,157,0.2)', padding: '2px 8px', fontSize: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              ${isPlaying ? '⏸ 暂停走动' : '▶ 播放走动'}
+            </button>
           </div>
           
-          <div>
-            <div class="gamedata-section-title">配备神兵防具</div>
-            <div class="gamedata-block-grid" style=${{ gridTemplateColumns: '1fr 1fr' }}>
-              <div class="gamedata-block-card"><div class="gamedata-block-label">⚔ 武器</div><div class="gamedata-block-value">${role.equip.weapon}</div></div>
-              <div class="gamedata-block-card"><div class="gamedata-block-label">🛡 身体防具</div><div class="gamedata-block-value">${role.equip.armor}</div></div>
-              <div class="gamedata-block-card"><div class="gamedata-block-label">👒 头部防护</div><div class="gamedata-block-value">${role.equip.helmet}</div></div>
-              <div class="gamedata-block-card"><div class="gamedata-block-label">🥾 足踏奇鞋</div><div class="gamedata-block-value">${role.equip.shoes}</div></div>
+          <div class="scroll-panel">
+            <div>
+              <div class="section-title">角色基础属性</div>
+              <div class="stat-grid" style=${{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                <div class="stat-card"><div class="stat-label">等级 (LV)</div><div class="stat-value" style=${{ color: 'var(--glow-yellow)' }}>LV ${role.level}</div></div>
+                <div class="stat-card"><div class="stat-label">体力 (HP)</div><div class="stat-value" style=${{ color: '#ff5777' }}>${role.hp}</div></div>
+                <div class="stat-card"><div class="stat-label">真气 (MP)</div><div class="stat-value" style=${{ color: '#4db3ff' }}>${role.mp}</div></div>
+                <div class="stat-card"><div class="stat-label">武术 (ATK)</div><div class="stat-value" style=${{ color: '#ffa64d' }}>${role.atk}</div></div>
+                <div class="stat-card"><div class="stat-label">灵力 (MAG)</div><div class="stat-value" style=${{ color: '#b366ff' }}>${role.mag}</div></div>
+                <div class="stat-card"><div class="stat-label">防御 (DEF)</div><div class="stat-value" style=${{ color: '#00ffaa' }}>${role.def}</div></div>
+                <div class="stat-card"><div class="stat-label">身法 (SPD)</div><div class="stat-value" style=${{ color: '#00e5ff' }}>${role.spd}</div></div>
+                <div class="stat-card"><div class="stat-label">吉运 (LCK)</div><div class="stat-value" style=${{ color: '#ffff00' }}>${role.lck}</div></div>
+                <div class="stat-card"><div class="stat-label">状态 (STATUS)</div><div class="stat-value" style=${{ color: 'var(--glow-green)' }}>${role.status}</div></div>
+              </div>
             </div>
-          </div>
-          
-          <div>
-            <div class="gamedata-section-title">精通绝学仙术</div>
-            <div class="gamedata-tag-list">
-              ${role.spells.map((spell, idx) => html`
-                <span key=${idx} class="gamedata-tag" style=${{ color: '#dfb3ff', background: 'rgba(179,102,255,0.1)', border: '1px solid rgba(179,102,255,0.3)' }}>✨ ${spell}</span>
-              `)}
+  
+            <div>
+              <div class="section-title">运行时精灵图集解剖 (Sprite Profiles)</div>
+              <div class="block-grid" style=${{ gridTemplateColumns: '1fr 1fr' }}>
+                <div class="block-card">
+                  <div class="block-label">👾 大地图动作包 (mgo.mkf)</div>
+                  <div class="block-value" style=${{ color: 'var(--glow-yellow)' }}>mgo.mkf #${mgoIdVal}</div>
+                </div>
+                <div class="block-card">
+                  <div class="block-label">⚔ 战斗贴图精灵包 (f.mkf)</div>
+                  <div class="block-value" style=${{ color: 'var(--glow-green)' }}>f.mkf #${battleSpriteVal}</div>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <div class="section-title">配备神兵防具</div>
+              <div class="block-grid" style=${{ gridTemplateColumns: '1fr 1fr' }}>
+                <div class="block-card"><div class="block-label">⚔ 武器</div><div class="block-value">${role.equip.weapon}</div></div>
+                <div class="block-card"><div class="block-label">🛡 身体防具</div><div class="block-value">${role.equip.armor}</div></div>
+                <div class="block-card"><div class="block-label">👒 头部防护</div><div class="block-value">${role.equip.helmet}</div></div>
+                <div class="block-card"><div class="block-label">🥾 足踏奇鞋</div><div class="block-value">${role.equip.shoes}</div></div>
+              </div>
+            </div>
+            
+            <div>
+              <div class="section-title">精通绝学仙术</div>
+              <div class="tag-list">
+                ${role.spells.map((spell, idx) => html`
+                  <span key=${idx} class="tag" style=${{ color: '#dfb3ff', background: 'rgba(179,102,255,0.1)', border: '1px solid rgba(179,102,255,0.3)' }}>✨ ${spell}</span>
+                `)}
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  `;
 }
+
+
+
 
 // 👾 NPC Tab 子组件
 function NpcTabComponent({ selectedNpcId, setSelectedNpcId, npcFilterKeyword, setNpcFilterKeyword, jumpToScript }) {
@@ -232,9 +236,10 @@ function NpcTabComponent({ selectedNpcId, setSelectedNpcId, npcFilterKeyword, se
   }, [activeNpc?.id, activeNpc?.mgoId, activeNpc?.frame]);
 
   return html`
-    <div class="gamedata-sidebar" style=${{ flex: '0 0 280px' }}>
-      <div class="gamedata-sidebar-header">
-        <span class="gamedata-sidebar-title">👾 全局 NPC 列表 (共 ${npcs.length} 个)</span>
+    <div class="npc-tab" style=${{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div class="sidebar" style=${{ flex: '0 0 280px' }}>
+      <div class="sidebar-header">
+        <span class="sidebar-title">👾 全局 NPC 列表 (共 ${npcs.length} 个)</span>
         <input 
           type="text" 
           value=${npcFilterKeyword} 
@@ -243,7 +248,7 @@ function NpcTabComponent({ selectedNpcId, setSelectedNpcId, npcFilterKeyword, se
           style=${{ background: '#0c0a08', border: '1px solid rgba(255,215,0,0.2)', color: '#fff', fontSize: '8px', padding: '3px 6px', outline: 'none', borderRadius: '2px' }}
         />
       </div>
-      <div class="gamedata-sidebar-list">
+      <div class="sidebar-list">
         ${filteredNpcs.length === 0 ? html`
           <div style=${{ textAlign: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '8.5px', paddingTop: '20px' }}>未找到匹配的 NPC</div>
         ` : filteredNpcs.map(npc => {
@@ -252,24 +257,25 @@ function NpcTabComponent({ selectedNpcId, setSelectedNpcId, npcFilterKeyword, se
             <div 
               key=${npc.id} 
               onClick=${() => setSelectedNpcId(npc.id)} 
-              class=${`gamedata-list-item ${isSelected ? 'is-selected' : ''}`}
+              class=${`list-item ${isSelected ? 'is-selected' : ''}`}
             >
-              <div class="gamedata-list-item-row">
-                <span class="gamedata-list-item-title">🤖 NPC #${npc.id}</span>
-                <span class="gamedata-list-item-meta">Dir: ${npc.dir}</span>
+              <div class="list-item-row">
+                <span class="list-item-title">🤖 NPC #${npc.id}</span>
+                <span class="list-item-meta">Dir: ${npc.dir}</span>
               </div>
-              <div class="gamedata-list-item-row gamedata-list-item-row-secondary">
-                <span class="gamedata-list-item-subtitle">${getRoleName(npc.mgoId)}</span>
-                <span class="gamedata-list-item-tail">(${npc.x}, ${npc.y})</span>
+              <div class="list-item-row list-item-row-secondary">
+                <span class="list-item-subtitle">${getRoleName(npc.mgoId)}</span>
+                <span class="list-item-tail">(${npc.x}, ${npc.y})</span>
               </div>
             </div>
-          `;
-        })}
+    </div>
+  `;
+})}
       </div>
     </div>
 
     ${activeNpc ? html`
-      <div class="gamedata-detail">
+      <div class="detail">
         <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,215,0,0.15)', paddingBottom: '8px', marginBottom: '12px' }}>
           <h2 style=${{ margin: 0, fontSize: '12px', color: 'var(--glow-yellow)', fontWeight: 'bold' }}>👾 NPC #${activeNpc.id} [${getRoleName(activeNpc.mgoId)}] 的运行时状态分析</h2>
         </div>
@@ -287,29 +293,29 @@ function NpcTabComponent({ selectedNpcId, setSelectedNpcId, npcFilterKeyword, se
             <div>
               <div style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}><span style=${{ width: '3px', height: '3px', background: 'var(--glow-yellow)', borderRadius: '50%' }}></span> 二进制核心事件物体属性 (EventObject Profile)</div>
               <div style=${{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>瓦片横坐标 (mx)</span><span style=${{ fontSize: '9px', color: '#fff', fontWeight: 'bold' }}>${activeNpc.x}</span></div>
-                <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>瓦片纵坐标 (my)</span><span style=${{ fontSize: '9px', color: '#fff', fontWeight: 'bold' }}>${activeNpc.y}</span></div>
-                <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>图层高度 (layer)</span><span style=${{ fontSize: '9px', color: '#fff', fontWeight: 'bold' }}>${activeNpc.layer}</span></div>
-                <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>初始朝向 (dir)</span><span style=${{ fontSize: '9px', color: '#fff', fontWeight: 'bold' }}>${activeNpc.dir === 0 ? '下 (0)' : activeNpc.dir === 1 ? '左 (1)' : activeNpc.dir === 2 ? '上 (2)' : '右 (3)'}</span></div>
-                <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>动作包 ID (mgoId)</span><span style=${{ fontSize: '9px', color: 'var(--glow-green)', fontWeight: 'bold' }}>${activeNpc.mgoId} (${getRoleName(activeNpc.mgoId)})</span></div>
-                <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>当前图元帧 (frame)</span><span style=${{ fontSize: '9px', color: '#fff', fontWeight: 'bold' }}>${activeNpc.frame}</span></div>
-                <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>生命活动状态 (state)</span><span style=${{ fontSize: '9px', color: 'var(--glow-yellow)', fontWeight: 'bold' }}>${activeNpc.state === 0 ? '0 (隐藏)' : activeNpc.state === 1 ? '1 (活跃)' : '2 (自动循环)'}</span></div>
-                <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>触发模式 (trigMode)</span><span style=${{ fontSize: '9px', color: '#fff', fontWeight: 'bold' }}>${activeNpc.trigMode}</span></div>
+                <div class="block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>瓦片横坐标 (mx)</span><span style=${{ fontSize: '9px', color: '#fff', fontWeight: 'bold' }}>${activeNpc.x}</span></div>
+                <div class="block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>瓦片纵坐标 (my)</span><span style=${{ fontSize: '9px', color: '#fff', fontWeight: 'bold' }}>${activeNpc.y}</span></div>
+                <div class="block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>图层高度 (layer)</span><span style=${{ fontSize: '9px', color: '#fff', fontWeight: 'bold' }}>${activeNpc.layer}</span></div>
+                <div class="block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>初始朝向 (dir)</span><span style=${{ fontSize: '9px', color: '#fff', fontWeight: 'bold' }}>${activeNpc.dir === 0 ? '下 (0)' : activeNpc.dir === 1 ? '左 (1)' : activeNpc.dir === 2 ? '上 (2)' : '右 (3)'}</span></div>
+                <div class="block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>动作包 ID (mgoId)</span><span style=${{ fontSize: '9px', color: 'var(--glow-green)', fontWeight: 'bold' }}>${activeNpc.mgoId} (${getRoleName(activeNpc.mgoId)})</span></div>
+                <div class="block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>当前图元帧 (frame)</span><span style=${{ fontSize: '9px', color: '#fff', fontWeight: 'bold' }}>${activeNpc.frame}</span></div>
+                <div class="block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>生命活动状态 (state)</span><span style=${{ fontSize: '9px', color: 'var(--glow-yellow)', fontWeight: 'bold' }}>${activeNpc.state === 0 ? '0 (隐藏)' : activeNpc.state === 1 ? '1 (活跃)' : '2 (自动循环)'}</span></div>
+                <div class="block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>触发模式 (trigMode)</span><span style=${{ fontSize: '9px', color: '#fff', fontWeight: 'bold' }}>${activeNpc.trigMode}</span></div>
               </div>
             </div>
             
             <div>
               <div style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}><span style=${{ width: '3px', height: '3px', background: 'var(--glow-yellow)', borderRadius: '50%' }}></span> 绑定脚本事件指针 (点击立即穿梭反解)</div>
               <div style=${{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <div class="gamedata-binding-item">
-                  <span class="gamedata-binding-label">🔍 交互触发脚本 (trigScr)</span>
-                  <span class="gamedata-binding-value">
+                <div class="binding-item">
+                  <span class="binding-label">🔍 交互触发脚本 (trigScr)</span>
+                  <span class="binding-value">
                     ${activeNpc.trigScr > 0 ? html`<span onClick=${() => jumpToScript(activeNpc.trigScr)} style=${{ color: 'var(--glow-yellow)', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold' }}>Script #${activeNpc.trigScr} ➔ 点击反解</span>` : html`<span style=${{ color: 'rgba(255,255,255,0.25)' }}>无触发脚本 (0)</span>`}
                   </span>
                 </div>
-                <div class="gamedata-binding-item">
-                  <span class="gamedata-binding-label">🤖 自动心跳脚本 (autoScr)</span>
-                  <span class="gamedata-binding-value">
+                <div class="binding-item">
+                  <span class="binding-label">🤖 自动心跳脚本 (autoScr)</span>
+                  <span class="binding-value">
                     ${activeNpc.autoScr > 0 ? html`<span onClick=${() => jumpToScript(activeNpc.autoScr)} style=${{ color: 'var(--glow-yellow)', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold' }}>Script #${activeNpc.autoScr} ➔ 点击反解</span>` : html`<span style=${{ color: 'rgba(255,255,255,0.25)' }}>无自动脚本 (0)</span>`}
                   </span>
                 </div>
@@ -319,7 +325,7 @@ function NpcTabComponent({ selectedNpcId, setSelectedNpcId, npcFilterKeyword, se
         </div>
       </div>
     ` : html`
-      <div class="gamedata-detail" style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '10px' }}>
+      <div class="detail" style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '10px' }}>
         请在左侧选择一个 NPC 进行深度分析
       </div>
     `}
@@ -373,98 +379,100 @@ function ItemTabComponent({ selectedItemId, setSelectedItemId, jumpToScript }) {
   }, [item.id]);
 
   return html`
-    <div class="gamedata-sidebar" style=${{ flex: '0 0 260px' }}>
-      <div class="gamedata-sidebar-header">
-        <span class="gamedata-sidebar-title">🎒 游戏物品列表 (共 ${items.length} 个)</span>
+    <div class="item-tab" style=${{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div class="sidebar" style=${{ flex: '0 0 260px' }}>
+      <div class="sidebar-header">
+        <span class="sidebar-title">🎒 游戏物品列表 (共 ${items.length} 个)</span>
       </div>
-      <div class="gamedata-sidebar-list">
+      <div class="sidebar-list">
         ${items.map(it => {
           const isSelected = selectedItemId === it.id;
           return html`
             <div 
               key=${it.id} 
               onClick=${() => setSelectedItemId(it.id)} 
-              class=${`gamedata-list-item ${isSelected ? 'is-selected' : ''}`}
+              class=${`list-item ${isSelected ? 'is-selected' : ''}`}
             >
-              <div class="gamedata-list-item-row">
-                <span class="gamedata-list-item-title" dangerouslySetInnerHTML=${{ __html: getItemNameHtml(it.id) }}></span>
-                <span class="gamedata-list-item-meta">ID #${it.id}</span>
+              <div class="list-item-row">
+                <span class="list-item-title" dangerouslySetInnerHTML=${{ __html: getItemNameHtml(it.id) }}></span>
+                <span class="list-item-meta">ID #${it.id}</span>
               </div>
             </div>
-          `;
-        })}
+    </div>
+  `;
+})}
       </div>
     </div>
     
-    <div class="gamedata-detail">
-      <div class="gamedata-detail-header">
-        <div class="gamedata-detail-header-main">
-          <h2 class="gamedata-detail-title" style=${{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} dangerouslySetInnerHTML=${{ __html: getItemNameHtml(item.id) }}></h2>
-          <span class="gamedata-detail-badge">底层解构档案</span>
+    <div class="detail">
+      <div class="detail-header">
+        <div class="detail-header-main">
+          <h2 class="detail-title" style=${{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }} dangerouslySetInnerHTML=${{ __html: getItemNameHtml(item.id) }}></h2>
+          <span class="detail-badge">底层解构档案</span>
         </div>
-        <div class="gamedata-detail-meta">物品 ID: <span style=${{ color: 'var(--glow-yellow)' }}>${item.id}</span></div>
+        <div class="detail-meta">物品 ID: <span style=${{ color: 'var(--glow-yellow)' }}>${item.id}</span></div>
       </div>
       
-      <div class="gamedata-content-split">
-        <div class="gamedata-preview-card">
-          <span class="gamedata-preview-label">🎒 物品小图标 (Ball)</span>
-          <canvas ref=${ballCanvasRef} width="40" height="40" class="gamedata-preview-canvas"></canvas>
-          <span class="gamedata-preview-label" style=${{ marginTop: '5px' }}>底牌元数据参数</span>
+      <div class="content-split">
+        <div class="preview-card">
+          <span class="preview-label">🎒 物品小图标 (Ball)</span>
+          <canvas ref=${ballCanvasRef} width="40" height="40" class="preview-canvas"></canvas>
+          <span class="preview-label" style=${{ marginTop: '5px' }}>底牌元数据参数</span>
           <div style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.35)', textAlign: 'left', lineHeight: '1.4', width: '100%' }}>
             数据偏移: ${info.offset}<br/>物品 Flags: ${info.flags}<br/>是否消耗: ${info.consumable}<br/>是否丢弃: ${info.throwable || '是'}<br/>是否可售: ${info.sellable || '是'}
           </div>
         </div>
         
-        <div class="gamedata-scroll-panel">
+        <div class="scroll-panel">
           <div>
-            <div class="gamedata-section-title">物品文字描述 (desc.dat)</div>
+            <div class="section-title">物品文字描述 (desc.dat)</div>
             <div style=${{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.03)', padding: '8px', borderRadius: '2px', fontSize: '9.5px', color: '#b3d4ff', lineHeight: '1.5', whiteSpace: 'pre-wrap', marginBottom: '12px' }}>
               ${getItemDescText(item.id)}
             </div>
           </div>
           <div>
-            <div class="gamedata-section-title">物品基础属性</div>
-            <div class="gamedata-stat-grid" style=${{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-              <div class="gamedata-stat-card"><div class="gamedata-stat-label">买价价值</div><div class="gamedata-stat-value" style=${{ color: 'var(--glow-yellow)' }}>${info.buy}</div></div>
-              <div class="gamedata-stat-card"><div class="gamedata-stat-label">卖价价值</div><div class="gamedata-stat-value" style=${{ color: '#ff5777' }}>${info.sell}</div></div>
-              <div class="gamedata-stat-card"><div class="gamedata-stat-label">物品类型</div><div class="gamedata-stat-value" style=${{ color: '#4db3ff' }}>${info.type}</div></div>
-              <div class="gamedata-stat-card"><div class="gamedata-stat-label">适用角色</div><div class="gamedata-stat-value" style=${{ color: '#00ffaa', fontSize: '9.5px' }}>${info.role}</div></div>
-              <div class="gamedata-stat-card"><div class="gamedata-stat-label">装备槽位</div><div class="gamedata-stat-value" style=${{ color: '#b366ff', fontSize: '9.5px' }}>${info.slot}</div></div>
-              <div class="gamedata-stat-card"><div class="gamedata-stat-label">五灵抗性</div><div class="gamedata-stat-value" style=${{ color: '#00e5ff', fontSize: '9.5px' }}>${info.res || '无'}</div></div>
+            <div class="section-title">物品基础属性</div>
+            <div class="stat-grid" style=${{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+              <div class="stat-card"><div class="stat-label">买价价值</div><div class="stat-value" style=${{ color: 'var(--glow-yellow)' }}>${info.buy}</div></div>
+              <div class="stat-card"><div class="stat-label">卖价价值</div><div class="stat-value" style=${{ color: '#ff5777' }}>${info.sell}</div></div>
+              <div class="stat-card"><div class="stat-label">物品类型</div><div class="stat-value" style=${{ color: '#4db3ff' }}>${info.type}</div></div>
+              <div class="stat-card"><div class="stat-label">适用角色</div><div class="stat-value" style=${{ color: '#00ffaa', fontSize: '9.5px' }}>${info.role}</div></div>
+              <div class="stat-card"><div class="stat-label">装备槽位</div><div class="stat-value" style=${{ color: '#b366ff', fontSize: '9.5px' }}>${info.slot}</div></div>
+              <div class="stat-card"><div class="stat-label">五灵抗性</div><div class="stat-value" style=${{ color: '#00e5ff', fontSize: '9.5px' }}>${info.res || '无'}</div></div>
             </div>
           </div>
           
           ${info.slot !== '无' ? html`
             <div>
-              <div class="gamedata-section-title">装备增益参数</div>
-              <div class="gamedata-block-grid" style=${{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
-                <div class="gamedata-block-card"><div class="gamedata-block-label">⚔ 武术 ATK</div><div class="gamedata-block-value">${info.atk}</div></div>
-                <div class="gamedata-block-card"><div class="gamedata-block-label">🛡 防御 DEF</div><div class="gamedata-block-value">${info.def}</div></div>
-                <div class="gamedata-block-card"><div class="gamedata-block-label">🏃 身法 SPD</div><div class="gamedata-block-value">${info.spd}</div></div>
-                <div class="gamedata-block-card"><div class="gamedata-block-label">🔮 灵力 MAG</div><div class="gamedata-block-value">${info.mag}</div></div>
-                <div class="gamedata-block-card"><div class="gamedata-block-label">🪙 吉运 LCK</div><div class="gamedata-block-value">${info.lck}</div></div>
+              <div class="section-title">装备增益参数</div>
+              <div class="block-grid" style=${{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+                <div class="block-card"><div class="block-label">⚔ 武术 ATK</div><div class="block-value">${info.atk}</div></div>
+                <div class="block-card"><div class="block-label">🛡 防御 DEF</div><div class="block-value">${info.def}</div></div>
+                <div class="block-card"><div class="block-label">🏃 身法 SPD</div><div class="block-value">${info.spd}</div></div>
+                <div class="block-card"><div class="block-label">🔮 灵力 MAG</div><div class="block-value">${info.mag}</div></div>
+                <div class="block-card"><div class="block-label">🪙 吉运 LCK</div><div class="block-value">${info.lck}</div></div>
               </div>
             </div>
           ` : ''}
           
           <div>
-            <div class="gamedata-section-title">绑定脚本事件指针 (点击立即穿梭反解)</div>
-            <div class="gamedata-binding-list">
-              <div class="gamedata-binding-item">
-                <span class="gamedata-binding-label">🔮 使用触发脚本 (useScr)</span>
-                <span class="gamedata-binding-value">
+            <div class="section-title">绑定脚本事件指针 (点击立即穿梭反解)</div>
+            <div class="binding-list">
+              <div class="binding-item">
+                <span class="binding-label">🔮 使用触发脚本 (useScr)</span>
+                <span class="binding-value">
                   ${item.useScr > 0 ? html`<span onClick=${() => jumpToScript(item.useScr)} style=${{ color: 'var(--glow-yellow)', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold' }}>Script #${item.useScr} ➔ 穿梭反解</span>` : html`<span style=${{ color: 'rgba(255,255,255,0.25)' }}>无 (0)</span>`}
                 </span>
               </div>
-              <div class="gamedata-binding-item">
-                <span class="gamedata-binding-label">🛡 装备触发脚本 (equScr)</span>
-                <span class="gamedata-binding-value">
+              <div class="binding-item">
+                <span class="binding-label">🛡 装备触发脚本 (equScr)</span>
+                <span class="binding-value">
                   ${item.equScr > 0 ? html`<span onClick=${() => jumpToScript(item.equScr)} style=${{ color: 'var(--glow-yellow)', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold' }}>Script #${item.equScr} ➔ 穿梭反解</span>` : html`<span style=${{ color: 'rgba(255,255,255,0.25)' }}>无 (0)</span>`}
                 </span>
               </div>
-              <div class="gamedata-binding-item">
-                <span class="gamedata-binding-label">🗑️ 丢弃触发脚本 (dropScr)</span>
-                <span class="gamedata-binding-value">
+              <div class="binding-item">
+                <span class="binding-label">🗑️ 丢弃触发脚本 (dropScr)</span>
+                <span class="binding-value">
                   ${item.dropScr > 0 ? html`<span onClick=${() => jumpToScript(item.dropScr)} style=${{ color: 'var(--glow-yellow)', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold' }}>Script #${item.dropScr} ➔ 穿梭反解</span>` : html`<span style=${{ color: 'rgba(255,255,255,0.25)' }}>无 (0)</span>`}
                 </span>
               </div>
@@ -532,9 +540,10 @@ function ScriptTabComponent({ selectedScriptId, setSelectedScriptId }) {
   };
 
   return html`
-    <div class="gamedata-sidebar" style=${{ flex: '0 0 250px' }}>
-      <div class="gamedata-sidebar-header">
-        <span class="gamedata-sidebar-title">📜 脚本指令检索 (共 ${totalScripts} 条)</span>
+    <div class="script-tab" style=${{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div class="sidebar" style=${{ flex: '0 0 250px' }}>
+      <div class="sidebar-header">
+        <span class="sidebar-title">📜 脚本指令检索 (共 ${totalScripts} 条)</span>
         <div style=${{ display: 'flex', gap: '4px' }}>
           <input 
             type="number" 
@@ -551,26 +560,27 @@ function ScriptTabComponent({ selectedScriptId, setSelectedScriptId }) {
           >一键反解</button>
         </div>
       </div>
-      <div class="gamedata-sidebar-list">
+      <div class="sidebar-list">
         ${scriptRanges.map(range => {
           const isSelected = selectedScriptId >= range.start && selectedScriptId <= range.end;
           return html`
             <div 
               key=${range.start} 
               onClick=${() => handleRangeClick(range.start)} 
-              class=${`gamedata-list-item ${isSelected ? 'is-selected' : ''}`}
+              class=${`list-item ${isSelected ? 'is-selected' : ''}`}
             >
-              <div class="gamedata-list-item-row">
-                <span class="gamedata-list-item-title">段落 #${range.start} ➔ #${range.end}</span>
-                <span class="gamedata-list-item-meta">${isSelected ? '●' : ''}</span>
+              <div class="list-item-row">
+                <span class="list-item-title">段落 #${range.start} ➔ #${range.end}</span>
+                <span class="list-item-meta">${isSelected ? '●' : ''}</span>
               </div>
             </div>
-          `;
-        })}
+    </div>
+  `;
+})}
       </div>
     </div>
 
-    <div class="gamedata-detail">
+    <div class="detail">
       <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,215,0,0.15)', paddingBottom: '8px', marginBottom: '12px' }}>
         <h2 style=${{ margin: 0, fontSize: '12px', color: 'var(--glow-yellow)', fontWeight: 'bold' }}>📜 连续指令解析流 (从 ID #${selectedScriptId} 顺序向下解码)</h2>
       </div>
@@ -680,31 +690,33 @@ function SceneTabComponent({ selectedSceneId, setSelectedSceneId, jumpToScript, 
   }, [scene?.sceneId, scene?.mapId]);
 
   return html`
-    <div class="gamedata-sidebar" style=${{ flex: '0 0 250px' }}>
-      <div class="gamedata-sidebar-header">
-        <span class="gamedata-sidebar-title">🗺️ 游戏场景 Scenes 目录</span>
+    <div class="scene-tab" style=${{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div class="sidebar" style=${{ flex: '0 0 250px' }}>
+      <div class="sidebar-header">
+        <span class="sidebar-title">🗺️ 游戏场景 Scenes 目录</span>
       </div>
-      <div class="gamedata-sidebar-list">
+      <div class="sidebar-list">
         ${scenes.map(s => {
           const isSelected = selectedSceneId === s.sceneId;
           return html`
             <div 
               key=${s.sceneId} 
               onClick=${() => setSelectedSceneId(s.sceneId)} 
-              class=${`gamedata-list-item ${isSelected ? 'is-selected' : ''}`}
+              class=${`list-item ${isSelected ? 'is-selected' : ''}`}
             >
-              <div class="gamedata-list-item-row">
-                <span class="gamedata-list-item-title">Scene #${s.sceneId}</span>
-                <span class="gamedata-list-item-meta">Map 0x${s.mapId.toString(16).toUpperCase()}</span>
+              <div class="list-item-row">
+                <span class="list-item-title">Scene #${s.sceneId}</span>
+                <span class="list-item-meta">Map 0x${s.mapId.toString(16).toUpperCase()}</span>
               </div>
             </div>
-          `;
-        })}
+    </div>
+  `;
+})}
       </div>
     </div>
 
     ${scene ? html`
-      <div class="gamedata-detail">
+      <div class="detail">
         <div style=${{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,215,0,0.15)', paddingBottom: '8px', marginBottom: '12px' }}>
           <h2 style=${{ margin: 0, fontSize: '12px', color: 'var(--glow-yellow)', fontWeight: 'bold' }}>🗺️ Scene #${scene.sceneId} (Map #${scene.mapId}) 的多维场景档案</h2>
         </div>
@@ -722,15 +734,15 @@ function SceneTabComponent({ selectedSceneId, setSelectedSceneId, jumpToScript, 
             <div>
               <div style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.4)', fontWeight: 'bold', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}><span style=${{ width: '3px', height: '3px', background: 'var(--glow-yellow)', borderRadius: '50%' }}></span> 场景事件与地图底牌</div>
               <div style=${{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>对应大地图 ID (mapId)</span><span style=${{ fontSize: '9px', color: 'var(--glow-green)', fontWeight: 'bold' }}>0x${scene.mapId.toString(16).toUpperCase()} (${scene.mapId})</span></div>
-                <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>场景物体区间</span><span style=${{ fontSize: '9px', color: '#fff', fontWeight: 'bold' }}>${scene.startEventId} ➔ ${scene.endEventId}</span></div>
-                <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}>
+                <div class="block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>对应大地图 ID (mapId)</span><span style=${{ fontSize: '9px', color: 'var(--glow-green)', fontWeight: 'bold' }}>0x${scene.mapId.toString(16).toUpperCase()} (${scene.mapId})</span></div>
+                <div class="block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}><span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>场景物体区间</span><span style=${{ fontSize: '9px', color: '#fff', fontWeight: 'bold' }}>${scene.startEventId} ➔ ${scene.endEventId}</span></div>
+                <div class="block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}>
                   <span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>进入场景触发脚本</span>
                   <span style=${{ fontSize: '8.5px', fontWeight: 'bold' }}>
                     ${scene.enterScriptId > 0 ? html`<span onClick=${() => jumpToScript(scene.enterScriptId)} style=${{ color: 'var(--glow-yellow)', textDecoration: 'underline', cursor: 'pointer' }}>Script #${scene.enterScriptId}</span>` : html`<span style=${{ color: 'rgba(255,255,255,0.25)' }}>无</span>`}
                   </span>
                 </div>
-                <div class="gamedata-block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}>
+                <div class="block-card" style=${{ display: 'flex', justifyContent: 'space-between', padding: '5px 10px' }}>
                   <span style=${{ fontSize: '8px', color: 'rgba(255,255,255,0.3)' }}>离开场景触发脚本</span>
                   <span style=${{ fontSize: '8.5px', fontWeight: 'bold' }}>
                     ${scene.exitScriptId > 0 ? html`<span onClick=${() => jumpToScript(scene.exitScriptId)} style=${{ color: 'var(--glow-yellow)', textDecoration: 'underline', cursor: 'pointer' }}>Script #${scene.exitScriptId}</span>` : html`<span style=${{ color: 'rgba(255,255,255,0.25)' }}>无</span>`}
@@ -790,7 +802,7 @@ function SceneTabComponent({ selectedSceneId, setSelectedSceneId, jumpToScript, 
         </div>
       </div>
     ` : html`
-      <div class="gamedata-detail" style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '10px' }}>
+      <div class="detail" style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.2)', fontSize: '10px' }}>
         请在左侧选择一个场景进行全景剖析
       </div>
     `}
@@ -842,11 +854,12 @@ function ShopTabComponent({ jumpToItem }) {
   };
 
   return html`
-    <div class="gamedata-sidebar" style=${{ flex: '0 0 280px' }}>
-      <div class="gamedata-sidebar-header">
-        <span class="gamedata-sidebar-title">🛒 游戏商店列表 (共 ${stores.length} 个)</span>
+    <div class="shop-tab" style=${{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div class="sidebar" style=${{ flex: '0 0 280px' }}>
+      <div class="sidebar-header">
+        <span class="sidebar-title">🛒 游戏商店列表 (共 ${stores.length} 个)</span>
       </div>
-      <div class="gamedata-sidebar-list">
+      <div class="sidebar-list">
         ${stores.map((itemsList, idx) => {
           const isSelected = selectedShopId === idx;
           const comment = getShopComment(itemsList);
@@ -854,34 +867,35 @@ function ShopTabComponent({ jumpToItem }) {
             <div 
               key=${idx} 
               onClick=${() => setSelectedShopId(idx)} 
-              class=${`gamedata-list-item ${isSelected ? 'is-selected' : ''}`}
+              class=${`list-item ${isSelected ? 'is-selected' : ''}`}
             >
-              <div class="gamedata-list-item-row" style=${{ flexDirection: 'column', alignItems: 'flex-start', gap: '3px' }}>
+              <div class="list-item-row" style=${{ flexDirection: 'column', alignItems: 'flex-start', gap: '3px' }}>
                 <div style=${{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                  <span class="gamedata-list-item-title" style=${{ fontWeight: 'bold' }}>商店 #${idx}</span>
-                  <span class="gamedata-list-item-meta" style=${{ color: 'var(--glow-yellow)' }}>${itemsList.length} 种货物</span>
+                  <span class="list-item-title" style=${{ fontWeight: 'bold' }}>商店 #${idx}</span>
+                  <span class="list-item-meta" style=${{ color: 'var(--glow-yellow)' }}>${itemsList.length} 种货物</span>
                 </div>
                 <div style=${{ fontSize: '7.5px', color: 'rgba(255,255,255,0.3)', width: '100%', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                   常售: ${comment}
                 </div>
               </div>
             </div>
-          `;
-        })}
+    </div>
+  `;
+})}
       </div>
     </div>
 
-    <div class="gamedata-detail">
-      <div class="gamedata-detail-header">
-        <div class="gamedata-detail-header-main">
-          <h2 class="gamedata-detail-title" style=${{ fontSize: '12px' }}>商店 #${selectedShopId} 货架详情</h2>
-          <span class="gamedata-detail-badge" style=${{ background: 'rgba(0, 225, 255, 0.15)', color: 'var(--glow-blue)', borderColor: 'var(--glow-blue)' }}>实时配置</span>
+    <div class="detail">
+      <div class="detail-header">
+        <div class="detail-header-main">
+          <h2 class="detail-title" style=${{ fontSize: '12px' }}>商店 #${selectedShopId} 货架详情</h2>
+          <span class="detail-badge" style=${{ background: 'rgba(0, 225, 255, 0.15)', color: 'var(--glow-blue)', borderColor: 'var(--glow-blue)' }}>实时配置</span>
         </div>
-        <div class="gamedata-detail-meta">数据来源: <span style=${{ color: 'var(--glow-yellow)' }}>data.mkf #0</span></div>
+        <div class="detail-meta">数据来源: <span style=${{ color: 'var(--glow-yellow)' }}>data.mkf #0</span></div>
       </div>
 
-      <div class="gamedata-scroll-panel" style=${{ padding: '12px', flex: 1, overflowY: 'auto' }}>
-        <div class="gamedata-section-title">在售商品名录 (点击名称穿梭至物品详情)</div>
+      <div class="scroll-panel" style=${{ padding: '12px', flex: 1, overflowY: 'auto' }}>
+        <div class="section-title">在售商品名录 (点击名称穿梭至物品详情)</div>
         <div style=${{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.02)', borderRadius: '2px', padding: '6px' }}>
           <table style=${{ width: '100%', borderCollapse: 'collapse', fontSize: '9.5px', textAlign: 'left' }}>
             <thead>
@@ -951,11 +965,12 @@ function GrowthTabComponent({ jumpToItem }) {
   };
 
   return html`
-    <div class="gamedata-sidebar" style=${{ flex: '0 0 240px' }}>
-      <div class="gamedata-sidebar-header">
-        <span class="gamedata-sidebar-title">📈 主角团成员列表</span>
+    <div class="growth-tab" style=${{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div class="sidebar" style=${{ flex: '0 0 240px' }}>
+      <div class="sidebar-header">
+        <span class="sidebar-title">📈 主角团成员列表</span>
       </div>
-      <div class="gamedata-sidebar-list">
+      <div class="sidebar-list">
         ${roleNames.map((name, idx) => {
           const isSelected = selectedRoleId === idx;
           const r = state.roles[idx] || {};
@@ -963,52 +978,53 @@ function GrowthTabComponent({ jumpToItem }) {
             <div 
               key=${idx} 
               onClick=${() => setSelectedRoleId(idx)} 
-              class=${`gamedata-list-item ${isSelected ? 'is-selected' : ''}`}
+              class=${`list-item ${isSelected ? 'is-selected' : ''}`}
             >
-              <div class="gamedata-list-item-row">
-                <span class="gamedata-list-item-title">${name}</span>
-                <span class="gamedata-list-item-meta">LV ${r.level || 1}</span>
+              <div class="list-item-row">
+                <span class="list-item-title">${name}</span>
+                <span class="list-item-meta">LV ${r.level || 1}</span>
               </div>
             </div>
-          `;
-        })}
+    </div>
+  `;
+})}
       </div>
     </div>
 
-    <div class="gamedata-detail" style=${{ display: 'flex', flexDirection: 'column' }}>
-      <div class="gamedata-detail-header">
-        <div class="gamedata-detail-header-main">
-          <h2 class="gamedata-detail-title" style=${{ fontSize: '12px' }}>${roleNames[selectedRoleId]} 默认初始属性与战斗音效表</h2>
-          <span class="gamedata-detail-badge" style=${{ background: 'rgba(255, 208, 0, 0.15)', color: 'var(--glow-yellow)', borderColor: 'var(--glow-yellow)' }}>初登场配置</span>
+    <div class="detail" style=${{ display: 'flex', flexDirection: 'column' }}>
+      <div class="detail-header">
+        <div class="detail-header-main">
+          <h2 class="detail-title" style=${{ fontSize: '12px' }}>${roleNames[selectedRoleId]} 默认初始属性与战斗音效表</h2>
+          <span class="detail-badge" style=${{ background: 'rgba(255, 208, 0, 0.15)', color: 'var(--glow-yellow)', borderColor: 'var(--glow-yellow)' }}>初登场配置</span>
         </div>
-        <div class="gamedata-detail-meta">数据来源: <span style=${{ color: 'var(--glow-yellow)' }}>data.mkf #3</span></div>
+        <div class="detail-meta">数据来源: <span style=${{ color: 'var(--glow-yellow)' }}>data.mkf #3</span></div>
       </div>
 
-      <div class="gamedata-scroll-panel" style=${{ padding: '12px', flex: 1, overflowY: 'auto' }}>
+      <div class="scroll-panel" style=${{ padding: '12px', flex: 1, overflowY: 'auto' }}>
         <!-- 基础战力数据网格 -->
         <div>
-          <div class="gamedata-section-title">默认属性参数</div>
-          <div class="gamedata-stat-grid" style=${{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-            <div class="gamedata-stat-card"><div class="gamedata-stat-label">初始等级</div><div class="gamedata-stat-value" style=${{ color: 'var(--glow-yellow)' }}>${role.level}</div></div>
-            <div class="gamedata-stat-card"><div class="gamedata-stat-label">初始最大生命 (HP)</div><div class="gamedata-stat-value" style=${{ color: '#ff5777' }}>${role.maxHp}</div></div>
-            <div class="gamedata-stat-card"><div class="gamedata-stat-label">初始最大法力 (MP)</div><div class="gamedata-stat-value" style=${{ color: '#00d2ff' }}>${role.maxMp}</div></div>
-            <div class="gamedata-stat-card"><div class="gamedata-stat-label">武术 ATK</div><div class="gamedata-stat-value" style=${{ color: '#ffb84d' }}>${role.attackStrength}</div></div>
-            <div class="gamedata-stat-card"><div class="gamedata-stat-label">防御 DEF</div><div class="gamedata-stat-value" style=${{ color: '#66ff66' }}>${role.defense}</div></div>
-            <div class="gamedata-stat-card"><div class="gamedata-stat-label">身法 SPD</div><div class="gamedata-stat-value" style=${{ color: '#00ffcc' }}>${role.dexterity}</div></div>
-            <div class="gamedata-stat-card"><div class="gamedata-stat-label">吉运 LCK</div><div class="gamedata-stat-value" style=${{ color: '#cc66ff' }}>${role.fleeRate}</div></div>
-            <div class="gamedata-stat-card"><div class="gamedata-stat-label">抗毒 PSN</div><div class="gamedata-stat-value" style=${{ color: '#ff66cc' }}>${role.poisonResistance}</div></div>
+          <div class="section-title">默认属性参数</div>
+          <div class="stat-grid" style=${{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+            <div class="stat-card"><div class="stat-label">初始等级</div><div class="stat-value" style=${{ color: 'var(--glow-yellow)' }}>${role.level}</div></div>
+            <div class="stat-card"><div class="stat-label">初始最大生命 (HP)</div><div class="stat-value" style=${{ color: '#ff5777' }}>${role.maxHp}</div></div>
+            <div class="stat-card"><div class="stat-label">初始最大法力 (MP)</div><div class="stat-value" style=${{ color: '#00d2ff' }}>${role.maxMp}</div></div>
+            <div class="stat-card"><div class="stat-label">武术 ATK</div><div class="stat-value" style=${{ color: '#ffb84d' }}>${role.attackStrength}</div></div>
+            <div class="stat-card"><div class="stat-label">防御 DEF</div><div class="stat-value" style=${{ color: '#66ff66' }}>${role.defense}</div></div>
+            <div class="stat-card"><div class="stat-label">身法 SPD</div><div class="stat-value" style=${{ color: '#00ffcc' }}>${role.dexterity}</div></div>
+            <div class="stat-card"><div class="stat-label">吉运 LCK</div><div class="stat-value" style=${{ color: '#cc66ff' }}>${role.fleeRate}</div></div>
+            <div class="stat-card"><div class="stat-label">抗毒 PSN</div><div class="stat-value" style=${{ color: '#ff66cc' }}>${role.poisonResistance}</div></div>
           </div>
         </div>
 
         <!-- 初始五灵魔法抗性 -->
         <div style=${{ marginTop: '12px' }}>
-          <div class="gamedata-section-title">五灵魔法抗性参数 (%)</div>
-          <div class="gamedata-block-grid" style=${{ gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
-            <div class="gamedata-block-card"><div class="gamedata-block-label">⚡ 雷 (Thunder)</div><div class="gamedata-block-value" style=${{ color: 'var(--glow-yellow)' }}>${role.elementalResistance?.[0] || 0}%</div></div>
-            <div class="gamedata-block-card"><div class="gamedata-block-label">🍃 风 (Wind)</div><div class="gamedata-block-value" style=${{ color: 'var(--glow-green)' }}>${role.elementalResistance?.[1] || 0}%</div></div>
-            <div class="gamedata-block-card"><div class="gamedata-block-label">🌊 水 (Water)</div><div class="gamedata-block-value" style=${{ color: 'var(--glow-blue)' }}>${role.elementalResistance?.[2] || 0}%</div></div>
-            <div class="gamedata-block-card"><div class="gamedata-block-label">🔥 火 (Fire)</div><div class="gamedata-block-value" style=${{ color: '#ff3b6f' }}>${role.elementalResistance?.[3] || 0}%</div></div>
-            <div class="gamedata-block-card"><div class="gamedata-block-label">🪨 土 (Earth)</div><div class="gamedata-block-value" style=${{ color: '#d2a679' }}>${role.elementalResistance?.[4] || 0}%</div></div>
+          <div class="section-title">五灵魔法抗性参数 (%)</div>
+          <div class="block-grid" style=${{ gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
+            <div class="block-card"><div class="block-label">⚡ 雷 (Thunder)</div><div class="block-value" style=${{ color: 'var(--glow-yellow)' }}>${role.elementalResistance?.[0] || 0}%</div></div>
+            <div class="block-card"><div class="block-label">🍃 风 (Wind)</div><div class="block-value" style=${{ color: 'var(--glow-green)' }}>${role.elementalResistance?.[1] || 0}%</div></div>
+            <div class="block-card"><div class="block-label">🌊 水 (Water)</div><div class="block-value" style=${{ color: 'var(--glow-blue)' }}>${role.elementalResistance?.[2] || 0}%</div></div>
+            <div class="block-card"><div class="block-label">🔥 火 (Fire)</div><div class="block-value" style=${{ color: '#ff3b6f' }}>${role.elementalResistance?.[3] || 0}%</div></div>
+            <div class="block-card"><div class="block-label">🪨 土 (Earth)</div><div class="block-value" style=${{ color: '#d2a679' }}>${role.elementalResistance?.[4] || 0}%</div></div>
           </div>
         </div>
 
@@ -1016,14 +1032,14 @@ function GrowthTabComponent({ jumpToItem }) {
         <div style=${{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '10px', marginTop: '12px' }}>
           <!-- 装备挂载槽 -->
           <div>
-            <div class="gamedata-section-title">初登场佩戴装备</div>
-            <div class="gamedata-binding-list">
+            <div class="section-title">初登场佩戴装备</div>
+            <div class="binding-list">
               ${equipPartLabels.map((label, partIdx) => {
                 const equipItemId = role.equipments?.[partIdx];
                 return html`
-                  <div class="gamedata-binding-item" key=${partIdx}>
-                    <span class="gamedata-binding-label" style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.4)' }}>${label}</span>
-                    <span class="gamedata-binding-value">
+                  <div class="binding-item" key=${partIdx}>
+                    <span class="binding-label" style=${{ fontSize: '8.5px', color: 'rgba(255,255,255,0.4)' }}>${label}</span>
+                    <span class="binding-value">
                       ${equipItemId > 0 ? html`
                         <span onClick=${() => jumpToItem(equipItemId)} style=${{ color: 'var(--glow-yellow)', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold' }}>
                           ${getItemNameHtml(equipItemId)}
@@ -1038,7 +1054,7 @@ function GrowthTabComponent({ jumpToItem }) {
 
           <!-- 已会法术武功 -->
           <div>
-            <div class="gamedata-section-title">初登场已会技能 (共 ${role.magics?.length || 0} 门)</div>
+            <div class="section-title">初登场已会技能 (共 ${role.magics?.length || 0} 门)</div>
             <div style=${{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: '2px', padding: '6px', maxHeight: '170px', overflowY: 'auto' }}>
               ${!role.magics || role.magics.length === 0 ? html`
                 <div style=${{ color: 'rgba(255,255,255,0.25)', fontSize: '9px', textAlign: 'center', padding: '20px 0' }}>未掌握任何法术</div>
@@ -1060,10 +1076,10 @@ function GrowthTabComponent({ jumpToItem }) {
 
         <!-- 角色特有音频绑定试听 -->
         <div style=${{ marginTop: '12px' }}>
-          <div class="gamedata-section-title">默认动作与特技音效 (点击 🔊 在线调试播放)</div>
-          <div class="gamedata-stat-grid" style=${{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-            <div class="gamedata-stat-card" style=${{ padding: '5px' }}>
-              <div class="gamedata-stat-label" style=${{ fontSize: '7.5px' }}>⚔ 普攻音效</div>
+          <div class="section-title">默认动作与特技音效 (点击 🔊 在线调试播放)</div>
+          <div class="stat-grid" style=${{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+            <div class="stat-card" style=${{ padding: '5px' }}>
+              <div class="stat-label" style=${{ fontSize: '7.5px' }}>⚔ 普攻音效</div>
               <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
                 <span style=${{ color: 'var(--glow-yellow)', fontSize: '9.5px', fontWeight: 'bold' }}>#${role.attackSound}</span>
                 ${role.attackSound > 0 && html`
@@ -1071,8 +1087,8 @@ function GrowthTabComponent({ jumpToItem }) {
                 `}
               </div>
             </div>
-            <div class="gamedata-stat-card" style=${{ padding: '5px' }}>
-              <div class="gamedata-stat-label" style=${{ fontSize: '7.5px' }}>💥 暴击音效</div>
+            <div class="stat-card" style=${{ padding: '5px' }}>
+              <div class="stat-label" style=${{ fontSize: '7.5px' }}>💥 暴击音效</div>
               <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
                 <span style=${{ color: 'var(--glow-yellow)', fontSize: '9.5px', fontWeight: 'bold' }}>#${role.criticalSound}</span>
                 ${role.criticalSound > 0 && html`
@@ -1080,8 +1096,8 @@ function GrowthTabComponent({ jumpToItem }) {
                 `}
               </div>
             </div>
-            <div class="gamedata-stat-card" style=${{ padding: '5px' }}>
-              <div class="gamedata-stat-label" style=${{ fontSize: '7.5px' }}>🔮 施法音效</div>
+            <div class="stat-card" style=${{ padding: '5px' }}>
+              <div class="stat-label" style=${{ fontSize: '7.5px' }}>🔮 施法音效</div>
               <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
                 <span style=${{ color: 'var(--glow-yellow)', fontSize: '9.5px', fontWeight: 'bold' }}>#${role.magicSound}</span>
                 ${role.magicSound > 0 && html`
@@ -1089,8 +1105,8 @@ function GrowthTabComponent({ jumpToItem }) {
                 `}
               </div>
             </div>
-            <div class="gamedata-stat-card" style=${{ padding: '5px' }}>
-              <div class="gamedata-stat-label" style=${{ fontSize: '7.5px' }}>🛡 援护音效</div>
+            <div class="stat-card" style=${{ padding: '5px' }}>
+              <div class="stat-label" style=${{ fontSize: '7.5px' }}>🛡 援护音效</div>
               <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
                 <span style=${{ color: 'var(--glow-yellow)', fontSize: '9.5px', fontWeight: 'bold' }}>#${role.coverSound}</span>
                 ${role.coverSound > 0 && html`
@@ -1098,8 +1114,8 @@ function GrowthTabComponent({ jumpToItem }) {
                 `}
               </div>
             </div>
-            <div class="gamedata-stat-card" style=${{ padding: '5px' }}>
-              <div class="gamedata-stat-label" style=${{ fontSize: '7.5px' }}>🤕 受击音效</div>
+            <div class="stat-card" style=${{ padding: '5px' }}>
+              <div class="stat-label" style=${{ fontSize: '7.5px' }}>🤕 受击音效</div>
               <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
                 <span style=${{ color: 'var(--glow-yellow)', fontSize: '9.5px', fontWeight: 'bold' }}>#${role.dyingSound}</span>
                 ${role.dyingSound > 0 && html`
@@ -1107,8 +1123,8 @@ function GrowthTabComponent({ jumpToItem }) {
                 `}
               </div>
             </div>
-            <div class="gamedata-stat-card" style=${{ padding: '5px' }}>
-              <div class="gamedata-stat-label" style=${{ fontSize: '7.5px' }}>💀 战死音效</div>
+            <div class="stat-card" style=${{ padding: '5px' }}>
+              <div class="stat-label" style=${{ fontSize: '7.5px' }}>💀 战死音效</div>
               <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
                 <span style=${{ color: 'var(--glow-yellow)', fontSize: '9.5px', fontWeight: 'bold' }}>#${role.deathSound}</span>
                 ${role.deathSound > 0 && html`
@@ -1225,7 +1241,8 @@ export function GameDataApp() {
   ];
 
   return html`
-    <div id="game-data-modal" style=${{ display: 'flex', position: 'fixed', zIndex: 99999, left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(5,5,8,0.75)', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+    <div id="game-data-modal" class="pal-dashboard gamedata-panel" style=${{ display: 'flex', position: 'fixed', zIndex: 99999, left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(5,5,8,0.75)', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+
       <div style=${{ background: 'rgba(15,13,8,0.96)', border: '1px solid var(--glow-yellow)', borderRadius: '4px', boxShadow: '0 0 25px rgba(255, 215, 0, 0.15)', width: 'calc(100% - 40px)', height: 'calc(100% - 40px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'JetBrains Mono', sans-serif" }}>
         <!-- 弹窗头部 -->
         <div style=${{ background: 'rgba(0,0,0,0.6)', padding: '8px 12px', borderBottom: '1px solid var(--border-glass)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

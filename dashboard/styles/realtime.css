@@ -1,0 +1,370 @@
+/* ==================== 💻 仙剑奇侠传游戏实时资料与控制台面板样式 (realtime.css) ==================== */
+
+.pal-dashboard #dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(5,5,8,0.96);
+  border-bottom: 1px solid var(--border-glass);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  zIndex: 10;
+}
+
+.pal-dashboard #panel-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel-inner-bg);
+}
+
+.pal-dashboard #panel-container::-webkit-scrollbar {
+  width: 3px;
+}
+.pal-dashboard #panel-container::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.05);
+}
+
+/* 绝对无 Padding 卡片！直接使用高密边界线 */
+.pal-dashboard .panel-row {
+  display: grid;
+  grid-template-columns: 480px 1fr; /* 左右两大精细列平铺，充分吞吐 1000px 宽度 */
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.pal-dashboard .panel-col {
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pal-dashboard .panel-col.right-border {
+  border-right: 1px solid var(--border-glass);
+}
+
+.pal-dashboard .section-header {
+  font-size: 10px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  padding-bottom: 2px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 📊 场景与事件高级统计 */
+.pal-dashboard .scene-dense-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+}
+
+.pal-dashboard .scene-item {
+  background: var(--grid-item-bg);
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  padding: 3px 5px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pal-dashboard .scene-label {
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.25);
+  margin-bottom: 1px;
+  text-transform: uppercase;
+}
+
+.pal-dashboard .scene-val {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--glow-blue);
+}
+
+/* 统计模式徽章分布栏 */
+.pal-dashboard .stat-modes-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2.5px;
+  background: rgba(0,0,0,0.2);
+  padding: 3px 5px;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.02);
+}
+
+.pal-dashboard .stat-mode-badge {
+  font-size: 8px;
+  padding: 1px 3px;
+  border-radius: 1.5px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.6);
+}
+.pal-dashboard .stat-mode-badge span {
+  font-weight: bold;
+  color: var(--glow-yellow);
+  margin-left: 2px;
+}
+
+/* 👥 主角多维核心大矩阵 */
+.pal-dashboard .hero-block-container {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 6px;
+}
+
+.pal-dashboard .hero-avatar-card {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.03);
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 4px;
+}
+
+.pal-dashboard .hero-name {
+  font-size: 11px;
+  font-weight: bold;
+  color: #fff;
+}
+.pal-dashboard .hero-image-lbl {
+  font-size: 7.5px;
+  color: rgba(255,255,255,0.25);
+  margin-top: 1px;
+}
+
+.pal-dashboard .hero-attributes-matrix {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.pal-dashboard .hero-attr-chip {
+  width: 138px;
+  background: var(--grid-item-bg);
+  border: 1px solid rgba(255,255,255,0.02);
+  padding: 2px 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pal-dashboard .hero-attr-lbl {
+  font-size: 8px;
+  color: rgba(255,255,255,0.3);
+}
+
+.pal-dashboard .hero-attr-val {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--glow-green);
+}
+
+/* 🎒 行囊网格 & 物品 20 项底层高级解码器 */
+.pal-dashboard .bag-cols-container {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 6px;
+}
+
+.pal-dashboard .bag-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2.5px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.pal-dashboard .bag-slot {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  height: 25px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.pal-dashboard .bag-slot:hover {
+  border-color: var(--glow-green);
+  background: rgba(0, 255, 157, 0.04);
+  color: var(--glow-green);
+}
+.pal-dashboard .bag-slot.active {
+  border-color: var(--glow-yellow) !important;
+  background: rgba(255, 208, 0, 0.06) !important;
+  color: var(--glow-yellow) !important;
+}
+
+.pal-dashboard .bag-inspector {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.03);
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pal-dashboard .ins-header {
+  font-size: 9px;
+  font-weight: bold;
+  color: #ffd000;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  padding-bottom: 2px;
+  margin-bottom: 3px;
+}
+
+.pal-dashboard .ins-table {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.pal-dashboard .ins-field {
+  width: 150px;
+  background: rgba(255,255,255,0.01);
+  padding: 1px 3px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  border-bottom: 1px dotted rgba(255,255,255,0.02);
+}
+.pal-dashboard .ins-f-label { color: rgba(255,255,255,0.25); }
+.pal-dashboard .ins-f-val { color: #fff; font-weight: 500; }
+
+/* 👾 附近 NPC 袖珍实体 NxM 芯片网格 */
+.pal-dashboard .npc-fleet-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2.5px;
+  max-height: 80px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.pal-dashboard .npc-micro-card {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.02);
+  padding: 3px 4px;
+  cursor: pointer;
+  transition: all 0.1s;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 32px;
+}
+.pal-dashboard .npc-micro-card:hover {
+  border-color: var(--glow-green);
+  background: rgba(0, 255, 157, 0.03);
+}
+.pal-dashboard .npc-micro-card.highlighted {
+  border-color: var(--glow-green) !important;
+  background: rgba(0, 255, 157, 0.08) !important;
+  box-shadow: 0 0 6px rgba(0, 255, 128, 0.2);
+}
+
+.pal-dashboard .npc-mc-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8.5px;
+  font-weight: bold;
+  color: #fff;
+}
+.pal-dashboard .npc-mc-pos {
+  font-size: 7.5px;
+  color: rgba(255,255,255,0.2);
+}
+
+/* 💻 并行指令控制台 & 系统极客分析指标 */
+.pal-dashboard .terminal-section {
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  flex-direction: column;
+  background: rgba(5, 5, 8, 0.98);
+  flex-shrink: 0;
+}
+
+.pal-dashboard .profiler-header {
+  background: rgba(0, 0, 0, 0.5);
+  border-bottom: 1px solid var(--border-glass);
+  padding: 4px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pal-dashboard .prof-badge {
+  font-size: 8px;
+  font-weight: bold;
+  padding: 1px 4px;
+  border-radius: 1px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.45);
+}
+.pal-dashboard .prof-badge span {
+  color: var(--glow-green);
+  margin-left: 2px;
+}
+
+.pal-dashboard .log-stream {
+  height: 1000px;
+  background: #030305;
+  overflow-y: scroll;
+  position: relative;
+}
+
+.pal-dashboard .log-stream-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  min-height: 100%;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
+}
+
+.pal-dashboard .log-item {
+  border-left: 1.5px solid var(--glow-green);
+  padding-left: 5px;
+  color: rgba(255, 255, 255, 0.8);
+}
+.pal-dashboard .log-item.scene { border-color: var(--glow-blue); }
+.pal-dashboard .log-item.trig { border-color: var(--glow-yellow); }
+.pal-dashboard .log-item.auto { border-color: var(--glow-green); }
+.pal-dashboard .log-item.item { border-color: var(--glow-red); }
+
+.pal-dashboard .log-time { color: rgba(255,255,255,0.2); font-size: 7.5px; margin-right: 3px; }
+.pal-dashboard .log-script-id { color: rgba(255,255,255,0.15); font-size: 7.5px; margin-right: 3px; }
+.pal-dashboard .log-badge {
+  padding: 0px 2px;
+  border-radius: 1px;
+  font-size: 7.5px;
+  font-weight: bold;
+  margin-right: 3px;
+}
+.pal-dashboard .log-badge.scene { background: rgba(0, 225, 255, 0.1); color: var(--glow-blue); }
+.pal-dashboard .log-badge.trig { background: rgba(255, 208, 0, 0.1); color: var(--glow-yellow); }
+.pal-dashboard .log-badge.auto { background: rgba(0, 255, 157, 0.1); color: var(--glow-green); }
+.pal-dashboard .log-badge.item { background: rgba(255, 59, 111, 0.1); color: var(--glow-red); }
+
+.pal-dashboard .log-code { color: #ec4899; font-weight: bold; }
+.pal-dashboard .log-desc { color: #93c5fd; }
+
+/* ⚙️ 调试控制与变速齿轮 */
+.pal-dashboard .debugger-footer {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 5px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

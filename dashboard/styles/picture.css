@@ -1,0 +1,24 @@
+/* ==================== 🖼️ 仙剑奇侠传图片与精灵资源浏览器面板样式 (picture.css) ==================== */
+
+/* 图片资源浏览器弹窗容器 */
+.pal-dashboard.picture-panel {
+  /* 专属样式设定 */
+}
+
+/* 选项卡按钮 */
+.pal-dashboard .image-tab-btn {
+  transition: all 0.15s ease;
+}
+.pal-dashboard .image-tab-btn.active {
+  background: rgba(0, 255, 157, 0.1) !important;
+  border-color: var(--glow-green) !important;
+  color: var(--glow-green) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 157, 0.15);
+}
+
+/* Canvas 尺寸防糊缩放样式 */
+.pal-dashboard .image-gallery-container canvas {
+  width: calc(var(--raw-width, 40px) * var(--image-explorer-scale, 2)) !important;
+  height: calc(var(--raw-height, 40px) * var(--image-explorer-scale, 2)) !important;
+  image-rendering: pixelated;
+}
