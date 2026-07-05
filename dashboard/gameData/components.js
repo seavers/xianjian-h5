@@ -1279,13 +1279,14 @@ export function GameDataApp() {
         
         <!-- 主内容展示区 -->
         <div id="gamedata-main-container" style=${{ flex: 1, display: 'flex', overflow: 'hidden', background: '#040302' }}>
-          ${activeTab === 'role' && html`<${RoleTabComponent} selectedRoleId=${selectedRoleId} setSelectedRoleId=${setSelectedRoleId} jumpToScript=${jumpToScript} />`}
-          ${activeTab === 'npc' && html`<${NpcTabComponent} selectedNpcId=${selectedNpcId} setSelectedNpcId=${setSelectedNpcId} npcFilterKeyword=${npcFilterKeyword} setNpcFilterKeyword=${setNpcFilterKeyword} jumpToScript=${jumpToScript} />`}
-          ${activeTab === 'item' && html`<${ItemTabComponent} selectedItemId=${selectedItemId} setSelectedItemId=${setSelectedItemId} jumpToScript=${jumpToScript} />`}
-          ${activeTab === 'script' && html`<${ScriptTabComponent} selectedScriptId=${selectedScriptId} setSelectedScriptId=${setSelectedScriptId} />`}
-          ${activeTab === 'scene' && html`<${SceneTabComponent} selectedSceneId=${selectedSceneId} setSelectedSceneId=${setSelectedSceneId} jumpToScript=${jumpToScript} jumpToNpc=${jumpToNpc} />`}
-          ${activeTab === 'shop' && html`<${ShopTabComponent} jumpToItem=${jumpToItem} />`}
-          ${activeTab === 'growth' && html`<${GrowthTabComponent} jumpToItem=${jumpToItem} />`}
+          ${activeTab === 'role' && html`<div class="role-tab" style=${{ display: 'flex', flex: 1, overflow: 'hidden' }}><${RoleTabComponent} selectedRoleId=${selectedRoleId} setSelectedRoleId=${setSelectedRoleId} jumpToScript=${jumpToScript} /></div>`}
+          ${activeTab === 'npc' && html`<div class="npc-tab" style=${{ display: 'flex', flex: 1, overflow: 'hidden' }}><${NpcTabComponent} selectedNpcId=${selectedNpcId} setSelectedNpcId=${setSelectedNpcId} npcFilterKeyword=${npcFilterKeyword} setNpcFilterKeyword=${setNpcFilterKeyword} jumpToScript=${jumpToScript} /></div>`}
+          ${activeTab === 'item' && html`<div class="item-tab" style=${{ display: 'flex', flex: 1, overflow: 'hidden' }}><${ItemTabComponent} selectedItemId=${selectedItemId} setSelectedItemId=${setSelectedItemId} jumpToScript=${jumpToScript} /></div>`}
+          ${activeTab === 'script' && html`<div class="script-tab" style=${{ display: 'flex', flex: 1, overflow: 'hidden' }}><${ScriptTabComponent} selectedScriptId=${selectedScriptId} setSelectedScriptId=${setSelectedScriptId} /></div>`}
+          ${activeTab === 'scene' && html`<div class="scene-tab" style=${{ display: 'flex', flex: 1, overflow: 'hidden' }}><${SceneTabComponent} selectedSceneId=${selectedSceneId} setSelectedSceneId=${setSelectedSceneId} jumpToScript=${jumpToScript} jumpToNpc=${jumpToNpc} /></div>`}
+          ${activeTab === 'shop' && html`<div class="shop-tab" style=${{ display: 'flex', flex: 1, overflow: 'hidden' }}><${ShopTabComponent} jumpToItem=${jumpToItem} /></div>`}
+          ${activeTab === 'growth' && html`<div class="growth-tab" style=${{ display: 'flex', flex: 1, overflow: 'hidden' }}><${GrowthTabComponent} jumpToItem=${jumpToItem} /></div>`}
+
         </div>
       </div>
     </div>
