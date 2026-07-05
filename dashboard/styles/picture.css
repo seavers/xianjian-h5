@@ -17,7 +17,7 @@
 }
 
 /* Canvas 尺寸防糊缩放样式 */
-.pal-dashboard .image-gallery-container canvas {
+.pal-dashboard #image-gallery-container canvas {
   width: calc(var(--raw-width, 40px) * var(--image-explorer-scale, 2)) !important;
   height: calc(var(--raw-height, 40px) * var(--image-explorer-scale, 2)) !important;
   image-rendering: pixelated;

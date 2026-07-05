@@ -221,7 +221,7 @@ function MapModalApp() {
   if (!isVisible) return null;
 
   return html`
-    <div id="map-modal" style=${{ display: 'flex', position: 'fixed', zIndex: 99999, left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(5,5,8,0.75)', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+    <div id="map-modal" class="pal-dashboard map-panel" style=${{ display: 'flex', position: 'fixed', zIndex: 99999, left: 0, top: 0, width: '100vw', height: '100vh', background: 'rgba(5,5,8,0.75)', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
       <div style=${{ '--modal-accent': 'var(--glow-blue)', background: 'rgba(10,13,20,0.96)', border: '1px solid var(--glow-blue)', borderRadius: '4px', boxShadow: '0 0 25px rgba(0, 225, 255, 0.15)', width: 'calc(100% - 40px)', height: 'calc(100% - 40px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'JetBrains Mono', sans-serif" }}>
         
         <!-- 弹窗头部 -->

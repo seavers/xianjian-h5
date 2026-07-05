@@ -42,7 +42,8 @@
 
 .picture-panel,
 .battle-panel,
-.gamedata-panel {
+.gamedata-panel,
+.map-panel {
   overflow: hidden;
 }
 
@@ -543,7 +544,7 @@
 }
 
 /* 通用开发者面板内的基础小按钮 */
-.pal-dashboard .btn-dbg {
+.btn-dbg {
   background: rgba(255,255,255,0.02);
   border: 1px solid rgba(255,255,255,0.05);
   padding: 3px 6px;
@@ -554,7 +555,7 @@
   cursor: pointer;
   transition: all 0.1s;
 }
-.pal-dashboard .btn-dbg:hover {
+.btn-dbg:hover {
   background: rgba(0, 255, 157, 0.05);
   border-color: var(--glow-green);
   color: var(--glow-green);
