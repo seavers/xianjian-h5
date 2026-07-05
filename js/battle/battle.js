@@ -2307,112 +2307,230 @@ async function playPlayerAttack(playerIdx, enemyIdx) {
   const origX = player.x;
   const origY = player.y;
 
+  // 1. 检测是否双击状态、天罡战气以及群体物理武器
+  const roleStats = state.roles[player.index];
+  const hasDualAttack = roleStats && roleStats.status && roleStats.status[8] > 0;
+  const hasBravery = roleStats && roleStats.status && roleStats.status[5] > 0;
+  const canAttackAll = roleStats && !!roleStats.attackAll;
+
   // 播放准备普通攻击动作叫喊音效
   if (player.attackSound > 0) {
     playSound(player.attackSound);
   }
 
-  // 1. 瞬移到敌人身前 (frame 8 准备姿势)
-  player.x = enemy.x + 35;
-  player.y = enemy.y + 10;
-  player.currentFrame = 8;
-  draw();
-  await sleep(150);
+  // 2. 物攻出手动作序列
+  if (canAttackAll) {
+    // 鞭子类全体物攻武器：在原地播放击打帧，无需进行突进瞬移
+    player.currentFrame = 7; // 出击前置帧
+    draw();
+    await sleep(150);
 
-  // 2. 挥刀斩击 (frame 9 出手动作)
-  player.x = enemy.x + 28;
-  player.y = enemy.y + 8;
-  player.currentFrame = 9;
+    player.currentFrame = 9; // 出手打击帧
+    if (player.weaponSound > 0) {
+      playSound(player.weaponSound);
+    }
+    draw();
 
-  // 播放武器打击/挥舞音效
-  if (player.weaponSound > 0) {
-    playSound(player.weaponSound);
+    // 敌方受击顺序还原：2, 1, 0, 4, 3
+    const indexOrder = [2, 1, 0, 4, 3];
+    const targetEnemyIdxs = [];
+    indexOrder.forEach(idx => {
+      if (enemies[idx] && enemies[idx].hp > 0) {
+        targetEnemyIdxs.push(idx);
+      }
+    });
+
+    if (targetEnemyIdxs.length > 0) {
+      const enemyOrigPositions = targetEnemyIdxs.map(eIdx => ({
+        enemy: enemies[eIdx],
+        x: enemies[eIdx].x,
+        y: enemies[eIdx].y
+      }));
+
+      // 全体受击怪物第一阶段后退
+      enemyOrigPositions.forEach(item => {
+        item.enemy.x -= 8;
+        item.enemy.y -= 4;
+      });
+      draw();
+      await sleep(80);
+
+      // 全体受击怪物第二阶段后退
+      enemyOrigPositions.forEach(item => {
+        item.enemy.x -= 2;
+        item.enemy.y -= 1;
+      });
+      draw();
+      await sleep(150);
+
+      // 依次计算物攻伤害并进行指数级衰减
+      let division = 1;
+      for (const eIdx of targetEnemyIdxs) {
+        const currentEnemy = enemies[eIdx];
+        
+        let str = player.attackStrength;
+        let def = currentEnemy.defense + (currentEnemy.level + 6) * 4;
+        let baseDmg = calcBaseDamage(str, def);
+        const res = currentEnemy.physicalResistance || 0;
+        if (res !== 0) {
+          baseDmg = Math.floor(baseDmg / res);
+        }
+
+        let dmg = baseDmg + Math.floor(Math.random() * 2) + 1;
+
+        // 暴击判定：天罡战气必定暴击 (x3)，普通攻击 1/6 暴击
+        let isCritical = hasBravery;
+        if (!isCritical && Math.floor(Math.random() * 6) === 0) {
+          isCritical = true;
+        }
+        if (isCritical) {
+          dmg *= 3;
+        }
+
+        // 李逍遥物理攻击 1/12 爆发 2 倍伤害
+        if (player.index === 0 && Math.floor(Math.random() * 12) === 0) {
+          dmg *= 2;
+          isCritical = true;
+        }
+
+        dmg = Math.floor(dmg * (1.0 + Math.random() * 0.125));
+        
+        // 全体武器攻击力除数衰减
+        dmg = Math.floor(dmg / division);
+
+        if (isCritical && player.criticalSound > 0) {
+          playSound(player.criticalSound);
+        }
+
+        if (dmg < 1) dmg = 1;
+        currentEnemy.hp = Math.max(0, currentEnemy.hp - dmg);
+
+        // 普通物理攻击击醒昏睡中状态
+        if (currentEnemy.status && currentEnemy.status[2] > 0) {
+          delete currentEnemy.status[2];
+        }
+
+        damagePopups.push({
+          actor: currentEnemy,
+          value: dmg,
+          isPlayer: false,
+          startTime: Date.now()
+        });
+
+        if (currentEnemy.hp <= 0 && currentEnemy.deathSound > 0) {
+          playSound(currentEnemy.deathSound);
+        }
+
+        division *= 2;
+      }
+
+      // 所有怪物弹回原站位
+      enemyOrigPositions.forEach(item => {
+        item.enemy.x = item.x;
+        item.enemy.y = item.y;
+      });
+      draw();
+      await sleep(250);
+    }
+  } else {
+    // 针对敌单体打击（支持双击状态）
+    // 1. 瞬移到敌方身前 (frame 8 准备姿势)
+    player.x = enemy.x + 35;
+    player.y = enemy.y + 10;
+    player.currentFrame = 8;
+    draw();
+    await sleep(150);
+
+    const runSingleHit = async () => {
+      // 2. 挥刀斩击 (frame 9 出手动作)
+      player.x = enemy.x + 28;
+      player.y = enemy.y + 8;
+      player.currentFrame = 9;
+
+      if (player.weaponSound > 0) {
+        playSound(player.weaponSound);
+      }
+
+      let str = player.attackStrength;
+      let def = enemy.defense + (enemy.level + 6) * 4;
+      let baseDmg = calcBaseDamage(str, def);
+      const res = enemy.physicalResistance || 0;
+      if (res !== 0) {
+        baseDmg = Math.floor(baseDmg / res);
+      }
+
+      let dmg = baseDmg + Math.floor(Math.random() * 2) + 1;
+
+      // 暴击判定：天罡战气必定暴击 (x3)，普通攻击 1/6 暴击
+      let isCritical = hasBravery;
+      if (!isCritical && Math.floor(Math.random() * 6) === 0) {
+        isCritical = true;
+      }
+      if (isCritical) {
+        dmg *= 3;
+      }
+
+      // 李逍遥 1/12 额外爆发 2 倍伤害
+      if (player.index === 0 && Math.floor(Math.random() * 12) === 0) {
+        dmg *= 2;
+        isCritical = true;
+      }
+
+      dmg = Math.floor(dmg * (1.0 + Math.random() * 0.125));
+
+      if (isCritical && player.criticalSound > 0) {
+        playSound(player.criticalSound);
+      }
+
+      if (dmg < 1) dmg = 1;
+
+      const enemyOrigX = enemy.x;
+      const enemyOrigY = enemy.y;
+
+      // 怪物被打击后移退后
+      enemy.x -= 8;
+      enemy.y -= 4;
+      draw();
+      await sleep(80);
+
+      enemy.x -= 2;
+      enemy.y -= 1;
+      draw();
+      await sleep(150);
+
+      enemy.hp = Math.max(0, enemy.hp - dmg);
+
+      if (enemy.status && enemy.status[2] > 0) {
+        delete enemy.status[2];
+      }
+
+      damagePopups.push({
+        actor: enemy,
+        value: dmg,
+        isPlayer: false,
+        startTime: Date.now()
+      });
+
+      if (enemy.hp <= 0 && enemy.deathSound > 0) {
+        playSound(enemy.deathSound);
+      }
+
+      enemy.x = enemyOrigX;
+      enemy.y = enemyOrigY;
+      draw();
+      await sleep(250);
+    };
+
+    // 释放第一击
+    await runSingleHit();
+
+    // 如果处于双击增益且敌人仍然活着，则释放第二击物攻
+    if (hasDualAttack && enemy.hp > 0) {
+      await runSingleHit();
+    }
   }
 
-  // 步骤 6.1：获取攻防双方属性，并对敌方的战场防御力进行等级加成修正
-  let str = player.attackStrength;
-  let def = enemy.defense;
-  const enemyLevel = enemy.level || 1;
-  def += (enemyLevel + 6) * 4;
-
-  // 步骤 6.2：根据攻击力与防御力计算物理基础伤害，并对其进行抗性折减
-  let baseDmg = calcBaseDamage(str, def);
-  const res = enemy.physicalResistance || 0;
-  if (res !== 0) {
-    baseDmg = Math.floor(baseDmg / res);
-  }
-
-  // 步骤 6.3：加入 1~2 点的物理打击基础随机伤害
-  let dmg = baseDmg + Math.floor(Math.random() * 2) + 1;
-
-  // 步骤 6.4：进行普通攻击的暴击效果随机判定 (1/6 概率触发 3 倍暴击)
-  let isCritical = false;
-  if (Math.floor(Math.random() * 6) === 0) {
-    dmg *= 3;
-    isCritical = true;
-  }
-
-  // 步骤 6.5：若攻击者是主角李逍遥，则额外有 1/12 的概率再次发生 2 倍爆发伤害
-  if (player.index === 0 && Math.floor(Math.random() * 12) === 0) {
-    dmg *= 2;
-    isCritical = true;
-  }
-
-  // 步骤 6.6：乘以 1.0 ~ 1.125 的伤害随机波动因子
-  dmg = Math.floor(dmg * (1.0 + Math.random() * 0.125));
-
-  // 步骤 6.7：播放暴击受击音效以增强打击质感反馈
-  if (isCritical && player.criticalSound > 0) {
-    playSound(player.criticalSound);
-  }
-
-  // 步骤 6.8：兜底伤害至最小 1 点，并对敌人扣减对应 HP
-  if (dmg < 1) dmg = 1;
-
-  // 记录受击怪物原位置
-  const enemyOrigX = enemy.x;
-  const enemyOrigY = enemy.y;
-
-  // 怪物被攻击，执行击退退后一格动画(分两阶段左上移动，共 x-=10, y-=5)
-  enemy.x -= 8;
-  enemy.y -= 4;
-  draw();
-  await sleep(80);
-
-  enemy.x -= 2;
-  enemy.y -= 1;
-  draw();
-  await sleep(150);
-
-  enemy.hp = Math.max(0, enemy.hp - dmg);
-
-  // 物理受击醒来（清除昏睡状态 ID 2）
-  if (enemy.status && enemy.status[2] > 0) {
-    delete enemy.status[2];
-    console.log(`[Status] 敌人 ${enemy.name || enemyIdx} 受物理普通攻击，昏睡状态解除`);
-  }
-
-  // 触发伤害数额浮动字样
-  damagePopups.push({
-    actor: enemy,
-    value: dmg,
-    isPlayer: false,
-    startTime: Date.now()
-  });
-
-  // 如果敌人死亡，则播放敌人死亡音效
-  if (enemy.hp <= 0 && enemy.deathSound > 0) {
-    playSound(enemy.deathSound);
-  }
-
-  // 怪物弹回原位置
-  enemy.x = enemyOrigX;
-  enemy.y = enemyOrigY;
-
-  draw();
-  await sleep(250);
-
-  // 3. 返回原位并重置玩家姿势与位置坐标
+  // 3. 返回原位置并重置玩家姿势
   player.x = player.origX !== undefined ? player.origX : origX;
   player.y = player.origY !== undefined ? player.origY : origY;
   restorePlayerFrame(player);
