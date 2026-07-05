@@ -2681,7 +2681,6 @@ async function playEnemyAttack(enemyIdx, playerIdx) {
           targetPlayer.hp = Math.max(0, targetPlayer.hp - dmg);
 
           // 同步削减全局角色状态中的 HP
-          const roleStats = state.roles[targetPlayer.index];
           if (roleStats) {
             roleStats.hp = targetPlayer.hp;
           }
