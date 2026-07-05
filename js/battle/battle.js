@@ -1561,16 +1561,24 @@ async function runActionPhase() {
     }
   }
 
-  // 根据身法属性由高到低对所有出手者进行排序
+  // 根据身法属性由高到低对所有出手者进行排序，对齐 C Pal 引入身法波动与 Boss 双动机制
   const actors = [];
   players.forEach((p, idx) => {
     if (p.hp > 0) {
-      actors.push({ type: 'player', index: idx, speed: p.dexterity });
+      const speed = Math.floor(p.dexterity * (0.9 + Math.random() * 0.2));
+      actors.push({ type: 'player', index: idx, speed: speed });
     }
   });
   enemies.forEach((e, idx) => {
     if (e.hp > 0) {
-      actors.push({ type: 'enemy', index: idx, speed: e.dexterity });
+      const speed1 = Math.floor(e.dexterity * (0.9 + Math.random() * 0.2));
+      actors.push({ type: 'enemy', index: idx, speed: speed1 });
+
+      // 如果敌人有双动/连击标记 (wDualMove)，则在一回合中推入两次出手序列
+      if (e.wDualMove) {
+        const speed2 = Math.floor(e.dexterity * (0.9 + Math.random() * 0.2));
+        actors.push({ type: 'enemy', index: idx, speed: speed2 });
+      }
     }
   });
 
