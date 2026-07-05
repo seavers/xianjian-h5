@@ -1785,8 +1785,6 @@ async function runActionPhase() {
         if (isBoss) {
           playSound(31);
         }
-        // 累积逃跑修行计数
-        player.rgFleeExp = (player.rgFleeExp || 0) + 2;
         let str = player.fleeRate;
         let def = 0;
         enemies.forEach(e => {
@@ -1832,6 +1830,8 @@ async function runActionPhase() {
           endBattle(0xFFFF);
           return;
         } else {
+          // 逃跑失败时才累积逃跑修行计数（对齐 C Pal）
+          player.rgFleeExp = (player.rgFleeExp || 0) + 2;
           const origX = player.x;
           const origY = player.y;
           player.currentFrame = 0;
@@ -2038,6 +2038,15 @@ async function runActionPhase() {
                 });
                 draw();
                 await sleep(400);
+              } else {
+                // 合击贡献者不足，降级为普通物理攻击（对齐 C Pal 行为）
+                let targetIdx = act.target;
+                if (enemies[targetIdx].hp <= 0) {
+                  targetIdx = enemies.findIndex(e => e.hp > 0);
+                }
+                if (targetIdx !== -1) {
+                  await playPlayerAttack(actor.index, targetIdx);
+                }
               }
             }
           }
@@ -2320,117 +2329,120 @@ async function playPlayerAttack(playerIdx, enemyIdx) {
 
   // 2. 物攻出手动作序列
   if (canAttackAll) {
-    // 鞭子类全体物攻武器：在原地播放击打帧，无需进行突进瞬移
-    player.currentFrame = 7; // 出击前置帧
-    draw();
-    await sleep(150);
+    // 鞭子类全体物攻武器：在原地播放击打帧，支持双击状态循环两次
+    const attackCount = hasDualAttack ? 2 : 1;
 
-    player.currentFrame = 9; // 出手打击帧
-    if (player.weaponSound > 0) {
-      playSound(player.weaponSound);
-    }
-    draw();
+    for (let t = 0; t < attackCount; t++) {
+      // 检查是否还有活着的敌人
+      if (!enemies.some(e => e.hp > 0)) break;
 
-    // 敌方受击顺序还原：2, 1, 0, 4, 3
-    const indexOrder = [2, 1, 0, 4, 3];
-    const targetEnemyIdxs = [];
-    indexOrder.forEach(idx => {
-      if (enemies[idx] && enemies[idx].hp > 0) {
-        targetEnemyIdxs.push(idx);
-      }
-    });
-
-    if (targetEnemyIdxs.length > 0) {
-      const enemyOrigPositions = targetEnemyIdxs.map(eIdx => ({
-        enemy: enemies[eIdx],
-        x: enemies[eIdx].x,
-        y: enemies[eIdx].y
-      }));
-
-      // 全体受击怪物第一阶段后退
-      enemyOrigPositions.forEach(item => {
-        item.enemy.x -= 8;
-        item.enemy.y -= 4;
-      });
-      draw();
-      await sleep(80);
-
-      // 全体受击怪物第二阶段后退
-      enemyOrigPositions.forEach(item => {
-        item.enemy.x -= 2;
-        item.enemy.y -= 1;
-      });
+      player.currentFrame = 7; // 出击前置帧
       draw();
       await sleep(150);
 
-      // 依次计算物攻伤害并进行指数级衰减
-      let division = 1;
-      for (const eIdx of targetEnemyIdxs) {
-        const currentEnemy = enemies[eIdx];
-        
-        let str = player.attackStrength;
-        let def = currentEnemy.defense + (currentEnemy.level + 6) * 4;
-        let baseDmg = calcBaseDamage(str, def);
-        const res = currentEnemy.physicalResistance || 0;
-        if (res !== 0) {
-          baseDmg = Math.floor(baseDmg / res);
+      player.currentFrame = 9; // 出手打击帧
+      if (player.weaponSound > 0) {
+        playSound(player.weaponSound);
+      }
+      draw();
+
+      // 敌方受击顺序还原：2, 1, 0, 4, 3（对齐 C Pal）
+      const indexOrder = [2, 1, 0, 4, 3];
+      const targetEnemyIdxs = [];
+      indexOrder.forEach(idx => {
+        if (enemies[idx] && enemies[idx].hp > 0) {
+          targetEnemyIdxs.push(idx);
         }
+      });
 
-        let dmg = baseDmg + Math.floor(Math.random() * 2) + 1;
+      if (targetEnemyIdxs.length > 0) {
+        const enemyOrigPositions = targetEnemyIdxs.map(eIdx => ({
+          enemy: enemies[eIdx],
+          x: enemies[eIdx].x,
+          y: enemies[eIdx].y
+        }));
 
-        // 暴击判定：天罡战气必定暴击 (x3)，普通攻击 1/6 暴击
+        // 全体受击怪物第一阶段后退
+        enemyOrigPositions.forEach(item => {
+          item.enemy.x -= 8;
+          item.enemy.y -= 4;
+        });
+        draw();
+        await sleep(80);
+
+        // 全体受击怪物第二阶段后退
+        enemyOrigPositions.forEach(item => {
+          item.enemy.x -= 2;
+          item.enemy.y -= 1;
+        });
+        draw();
+        await sleep(150);
+
+        // 群攻暴击一次性统一判定（对齐 C Pal：暴击对全体统一生效）
         let isCritical = hasBravery;
         if (!isCritical && Math.floor(Math.random() * 6) === 0) {
           isCritical = true;
         }
-        if (isCritical) {
-          dmg *= 3;
-        }
-
-        // 李逍遥物理攻击 1/12 爆发 2 倍伤害
         if (player.index === 0 && Math.floor(Math.random() * 12) === 0) {
-          dmg *= 2;
           isCritical = true;
         }
-
-        dmg = Math.floor(dmg * (1.0 + Math.random() * 0.125));
-        
-        // 全体武器攻击力除数衰减
-        dmg = Math.floor(dmg / division);
 
         if (isCritical && player.criticalSound > 0) {
           playSound(player.criticalSound);
         }
 
-        if (dmg < 1) dmg = 1;
-        currentEnemy.hp = Math.max(0, currentEnemy.hp - dmg);
+        // 依次计算物攻伤害并进行指数级衰减
+        let division = 1;
+        for (const eIdx of targetEnemyIdxs) {
+          const currentEnemy = enemies[eIdx];
 
-        // 普通物理攻击击醒昏睡中状态
-        if (currentEnemy.status && currentEnemy.status[2] > 0) {
-          delete currentEnemy.status[2];
+          let str = player.attackStrength;
+          let def = currentEnemy.defense + (currentEnemy.level + 6) * 4;
+          let baseDmg = calcBaseDamage(str, def);
+          const res = currentEnemy.physicalResistance || 0;
+          if (res !== 0) {
+            baseDmg = Math.floor(baseDmg / res);
+          }
+
+          // 群攻不额外添加随机加成（对齐 C Pal）
+          let dmg = baseDmg;
+          if (isCritical) {
+            dmg *= 3;
+          }
+
+          // 全体武器攻击力除数衰减
+          dmg = Math.floor(dmg / division);
+
+          if (dmg < 1) dmg = 1;
+          currentEnemy.hp = Math.max(0, currentEnemy.hp - dmg);
+
+          // 普通物理攻击击醒昏睡中状态
+          if (currentEnemy.status && currentEnemy.status[2] > 0) {
+            delete currentEnemy.status[2];
+          }
+
+          damagePopups.push({
+            actor: currentEnemy,
+            value: dmg,
+            isPlayer: false,
+            startTime: Date.now()
+          });
+
+          if (currentEnemy.hp <= 0 && currentEnemy.deathSound > 0) {
+            playSound(currentEnemy.deathSound);
+          }
+
+          division *= 2;
         }
 
-        damagePopups.push({
-          actor: currentEnemy,
-          value: dmg,
-          isPlayer: false,
-          startTime: Date.now()
+        // 所有怪物弹回原站位
+        enemyOrigPositions.forEach(item => {
+          item.enemy.x = item.x;
+          item.enemy.y = item.y;
         });
-
-        if (currentEnemy.hp <= 0 && currentEnemy.deathSound > 0) {
-          playSound(currentEnemy.deathSound);
-        }
-
-        division *= 2;
+        draw();
+        await sleep(250);
       }
-
-      // 所有怪物弹回原站位
-      enemyOrigPositions.forEach(item => {
-        item.enemy.x = item.x;
-        item.enemy.y = item.y;
-      });
-      draw();
-      await sleep(250);
     }
   } else {
     // 针对敌单体打击（支持双击状态）
@@ -3327,9 +3339,19 @@ async function endBattle(result) {
           roleStats.hp += Math.floor((roleStats.maxHp - roleStats.hp) / 2);
           roleStats.mp += Math.floor((roleStats.maxMp - roleStats.mp) / 2);
 
-          // 战后自动清除中毒与全部异常/增益负面状态
-          roleStats.status = {};
-          roleStats.poisons = [];
+          // 战后自动清除临时异常状态（保留装备附加的永久状态 >999）
+          if (roleStats.status) {
+            Object.keys(roleStats.status).forEach(statusId => {
+              if (roleStats.status[statusId] <= 999) {
+                delete roleStats.status[statusId];
+              }
+            });
+          }
+
+          // 仅清除等级 ≤ 3 的中毒（对齐 C Pal 的 PAL_CurePoisonByLevel(w, 3)）
+          if (roleStats.poisons && roleStats.poisons.length > 0) {
+            roleStats.poisons = roleStats.poisons.filter(p => (p.level || 0) > 3);
+          }
         }
       }
 
