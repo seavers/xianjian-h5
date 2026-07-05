@@ -1,4 +1,26 @@
-/* ==================== 💻 仙剑奇侠传开发者面板公共基础样式 (base.css) ==================== */
+
+#dashboard {
+  background: var(--bg-dark);
+  border-left: 1px solid var(--border-glass);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+#resize-handle {
+  position: absolute;
+  top: 0;
+  left: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 9999;
+  background: transparent;
+}
+#resize-handle:hover {
+  background: rgba(0, 255, 157, 0.15);
+}
 
 .pal-dashboard {
   --glow-green: #00ff9d;
