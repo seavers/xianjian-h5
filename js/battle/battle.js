@@ -2881,7 +2881,7 @@ async function endBattle(result) {
         }
       }
 
-      // 步骤 6：战斗结束后自动恢复部分 HP 与 MP（恢复损失值的一半，死者复活）
+      // 步骤 6：战斗结束后自动恢复部分 HP 与 MP（恢复损失值的一半，死者复活），并清空所有负面状态与中毒
       for (let i = 0; i < state.party.length; i++) {
         const role = state.party[i];
         const roleStats = state.roles[role.index];
@@ -2889,6 +2889,10 @@ async function endBattle(result) {
         if (roleStats) {
           roleStats.hp += Math.floor((roleStats.maxHp - roleStats.hp) / 2);
           roleStats.mp += Math.floor((roleStats.maxMp - roleStats.mp) / 2);
+
+          // 战后自动清除中毒与全部异常/增益负面状态
+          roleStats.status = {};
+          roleStats.poisons = [];
         }
       }
 
