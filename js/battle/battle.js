@@ -3925,84 +3925,87 @@ async function handleMagicAction(player, actor, act) {
     }
     state.activeTargetIdx = targetIdx;
     if (targetIdx !== -1) {
-      await playMagicEffect(magic, player, enemies[targetIdx]);
-
-      // 步骤 1：运行施法脚本
+      // 步骤 1：运行施法前置脚本，判定施法是否成功
+      state.scriptSuccess = true;
       if (itemObj.useScr > 0) {
         await Script.runTriggerScript(itemObj.useScr, state.roles[player.index], 'magic');
       }
-      
-      // 步骤 2：运行施法成功后脚本
-      if (itemObj.equScr > 0) {
-        await Script.runTriggerScript(itemObj.equScr, enemies[targetIdx], 'magic');
-      }
 
-      // 步骤 3：结算伤害 (单体伤害或群体伤害，仅在 wBaseDamage > 0 时结算，防止飞龙探云手等辅助仙术误伤)
-      if (intToShort(magic.wBaseDamage) > 0) {
-        let targets = [];
-        if (magic.wType === 1 || magic.wType === 6 || magic.wType === 2) {
-          enemies.forEach((e, eIdx) => { if (e.hp > 0) targets.push(eIdx); });
-        } else {
-          if (enemies[targetIdx].hp > 0) targets = [targetIdx];
+      // 步骤 2：若施法成功，播放法术特效、运行施法成功后脚本并结算伤害
+      if (state.scriptSuccess !== false) {
+        await playMagicEffect(magic, player, enemies[targetIdx]);
+
+        if (itemObj.equScr > 0) {
+          await Script.runTriggerScript(itemObj.equScr, enemies[targetIdx], 'magic');
         }
 
-        // 记录每一个受击怪物的原位置
-        const enemyOrigPositions = targets.map(eIdx => ({
-          enemy: enemies[eIdx],
-          x: enemies[eIdx].x,
-          y: enemies[eIdx].y
-        }));
+        // 步骤 3：结算伤害 (单体伤害或群体伤害，仅在 wBaseDamage > 0 时结算，防止飞龙探云手等辅助仙术误伤)
+        if (intToShort(magic.wBaseDamage) > 0) {
+          let targets = [];
+          if (magic.wType === 1 || magic.wType === 6 || magic.wType === 2) {
+            enemies.forEach((e, eIdx) => { if (e.hp > 0) targets.push(eIdx); });
+          } else {
+            if (enemies[targetIdx].hp > 0) targets = [targetIdx];
+          }
 
-        // 全体受击怪物第一阶段向左上移动
-        enemyOrigPositions.forEach(item => {
-          item.enemy.x -= 8;
-          item.enemy.y -= 4;
-        });
-        draw();
-        await sleep(80);
+          // 记录每一个受击怪物的原位置
+          const enemyOrigPositions = targets.map(eIdx => ({
+            enemy: enemies[eIdx],
+            x: enemies[eIdx].x,
+            y: enemies[eIdx].y
+          }));
 
-        // 全体受击怪物第二阶段向左上移动
-        enemyOrigPositions.forEach(item => {
-          item.enemy.x -= 2;
-          item.enemy.y -= 1;
-        });
-        draw();
-        await sleep(150);
+          // 全体受击怪物第一阶段向左上移动
+          enemyOrigPositions.forEach(item => {
+            item.enemy.x -= 8;
+            item.enemy.y -= 4;
+          });
+          draw();
+          await sleep(80);
 
-        for (const eIdx of targets) {
-          const enemy = enemies[eIdx];
-           // 灵力换算
-          let str = player.magicStrength;
-          // 基础伤害计算 (完全还原自 sdlpal 中的 PAL_CalcMagicDamage)
-          let dmg = calcMagicDamage(str, enemy.defense, enemy.wElemResistance, enemy.wPoisonResistance || 0, 1, magic);
+          // 全体受击怪物第二阶段向左上移动
+          enemyOrigPositions.forEach(item => {
+            item.enemy.x -= 2;
+            item.enemy.y -= 1;
+          });
+          draw();
+          await sleep(150);
 
-          if (dmg < 1) dmg = 1;
-          enemy.hp = Math.max(0, enemy.hp - dmg);
+          for (const eIdx of targets) {
+            const enemy = enemies[eIdx];
+             // 灵力换算
+            let str = player.magicStrength;
+            // 基础伤害计算 (完全还原自 sdlpal 中的 PAL_CalcMagicDamage)
+            let dmg = calcMagicDamage(str, enemy.defense, enemy.wElemResistance, enemy.wPoisonResistance || 0, 1, magic);
 
-          // 弹出伤害飘字
-          damagePopups.push({
-            actor: enemy,
-            value: dmg,
-            isPlayer: false,
-            startTime: Date.now()
+            if (dmg < 1) dmg = 1;
+            enemy.hp = Math.max(0, enemy.hp - dmg);
+
+            // 弹出伤害飘字
+            damagePopups.push({
+              actor: enemy,
+              value: dmg,
+              isPlayer: false,
+              startTime: Date.now()
+            });
+
+            if (enemy.hp <= 0 && enemy.wDeathSound > 0) {
+              playSound(enemy.wDeathSound);
+            }
+          }
+
+          // 全体受击怪物还原位置
+          enemyOrigPositions.forEach(item => {
+            item.enemy.x = item.x;
+            item.enemy.y = item.y;
           });
 
-          if (enemy.hp <= 0 && enemy.wDeathSound > 0) {
-            playSound(enemy.wDeathSound);
-          }
+          draw();
+          await sleep(400); // 飘字稍作停留
+        } else {
+          draw();
+          await sleep(400);
         }
-
-        // 全体受击怪物还原位置
-        enemyOrigPositions.forEach(item => {
-          item.enemy.x = item.x;
-          item.enemy.y = item.y;
-        });
-
-        draw();
-        await sleep(400); // 飘字稍作停留
-      } else {
-        draw();
-        await sleep(400);
       }
     }
   } else {
@@ -4013,55 +4016,58 @@ async function handleMagicAction(player, actor, act) {
       targetIdx = players.findIndex(p => p.hp > 0);
     }
     if (targetIdx !== -1) {
-      await playMagicEffect(magic, player, players[targetIdx]);
-
-      // 步骤 1：运行施法脚本
+      // 步骤 1：运行施法前置脚本，判定施法是否成功
+      state.scriptSuccess = true;
       if (itemObj.useScr > 0) {
         await Script.runTriggerScript(itemObj.useScr, state.roles[player.index], 'magic');
       }
 
-      // 步骤 2：运行施法成功后脚本
-      if (itemObj.equScr > 0) {
-        await Script.runTriggerScript(itemObj.equScr, state.roles[players[targetIdx].index], 'magic');
-      }
+      // 步骤 2：若施法成功，播放法术特效、运行施法成功后脚本并结算恢复
+      if (state.scriptSuccess !== false) {
+        await playMagicEffect(magic, player, players[targetIdx]);
 
-      // 结算恢复 (单体或群体)
-      let targets = [];
-      if (magic.wType === 5) {
-        players.forEach((p, pIdx) => { if (p.hp > 0) targets.push(pIdx); });
-      } else {
-        // 单体治疗/复活：如果目标是活着的，或者目标虽阵亡但所施放的是复活仙术，则作为合法对象进行结算
-        if (players[targetIdx].hp > 0 || isRevival) {
-          targets = [targetIdx];
-        }
-      }
-
-      let recover = Math.floor(player.magicStrength * 1.5 + magic.wBaseDamage);
-      if (recover < 1) recover = 1;
-
-      for (const pIdx of targets) {
-        const targetPlayer = players[pIdx];
-        
-        // 恢复 HP (不超过最大 HP)
-        targetPlayer.hp = Math.min(targetPlayer.maxHp, targetPlayer.hp + recover);
-        const roleStats = state.roles[targetPlayer.index];
-        if (roleStats) {
-          roleStats.hp = targetPlayer.hp;
+        if (itemObj.equScr > 0) {
+          await Script.runTriggerScript(itemObj.equScr, state.roles[players[targetIdx].index], 'magic');
         }
 
-        // 恢复 HP 后立即重新应用角色的状态姿态帧（确保复活时由倒地动作立即恢复为正常/虚弱动作帧）
-        restorePlayerFrame(targetPlayer);
+        // 步骤 3：结算恢复 (单体或群体)
+        let targets = [];
+        if (magic.wType === 5) {
+          players.forEach((p, pIdx) => { if (p.hp > 0) targets.push(pIdx); });
+        } else {
+          // 单体治疗/复活：如果目标是活着的，或者目标虽阵亡但所施放的是复活仙术，则作为合法对象进行结算
+          if (players[targetIdx].hp > 0 || isRevival) {
+            targets = [targetIdx];
+          }
+        }
 
-        // 飘白色加血字 (isPlayer 为 true)
-        damagePopups.push({
-          actor: targetPlayer,
-          value: recover,
-          isPlayer: true,
-          startTime: Date.now()
-        });
+        let recover = Math.floor(player.magicStrength * 1.5 + magic.wBaseDamage);
+        if (recover < 1) recover = 1;
+
+        for (const pIdx of targets) {
+          const targetPlayer = players[pIdx];
+          
+          // 恢复 HP (不超过最大 HP)
+          targetPlayer.hp = Math.min(targetPlayer.maxHp, targetPlayer.hp + recover);
+          const roleStats = state.roles[targetPlayer.index];
+          if (roleStats) {
+            roleStats.hp = targetPlayer.hp;
+          }
+
+          // 恢复 HP 后立即重新应用角色的状态姿态帧（确保复活时由倒地动作立即恢复为正常/虚弱动作帧）
+          restorePlayerFrame(targetPlayer);
+
+          // 飘白色加血字 (isPlayer 为 true)
+          damagePopups.push({
+            actor: targetPlayer,
+            value: recover,
+            isPlayer: true,
+            startTime: Date.now()
+          });
+        }
+        draw();
+        await sleep(400); // 飘字稍作停留
       }
-      draw();
-      await sleep(400); // 飘字稍作停留
     }
   }
 
