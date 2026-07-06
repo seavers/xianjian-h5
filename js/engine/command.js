@@ -2877,10 +2877,9 @@ export function jumpIfEnemyTurn(targetScriptId) {
   // 步骤 1：获取当前游戏是否在战斗模式下运行
   const isBattle = state.currentMode === 'battle';
 
-  // 步骤 2：如果处于战斗中，通过 50% 概率简易 Mock 敌方行动回合判定，并执行跳转
+  // 步骤 2：如果处于战斗中，检查全局敌方行动标志 state.fEnemyMoving 是否为真，若为真则返回跳转的脚本 ID
   if (isBattle) {
-    const isEnemyAction = Math.random() < 0.5;
-    if (isEnemyAction) {
+    if (state.fEnemyMoving) {
       console.log(`[0x68 jumpIfEnemyTurn] 处于敌方行动回合，跳转至脚本: ${targetScriptId}`);
       return targetScriptId;
     }

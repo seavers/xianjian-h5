@@ -84,6 +84,9 @@ export const state = {
   // 全局逻辑帧计数器，用于部分周期性逻辑（如驱魔香状态下怪兽每两帧原地旋转一次）
   dwFrameNum: 0,
 
+  // 标志当前是否处于敌方行动回合（用来支撑 0x68 jumpIfEnemyTurn 指令判定）
+  fEnemyMoving: false,
+
   // 并行脚本执行历史（用于右侧监控流）
   scriptLogs: [],
 

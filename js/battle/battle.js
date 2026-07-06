@@ -77,6 +77,7 @@ export async function start(id, failId, fleeId) {
   // 步骤 1.2：切换为战斗模式，并初始化战斗状态机
   state.currentMode = 'battle';
   state.uiMode = 'block';
+  state.fEnemyMoving = false;
   isBattleRunning = true;
   turn = 1;
   phase = 'select';
@@ -2083,7 +2084,14 @@ async function runActionPhase() {
         if (aliveEnemyIdxs.length > 0) {
           const targetEnemyIdx = aliveEnemyIdxs[Math.floor(Math.random() * aliveEnemyIdxs.length)];
           console.log(`[Status] 敌人 #${actor.index} 处于混乱状态，物理攻击其队友敌人 #${targetEnemyIdx}`);
-          await playEnemyAttackEnemy(actor.index, targetEnemyIdx);
+
+          // 设置敌方移动标志，并执行队友普通物理攻击
+          state.fEnemyMoving = true;
+          try {
+            await playEnemyAttackEnemy(actor.index, targetEnemyIdx);
+          } finally {
+            state.fEnemyMoving = false;
+          }
         } else {
           console.log(`[Status] 敌人 #${actor.index} 处于混乱状态，但无活着的队友`);
         }
@@ -2098,7 +2106,14 @@ async function runActionPhase() {
 
       if (alivePlayerIdxs.length > 0) {
         const targetIdx = alivePlayerIdxs[Math.floor(Math.random() * alivePlayerIdxs.length)];
-        await playEnemyAttack(actor.index, targetIdx);
+
+        // 设置敌方移动标志，执行敌方物理或法术动作
+        state.fEnemyMoving = true;
+        try {
+          await playEnemyAttack(actor.index, targetIdx);
+        } finally {
+          state.fEnemyMoving = false;
+        }
       }
     }
   }
